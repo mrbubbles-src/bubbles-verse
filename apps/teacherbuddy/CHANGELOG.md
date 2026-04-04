@@ -1,0 +1,156 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Documentation
+
+- Doc index overhaul under `documentation/README.md`; added `metadata-and-seo.md` (OG, sitemap, `page-meta.ts`).
+- README: monorepo paths, Turbo filter, standalone clone URL fix (prior release notes).
+
+## [1.1.5] - 2026-02-09
+
+### Added
+
+- Class-aware state foundations: `Classroom` model support, class utilities (`lib/classes.ts`), and class-focused storage/test coverage.
+- Shared `ClassSelector` component for class selection across students, generator, play, breakout rooms, and projects.
+- Unified quiz editor test coverage for form + import workflows (`components/quizzes/__tests__/quiz-editor-form.test.tsx`).
+- Shared select wrapper tests for popup alignment defaults (`components/ui/__tests__/select.test.tsx`).
+
+### Changed
+
+- Student workflow expanded to class-first management: create/select classes, import full class rosters, and manage students in the active class.
+- Generator, quiz play, breakout groups, and project lists now run with active-class scoping.
+- Quiz editing/import flow consolidated into `QuizEditorForm`; legacy `quiz-import-card` removed.
+- Quiz question list card behavior refined for better overflow/height handling.
+- Shared `SelectContent` now defaults to popper-style content-fit behavior and supports explicit trigger-aligned positioning via `alignItemWithTrigger={true}` where needed.
+- App version updated to `1.1.5` in `package.json`.
+- Sidebar version label now reads version dynamically from `package.json` via server layout prop wiring.
+- Dependency/version refresh from the `main..HEAD` baseline commits (including `package.json` and `bun.lock` updates from `e9d61c2`).
+
+### Tests
+
+- Expanded reducer/storage/type-guard coverage for class-aware persistence and migration paths.
+- Added class utility tests (`lib/__tests__/classes.test.ts`) and updated student/reducer expectations.
+- Added select alignment behavior tests in `components/ui/__tests__/select.test.tsx`.
+
+### Documentation
+
+- Updated README and project docs for class-scoped workflows and unified quiz editing/import.
+- Updated component docs to describe select popup auto-sizing defaults and trigger-alignment override.
+
+## [1.1.4] - 2026-02-05
+
+### Changed
+
+- Rethought Data Security
+
+### Documentation
+
+- Version bumped to 1.1.4 in `package.json` and sidebar (AppShell).
+- Root layout: documented PrivacyNotice, Toaster (sonner), metadata (title template, OG, Twitter), and ld+json WebApplication schema in layout and routes docs.
+- Route pages: documented inline `metadata` export and `skeleton` prop pattern for feature components (StudentForm, QuizEditor, QuizPlayCard, GeneratorCard).
+- Components: added PrivacyNotice and Toaster to layout section; Toaster (sonner) to UI primitives; sonner to dependencies.
+- Structure: added `privacy-notice.tsx`, `robots.ts`, `sitemap.ts`, and Sonner/Toaster in folder structure and key files.
+- Routes: updated App Layout and Route Metadata to reflect current layout content and route-level metadata; Route Components updated for skeleton prop usage.
+
+## [1.1.3] - 2026-02-05
+
+### Added
+
+- Metadata and SEO
+- Logo to `/` page
+- Logo to Footer
+- Privacy Notice
+- `sitemap.xml` and `robots.txt`
+- Privacy Policy and Legal Notice to Footer
+- Codeowners file
+- Workflow files for GitHub Actions
+
+### Changed
+
+- Root layout metadata now defines app-wide `metadataBase`, Open Graph defaults, and Twitter defaults.
+- Shared Open Graph/Twitter metadata now points to the generated `/api/og` endpoint.
+- Root dashboard metadata title is explicitly `Dashboard | TeacherBuddy` for title consistency with other pages.
+- `lib/page-info.tsx` now consumes shared route metadata from `lib/page-meta.ts`.
+- Project docs and README now document metadata and Open Graph patterns, including `NEXT_PUBLIC_SITE_URL`.
+- Favicon switched to be aligned with the logo
+- Switched Icon in Sidebar Header to be aligned with the logo
+
+## [1.1.2] - 2026-02-05
+
+### Added
+
+- **In-app help**: PageInfoDialog — help button (?) next to the page title in the header opens a modal with a per-page tutorial (what the page does, what to do, what you get). Content is defined in `lib/page-info.tsx`.
+- Page metadata and help content in `lib/page-info.tsx` (`PAGE_INFOS`, `PAGE_INFO_BY_PATH`); header title and description are now driven from this data.
+- Dialog and Tabs UI components (`components/ui/dialog.tsx`, `components/ui/tabs.tsx`).
+- Component tests for PageInfoDialog (`components/utility/__tests__/page-info-dialog.test.tsx`).
+
+### Changed
+
+- App shell and header now use page info for route metadata and pass an `info` prop to Header for PageInfoDialog.
+- Project documentation: components (PageInfoDialog, Dialog, Tabs), structure (lib/page-info), routes, testing, getting-started (page-info step), hooks (useIsMobile), README (in-app help).
+
+## [1.1.1] - 2026-02-05
+
+### Fixed
+
+- Design Fixes
+  - Responsiveness of the app
+  - Accessibility of the app
+
+### Changed
+
+- Performance Improvements
+
+## [1.1.0] - 2026-02-04
+
+### Added
+
+- QuizTimerCard with audio feedback and volume control
+- Quick timer display in sidebar on all pages
+- Project lists page with builder, view, and persistence
+- Comprehensive test suite using Vitest and React Testing Library
+  - 247 tests across 8 test files
+  - Unit tests for type guards (`lib/__tests__/type-guards.test.ts`)
+  - Unit tests for student utilities (`lib/__tests__/students.test.ts`)
+  - Unit tests for storage functions (`lib/__tests__/storage.test.ts`)
+  - Hook tests for `useTimer` (`hooks/__tests__/use-timer.test.ts`)
+  - Hook tests for `useCopyToClipboard` (`hooks/__tests__/use-copy-to-clipboard.test.ts`)
+  - Integration tests for app reducer (`context/__tests__/app-reducer.test.ts`)
+  - Component tests for `StudentForm` and `QuizSelector`
+- Test configuration files (`vitest.config.ts`, `vitest.setup.ts`)
+- Test utilities with AppStoreProvider wrapper (`__tests__/test-utils.tsx`)
+- npm scripts: `test`, `test:ui`, `test:coverage`, `test:run`
+- Testing documentation (`documentation/project-docs/testing.md`)
+
+### Changed
+
+- Refactored components for improved state management
+- Updated `package.json` with testing dependencies and scripts
+
+### Developer Experience
+
+- Tests provide ~80% coverage on core business logic (lib/, context/)
+- Mocked localStorage and crypto.randomUUID in test setup
+- Component tests use custom render wrapper with providers
+
+## [1.0.0] - 2026-02-03
+
+### Added
+
+- Server-safe style variants for buttons and badges
+- Dashboard cards as server component
+- Hydration skeletons for feature views
+- Global `app/loading.tsx` and `app/error.tsx` boundaries
+- Project documentation and expanded README
+- MIT license
+
+### Fixed
+
+- Theme toggle hydration label mismatch
+- Tightened student status typing

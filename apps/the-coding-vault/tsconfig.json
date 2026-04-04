@@ -1,0 +1,29 @@
+{
+  "extends": "@bubbles/typescript-config/nextjs.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"],
+      "@bubbles/ui/globals.css": ["../../packages/ui/src/styles/globals.css"],
+      "@bubbles/ui/hooks/*": ["../../packages/ui/src/hooks/*"],
+      "@bubbles/ui/lib/*": ["../../packages/ui/src/lib/*"],
+      "@bubbles/ui/postcss.config": ["../../packages/ui/postcss.config.mjs"],
+      "@bubbles/ui/shadcn/*": ["../../packages/ui/src/components/shadcn/*"],
+      "@bubbles/ui/*": ["../../packages/ui/src/*"],
+      "react-hook-form": ["./node_modules/react-hook-form"]
+    },
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
+  },
+  "include": [
+    "next-env.d.ts",
+    "next.config.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": ["node_modules", "components/ui/shadcn/**/*"]
+}

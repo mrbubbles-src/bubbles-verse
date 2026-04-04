@@ -1,0 +1,3 @@
+{
+  "extends": "@bubbles/typescript-config/base.json"
+}

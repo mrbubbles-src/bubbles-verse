@@ -1,0 +1,152 @@
+{
+  "meta": {
+    "title": "mrbubbles-src | Portfolio",
+    "description": "Meet Manuel Fahrenholz (aka mrbubbles-src), a fullstack MERN web developer based in Germany.",
+    "openGraph": {
+      "title": "mrbubbles-src < Fullstack Web Developer />",
+      "description": "Fullstack (MERN) Web Developer from Germany",
+      "ogAlt": "mrbubbles-src Portfolio Preview"
+    }
+  },
+  "landingPage": {
+    "screenreaderAbout": "About Me",
+    "titleTech": "Tech Stack",
+    "titleProjects": "Projects",
+    "titleContact": "Contact Me",
+    "titleContactAbout": "Profile Summary"
+  },
+  "a11y": {
+    "landingPage": {
+      "labelledByAbout": "about-section",
+      "labelledByTech": "tech-stack",
+      "labelledByProjects": "projects-heading",
+      "labelledByContact": "contact-section"
+    },
+    "contactAbout": {
+      "labelledByContactAbout": "about-summary"
+    }
+  },
+  "navbar": {
+    "about": "About",
+    "projects": "Projects",
+    "contact": "Contact",
+    "stack": "Stack",
+    "cv": "Curriculum Vitae",
+    "themeToggle": {
+      "screenreaderTitle": "Switch between light and dark mode",
+      "triggerTitle": "Switch between light and dark mode",
+      "contentTitle": "dropdown menu for light and dark mode"
+    },
+    "language": {
+      "en": "🇬🇧 English",
+      "de": "🇩🇪 German",
+      "screenreaderTitle": "Switch Language",
+      "triggerTitle": "language switcher",
+      "contentTitle": "dropdown menu for language selection"
+    },
+    "a11y": {
+      "labelBack": "Back to landingpage",
+      "labelToggle": "Toggle Menu"
+    }
+  },
+  "footer": {
+    "legal": "Legal Notice",
+    "privacy": "Privacy Policy",
+    "themeToggle": {
+      "screenreaderTitle": "Switch between light and dark mode",
+      "triggerTitle": "Switch between light and dark mode",
+      "contentTitle": "dropdown menu for light and dark mode",
+      "footerText": "Theme Toggle"
+    },
+    "language": {
+      "en": "🇬🇧 English",
+      "de": "🇩🇪 German",
+      "screenreaderTitle": "Switch Language",
+      "triggerTitle": "language switcher",
+      "contentTitle": "dropdown menu for language selection"
+    }
+  },
+  "about": {
+    "greetingP1": "Hello",
+    "greetingP2": "nice to meet you!",
+    "screenreaderTitle": "About Manuel Fahrenholz",
+    "nameIntroP1": "My name is",
+    "nameIntroP2": "Nice to meet you!",
+    "ageP1": "I'm",
+    "ageP2": "years old and live in the b-e-a-utiful city of",
+    "ageP3": "Cologne, Germany",
+    "jobP1": "My journey as a",
+    "jobP2": "began in September 2022 at the DCI Digital Career Institute, where I completed a 12-month",
+    "jobP3": "-course. I now work there as a",
+    "jobP4": ", sharing my knowledge with the next wave of developers.",
+    "care": "With a background in caregiving, helping people is second nature — I aim to build apps that offer real support, even in small ways.",
+    "hobbies": "Outside of work, I LOVE gaming, reading (or listening to) books, binge-watching shows & movies, and occasionally doodling just for fun.",
+    "cta": "Want to know more? Feel free to check out my CV, GitHub, or LinkedIn — or just send me a message via the contact form!",
+    "closingP1": "Can't wait to hear more about YOU!",
+    "closingP2": "Best",
+    "signature": "Manuel",
+    "cvButton": "See my journey",
+    "contactButton": "Get in touch!",
+    "imageAlt": "Profile picture of Manuel Fahrenholz"
+  },
+  "contact": {
+    "title": "Contact Me",
+    "form": {
+      "nameLabel": "Your Name",
+      "namePlaceholder": "Enter your name",
+      "nameDescription": "Please enter your full name",
+      "nameRequired": "Name is required",
+      "emailLabel": "Your E-mail",
+      "emailPlaceholder": "Enter your e-mail",
+      "emailDescription": "We'll never share your e-mail with anyone else.",
+      "emailRequired": "E-mail is required",
+      "messageLabel": "Your Message",
+      "messagePlaceholder": "Enter your message",
+      "messageDescription": "Feel free to share feedback, questions, or just say hi!",
+      "messageRequired": "Message is required",
+      "submitLabel": "Send Message",
+      "submitLabelAlt": "Sending..."
+    },
+    "successMessage": "Thank you for your message! I'll get back to you as soon as possible.",
+    "toastSuccess": "E-mail sent successfully!",
+    "toastError": "Error sending e-mail. Please try again later.",
+    "captchaMissing": "Please verify that you are not a robot."
+  },
+  "contactAbout": {
+    "title": "Profile Summary",
+    "proffessionTitle": "Profession",
+    "proffessionDescription": "Fullstack Web Developer",
+    "currentJobTitle": "Current Job",
+    "currentJobDescription": "Jr WebDev Teacher",
+    "locationTitle": "Location",
+    "locationDescription": "Cologne, Germany",
+    "cvButton": "See my journey",
+    "contactButton": "Get in touch!",
+    "imageAlt": "Profile picture of Manuel Fahrenholz",
+    "a11y": {
+      "labelledByContactAbout": "about-summary"
+    }
+  },
+  "projects": {
+    "redacted": {
+      "title": "< REDACTED /> coming soon™ 👀",
+      "description": "< REDACTED />"
+    },
+    "bookNook": {
+      "title": "bookNook",
+      "description": "A book‑management application to track your existing book catalog, what you’re currently reading – including the current page – and what you’d like to read next. You can even set yourself a little reading challenge! < Note: The backend runs on the render(dot)com free tier. It can take a minute or so to wake up, so please be patient. Once it’s awake, it runs as smooth as butter 😉! This was created by my team and me as our final group project while studying web development at the DCI Digital Career Institute. >"
+    },
+    "vetClinic": {
+      "title": "Vet‑Clinic Homepage Overhaul",
+      "description": "My team and I overhauled a veterinarian’s homepage to give it a more modern look. < Note: This was our final group project for the SPA module while studying web development at the DCI Digital Career Institute. >"
+    },
+    "studentNameGenerator": {
+      "title": "Random Student Name Generator",
+      "description": "I created this little project while learning web development at the DCI Digital Career Institute to help my teachers pick a random student whenever they need one (e.g. for answering questions or presenting assignment solutions). It’s a passion project that I improve whenever I find the time. A relaunch is coming soon, so keep an eye on it!"
+    },
+    "bubblesGenerator": {
+      "title": "bubbles-express-generator",
+      "description": "A simple CLI to scaffold Express.js starter projects. Other similar tools are available, but I wanted to create my own to learn more about Node.js and Express.js. Other tools were also very complex and opinionated. They contained a lot of features I didn't need, so I wanted to create a simple tool that only does what I need it to do. It’s a work in progress, and I’m planning to add more features in the future."
+    }
+  }
+}

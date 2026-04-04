@@ -1,0 +1,66 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "env": [
+        "CLOUDINARY_API_SECRET",
+        "DATABASE_URL",
+        "DIRECT_URL",
+        "DISCORD_WEBHOOK_URL",
+        "JWT_SECRET",
+        "NEXT_DISABLE_REACT_COMPILER",
+        "NEXT_PUBLIC_APP_URL",
+        "NEXT_PUBLIC_CLOUDINARY_API_KEY",
+        "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME",
+        "NEXT_PUBLIC_SITE_URL",
+        "NEXT_PUBLIC_TURNSTILE_SITE_KEY",
+        "NODE_ENV",
+        "RESEND_API_KEY",
+        "SUPABASE_ACCESS_TOKEN",
+        "SUPABASE_PROJECT_REF",
+        "THE_CODING_VAULT_ENABLE_NO_DB_FALLBACK",
+        "TURNSTILE_SECRET_KEY",
+        "VERCEL_PROJECT_PRODUCTION_URL",
+        "VERCEL_URL"
+      ],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": [".next/**", "!.next/cache/**"]
+    },
+    "lint": {
+      "dependsOn": ["^lint"]
+    },
+    "format": {
+      "dependsOn": ["^format"]
+    },
+    "typecheck": {
+      "dependsOn": ["^typecheck"]
+    },
+    "dev": {
+      "cache": false,
+      "env": [
+        "CLOUDINARY_API_SECRET",
+        "DATABASE_URL",
+        "DIRECT_URL",
+        "DISCORD_WEBHOOK_URL",
+        "JWT_SECRET",
+        "NEXT_DISABLE_REACT_COMPILER",
+        "NEXT_PUBLIC_APP_URL",
+        "NEXT_PUBLIC_CLOUDINARY_API_KEY",
+        "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME",
+        "NEXT_PUBLIC_SITE_URL",
+        "NEXT_PUBLIC_TURNSTILE_SITE_KEY",
+        "NODE_ENV",
+        "RESEND_API_KEY",
+        "SUPABASE_ACCESS_TOKEN",
+        "SUPABASE_PROJECT_REF",
+        "THE_CODING_VAULT_ENABLE_NO_DB_FALLBACK",
+        "TURNSTILE_SECRET_KEY",
+        "VERCEL_PROJECT_PRODUCTION_URL",
+        "VERCEL_URL"
+      ],
+      "persistent": true
+    }
+  }
+}

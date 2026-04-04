@@ -1,0 +1,65 @@
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+
+<!-- END:nextjs-agent-rules -->
+
+## General
+
+- Be extremely concise. Sacrifice grammar for the sake of concision.
+- Avoid overly clever or abstract solutions unless clearly justified.
+- Write code for humans: it must be easy to read, understand, and maintain, while remaining efficient.
+- Add concise JSDoc comments that explain what the function or component is for, how to use it, what it expects, and what it returns — even if the implementation seems obvious.
+- Avoid comments that merely restate the function name or implementation.
+- Always assume your knowledge is outdated, verify it with all your available tooling.
+- Use the `init` command first once in a new NextDevTools session to initialize the MCP.
+
+## UI/UX
+
+- For UI/UX relevant tasks, always use frontent-design, userinterface-wiki and shadcn skills.
+- Avoid unnecessary wrapper elements.
+- Always design mobile-first.
+- Keep skeletons in separate files.
+
+## Testing
+
+- Keep tests up to date and accurate.
+- Update or add tests with every functional change.
+- Keep test files in their own directory; do not mix them with the source code.
+
+## TypeScript
+
+- Do not use `any`, `unknown` or `never` unless there's absolutely no other way.
+
+## Large File & Module Structure Policy
+
+- Avoid excessively large files.
+- Prefer cohesive modules over splitting by size.
+- ~400+ lines: briefly check if the file is still clear and focused.
+- ~800+ lines: strong signal to consider splitting.
+- Split when responsibilities diverge or navigation becomes difficult.
+- Do not split tightly coupled logic just to reduce size.
+- If unsure: keep the current structure.
+
+## Documentation
+
+- Always update documentation, README.md, and CHANGELOG.md.
+- Documentation and changelogs must live close to the code they describe.
+- Keep docs concise, human readable, and aligned with the codebase.
+- Prefer small, focused files over large ones.
+- Document anything that improves human onboarding or understanding.
+- Root:
+  - documents the monorepo as a whole (architecture, setup, tooling).
+  - only global changes.
+  - `README.md` (overview, setup, structure)
+  - optional `documentation/`
+  - `CHANGELOG.md` (only cross-cutting changes)
+- Apps/Packages:
+  - document their own logic, usage, and changes.
+  - scoped changes only.
+  - own `README.md`
+  - own `CHANGELOG.md`
+  - own `documentation/` (e.g. `apps/*/documentation/`, `packages/*/documentation/`)
+- Do not mix scopes.

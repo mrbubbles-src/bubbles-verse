@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://www.mrbubbles-src.dev
+
+# Sitemaps
+Sitemap: https://www.mrbubbles-src.dev/sitemap.xml
