@@ -1,6 +1,6 @@
 'use client';
 
-import { startVt } from '@/lib/view-transition';
+import { startVt } from './view-transition';
 
 import { HugeiconsIcon, Moon02Icon, SunIcon } from '@bubbles/ui/lib/hugeicons';
 import { Button } from '@bubbles/ui/shadcn/button';
@@ -10,7 +10,7 @@ import {
   TooltipTrigger,
 } from '@bubbles/ui/shadcn/tooltip';
 
-import { useTheme } from '@/hooks/use-theme';
+import { useTheme } from './use-theme';
 
 /**
  * Renders a theme toggle button with view-transition animation support.

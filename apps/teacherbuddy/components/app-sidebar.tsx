@@ -22,7 +22,7 @@ import {
   UserAdd01Icon,
 } from '@bubbles/ui/lib/hugeicons';
 
-import ThemeToggle from '@/components/utility/theme-toggle';
+import { ThemeToggle } from '@bubbles/theme';
 
 const navigationItems = [
   {

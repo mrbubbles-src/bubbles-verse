@@ -10,7 +10,7 @@ import Footer from '@/components/footer';
 import PrivacyNotice from '@/components/privacy-notice';
 import { Toaster } from '@bubbles/ui/shadcn/sonner';
 import { AppStoreProvider } from '@/context/app-store';
-import { ThemeProvider } from '@/context/theme-provider';
+import { ThemeProvider } from '@bubbles/theme';
 import packageJson from '@/package.json';
 
 const geistSans = Geist({

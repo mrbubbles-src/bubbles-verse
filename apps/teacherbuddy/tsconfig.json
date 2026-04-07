@@ -4,6 +4,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
+      "@bubbles/theme": ["../../packages/theme/src/index.ts"],
       "@bubbles/ui/*": ["../../packages/ui/src/*"]
     },
     "plugins": [

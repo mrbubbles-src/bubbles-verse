@@ -1,6 +1,6 @@
 'use client';
 
-import type { Theme, ThemeProviderValue } from '@/hooks/use-theme';
+import type { Theme, ThemeProviderValue } from './use-theme';
 
 import * as React from 'react';
 
@@ -10,7 +10,7 @@ import {
   useTheme as useNextTheme,
 } from 'next-themes';
 
-import { ThemeProviderContext } from '@/hooks/use-theme';
+import { ThemeProviderContext } from './use-theme';
 
 // Bridges next-themes into our custom ThemeProviderContext expected by useTheme()
 function ThemeBridge({ children }: { children: React.ReactNode }) {
