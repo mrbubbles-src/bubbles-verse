@@ -84,6 +84,7 @@ describe('use-activity-store', () => {
           loggedAt: '2026-04-07T10:15:00.000Z',
         },
         xpEarned: 5,
+        dailyXpToday: 5,
       })
       expect(useActivityStore.getState().entries).toEqual([result.entry])
       expect(JSON.parse(localStorage.getItem('it-counts:entries') ?? '[]')).toEqual([
@@ -106,8 +107,20 @@ describe('use-activity-store', () => {
       const second = useActivityStore.getState().addDurationEntry(15)
       // cumulative 30 min → 5 XP total, minus previous 2 XP = 3 XP delta
       expect(second.xpEarned).toBe(3)
+      expect(second.dailyXpToday).toBe(5)
 
       vi.restoreAllMocks()
+    })
+  })
+
+  describe('getDailyTotalMinutes and getDailyXpForDate', () => {
+    it('sums minutes for a date and maps daily XP from the aggregate', () => {
+      useActivityStore.getState().addEntry(ENTRY_A)
+      useActivityStore.getState().addEntry(ENTRY_B)
+
+      expect(useActivityStore.getState().getDailyTotalMinutes('2026-04-07')).toBe(35)
+      // 35 min → tier 30+ → 5 XP (not per-entry 3+2)
+      expect(useActivityStore.getState().getDailyXpForDate('2026-04-07')).toBe(5)
     })
   })
 

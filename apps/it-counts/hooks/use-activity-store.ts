@@ -8,7 +8,10 @@ import { getWeekStart } from '@/lib/dates'
 
 export type AddDurationEntryResult = {
   entry: ActivityEntry
+  /** Tier delta from this log relative to prior today total (level sync uses the log, not this field). */
   xpEarned: number
+  /** `calculateDailyXp` for today after this entry — use for confirmation copy. */
+  dailyXpToday: number
 }
 
 interface ActivityState {
@@ -17,6 +20,8 @@ interface ActivityState {
   addDurationEntry: (durationMin: number) => AddDurationEntryResult
   loadFromStorage: () => void
   getDailyEntries: (date: string) => ActivityEntry[]
+  getDailyTotalMinutes: (date: string) => number
+  getDailyXpForDate: (date: string) => number
   getWeeklyEntries: (weekStart: string) => ActivityEntry[]
 }
 
@@ -52,7 +57,8 @@ export const useActivityStore = create<ActivityState>()((set, get) => ({
       .reduce((sum, e) => sum + e.durationMin, 0)
 
     const previousXp = calculateDailyXp(previousDailyTotal)
-    const newXp = calculateDailyXp(previousDailyTotal + durationMin)
+    const newDailyTotal = previousDailyTotal + durationMin
+    const dailyXpToday = calculateDailyXp(newDailyTotal)
 
     const next = [...entries, entry]
     saveEntries(next)
@@ -60,12 +66,24 @@ export const useActivityStore = create<ActivityState>()((set, get) => ({
 
     return {
       entry,
-      xpEarned: newXp - previousXp,
+      xpEarned: dailyXpToday - previousXp,
+      dailyXpToday,
     }
   },
 
   getDailyEntries: (date) => {
     return get().entries.filter((e) => e.date === date)
+  },
+
+  getDailyTotalMinutes: (date) => {
+    return get()
+      .entries.filter((e) => e.date === date)
+      .reduce((sum, e) => sum + e.durationMin, 0)
+  },
+
+  getDailyXpForDate: (date) => {
+    const minutes = get().getDailyTotalMinutes(date)
+    return calculateDailyXp(minutes)
   },
 
   getWeeklyEntries: (weekStart) => {

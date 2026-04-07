@@ -30,4 +30,9 @@ describe('XpHero', () => {
     const xpElement = screen.getByText('42 / 100 XP')
     expect(xpElement.className).toMatch(/font-heading/)
   })
+
+  it('renders level progress toward 100 XP', () => {
+    render(<XpHero />)
+    expect(screen.getByRole('progressbar', { name: /42 of 100 xp/i })).toBeInTheDocument()
+  })
 })

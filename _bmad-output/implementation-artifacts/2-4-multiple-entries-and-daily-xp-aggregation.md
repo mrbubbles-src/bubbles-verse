@@ -1,6 +1,6 @@
 # Story 2.4: Multiple Entries & Daily XP Aggregation
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -27,15 +27,15 @@ so that fragmented outings are treated the same as a single long one.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Move aggregation logic into the activity and level state
-  - [ ] Add daily-total selectors in the activity store
-  - [ ] Compute daily XP from the aggregated minutes, never from per-entry XP
-- [ ] Task 2: Update the dashboard and confirmation copy
-  - [ ] Show the hero XP value as total level XP across days
-  - [ ] Add `XpProgressBar` with the correct current-level total
-  - [ ] Update confirmation copy to reflect the new daily total result
-- [ ] Task 3: Add fragmented-day tests
-  - [ ] Cover multi-entry same-day aggregation, tier crossing, and cross-day level XP accumulation
+- [x] Task 1: Move aggregation logic into the activity and level state
+  - [x] Add daily-total selectors in the activity store
+  - [x] Compute daily XP from the aggregated minutes, never from per-entry XP
+- [x] Task 2: Update the dashboard and confirmation copy
+  - [x] Show the hero XP value as total level XP across days
+  - [x] Add `XpProgressBar` with the correct current-level total
+  - [x] Update confirmation copy to reflect the new daily total result
+- [x] Task 3: Add fragmented-day tests
+  - [x] Cover multi-entry same-day aggregation, tier crossing, and cross-day level XP accumulation
 
 ## Dev Notes
 
@@ -73,4 +73,27 @@ GPT-5 Codex
 
 ### Completion Notes List
 
+- Level XP is derived via `sumLevelXpFromEntries` over `[levelStartDate, today]` (sum of `calculateDailyXp` per calendar day).
+- Replaced `addXp` delta updates with `syncXpFromEntries` after hydrate and each log; confirmation shows today's total daily XP (`dailyXpToday`).
+- Added `XpProgressBar` under the hero; duration preview shows total XP for today after the typed minutes.
+
 ### File List
+
+- `apps/it-counts/lib/xp.ts`
+- `apps/it-counts/hooks/use-activity-store.ts`
+- `apps/it-counts/hooks/use-level-store.ts`
+- `apps/it-counts/components/shared/store-hydrator.tsx`
+- `apps/it-counts/components/logging/log-entry-sheet.tsx`
+- `apps/it-counts/components/logging/duration-input.tsx`
+- `apps/it-counts/components/dashboard/xp-hero.tsx`
+- `apps/it-counts/components/dashboard/xp-progress-bar.tsx`
+- `apps/it-counts/__tests__/hooks/use-activity-store.test.ts`
+- `apps/it-counts/__tests__/hooks/use-level-store.test.ts`
+- `apps/it-counts/__tests__/components/log-entry-sheet.test.tsx`
+- `apps/it-counts/__tests__/components/dashboard.test.tsx`
+- `apps/it-counts/__tests__/components/xp-hero.test.tsx`
+- `apps/it-counts/__tests__/lib/sum-level-xp.test.ts`
+
+### Change Log
+
+- 2026-04-07: Story 2.4 — daily aggregation for level XP, confirmation copy, progress bar, tests.

@@ -26,7 +26,8 @@ const AUTO_CLOSE_DELAY_MS = 900
 type InputMode = 'duration' | 'time-range'
 
 type ConfirmationState = {
-  xpEarned: number
+  /** Today's total daily XP after this log (`calculateDailyXp` on aggregated minutes). */
+  dailyXpToday: number
   message: string
 }
 
@@ -107,7 +108,7 @@ export function LogEntrySheet() {
       .filter((e) => e.date === today)
       .reduce((sum, e) => sum + e.durationMin, 0)
   }, [entries])
-  const addXp = useLevelStore((s) => s.addXp)
+  const syncXpFromEntries = useLevelStore((s) => s.syncXpFromEntries)
 
   const [open, setOpen] = useState(false)
   const [inputMode, setInputMode] = useState<InputMode>('duration')
@@ -206,11 +207,11 @@ export function LogEntrySheet() {
       durationMin = walkingMinutes
     }
 
-    const { xpEarned } = addDurationEntry(durationMin)
-    addXp(xpEarned)
+    const { dailyXpToday } = addDurationEntry(durationMin)
+    syncXpFromEntries(useActivityStore.getState().entries)
     setDurationError('')
     setConfirmation({
-      xpEarned,
+      dailyXpToday,
       message: getRandomMessage('log-confirm'),
     })
 
@@ -296,7 +297,7 @@ export function LogEntrySheet() {
           {confirmation ? (
             <div className="flex flex-col gap-2">
               <p className="text-sm/6 font-semibold tabular-nums text-foreground">
-                +{confirmation.xpEarned} XP · That counted.
+                +{confirmation.dailyXpToday} XP today · That counted.
               </p>
               <MotivationalMessage message={confirmation.message} className="text-left" />
             </div>

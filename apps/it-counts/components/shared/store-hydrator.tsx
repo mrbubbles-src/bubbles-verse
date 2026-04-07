@@ -12,11 +12,13 @@ import { useLevelStore } from '@/hooks/use-level-store'
 export function StoreHydrator() {
   const loadEntries = useActivityStore((s) => s.loadFromStorage)
   const loadLevel = useLevelStore((s) => s.loadFromStorage)
+  const syncXpFromEntries = useLevelStore((s) => s.syncXpFromEntries)
 
   useEffect(() => {
     loadEntries()
     loadLevel()
-  }, [loadEntries, loadLevel])
+    syncXpFromEntries(useActivityStore.getState().entries)
+  }, [loadEntries, loadLevel, syncXpFromEntries])
 
   return null
 }

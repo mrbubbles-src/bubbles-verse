@@ -1,9 +1,10 @@
 import { create } from 'zustand'
 
-import type { LevelState } from '@/types'
+import type { ActivityEntry, LevelState } from '@/types'
 import { loadCurrentLevel, saveCurrentLevel } from '@/lib/storage'
 import { getTodayString, getWeeksElapsedInLevel } from '@/lib/dates'
 import { calculateOverXp, isLevelUpEligible } from '@/lib/levels'
+import { sumLevelXpFromEntries } from '@/lib/xp'
 
 /**
  * Builds a fresh default level state using today's date at call time,
@@ -20,7 +21,11 @@ function createDefaultLevelState(): LevelState {
 
 interface LevelStoreState {
   levelState: LevelState
-  addXp: (xpToAdd: number) => void
+  /**
+   * Recomputes persisted level XP from activity entries: sum of daily XP for
+   * each day in `[levelState.startDate, today]` (device-local dates).
+   */
+  syncXpFromEntries: (entries: ActivityEntry[]) => void
   loadFromStorage: () => void
   triggerLevelUp: () => void
   isEligible: boolean
@@ -35,14 +40,10 @@ export const useLevelStore = create<LevelStoreState>()((set, get) => ({
   levelState: createDefaultLevelState(),
   isEligible: false,
 
-  addXp: (xpToAdd) => {
-    if (Number.isFinite(xpToAdd) === false || xpToAdd <= 0) {
-      return
-    }
-
+  syncXpFromEntries: (entries) => {
     const current = get().levelState
-    const nextXp = current.xp + xpToAdd
     const today = getTodayString()
+    const nextXp = sumLevelXpFromEntries(entries, current.startDate, today)
     const weeksElapsed = getWeeksElapsedInLevel(current.startDate, today)
     const next: LevelState = {
       ...current,

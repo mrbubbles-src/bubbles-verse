@@ -2,22 +2,40 @@ import { cloneElement, createContext, type ReactElement, type ReactNode, useCont
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const addDurationEntryMock = vi.fn()
-const addXpMock = vi.fn()
+import { calculateDailyXp } from '@/lib/xp'
+import type { ActivityEntry } from '@/types'
+
+const sheetMocks = vi.hoisted(() => ({
+  entries: [] as ActivityEntry[],
+  addDurationEntry: vi.fn(),
+  syncXpFromEntries: vi.fn(),
+}))
 
 vi.mock('@/hooks/use-activity-store', () => ({
-  useActivityStore: vi.fn((selector: (state: { addDurationEntry: typeof addDurationEntryMock; entries: never[] }) => unknown) =>
-    selector({
-      addDurationEntry: addDurationEntryMock,
-      entries: [],
-    })
+  useActivityStore: Object.assign(
+    (
+      selector: (state: {
+        addDurationEntry: typeof sheetMocks.addDurationEntry
+        entries: ActivityEntry[]
+      }) => unknown,
+    ) =>
+      selector({
+        addDurationEntry: sheetMocks.addDurationEntry,
+        entries: sheetMocks.entries,
+      }),
+    {
+      getState: () => ({
+        entries: sheetMocks.entries,
+        addDurationEntry: sheetMocks.addDurationEntry,
+      }),
+    },
   ),
 }))
 
 vi.mock('@/hooks/use-level-store', () => ({
-  useLevelStore: vi.fn((selector: (state: { addXp: typeof addXpMock }) => unknown) =>
+  useLevelStore: vi.fn((selector: (state: { syncXpFromEntries: typeof sheetMocks.syncXpFromEntries }) => unknown) =>
     selector({
-      addXp: addXpMock,
+      syncXpFromEntries: sheetMocks.syncXpFromEntries,
     })
   ),
 }))
@@ -118,16 +136,25 @@ import { LogEntrySheet } from '@/components/logging/log-entry-sheet'
 
 describe('LogEntrySheet', () => {
   beforeEach(() => {
-    addDurationEntryMock.mockReset()
-    addXpMock.mockReset()
-    addDurationEntryMock.mockReturnValue({
-      entry: {
+    sheetMocks.entries.length = 0
+    sheetMocks.addDurationEntry.mockReset()
+    sheetMocks.syncXpFromEntries.mockReset()
+    sheetMocks.addDurationEntry.mockImplementation((durationMin: number) => {
+      const entry: ActivityEntry = {
         id: 'generated-id',
         date: '2026-04-07',
-        durationMin: 30,
+        durationMin,
         loggedAt: '2026-04-07T10:15:00.000Z',
-      },
-      xpEarned: 5,
+      }
+      sheetMocks.entries.push(entry)
+      const totalMin = sheetMocks.entries.reduce((sum, e) => sum + e.durationMin, 0)
+      const dailyXpToday = calculateDailyXp(totalMin)
+      const previousTotal = totalMin - durationMin
+      return {
+        entry,
+        xpEarned: dailyXpToday - calculateDailyXp(previousTotal),
+        dailyXpToday,
+      }
     })
   })
 
@@ -191,9 +218,9 @@ describe('LogEntrySheet', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /log it/i }))
 
-    expect(addDurationEntryMock).toHaveBeenCalledWith(45)
-    expect(addXpMock).toHaveBeenCalledWith(5)
-    expect(screen.getByText('+5 XP · That counted.')).toBeInTheDocument()
+    expect(sheetMocks.addDurationEntry).toHaveBeenCalledWith(45)
+    expect(sheetMocks.syncXpFromEntries).toHaveBeenCalledWith(sheetMocks.entries)
+    expect(screen.getByText('+5 XP today · That counted.')).toBeInTheDocument()
   })
 
   it('submit is disabled in time-range mode when fields are incomplete', () => {
@@ -221,7 +248,7 @@ describe('LogEntrySheet', () => {
 
     fireEvent.change(input, { target: { value: '30' } })
 
-    expect(screen.getByText('= 5 XP')).toBeInTheDocument()
+    expect(screen.getByText('= 5 XP today')).toBeInTheDocument()
   })
 
   it('submits the duration, mirrors earned xp into the level store, and shows inline confirmation', async () => {
@@ -233,14 +260,14 @@ describe('LogEntrySheet', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: /log it/i }))
 
-    expect(addDurationEntryMock).toHaveBeenCalledWith(30)
-    expect(addXpMock).toHaveBeenCalledWith(5)
-    expect(screen.getByText('+5 XP · That counted.')).toBeInTheDocument()
+    expect(sheetMocks.addDurationEntry).toHaveBeenCalledWith(30)
+    expect(sheetMocks.syncXpFromEntries).toHaveBeenCalledWith(sheetMocks.entries)
+    expect(screen.getByText('+5 XP today · That counted.')).toBeInTheDocument()
     expect(screen.getByText('Quiet win.')).toBeInTheDocument()
 
     await waitFor(
       () => {
-        expect(screen.queryByText('+5 XP · That counted.')).not.toBeInTheDocument()
+        expect(screen.queryByText('+5 XP today · That counted.')).not.toBeInTheDocument()
       },
       { timeout: 1500 },
     )
@@ -255,6 +282,6 @@ describe('LogEntrySheet', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(
       'Enter whole minutes greater than 0.',
     )
-    expect(addDurationEntryMock).not.toHaveBeenCalled()
+    expect(sheetMocks.addDurationEntry).not.toHaveBeenCalled()
   })
 })

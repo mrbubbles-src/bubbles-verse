@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useLevelStore } from '@/hooks/use-level-store'
-import type { LevelState } from '@/types'
+import type { ActivityEntry, LevelState } from '@/types'
 
 vi.mock('@/lib/dates', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/dates')>()
@@ -95,35 +95,138 @@ describe('use-level-store', () => {
     })
   })
 
-  describe('addXp — write-through', () => {
-    it('increments xp, derives overXp, and persists immediately', () => {
+  describe('syncXpFromEntries — write-through', () => {
+    it('sets xp to sum of daily XP for days in the level window', () => {
       useLevelStore.setState({
         levelState: {
           level: 1,
-          startDate: '2026-03-01',
-          xp: 98,
+          startDate: '2026-04-06',
+          xp: 0,
           overXp: 0,
         },
         isEligible: false,
       })
 
-      useLevelStore.getState().addXp(5)
+      const entries: ActivityEntry[] = [
+        {
+          id: '1',
+          date: '2026-04-06',
+          durationMin: 30,
+          loggedAt: '2026-04-06T08:00:00Z',
+        },
+        {
+          id: '2',
+          date: '2026-04-07',
+          durationMin: 10,
+          loggedAt: '2026-04-07T09:00:00Z',
+        },
+      ]
+
+      useLevelStore.getState().syncXpFromEntries(entries)
 
       const { levelState } = useLevelStore.getState()
-      expect(levelState.xp).toBe(103)
-      expect(levelState.overXp).toBe(3)
-      expect(useLevelStore.getState().isEligible).toBe(true)
+      expect(levelState.xp).toBe(7)
+      expect(levelState.overXp).toBe(0)
       expect(
         JSON.parse(localStorage.getItem('it-counts:current-level') ?? 'null'),
       ).toEqual(levelState)
     })
 
-    it('ignores zero or negative xp updates', () => {
-      useLevelStore.getState().addXp(0)
-      useLevelStore.getState().addXp(-2)
+    it('aggregates fragmented same-day entries into one daily XP (tier from total)', () => {
+      useLevelStore.setState({
+        levelState: {
+          level: 1,
+          startDate: '2026-04-07',
+          xp: 0,
+          overXp: 0,
+        },
+        isEligible: false,
+      })
 
-      expect(useLevelStore.getState().levelState.xp).toBe(0)
-      expect(localStorage.getItem('it-counts:current-level')).toBeNull()
+      const entries: ActivityEntry[] = [
+        {
+          id: '1',
+          date: '2026-04-07',
+          durationMin: 10,
+          loggedAt: '2026-04-07T08:00:00Z',
+        },
+        {
+          id: '2',
+          date: '2026-04-07',
+          durationMin: 5,
+          loggedAt: '2026-04-07T09:00:00Z',
+        },
+        {
+          id: '3',
+          date: '2026-04-07',
+          durationMin: 15,
+          loggedAt: '2026-04-07T10:00:00Z',
+        },
+      ]
+
+      useLevelStore.getState().syncXpFromEntries(entries)
+
+      expect(useLevelStore.getState().levelState.xp).toBe(5)
+    })
+
+    it('ignores entries before level startDate', () => {
+      useLevelStore.setState({
+        levelState: {
+          level: 2,
+          startDate: '2026-04-07',
+          xp: 0,
+          overXp: 0,
+        },
+        isEligible: false,
+      })
+
+      const entries: ActivityEntry[] = [
+        {
+          id: 'old',
+          date: '2026-04-06',
+          durationMin: 60,
+          loggedAt: '2026-04-06T10:00:00Z',
+        },
+        {
+          id: 'new',
+          date: '2026-04-07',
+          durationMin: 30,
+          loggedAt: '2026-04-07T10:00:00Z',
+        },
+      ]
+
+      useLevelStore.getState().syncXpFromEntries(entries)
+
+      expect(useLevelStore.getState().levelState.xp).toBe(5)
+    })
+
+    it('derives overXp and eligibility from recomputed total across many days', () => {
+      useLevelStore.setState({
+        levelState: {
+          level: 1,
+          startDate: '2026-03-01',
+          xp: 0,
+          overXp: 0,
+        },
+        isEligible: false,
+      })
+
+      const entries: ActivityEntry[] = Array.from({ length: 21 }, (_, i) => {
+        const day = i + 1
+        return {
+          id: `day-${day}`,
+          date: `2026-03-${String(day).padStart(2, '0')}`,
+          durationMin: 30,
+          loggedAt: `2026-03-${String(day).padStart(2, '0')}T10:00:00Z`,
+        }
+      })
+
+      useLevelStore.getState().syncXpFromEntries(entries)
+
+      const { levelState, isEligible } = useLevelStore.getState()
+      expect(levelState.xp).toBe(105)
+      expect(levelState.overXp).toBe(5)
+      expect(isEligible).toBe(true)
     })
   })
 

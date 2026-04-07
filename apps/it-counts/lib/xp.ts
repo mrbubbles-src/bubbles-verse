@@ -1,3 +1,5 @@
+import type { ActivityEntry } from '@/types';
+
 const XP_TIERS = [
   { minimumMinutes: 30, xp: 5 },
   { minimumMinutes: 20, xp: 3 },
@@ -21,4 +23,33 @@ export function calculateDailyXp(totalMinutes: number): number {
   }
 
   return 0;
+}
+
+/**
+ * Sums {@link calculateDailyXp} for each calendar day that falls in
+ * `[levelStartDate, throughDate]` (inclusive), using aggregated minutes per day.
+ * Entries outside that window are ignored. This is the single source for
+ * current-level XP derived from the activity log (not per-entry XP).
+ */
+export function sumLevelXpFromEntries(
+  entries: readonly ActivityEntry[],
+  levelStartDate: string,
+  throughDate: string,
+): number {
+  const minutesByDate = new Map<string, number>();
+
+  for (const e of entries) {
+    if (e.date < levelStartDate || e.date > throughDate) {
+      continue;
+    }
+
+    minutesByDate.set(e.date, (minutesByDate.get(e.date) ?? 0) + e.durationMin);
+  }
+
+  let sum = 0;
+  for (const minutes of minutesByDate.values()) {
+    sum += calculateDailyXp(minutes);
+  }
+
+  return sum;
 }

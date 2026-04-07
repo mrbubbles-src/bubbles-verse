@@ -27,10 +27,9 @@ export function DurationInput({
   onValueChange,
 }: DurationInputProps) {
   const parsedDuration = value ? Number(value) : NaN
-  const xpPreview =
+  const xpPreviewTotal =
     Number.isFinite(parsedDuration) && parsedDuration > 0
-      ? calculateDailyXp(previousDailyMinutes + parsedDuration) -
-        calculateDailyXp(previousDailyMinutes)
+      ? calculateDailyXp(previousDailyMinutes + parsedDuration)
       : null
 
   return (
@@ -55,9 +54,9 @@ export function DurationInput({
             className="h-12 text-base tabular-nums"
           />
           <FieldDescription className="min-h-6">
-            {xpPreview && xpPreview > 0 ? (
+            {xpPreviewTotal && xpPreviewTotal > 0 ? (
               <span className="font-medium tabular-nums text-foreground">
-                = {xpPreview} XP
+                = {xpPreviewTotal} XP today
               </span>
             ) : (
               'XP starts at 5 minutes.'

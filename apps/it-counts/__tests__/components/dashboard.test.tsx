@@ -12,7 +12,7 @@ vi.mock('@/hooks/use-level-store', () => ({
     selector({
       levelState: { level: 1, startDate: '2026-04-07', xp: 0, overXp: 0 },
       isEligible: false,
-      addXp: vi.fn(),
+      syncXpFromEntries: vi.fn(),
       loadFromStorage: vi.fn(),
       triggerLevelUp: vi.fn(),
     })
