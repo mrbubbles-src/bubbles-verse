@@ -1,6 +1,6 @@
 # Story 3.3: Level-Up Eligibility CTA
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -26,14 +26,14 @@ so that I know I can level up without being pressured or auto-redirected.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add the eligibility CTA to the dashboard
-  - [ ] Render it only from derived store state
-  - [ ] Keep the copy exactly calm and conditional
-- [ ] Task 2: Wire navigation to `/level-up`
-  - [ ] Use the existing App Router pattern
-  - [ ] If programmatic navigation is used, wrap it in the shared view-transition helper instead of adding a new library
-- [ ] Task 3: Add coverage for eligible and ineligible cases
-  - [ ] Verify the CTA is the only indicator and fully disappears when conditions are not met
+- [x] Task 1: Add the eligibility CTA to the dashboard
+  - [x] Render it only from derived store state
+  - [x] Keep the copy exactly calm and conditional
+- [x] Task 2: Wire navigation to `/level-up`
+  - [x] Use the existing App Router pattern
+  - [x] If programmatic navigation is used, wrap it in the shared view-transition helper instead of adding a new library
+- [x] Task 3: Add coverage for eligible and ineligible cases
+  - [x] Verify the CTA is the only indicator and fully disappears when conditions are not met
 
 ## Dev Notes
 
@@ -65,10 +65,28 @@ so that I know I can level up without being pressured or auto-redirected.
 
 ### Agent Model Used
 
-GPT-5 Codex
+claude-sonnet-4-6
 
 ### Debug Log References
 
 ### Completion Notes List
 
+- Created `LevelUpIndicator` component reading `isEligible` and `level` directly from `useLevelStore` — no local eligibility logic
+- Navigation via `useRouter().push('/level-up')` wrapped in `startVt()` from `@bubbles/theme`
+- Button uses `variant="outline"` — calm, no urgency animations
+- Returns `null` when `!isEligible` — no placeholder, no countdown
+- Integrated into `app/page.tsx` between `LevelRequirements` and `SessionStartMessage`
+- Added `next/navigation` and `startVt` mocks to `dashboard.test.tsx` to prevent regression failures after adding the new component
+- 6 new tests cover: eligible render, level number, no banner/toast, click navigation, ineligible null, ineligible no hint
+- 23 test files / 129 tests all pass
+
 ### File List
+
+- apps/it-counts/components/dashboard/level-up-indicator.tsx (new)
+- apps/it-counts/app/page.tsx (modified)
+- apps/it-counts/__tests__/components/dashboard/level-up-indicator.test.tsx (new)
+- apps/it-counts/__tests__/components/dashboard.test.tsx (modified)
+
+## Change Log
+
+- 2026-04-08: Implemented `LevelUpIndicator` component with calm CTA button, `startVt` navigation, and full eligible/ineligible test coverage (Story 3.3)

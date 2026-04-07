@@ -2,6 +2,7 @@ import { ThemeToggle } from '@bubbles/theme';
 
 import { BottomNav } from '@/components/dashboard/bottom-nav';
 import { LevelRequirements } from '@/components/dashboard/level-requirements';
+import { LevelUpIndicator } from '@/components/dashboard/level-up-indicator';
 import { OverXpSection } from '@/components/dashboard/over-xp-section';
 import { SessionStartMessage } from '@/components/dashboard/session-start-message';
 import { WeeklySummary } from '@/components/dashboard/weekly-summary';
@@ -24,6 +25,7 @@ export default function Home() {
         <OverXpSection />
         <WeeklySummary />
         <LevelRequirements />
+        <LevelUpIndicator />
         <SessionStartMessage />
         <LogEntrySheet />
       </main>

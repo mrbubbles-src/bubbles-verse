@@ -1,10 +1,15 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}))
+
 vi.mock('@bubbles/theme', () => ({
   ThemeProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   ThemeToggle: () => <button aria-label="Toggle theme">theme</button>,
   useTheme: () => ({ resolvedTheme: 'dark', theme: 'dark', setTheme: vi.fn(), isHydrated: true }),
+  startVt: vi.fn((cb: () => void) => cb()),
 }))
 
 vi.mock('@/hooks/use-level-store', () => ({
