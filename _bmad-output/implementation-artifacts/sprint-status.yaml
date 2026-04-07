@@ -49,7 +49,7 @@ development_status:
   1-2-add-shared-fonts-and-typography-to-bubbles-ui: review
   1-3-adapt-apps-it-counts-to-monorepo-conventions: done
   1-4-core-types-and-persistence-abstraction: done
-  1-5-date-utilities-and-xp-engine: ready-for-dev
+  1-5-date-utilities-and-xp-engine: done
   1-6-level-system-and-motivational-messages: ready-for-dev
   1-7-zustand-stores-scaffolding: ready-for-dev
   epic-1-retrospective: optional

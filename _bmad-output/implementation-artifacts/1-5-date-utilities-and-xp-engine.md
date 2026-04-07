@@ -1,6 +1,6 @@
 # Story 1.5: Date Utilities & XP Engine
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -23,15 +23,15 @@ so that all date/time and XP calculations are centralized, correct, and independ
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Implement device-local date helpers
-  - [ ] Create `apps/it-counts/lib/dates.ts` with the exact exported functions from the AC
-  - [ ] Keep all calculations based on device-local `YYYY-MM-DD` strings and Monday-start weeks
-- [ ] Task 2: Implement the XP engine
-  - [ ] Create `apps/it-counts/lib/xp.ts` with a pure `calculateDailyXp(totalMinutes)` function
-  - [ ] Encode the fixed tier table and 30-minute cap without side effects
-- [ ] Task 3: Add focused unit coverage
-  - [ ] Add `apps/it-counts/__tests__/lib/dates.test.ts`
-  - [ ] Add `apps/it-counts/__tests__/lib/xp.test.ts`
+- [x] Task 1: Implement device-local date helpers
+  - [x] Create `apps/it-counts/lib/dates.ts` with the exact exported functions from the AC
+  - [x] Keep all calculations based on device-local `YYYY-MM-DD` strings and Monday-start weeks
+- [x] Task 2: Implement the XP engine
+  - [x] Create `apps/it-counts/lib/xp.ts` with a pure `calculateDailyXp(totalMinutes)` function
+  - [x] Encode the fixed tier table and 30-minute cap without side effects
+- [x] Task 3: Add focused unit coverage
+  - [x] Add `apps/it-counts/__tests__/lib/dates.test.ts`
+  - [x] Add `apps/it-counts/__tests__/lib/xp.test.ts`
 
 ## Dev Notes
 
@@ -68,6 +68,28 @@ GPT-5 Codex
 
 ### Debug Log References
 
+- `bun run test:run -- __tests__/lib/dates.test.ts __tests__/lib/xp.test.ts` in `apps/it-counts` — red phase failed first on missing `@/lib/dates` and `@/lib/xp`, then passed after implementation (`12` tests)
+- `bun run test:run` in `apps/it-counts` — passes (`3` files, `17` tests)
+- `bun run lint` in `apps/it-counts` — passes
+- `bun run build` in `apps/it-counts` — passes on Next.js `16.2.2`
+- `bun run typecheck` in `apps/it-counts` — passes after Next.js regenerated `.next/types` during the build step
+- Manual code review across implementation, tests, and story ACs — no findings; story accepted as done
+
 ### Completion Notes List
 
+- Added `apps/it-counts/lib/dates.ts` with pure helpers for local `YYYY-MM-DD` formatting, Monday week starts, exact same-day comparison, and full-week elapsed calculations
+- Added `apps/it-counts/lib/xp.ts` with the fixed daily XP tier table so the highest qualifying threshold wins and 30+ minutes caps at `5` XP
+- Added focused unit tests for Sunday-to-Monday week boundaries, week `0` vs week `1`, and every required XP tier threshold
+- Updated the app README and changelog so the new shared business-logic modules are documented close to the code
+- Reviewed the delivered scope against Story 1.5 acceptance criteria and found no open issues
+
 ### File List
+
+- `_bmad-output/implementation-artifacts/1-5-date-utilities-and-xp-engine.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `apps/it-counts/__tests__/lib/dates.test.ts`
+- `apps/it-counts/__tests__/lib/xp.test.ts`
+- `apps/it-counts/CHANGELOG.md`
+- `apps/it-counts/README.md`
+- `apps/it-counts/lib/dates.ts`
+- `apps/it-counts/lib/xp.ts`

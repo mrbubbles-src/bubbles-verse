@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `types/index.ts` with the persisted `ActivityEntry`, `LevelState`, and `AppSettings` shapes for future feature stories.
 - Added `lib/storage.ts` as the app-local localStorage boundary for entries, current level progress, and settings, including safe fallbacks for empty or malformed payloads.
 - Added app-local Vitest wiring and the first storage tests under `__tests__/lib/storage.test.ts`.
+- Added `lib/dates.ts` with pure device-local date helpers for `YYYY-MM-DD` formatting, Monday week starts, and elapsed level-week calculations.
+- Added `lib/xp.ts` with the fixed daily XP tier engine and the 30-minute cap.
+- Added focused guardrail coverage in `__tests__/lib/dates.test.ts` and `__tests__/lib/xp.test.ts`.
 
 ### Changed
 
@@ -21,3 +24,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Documentation
 
 - Replaced the starter README with app-specific monorepo usage notes and Bun-based quality checks.
+- Documented the new date and XP business-logic modules in the app README.

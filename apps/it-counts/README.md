@@ -39,6 +39,12 @@ Story 1.4 adds the first app-local business modules:
 - `lib/storage.ts` is the only localStorage boundary for `it-counts:entries`, `it-counts:current-level`, and `it-counts:settings`
 - malformed or missing storage payloads fall back to safe defaults so future UI stories can hydrate defensively
 
+Story 1.5 adds the first pure business-logic helpers:
+
+- `lib/dates.ts` centralizes device-local `YYYY-MM-DD` handling, Monday week starts, and elapsed-level-week math
+- `lib/xp.ts` applies the fixed daily XP tier table with the 30-minute cap enforced
+- `__tests__/lib/dates.test.ts` and `__tests__/lib/xp.test.ts` lock in the edge cases before stores and UI start consuming these helpers
+
 ## Quality Checks
 
 Use the app-local scripts when validating changes:
