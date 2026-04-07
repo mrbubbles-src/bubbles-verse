@@ -65,7 +65,7 @@ development_status:
   # Epic 3: Level System & Full Dashboard
   epic-3: in-progress
   3-1-full-dashboard-level-info-weekly-progress-and-messages: review
-  3-2-overxp-display-and-pace-indicator: ready-for-dev
+  3-2-overxp-display-and-pace-indicator: review
   3-3-level-up-eligibility-cta: ready-for-dev
   3-4-level-transition-and-level-up-page: ready-for-dev
   epic-3-retrospective: optional

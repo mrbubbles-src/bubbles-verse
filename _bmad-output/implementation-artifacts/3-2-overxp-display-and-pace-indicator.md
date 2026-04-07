@@ -1,6 +1,6 @@
 # Story 3.2: OverXP Display & Pace Indicator
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -26,14 +26,14 @@ so that I understand my current intensity without it creating pressure.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add the OverXP UI components
-  - [ ] Create `OverXpIndicator`
-  - [ ] Create `StatusBadge`
-- [ ] Task 2: Wire the section to current-level state
-  - [ ] Show the section only when `overXp > 0`
-  - [ ] Map pace labels from `getOverXpPace()` to neutral UI copy
-- [ ] Task 3: Add thresholds and rendering tests
-  - [ ] Cover hidden state, slightly-over, and well-over outputs
+- [x] Task 1: Add the OverXP UI components
+  - [x] Create `OverXpIndicator`
+  - [x] Create `StatusBadge`
+- [x] Task 2: Wire the section to current-level state
+  - [x] Show the section only when `overXp > 0`
+  - [x] Map pace labels from `getOverXpPace()` to neutral UI copy
+- [x] Task 3: Add thresholds and rendering tests
+  - [x] Cover hidden state, slightly-over, and well-over outputs
 
 ## Dev Notes
 
@@ -65,10 +65,28 @@ so that I understand my current intensity without it creating pressure.
 
 ### Agent Model Used
 
-GPT-5 Codex
+claude-sonnet-4-6
 
 ### Debug Log References
 
 ### Completion Notes List
 
+- Created `OverXpIndicator` (prop-based, renders "+N XP over")
+- Created `StatusBadge` (prop-based, derives pace via `getOverXpPace()`, uses text + Catppuccin color tokens per pace)
+- Created `OverXpSection` (client component, reads `overXp` from `useLevelStore`, returns null when 0, otherwise renders both sub-components)
+- Wired `OverXpSection` into `app/page.tsx` between `XpHero` and `WeeklySummary`
+- Added 16 tests across 3 new test files; all 123 tests pass with no regressions
+
 ### File List
+
+- apps/it-counts/components/dashboard/over-xp-indicator.tsx (new)
+- apps/it-counts/components/dashboard/status-badge.tsx (new)
+- apps/it-counts/components/dashboard/over-xp-section.tsx (new)
+- apps/it-counts/app/page.tsx (modified)
+- apps/it-counts/__tests__/components/dashboard/over-xp-indicator.test.tsx (new)
+- apps/it-counts/__tests__/components/dashboard/status-badge.test.tsx (new)
+- apps/it-counts/__tests__/components/dashboard/over-xp-section.test.tsx (new)
+
+## Change Log
+
+- 2026-04-08: Story 3.2 implemented — OverXpSection (+ OverXpIndicator, StatusBadge) added to dashboard. Section visible only when overXp > 0. Pace labels neutral, use text + Catppuccin color tokens. 16 new tests; 123 total passing.

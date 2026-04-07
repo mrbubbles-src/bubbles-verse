@@ -2,6 +2,7 @@ import { ThemeToggle } from '@bubbles/theme';
 
 import { BottomNav } from '@/components/dashboard/bottom-nav';
 import { LevelRequirements } from '@/components/dashboard/level-requirements';
+import { OverXpSection } from '@/components/dashboard/over-xp-section';
 import { SessionStartMessage } from '@/components/dashboard/session-start-message';
 import { WeeklySummary } from '@/components/dashboard/weekly-summary';
 import { XpHero } from '@/components/dashboard/xp-hero';
@@ -20,6 +21,7 @@ export default function Home() {
 
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col items-center gap-6 px-4 py-8">
         <XpHero />
+        <OverXpSection />
         <WeeklySummary />
         <LevelRequirements />
         <SessionStartMessage />
