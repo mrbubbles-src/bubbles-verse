@@ -18,8 +18,12 @@ import { TimeRangeInput } from '@/components/logging/time-range-input'
 import { MotivationalMessage } from '@/components/shared/motivational-message'
 import { useActivityStore } from '@/hooks/use-activity-store'
 import { useLevelStore } from '@/hooks/use-level-store'
-import { getTodayString } from '@/lib/dates'
+import { useSettingsStore } from '@/hooks/use-settings-store'
+import { getTodayString, getWeekStart } from '@/lib/dates'
 import { getRandomMessage } from '@/lib/messages'
+
+/** Weekly XP threshold for the goal-reached message (matches WeeklySummary). */
+const WEEKLY_XP_GOAL = 10
 
 const AUTO_CLOSE_DELAY_MS = 900
 
@@ -205,9 +209,21 @@ export function LogEntrySheet() {
     const { dailyXpToday } = addDurationEntry(durationMin)
     syncXpFromEntries(useActivityStore.getState().entries)
     setDurationError('')
+
+    const weekStart = getWeekStart(getTodayString())
+    const weeklyXp = useActivityStore.getState().getWeeklyXp(weekStart)
+    const goalReachedShownForWeek = useSettingsStore.getState().getSetting('goalReachedShownForWeek')
+    const isGoalJustReached = weeklyXp >= WEEKLY_XP_GOAL && goalReachedShownForWeek !== weekStart
+
+    if (isGoalJustReached) {
+      useSettingsStore.getState().setSetting('goalReachedShownForWeek', weekStart)
+    }
+
     setConfirmation({
       dailyXpToday,
-      message: getRandomMessage('log-confirm'),
+      message: isGoalJustReached
+        ? getRandomMessage('goal-reached')
+        : getRandomMessage('log-confirm'),
     })
 
     closeTimeoutRef.current = window.setTimeout(() => {

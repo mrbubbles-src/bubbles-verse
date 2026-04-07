@@ -1,6 +1,6 @@
 # Story 3.1: Full Dashboard — Level Info, Weekly Progress & Messages
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -30,15 +30,15 @@ so that I have a calm, honest overview of where I stand without having to naviga
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Expand the dashboard information architecture
-  - [ ] Add `LevelBadge`, weekly summary, requirements, and unlocked abilities sections
-  - [ ] Apply the OKLCH gradient progress bar with the current total XP label
-- [ ] Task 2: Implement weekly message gating
-  - [ ] Show `weekly-reset` only once per week on first open
-  - [ ] Show `goal-reached` only once per week when crossing the 10 XP threshold
-  - [ ] Persist the week markers in storage-backed settings if needed so reloads do not retrigger them
-- [ ] Task 3: Add tests for the weekly rules
-  - [ ] Cover weekly XP totals, calm under-target rendering, weekly-reset gating, and goal-reached gating
+- [x] Task 1: Expand the dashboard information architecture
+  - [x] Add `LevelBadge`, weekly summary, requirements, and unlocked abilities sections
+  - [x] Apply the OKLCH gradient progress bar with the current total XP label
+- [x] Task 2: Implement weekly message gating
+  - [x] Show `weekly-reset` only once per week on first open
+  - [x] Show `goal-reached` only once per week when crossing the 10 XP threshold
+  - [x] Persist the week markers in storage-backed settings if needed so reloads do not retrigger them
+- [x] Task 3: Add tests for the weekly rules
+  - [x] Cover weekly XP totals, calm under-target rendering, weekly-reset gating, and goal-reached gating
 
 ## Dev Notes
 
@@ -71,10 +71,50 @@ so that I have a calm, honest overview of where I stand without having to naviga
 
 ### Agent Model Used
 
-GPT-5 Codex
+claude-sonnet-4-6
 
 ### Debug Log References
 
+- `log-entry-sheet.test.tsx` mock updated: added `getWeekStart` to `@/lib/dates` mock, `getWeeklyXp` to activity store's `getState()`, and new `useSettingsStore` mock. Required because `handleSubmit` now calls these at submit time.
+- `dashboard.test.tsx` mock updated: added `getDailyTotalMinutes`, `getWeeklyXp` to activity store mock, and added `useSettingsStore` mock for new components.
+- Lint: 1 warning (`react-hooks/set-state-in-effect`) in `session-start-message.tsx` — pre-existing pattern in the file (same `setState` inside effect was already there).
+
 ### Completion Notes List
 
+- Created `hooks/use-settings-store.ts`: storage-backed Zustand store for `AppSettings`. Used for cross-session weekly message markers.
+- Created `components/dashboard/level-badge.tsx`: pill badge showing "Level N".
+- Created `components/dashboard/weekly-summary.tsx`: shows "Week N of 4+" and "X XP · Goal: 10 XP" (no warning language when under target).
+- Created `components/dashboard/level-requirements.tsx`: reads `LEVEL_DEFINITIONS`, shows requirements + unlocked abilities for current level.
+- Updated `xp-progress-bar.tsx`: replaced `bg-primary` with OKLCH gradient `oklch(0.6 0.15 240) → oklch(0.65 0.12 280)`.
+- Updated `xp-hero.tsx`: added `LevelBadge` above XP text.
+- Updated `page.tsx`: added `WeeklySummary` and `LevelRequirements` sections.
+- Updated `store-hydrator.tsx`: added settings store hydration.
+- Updated `session-start-message.tsx`: `weekly-reset` takes priority over `session-start` on new week; both gated by session flag so no re-trigger on same-session nav.
+- Updated `log-entry-sheet.tsx`: after logging, checks `weeklyXp >= 10 && goalReachedShownForWeek !== weekStart` to show `goal-reached` once per week instead of `log-confirm`.
+- Added `getWeeklyXp(weekStart)` to `use-activity-store.ts`.
+- All 110 tests pass. TypeCheck clean.
+
 ### File List
+
+- `apps/it-counts/hooks/use-settings-store.ts` (new)
+- `apps/it-counts/hooks/use-activity-store.ts` (modified — added `getWeeklyXp`)
+- `apps/it-counts/components/dashboard/level-badge.tsx` (new)
+- `apps/it-counts/components/dashboard/weekly-summary.tsx` (new)
+- `apps/it-counts/components/dashboard/level-requirements.tsx` (new)
+- `apps/it-counts/components/dashboard/xp-progress-bar.tsx` (modified — OKLCH gradient)
+- `apps/it-counts/components/dashboard/xp-hero.tsx` (modified — LevelBadge)
+- `apps/it-counts/components/dashboard/session-start-message.tsx` (modified — weekly-reset priority)
+- `apps/it-counts/components/logging/log-entry-sheet.tsx` (modified — goal-reached gate)
+- `apps/it-counts/components/shared/store-hydrator.tsx` (modified — settings hydration)
+- `apps/it-counts/app/page.tsx` (modified — WeeklySummary + LevelRequirements)
+- `apps/it-counts/__tests__/hooks/use-settings-store.test.ts` (new)
+- `apps/it-counts/__tests__/components/dashboard/level-badge.test.tsx` (new)
+- `apps/it-counts/__tests__/components/dashboard/weekly-summary.test.tsx` (new)
+- `apps/it-counts/__tests__/components/dashboard/level-requirements.test.tsx` (new)
+- `apps/it-counts/__tests__/components/session-start-message.test.tsx` (modified)
+- `apps/it-counts/__tests__/components/log-entry-sheet.test.tsx` (modified — updated mocks)
+- `apps/it-counts/__tests__/components/dashboard.test.tsx` (modified — updated mocks)
+
+## Change Log
+
+- 2026-04-08: Implemented full dashboard with LevelBadge, WeeklySummary, LevelRequirements, OKLCH gradient progress bar, weekly-reset + goal-reached message gating (storage-backed via useSettingsStore). 110 tests pass.

@@ -32,6 +32,7 @@ vi.mock('@/hooks/use-activity-store', () => ({
       getState: () => ({
         entries: [...sheetMocks.entries],
         addDurationEntry: sheetMocks.addDurationEntry,
+        getWeeklyXp: vi.fn(() => 0),
       }),
     },
   ),
@@ -47,6 +48,16 @@ vi.mock('@/hooks/use-level-store', () => ({
 
 vi.mock('@/lib/dates', () => ({
   getTodayString: vi.fn(() => '2026-04-07'),
+  getWeekStart: vi.fn(() => '2026-03-31'),
+}))
+
+vi.mock('@/hooks/use-settings-store', () => ({
+  useSettingsStore: Object.assign(vi.fn(), {
+    getState: () => ({
+      getSetting: vi.fn(() => undefined),
+      setSetting: vi.fn(),
+    }),
+  }),
 }))
 
 vi.mock('@/lib/messages', () => ({

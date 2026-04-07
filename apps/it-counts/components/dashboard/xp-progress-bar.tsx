@@ -21,8 +21,11 @@ export function XpProgressBar() {
       aria-valuemax={LEVEL_CAP}
       aria-label={`Level progress, ${clampedXp} of ${LEVEL_CAP} XP`}>
       <div
-        className="h-full rounded-full bg-primary transition-[width] duration-300 ease-out"
-        style={{ width: `${clampedXp}%` }}
+        className="h-full rounded-full transition-[width] duration-300 ease-out"
+        style={{
+          width: `${clampedXp}%`,
+          background: 'linear-gradient(to right, oklch(0.6 0.15 240), oklch(0.65 0.12 280))',
+        }}
       />
     </div>
   )

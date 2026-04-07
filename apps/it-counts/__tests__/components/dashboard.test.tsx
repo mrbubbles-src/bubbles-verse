@@ -32,10 +32,24 @@ vi.mock('@/hooks/use-activity-store', () => ({
           loggedAt: '2026-04-07T10:00:00.000Z',
         },
         xpEarned: 5,
+        dailyXpToday: 5,
       })),
       loadFromStorage: vi.fn(),
       getDailyEntries: () => [],
+      getDailyTotalMinutes: () => 0,
       getWeeklyEntries: () => [],
+      getWeeklyXp: () => 0,
+    })
+  ),
+}))
+
+vi.mock('@/hooks/use-settings-store', () => ({
+  useSettingsStore: vi.fn((selector) =>
+    selector({
+      settings: {},
+      loadFromStorage: vi.fn(),
+      getSetting: vi.fn(() => undefined),
+      setSetting: vi.fn(),
     })
   ),
 }))

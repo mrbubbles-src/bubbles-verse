@@ -23,6 +23,8 @@ interface ActivityState {
   getDailyTotalMinutes: (date: string) => number
   getDailyXpForDate: (date: string) => number
   getWeeklyEntries: (weekStart: string) => ActivityEntry[]
+  /** Sum of daily XP for each unique day in the given Monday-anchored week. */
+  getWeeklyXp: (weekStart: string) => number
 }
 
 /**
@@ -88,5 +90,11 @@ export const useActivityStore = create<ActivityState>()((set, get) => ({
 
   getWeeklyEntries: (weekStart) => {
     return get().entries.filter((e) => getWeekStart(e.date) === weekStart)
+  },
+
+  getWeeklyXp: (weekStart) => {
+    const weekEntries = get().getWeeklyEntries(weekStart)
+    const uniqueDates = [...new Set(weekEntries.map((e) => e.date))]
+    return uniqueDates.reduce((sum, date) => sum + get().getDailyXpForDate(date), 0)
   },
 }))
