@@ -31,6 +31,14 @@ Open [http://localhost:3000](http://localhost:3000) after the dev server starts.
 
 The root layout imports `@bubbles/ui/globals.css`, applies shared font variables from `@bubbles/ui/fonts`, and keeps app-specific CSS in `app/it-counts.css`.
 
+## Local Data Model
+
+Story 1.4 adds the first app-local business modules:
+
+- `types/index.ts` defines `ActivityEntry`, `LevelState`, and `AppSettings`
+- `lib/storage.ts` is the only localStorage boundary for `it-counts:entries`, `it-counts:current-level`, and `it-counts:settings`
+- malformed or missing storage payloads fall back to safe defaults so future UI stories can hydrate defensively
+
 ## Quality Checks
 
 Use the app-local scripts when validating changes:
@@ -39,6 +47,7 @@ Use the app-local scripts when validating changes:
 cd apps/it-counts
 bun run typecheck
 bun run lint
+bun run test:run
 bun run build
 ```
 
