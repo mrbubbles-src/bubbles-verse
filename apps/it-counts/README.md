@@ -45,6 +45,13 @@ Story 1.5 adds the first pure business-logic helpers:
 - `lib/xp.ts` applies the fixed daily XP tier table with the 30-minute cap enforced
 - `__tests__/lib/dates.test.ts` and `__tests__/lib/xp.test.ts` lock in the edge cases before stores and UI start consuming these helpers
 
+Story 1.6 extends the pure business-logic layer:
+
+- `lib/levels.ts` defines Levels 1-3 as extensible data and exposes eligibility, OverXP, and pace helpers
+- `lib/messages.ts` centralizes the MVP motivational message library across the four required contexts
+- `documentation/level-design.md` keeps the human-readable level table close to the implementation
+- `__tests__/lib/levels.test.ts` and `__tests__/lib/messages.test.ts` guard the new level and message rules
+
 ## Quality Checks
 
 Use the app-local scripts when validating changes:
