@@ -247,17 +247,16 @@
     z-index: 1;
   }
 }
-@property --cx {
+@property --vt-x {
   syntax: '<percentage>';
-  inherits: false;
+  inherits: true;
   initial-value: 50%;
 }
-@property --cy {
+@property --vt-y {
   syntax: '<percentage>';
-  inherits: false;
+  inherits: true;
   initial-value: 50%;
 }
-
 @property --r {
   syntax: '<percentage>';
   inherits: false;
@@ -267,15 +266,12 @@
 ::view-transition-old(root) {
   animation: none;
   backface-visibility: hidden;
-  contain: paint;
 }
 
 ::view-transition-new(root) {
-  animation: circle-in 1300ms ease-in-out both;
+  animation: circle-in 1000ms ease both;
   will-change: clip-path;
-  backface-visibility: hidden;
-  transform: translateZ(0);
-  contain: paint;
+  clip-path: circle(var(--r) at var(--vt-x, 50%) var(--vt-y, 50%));
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -285,17 +281,11 @@
   }
 }
 @keyframes circle-in {
-  0% {
-    --cx: var(--vt-x, 50%);
-    --cy: var(--vt-y, 50%);
+  from {
     --r: 0%;
-    clip-path: circle(var(--r) at var(--cx) var(--cy));
   }
-  100% {
-    --cx: 10%;
-    --cy: 90%;
+  to {
     --r: 185%;
-    clip-path: circle(var(--r) at var(--cx) var(--cy));
   }
 }
 @keyframes scaleIn {
