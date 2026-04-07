@@ -1,6 +1,6 @@
 # Story 3.4: Level Transition & `/level-up` Page
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -30,15 +30,15 @@ so that reaching a new level feels genuinely earned before returning to calm.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Build the `/level-up` route
-  - [ ] Create `apps/it-counts/app/level-up/page.tsx`
-  - [ ] Render the completed-level summary, OverXP, pace, and next-level requirements
-- [ ] Task 2: Add the transition behavior
-  - [ ] Implement a brief confetti effect that respects reduced motion
-  - [ ] Wire the primary CTA to `triggerLevelUp()` and navigate back to the dashboard
-- [ ] Task 3: Add route guards and tests
-  - [ ] Redirect ineligible visits away from `/level-up`
-  - [ ] Verify level reset, persisted write-through, and post-level-up dashboard state
+- [x] Task 1: Build the `/level-up` route
+  - [x] Create `apps/it-counts/app/level-up/page.tsx`
+  - [x] Render the completed-level summary, OverXP, pace, and next-level requirements
+- [x] Task 2: Add the transition behavior
+  - [x] Implement a brief confetti effect that respects reduced motion
+  - [x] Wire the primary CTA to `triggerLevelUp()` and navigate back to the dashboard
+- [x] Task 3: Add route guards and tests
+  - [x] Redirect ineligible visits away from `/level-up`
+  - [x] Verify level reset, persisted write-through, and post-level-up dashboard state
 
 ## Dev Notes
 
@@ -70,10 +70,25 @@ so that reaching a new level feels genuinely earned before returning to calm.
 
 ### Agent Model Used
 
-GPT-5 Codex
+claude-sonnet-4-6
 
 ### Debug Log References
 
 ### Completion Notes List
 
+- Created `app/level-up/page.tsx` — client component with `useEffect`-based redirect for ineligible users (`router.replace('/')`)
+- Created `components/level-up/confetti-burst.tsx` — Canvas-based particle burst, non-looping, respects `prefers-reduced-motion`, no external deps
+- Page shows: completed level heading, XP total, OverXP + pace label (when overXp > 0), next-level requirements + unlocked abilities from `LEVEL_DEFINITIONS`
+- CTA "Start Level [N+1]" calls `triggerLevelUp()` then `startVt(() => router.push('/'))` — state mutation before navigation
+- 9 tests: redirect when ineligible, heading, XP, overXP, pace, next requirements, unlocked abilities, CTA label, CTA click behavior
+- 24 test files / 138 tests all pass
+
 ### File List
+
+- apps/it-counts/app/level-up/page.tsx (new)
+- apps/it-counts/components/level-up/confetti-burst.tsx (new)
+- apps/it-counts/__tests__/components/level-up-page.test.tsx (new)
+
+## Change Log
+
+- 2026-04-08: Implemented `/level-up` page with confetti burst, completed-level summary, next-level preview, ineligible redirect, and `triggerLevelUp()` CTA with View Transition (Story 3.4)

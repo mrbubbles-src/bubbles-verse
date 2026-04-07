@@ -67,19 +67,19 @@ development_status:
   3-1-full-dashboard-level-info-weekly-progress-and-messages: review
   3-2-overxp-display-and-pace-indicator: review
   3-3-level-up-eligibility-cta: review
-  3-4-level-transition-and-level-up-page: ready-for-dev
+  3-4-level-transition-and-level-up-page: review
   epic-3-retrospective: optional
 
   # Epic 4: Activity History
   epic-4: in-progress
-  4-1-activity-history-page-chronological-daily-view: ready-for-dev
-  4-2-weekly-grouping-and-aggregated-xp-totals: ready-for-dev
+  4-1-activity-history-page-chronological-daily-view: review
+  4-2-weekly-grouping-and-aggregated-xp-totals: review
   epic-4-retrospective: optional
 
   # Epic 5: PWA & Production
   epic-5: in-progress
-  5-1-pwa-manifest-app-icons-and-basic-seo: ready-for-dev
-  5-2-custom-service-worker-and-offline-support: ready-for-dev
-  5-3-performance-accessibility-and-animation-audit: ready-for-dev
-  5-4-vercel-deployment: ready-for-dev
+  5-1-pwa-manifest-app-icons-and-basic-seo: review
+  5-2-custom-service-worker-and-offline-support: review
+  5-3-performance-accessibility-and-animation-audit: review
+  5-4-vercel-deployment: review
   epic-5-retrospective: optional

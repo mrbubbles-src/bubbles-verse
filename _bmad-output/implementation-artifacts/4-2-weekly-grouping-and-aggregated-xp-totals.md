@@ -1,6 +1,6 @@
 # Story 4.2: Weekly Grouping & Aggregated XP Totals
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -27,14 +27,14 @@ so that I can see my consistency across weeks at a glance.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add weekly grouping on top of daily grouping
-  - [ ] Create `WeeklyGroup`
-  - [ ] Group days under Monday-Sunday week containers in reverse-chronological order
-- [ ] Task 2: Add weekly XP totals and labels
-  - [ ] Show the formatted week range and weekly XP sum
-  - [ ] Keep the current partial week at the top
-- [ ] Task 3: Extend history tests
-  - [ ] Cover multi-week grouping, weekly totals, partial current week, and the shared empty state
+- [x] Task 1: Add weekly grouping on top of daily grouping
+  - [x] Create `WeeklyGroup`
+  - [x] Group days under Monday-Sunday week containers in reverse-chronological order
+- [x] Task 2: Add weekly XP totals and labels
+  - [x] Show the formatted week range and weekly XP sum
+  - [x] Keep the current partial week at the top
+- [x] Task 3: Extend history tests
+  - [x] Cover multi-week grouping, weekly totals, partial current week, and the shared empty state
 
 ## Dev Notes
 
@@ -66,10 +66,25 @@ so that I can see my consistency across weeks at a glance.
 
 ### Agent Model Used
 
-GPT-5 Codex
+claude-sonnet-4-6
 
 ### Debug Log References
 
 ### Completion Notes List
 
+- Created `components/history/weekly-group.tsx`: `<section aria-label="Week of ...">` with `role="region"`, week range label ("Apr 6 – Apr 12"), weekly XP, and DailyGroup children
+- `getWeekEnd()` helper adds 6 days to Monday start; `formatShortDate()` formats YYYY-MM-DD to "Mon D"
+- Updated `app/history/page.tsx` `useMemo` to add a second grouping layer: dates → weeks using `getWeekStart()`, weeks sorted newest-first, days within a week newest-first (AC from Story 4.1), weekly XP computed inline
+- Days with no entries are naturally omitted (they never enter the map)
+- 6 new tests: 2 regions, newest-week-first, week range label, weekly XP total, 4 articles, empty state
+- 26 test files / 152 tests all pass
+
 ### File List
+
+- apps/it-counts/app/history/page.tsx (modified)
+- apps/it-counts/components/history/weekly-group.tsx (new)
+- apps/it-counts/__tests__/components/history/weekly-grouping.test.tsx (new)
+
+## Change Log
+
+- 2026-04-08: Implemented `WeeklyGroup` wrapper component, Monday-anchored week grouping with range labels and XP totals, updated history page (Story 4.2)

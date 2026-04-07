@@ -26,10 +26,8 @@ describe('OverXpSection', () => {
 
   it('is hidden entirely when overXp is 0', () => {
     vi.mocked(useLevelStore).mockImplementation((selector) =>
-      selector({
-        levelState: { level: 1, startDate: '2026-04-07', xp: 80, overXp: 0 },
-        isEligible: false,
-      })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      selector({ levelState: { level: 1, startDate: '2026-04-07', xp: 80, overXp: 0 }, isEligible: false } as any)
     )
     render(<OverXpSection />)
     expect(screen.queryByText(/\+\d+ XP over/)).not.toBeInTheDocument()
@@ -38,10 +36,8 @@ describe('OverXpSection', () => {
 
   it('shows "Well over" badge when overXp is 25', () => {
     vi.mocked(useLevelStore).mockImplementation((selector) =>
-      selector({
-        levelState: { level: 1, startDate: '2026-04-07', xp: 125, overXp: 25 },
-        isEligible: false,
-      })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      selector({ levelState: { level: 1, startDate: '2026-04-07', xp: 125, overXp: 25 }, isEligible: false } as any)
     )
     render(<OverXpSection />)
     expect(screen.getByText('+25 XP over')).toBeInTheDocument()

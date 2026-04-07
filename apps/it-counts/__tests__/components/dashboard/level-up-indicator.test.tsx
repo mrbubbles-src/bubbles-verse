@@ -56,10 +56,8 @@ describe('LevelUpIndicator', () => {
 
   it('renders nothing when not eligible', () => {
     vi.mocked(useLevelStore).mockImplementation((selector) =>
-      selector({
-        levelState: { level: 1, startDate: '2026-03-01', xp: 80, overXp: 0 },
-        isEligible: false,
-      })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      selector({ levelState: { level: 1, startDate: '2026-03-01', xp: 80, overXp: 0 }, isEligible: false } as any)
     )
     const { container } = render(<LevelUpIndicator />)
     expect(container.firstChild).toBeNull()
@@ -67,10 +65,8 @@ describe('LevelUpIndicator', () => {
 
   it('shows no placeholder or hint when ineligible', () => {
     vi.mocked(useLevelStore).mockImplementation((selector) =>
-      selector({
-        levelState: { level: 1, startDate: '2026-03-01', xp: 50, overXp: 0 },
-        isEligible: false,
-      })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      selector({ levelState: { level: 1, startDate: '2026-03-01', xp: 50, overXp: 0 }, isEligible: false } as any)
     )
     render(<LevelUpIndicator />)
     expect(screen.queryByText(/level up/i)).not.toBeInTheDocument()

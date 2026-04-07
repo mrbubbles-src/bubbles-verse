@@ -86,6 +86,29 @@ bun run test:run
 bun run build
 ```
 
+## Deployment (Vercel)
+
+`apps/it-counts` is deployed as a standalone Vercel project within the `bubbles-verse` monorepo.
+
+**Project settings in the Vercel dashboard:**
+
+| Setting | Value |
+|---|---|
+| Root Directory | `apps/it-counts` |
+| Framework Preset | Next.js (auto-detected) |
+| Install Command | `bun install --frozen-lockfile` (auto with `vercel.json`) |
+| Build Command | `bun --bun next build` |
+| Output Directory | `.next` |
+
+**Prerequisites:**
+- No server-side environment variables required — the app is entirely client-side (localStorage)
+- HTTPS is provided by Vercel, enabling service worker registration and PWA installability
+- Preview deployments work automatically for all branches
+
+**PWA assets still needed for a full Lighthouse score:**
+- Place 192×192 and 512×512 PNG files at `public/icons/icon-192.png` and `public/icons/icon-512.png`
+- A placeholder SVG is at `public/icons/icon.svg` for development
+
 ## Current Scope
 
 - `app/page.tsx` is now the real duration-logging dashboard entry point

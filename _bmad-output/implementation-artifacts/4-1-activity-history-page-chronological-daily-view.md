@@ -1,6 +1,6 @@
 # Story 4.1: Activity History Page — Chronological Daily View
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -28,15 +28,15 @@ so that I can look back at my movement history and see daily totals at a glance.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create the history route and empty state
-  - [ ] Add `apps/it-counts/app/history/page.tsx`
-  - [ ] Render the neutral empty state when there are no entries
-- [ ] Task 2: Build `DailyGroup`
-  - [ ] Group entries by day in reverse-chronological order
-  - [ ] Render per-entry times oldest-first inside each group
-  - [ ] Show daily total minutes and daily XP
-- [ ] Task 3: Add tests for ordering and permanence
-  - [ ] Cover empty state, day grouping, entry order, and the absence of edit/delete actions
+- [x] Task 1: Create the history route and empty state
+  - [x] Add `apps/it-counts/app/history/page.tsx`
+  - [x] Render the neutral empty state when there are no entries
+- [x] Task 2: Build `DailyGroup`
+  - [x] Group entries by day in reverse-chronological order
+  - [x] Render per-entry times oldest-first inside each group
+  - [x] Show daily total minutes and daily XP
+- [x] Task 3: Add tests for ordering and permanence
+  - [x] Cover empty state, day grouping, entry order, and the absence of edit/delete actions
 
 ## Dev Notes
 
@@ -68,10 +68,26 @@ so that I can look back at my movement history and see daily totals at a glance.
 
 ### Agent Model Used
 
-GPT-5 Codex
+claude-sonnet-4-6
 
 ### Debug Log References
 
 ### Completion Notes List
 
+- Replaced placeholder `app/history/page.tsx` with full implementation; client component using `useActivityStore`
+- Grouping logic in `useMemo`: `Map<date, entries[]>`, entries sorted by `loggedAt`, dates sorted reverse-chronologically
+- Created `components/history/daily-group.tsx`: `<article>` with date heading, per-entry list (durationMin + formatted time), and daily total (`N min total · N XP`)
+- `DailyGroup` uses `calculateDailyXp` from `@/lib/xp` — no ad-hoc XP logic
+- Empty state: plain neutral text, no CTA, no sad face
+- 8 tests: empty state, no buttons, 2 groups, order, totals, individual entries, no edit/delete
+- 25 test files / 146 tests all pass
+
 ### File List
+
+- apps/it-counts/app/history/page.tsx (modified)
+- apps/it-counts/components/history/daily-group.tsx (new)
+- apps/it-counts/__tests__/components/history/history-page.test.tsx (new)
+
+## Change Log
+
+- 2026-04-08: Implemented activity history page with `DailyGroup` component, reverse-chronological grouping, neutral empty state, and full test coverage (Story 4.1)
