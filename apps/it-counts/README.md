@@ -52,6 +52,13 @@ Story 1.6 extends the pure business-logic layer:
 - `documentation/level-design.md` keeps the human-readable level table close to the implementation
 - `__tests__/lib/levels.test.ts` and `__tests__/lib/messages.test.ts` guard the new level and message rules
 
+Story 1.7 scaffolds the Zustand state layer:
+
+- `hooks/use-activity-store.ts` manages the activity log with write-through persistence and date/week selectors
+- `hooks/use-level-store.ts` manages level progress with derived `isEligible` and `triggerLevelUp`
+- `hooks/use-ui-store.ts` tracks ephemeral session state (no persistence)
+- `components/shared/store-hydrator.tsx` hydrates activity and level stores on mount as a client component inside the server layout
+
 ## Quality Checks
 
 Use the app-local scripts when validating changes:

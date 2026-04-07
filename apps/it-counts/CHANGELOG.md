@@ -19,9 +19,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `lib/messages.ts` with the four MVP motivational message contexts and randomized lookup.
 - Added `__tests__/lib/levels.test.ts` and `__tests__/lib/messages.test.ts` to lock in level rules and message coverage.
 - Added `documentation/level-design.md` so the level table stays readable outside the implementation.
+- Added `hooks/use-activity-store.ts` Zustand store with entries, write-through persistence, and date/week selectors.
+- Added `hooks/use-level-store.ts` Zustand store with derived `isEligible`, `triggerLevelUp`, and write-through persistence.
+- Added `hooks/use-ui-store.ts` Zustand store for ephemeral session UI state.
+- Added `components/shared/store-hydrator.tsx` client component for store hydration on mount.
+- Added `__tests__/hooks/use-activity-store.test.ts`, `__tests__/hooks/use-level-store.test.ts`, and `__tests__/hooks/use-ui-store.test.ts`.
+- Added `zustand@5.0.12` as runtime dependency.
 
 ### Changed
 
+- Wired `StoreHydrator` into `app/layout.tsx` so activity and level stores hydrate from localStorage on mount.
 - Imported `app/it-counts.css` from the root layout and kept the shared font variables, shared theme provider, and Next.js 16.2.2 monorepo wiring intact.
 - Added the shared `progress` primitive in `packages/ui` and updated the shared shadcn button to include the global `touch-hitbox` utility.
 

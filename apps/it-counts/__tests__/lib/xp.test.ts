@@ -12,7 +12,7 @@ describe('calculateDailyXp', () => {
     [20, 3],
     [30, 5],
     [60, 5],
-  ])('returns %i XP for %i total minutes', (totalMinutes, expectedXp) => {
+  ])('returns %i→%i XP for given total minutes', (totalMinutes, expectedXp) => {
     expect(calculateDailyXp(totalMinutes)).toBe(expectedXp);
   });
 });

@@ -5,6 +5,7 @@ import './it-counts.css';
 
 import { ThemeProvider } from '@bubbles/theme';
 import { firaCode, montserrat, poppins } from '@bubbles/ui/fonts';
+import { StoreHydrator } from '@/components/shared/store-hydrator';
 
 export const metadata: Metadata = {
   title: 'It Counts',
@@ -29,6 +30,7 @@ export default function RootLayout({
       className={`${montserrat.variable} ${poppins.variable} ${firaCode.variable} antialiased`}>
       <body>
         <ThemeProvider attribute="class" defaultTheme="dark">
+          <StoreHydrator />
           {children}
         </ThemeProvider>
       </body>

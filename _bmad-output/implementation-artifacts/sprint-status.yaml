@@ -51,7 +51,7 @@ development_status:
   1-4-core-types-and-persistence-abstraction: done
   1-5-date-utilities-and-xp-engine: done
   1-6-level-system-and-motivational-messages: done
-  1-7-zustand-stores-scaffolding: ready-for-dev
+  1-7-zustand-stores-scaffolding: done
   epic-1-retrospective: optional
 
   # Epic 2: Activity Logging & XP
