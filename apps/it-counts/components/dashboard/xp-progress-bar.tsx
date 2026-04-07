@@ -10,19 +10,19 @@ const LEVEL_CAP = 100
  */
 export function XpProgressBar() {
   const xp = useLevelStore((s) => s.levelState.xp)
-  const fillPercent = Math.min(LEVEL_CAP, Math.max(0, xp))
+  const clampedXp = Math.min(LEVEL_CAP, Math.max(0, xp))
 
   return (
     <div
       className="h-2 w-full max-w-[min(100%,20rem)] overflow-hidden rounded-full bg-muted"
       role="progressbar"
-      aria-valuenow={xp}
+      aria-valuenow={clampedXp}
       aria-valuemin={0}
       aria-valuemax={LEVEL_CAP}
-      aria-label={`Level progress, ${xp} of ${LEVEL_CAP} XP`}>
+      aria-label={`Level progress, ${clampedXp} of ${LEVEL_CAP} XP`}>
       <div
         className="h-full rounded-full bg-primary transition-[width] duration-300 ease-out"
-        style={{ width: `${fillPercent}%` }}
+        style={{ width: `${clampedXp}%` }}
       />
     </div>
   )

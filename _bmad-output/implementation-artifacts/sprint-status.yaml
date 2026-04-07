@@ -59,7 +59,7 @@ development_status:
   2-1-dashboard-shell-with-typography-hero-layout: done
   2-2-duration-based-activity-logging: done
   2-3-start-end-time-logging-mode: done
-  2-4-multiple-entries-and-daily-xp-aggregation: review
+  2-4-multiple-entries-and-daily-xp-aggregation: done
   epic-2-retrospective: optional
 
   # Epic 3: Level System & Full Dashboard

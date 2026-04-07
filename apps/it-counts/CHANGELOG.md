@@ -44,6 +44,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - `parseTimeToMinutes` in `components/logging/log-entry-sheet.tsx` now rejects non-integer hour/minute parts and values outside 0–23 / 0–59 so bogus `HH:MM` strings cannot produce false trip lengths.
+- Added `levelStartAt` timestamp-aware XP recomputation so same-day logs from before a level-up are not re-credited after hydration or additional entries.
+- Clamped `XpProgressBar` ARIA values to the declared 0-100 range and moved log-sheet daily-minute aggregation to the activity-store selector to avoid duplicated logic.
+- Expanded logging/level tests to cover same-day level-up recomputation, tier-crossing confirmation copy, and immutable entry snapshots passed into `syncXpFromEntries`.
 
 ### Documentation
 

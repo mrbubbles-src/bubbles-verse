@@ -178,6 +178,7 @@ function isLevelState(value: JsonInput): value is LevelState {
     Number.isInteger(value.level) &&
     value.level >= 1 &&
     isLocalDateString(value.startDate) &&
+    (value.levelStartAt === undefined || isIsoDateTimeString(value.levelStartAt)) &&
     typeof value.xp === 'number' &&
     Number.isFinite(value.xp) &&
     value.xp >= 0 &&

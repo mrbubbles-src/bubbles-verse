@@ -16,6 +16,11 @@ export type ActivityEntry = {
 export type LevelState = {
   level: number
   startDate: string
+  /**
+   * ISO timestamp marking the exact start moment of the current level.
+   * Used to avoid re-crediting logs from earlier on the same calendar day.
+   */
+  levelStartAt?: string
   xp: number
   overXp: number
 }

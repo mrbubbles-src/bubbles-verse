@@ -68,6 +68,12 @@ Story 2.2 adds the first end-user logging flow:
 - `components/dashboard/session-start-message.tsx` shows one `session-start` message per in-memory app session
 - `components/shared/motivational-message.tsx` keeps confirmation and dashboard encouragement text-only and reusable
 
+Story 2.4 and review hardening extend this flow:
+
+- level progress now recomputes from aggregated daily XP and uses `levelStartAt` to exclude same-day entries logged before a level-up
+- `components/dashboard/xp-progress-bar.tsx` now keeps ARIA progress semantics clamped to the 0-100 range
+- `components/logging/log-entry-sheet.tsx` reads daily totals from the activity-store selector and confirms with a daily-total message (`Today total: X XP`)
+
 ## Quality Checks
 
 Use the app-local scripts when validating changes:

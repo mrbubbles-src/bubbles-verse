@@ -14,6 +14,7 @@ function createDefaultLevelState(): LevelState {
   return {
     level: 1,
     startDate: getTodayString(),
+    levelStartAt: new Date().toISOString(),
     xp: 0,
     overXp: 0,
   }
@@ -43,7 +44,12 @@ export const useLevelStore = create<LevelStoreState>()((set, get) => ({
   syncXpFromEntries: (entries) => {
     const current = get().levelState
     const today = getTodayString()
-    const nextXp = sumLevelXpFromEntries(entries, current.startDate, today)
+    const nextXp = sumLevelXpFromEntries(
+      entries,
+      current.startDate,
+      today,
+      current.levelStartAt,
+    )
     const weeksElapsed = getWeeksElapsedInLevel(current.startDate, today)
     const next: LevelState = {
       ...current,
@@ -61,11 +67,15 @@ export const useLevelStore = create<LevelStoreState>()((set, get) => ({
   loadFromStorage: () => {
     const loaded = loadCurrentLevel()
     const state = loaded ?? createDefaultLevelState()
+    const migratedState: LevelState = {
+      ...state,
+      levelStartAt: state.levelStartAt ?? `${state.startDate}T00:00:00.000Z`,
+    }
     const weeksElapsed = getWeeksElapsedInLevel(state.startDate, getTodayString())
 
     set({
-      levelState: state,
-      isEligible: isLevelUpEligible(state.xp, weeksElapsed),
+      levelState: migratedState,
+      isEligible: isLevelUpEligible(migratedState.xp, weeksElapsed),
     })
   },
 
@@ -75,6 +85,7 @@ export const useLevelStore = create<LevelStoreState>()((set, get) => ({
     const next: LevelState = {
       level: current.level + 1,
       startDate: today,
+      levelStartAt: new Date().toISOString(),
       xp: 0,
       overXp: 0,
     }

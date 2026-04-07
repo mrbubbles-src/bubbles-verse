@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useLevelStore } from '@/hooks/use-level-store'
 import type { ActivityEntry, LevelState } from '@/types'
@@ -29,6 +29,10 @@ describe('use-level-store', () => {
     resetStore()
   })
 
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('starts with default level state', () => {
     const { levelState, isEligible } = useLevelStore.getState()
 
@@ -50,7 +54,10 @@ describe('use-level-store', () => {
       localStorage.setItem('it-counts:current-level', JSON.stringify(stored))
       useLevelStore.getState().loadFromStorage()
 
-      expect(useLevelStore.getState().levelState).toEqual(stored)
+      expect(useLevelStore.getState().levelState).toEqual({
+        ...stored,
+        levelStartAt: '2026-03-01T00:00:00.000Z',
+      })
     })
 
     it('uses default when localStorage is empty', () => {
@@ -261,6 +268,42 @@ describe('use-level-store', () => {
       const stored = JSON.parse(raw!) as LevelState
       expect(stored.level).toBe(2)
       expect(stored.xp).toBe(0)
+    })
+
+    it('does not re-credit same-day entries logged before level-up', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-04-07T12:00:00.000Z'))
+
+      useLevelStore.setState({
+        levelState: {
+          level: 1,
+          startDate: '2026-04-01',
+          levelStartAt: '2026-04-01T00:00:00.000Z',
+          xp: 100,
+          overXp: 0,
+        },
+        isEligible: true,
+      })
+
+      useLevelStore.getState().triggerLevelUp()
+
+      const entries: ActivityEntry[] = [
+        {
+          id: 'before-level-up',
+          date: '2026-04-07',
+          durationMin: 30,
+          loggedAt: '2026-04-07T10:00:00.000Z',
+        },
+        {
+          id: 'after-level-up',
+          date: '2026-04-07',
+          durationMin: 30,
+          loggedAt: '2026-04-07T13:00:00.000Z',
+        },
+      ]
+
+      useLevelStore.getState().syncXpFromEntries(entries)
+      expect(useLevelStore.getState().levelState.xp).toBe(5)
     })
   })
 })

@@ -1,6 +1,6 @@
 # Story 2.4: Multiple Entries & Daily XP Aggregation
 
-Status: review
+Status: done
 
 ## Story
 
@@ -36,6 +36,15 @@ so that fragmented outings are treated the same as a single long one.
   - [x] Update confirmation copy to reflect the new daily total result
 - [x] Task 3: Add fragmented-day tests
   - [x] Cover multi-entry same-day aggregation, tier crossing, and cross-day level XP accumulation
+
+### Review Findings
+
+- [x] [Review][Patch] Same-day level-up can re-credit pre-level-up XP [apps/it-counts/hooks/use-level-store.ts]
+- [x] [Review][Patch] Progress bar ARIA value can exceed declared max [apps/it-counts/components/dashboard/xp-progress-bar.tsx]
+- [x] [Review][Patch] Aggregation logic duplicated in UI instead of store selector [apps/it-counts/components/logging/log-entry-sheet.tsx]
+- [x] [Review][Patch] Missing regression test: level-up then same-day recomputation [apps/it-counts/__tests__/hooks/use-level-store.test.ts]
+- [x] [Review][Patch] Missing focused AC2 tier-crossing confirmation UI test [apps/it-counts/__tests__/components/log-entry-sheet.test.tsx]
+- [x] [Review][Patch] Test mock shape may hide stale-entry snapshot bugs [apps/it-counts/__tests__/components/log-entry-sheet.test.tsx]
 
 ## Dev Notes
 

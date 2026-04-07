@@ -35,11 +35,39 @@ export function sumLevelXpFromEntries(
   entries: readonly ActivityEntry[],
   levelStartDate: string,
   throughDate: string,
+  levelStartAt?: string,
 ): number {
+  const levelStartDay = parseLocalDateToDayNumber(levelStartDate);
+  const throughDay = parseLocalDateToDayNumber(throughDate);
+  const levelStartAtMs =
+    typeof levelStartAt === 'string' ? Date.parse(levelStartAt) : Number.NaN;
+
+  if (
+    levelStartDay === null ||
+    throughDay === null ||
+    Number.isFinite(levelStartDay) === false ||
+    Number.isFinite(throughDay) === false
+  ) {
+    return 0;
+  }
+
   const minutesByDate = new Map<string, number>();
 
   for (const e of entries) {
-    if (e.date < levelStartDate || e.date > throughDate) {
+    const entryDay = parseLocalDateToDayNumber(e.date);
+    if (entryDay === null) {
+      continue;
+    }
+
+    if (entryDay < levelStartDay || entryDay > throughDay) {
+      continue;
+    }
+
+    if (
+      entryDay === levelStartDay &&
+      Number.isFinite(levelStartAtMs) &&
+      Date.parse(e.loggedAt) < levelStartAtMs
+    ) {
       continue;
     }
 
@@ -52,4 +80,25 @@ export function sumLevelXpFromEntries(
   }
 
   return sum;
+}
+
+/**
+ * Parses a strict `YYYY-MM-DD` local date string to UTC-day milliseconds.
+ */
+function parseLocalDateToDayNumber(date: string): number | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!match) {
+    return null;
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const normalized = new Date(Date.UTC(year, month - 1, day));
+  const isValid =
+    normalized.getUTCFullYear() === year &&
+    normalized.getUTCMonth() === month - 1 &&
+    normalized.getUTCDate() === day;
+
+  return isValid ? normalized.getTime() : null;
 }

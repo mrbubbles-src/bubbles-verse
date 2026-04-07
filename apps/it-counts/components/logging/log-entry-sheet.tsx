@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { Button } from '@bubbles/ui/shadcn/button'
 import {
@@ -100,14 +100,9 @@ function computeTimeRange(
  * inline confirmation before close.
  */
 export function LogEntrySheet() {
+  const today = getTodayString()
   const addDurationEntry = useActivityStore((s) => s.addDurationEntry)
-  const entries = useActivityStore((s) => s.entries)
-  const previousDailyMinutes = useMemo(() => {
-    const today = getTodayString()
-    return entries
-      .filter((e) => e.date === today)
-      .reduce((sum, e) => sum + e.durationMin, 0)
-  }, [entries])
+  const previousDailyMinutes = useActivityStore((s) => s.getDailyTotalMinutes(today))
   const syncXpFromEntries = useLevelStore((s) => s.syncXpFromEntries)
 
   const [open, setOpen] = useState(false)
@@ -297,7 +292,7 @@ export function LogEntrySheet() {
           {confirmation ? (
             <div className="flex flex-col gap-2">
               <p className="text-sm/6 font-semibold tabular-nums text-foreground">
-                +{confirmation.dailyXpToday} XP today · That counted.
+                Today total: {confirmation.dailyXpToday} XP · That counted.
               </p>
               <MotivationalMessage message={confirmation.message} className="text-left" />
             </div>

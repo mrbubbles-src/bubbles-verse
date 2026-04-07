@@ -17,15 +17,20 @@ vi.mock('@/hooks/use-activity-store', () => ({
       selector: (state: {
         addDurationEntry: typeof sheetMocks.addDurationEntry
         entries: ActivityEntry[]
+        getDailyTotalMinutes: (date: string) => number
       }) => unknown,
     ) =>
       selector({
         addDurationEntry: sheetMocks.addDurationEntry,
         entries: sheetMocks.entries,
+        getDailyTotalMinutes: (date: string) =>
+          sheetMocks.entries
+            .filter((entry) => entry.date === date)
+            .reduce((sum, entry) => sum + entry.durationMin, 0),
       }),
     {
       getState: () => ({
-        entries: sheetMocks.entries,
+        entries: [...sheetMocks.entries],
         addDurationEntry: sheetMocks.addDurationEntry,
       }),
     },
@@ -136,7 +141,7 @@ import { LogEntrySheet } from '@/components/logging/log-entry-sheet'
 
 describe('LogEntrySheet', () => {
   beforeEach(() => {
-    sheetMocks.entries.length = 0
+    sheetMocks.entries = []
     sheetMocks.addDurationEntry.mockReset()
     sheetMocks.syncXpFromEntries.mockReset()
     sheetMocks.addDurationEntry.mockImplementation((durationMin: number) => {
@@ -146,7 +151,7 @@ describe('LogEntrySheet', () => {
         durationMin,
         loggedAt: '2026-04-07T10:15:00.000Z',
       }
-      sheetMocks.entries.push(entry)
+      sheetMocks.entries = [...sheetMocks.entries, entry]
       const totalMin = sheetMocks.entries.reduce((sum, e) => sum + e.durationMin, 0)
       const dailyXpToday = calculateDailyXp(totalMin)
       const previousTotal = totalMin - durationMin
@@ -219,8 +224,12 @@ describe('LogEntrySheet', () => {
     fireEvent.click(screen.getByRole('button', { name: /log it/i }))
 
     expect(sheetMocks.addDurationEntry).toHaveBeenCalledWith(45)
-    expect(sheetMocks.syncXpFromEntries).toHaveBeenCalledWith(sheetMocks.entries)
-    expect(screen.getByText('+5 XP today · That counted.')).toBeInTheDocument()
+    expect(sheetMocks.syncXpFromEntries).toHaveBeenCalledWith(
+      expect.arrayContaining(sheetMocks.entries),
+    )
+    const syncedEntries = sheetMocks.syncXpFromEntries.mock.calls.at(-1)?.[0] as ActivityEntry[]
+    expect(syncedEntries).not.toBe(sheetMocks.entries)
+    expect(screen.getByText('Today total: 5 XP · That counted.')).toBeInTheDocument()
   })
 
   it('submit is disabled in time-range mode when fields are incomplete', () => {
@@ -261,16 +270,42 @@ describe('LogEntrySheet', () => {
     fireEvent.click(screen.getByRole('button', { name: /log it/i }))
 
     expect(sheetMocks.addDurationEntry).toHaveBeenCalledWith(30)
-    expect(sheetMocks.syncXpFromEntries).toHaveBeenCalledWith(sheetMocks.entries)
-    expect(screen.getByText('+5 XP today · That counted.')).toBeInTheDocument()
+    expect(sheetMocks.syncXpFromEntries).toHaveBeenCalledWith(
+      expect.arrayContaining(sheetMocks.entries),
+    )
+    expect(screen.getByText('Today total: 5 XP · That counted.')).toBeInTheDocument()
     expect(screen.getByText('Quiet win.')).toBeInTheDocument()
 
     await waitFor(
       () => {
-        expect(screen.queryByText('+5 XP today · That counted.')).not.toBeInTheDocument()
+        expect(screen.queryByText('Today total: 5 XP · That counted.')).not.toBeInTheDocument()
       },
       { timeout: 1500 },
     )
+  })
+
+  it('shows recalculated daily total when a third entry crosses the tier threshold', () => {
+    sheetMocks.entries = [
+      {
+        id: 'entry-1',
+        date: '2026-04-07',
+        durationMin: 10,
+        loggedAt: '2026-04-07T08:00:00.000Z',
+      },
+      {
+        id: 'entry-2',
+        date: '2026-04-07',
+        durationMin: 5,
+        loggedAt: '2026-04-07T09:00:00.000Z',
+      },
+    ]
+
+    render(<LogEntrySheet />)
+    fireEvent.click(screen.getByRole('button', { name: /log activity/i }))
+    fireEvent.change(screen.getByLabelText(/minutes/i), { target: { value: '15' } })
+    fireEvent.click(screen.getByRole('button', { name: /log it/i }))
+
+    expect(screen.getByText('Today total: 5 XP · That counted.')).toBeInTheDocument()
   })
 
   it('shows a validation error when the input is empty or invalid', () => {
