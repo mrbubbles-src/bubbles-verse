@@ -1,32 +1,22 @@
 import type { Metadata } from 'next';
 
-import { Geist, Geist_Mono } from 'next/font/google';
 import { cookies } from 'next/headers';
 
 import '@bubbles/ui/globals.css';
 
+import { ThemeProvider } from '@bubbles/theme';
+import { firaCode, montserrat, poppins } from '@bubbles/ui/fonts';
+import { Toaster } from '@bubbles/ui/shadcn/sonner';
+
 import AppShell from '@/components/app-shell';
 import Footer from '@/components/footer';
 import PrivacyNotice from '@/components/privacy-notice';
-import { Toaster } from '@bubbles/ui/shadcn/sonner';
 import { AppStoreProvider } from '@/context/app-store';
-import { ThemeProvider } from '@bubbles/theme';
 import packageJson from '@/package.json';
-
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ??
-      'https://teacherbuddy.mrbubbles-src.dev',
+    process.env.NEXT_PUBLIC_SITE_URL ?? 'https://teacherbuddy.mrbubbles-src.dev'
   ),
   title: {
     template: '%s | TeacherBuddy',
@@ -99,7 +89,7 @@ export default async function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        className={`${montserrat.variable} ${poppins.variable} ${firaCode.variable} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="dark">
           <AppStoreProvider>
             <AppShell

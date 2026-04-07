@@ -33,12 +33,14 @@
     "@bubbles/eslint-config": "workspace:*",
     "@bubbles/typescript-config": "workspace:*",
     "eslint": "^9.39.2",
+    "next": "16.2.2",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3"
   },
   "exports": {
     "./globals.css": "./src/styles/globals.css",
     "./postcss.config": "./postcss.config.mjs",
+    "./fonts": "./src/fonts.ts",
     "./lib/*": "./src/lib/*.ts",
     "./components/*": "./src/components/*.tsx",
     "./shadcn/*": "./src/components/shadcn/*.tsx",

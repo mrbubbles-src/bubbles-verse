@@ -52,7 +52,7 @@ describe('storage', () => {
     const students = loadStudents('class-1')
 
     expect(students).toHaveLength(2)
-    expect(students[0].classId).toBe('class-1')
+    expect(students[0]!.classId).toBe('class-1')
   })
 
   it('saves and loads class-aware students', () => {
