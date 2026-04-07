@@ -14,6 +14,7 @@ import {
 
 import { LogActivityButton } from '@/components/dashboard/log-activity-button'
 import { DurationInput } from '@/components/logging/duration-input'
+import { TimeRangeInput } from '@/components/logging/time-range-input'
 import { MotivationalMessage } from '@/components/shared/motivational-message'
 import { useActivityStore } from '@/hooks/use-activity-store'
 import { useLevelStore } from '@/hooks/use-level-store'
@@ -22,14 +23,80 @@ import { getRandomMessage } from '@/lib/messages'
 
 const AUTO_CLOSE_DELAY_MS = 900
 
+type InputMode = 'duration' | 'time-range'
+
 type ConfirmationState = {
   xpEarned: number
   message: string
 }
 
 /**
- * Owns the duration-based logging flow: opening the bottom sheet, collecting
- * minutes, writing the entry, and showing the inline confirmation before close.
+ * Parses a HH:MM clock time into total minutes from midnight.
+ * Returns null if empty, malformed, non-integer parts, or out of 0–23 / 0–59.
+ */
+function parseTimeToMinutes(t: string): number | null {
+  if (!t) return null
+  const parts = t.split(':')
+  if (parts.length !== 2) return null
+  const h = Number(parts[0])
+  const m = Number(parts[1])
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return null
+  if (!Number.isInteger(h) || !Number.isInteger(m)) return null
+  if (h < 0 || h > 23 || m < 0 || m > 59) return null
+  return h * 60 + m
+}
+
+/**
+ * Validates start/end time and non-walking minutes, returning errors and the
+ * calculated walking duration. `walkingMinutes` is null when inputs are
+ * incomplete or invalid.
+ */
+function computeTimeRange(
+  startTime: string,
+  endTime: string,
+  nonWalking: string,
+): {
+  endTimeError: string | null
+  nonWalkingError: string | null
+  walkingMinutes: number | null
+} {
+  const startMin = parseTimeToMinutes(startTime)
+  const endMin = parseTimeToMinutes(endTime)
+
+  if (startMin === null || endMin === null) {
+    return { endTimeError: null, nonWalkingError: null, walkingMinutes: null }
+  }
+
+  if (endMin <= startMin) {
+    return {
+      endTimeError: 'End time must be after start time.',
+      nonWalkingError: null,
+      walkingMinutes: null,
+    }
+  }
+
+  const totalMin = endMin - startMin
+  const nonWalkingMin = nonWalking ? Number(nonWalking) : 0
+
+  if (nonWalkingMin > totalMin) {
+    return {
+      endTimeError: null,
+      nonWalkingError: 'Non-walking time exceeds trip duration.',
+      walkingMinutes: null,
+    }
+  }
+
+  return {
+    endTimeError: null,
+    nonWalkingError: null,
+    walkingMinutes: Math.max(0, totalMin - nonWalkingMin),
+  }
+}
+
+/**
+ * Owns the activity logging flow: opening the bottom sheet, collecting either
+ * a raw duration or a start/end time pair, writing the entry, and showing the
+ * inline confirmation before close.
  */
 export function LogEntrySheet() {
   const addDurationEntry = useActivityStore((s) => s.addDurationEntry)
@@ -41,15 +108,33 @@ export function LogEntrySheet() {
       .reduce((sum, e) => sum + e.durationMin, 0)
   }, [entries])
   const addXp = useLevelStore((s) => s.addXp)
+
   const [open, setOpen] = useState(false)
+  const [inputMode, setInputMode] = useState<InputMode>('duration')
+
+  // Duration mode state
   const [durationValue, setDurationValue] = useState('')
-  const [errorMessage, setErrorMessage] = useState('')
+  const [durationError, setDurationError] = useState('')
+
+  // Time-range mode state
+  const [startTime, setStartTime] = useState('')
+  const [endTime, setEndTime] = useState('')
+  const [nonWalking, setNonWalking] = useState('')
+
   const [confirmation, setConfirmation] = useState<ConfirmationState | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const closeTimeoutRef = useRef<number | null>(null)
 
+  const { endTimeError, nonWalkingError, walkingMinutes } = computeTimeRange(
+    startTime,
+    endTime,
+    nonWalking,
+  )
+
+  const isTimeRangeValid = walkingMinutes !== null
+
   useEffect(() => {
-    if (!open) {
+    if (!open || inputMode !== 'duration') {
       return
     }
 
@@ -60,7 +145,7 @@ export function LogEntrySheet() {
     return () => {
       window.cancelAnimationFrame(frame)
     }
-  }, [open])
+  }, [open, inputMode])
 
   useEffect(() => {
     return () => {
@@ -71,11 +156,15 @@ export function LogEntrySheet() {
   }, [])
 
   /**
-   * Resets transient form state whenever the sheet is dismissed or reopened.
+   * Resets all transient form state whenever the sheet is dismissed or reopened.
    */
   function resetSheetState() {
+    setInputMode('duration')
     setDurationValue('')
-    setErrorMessage('')
+    setDurationError('')
+    setStartTime('')
+    setEndTime('')
+    setNonWalking('')
     setConfirmation(null)
   }
 
@@ -97,22 +186,29 @@ export function LogEntrySheet() {
   }
 
   /**
-   * Validates the minute input at the UI boundary, creates the entry through
-   * the store, then mirrors the earned XP into level progress immediately.
+   * Validates the active input mode, creates the entry via the store, then
+   * mirrors earned XP into level progress and shows the inline confirmation.
    */
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    const durationMin = Number(durationValue)
+    let durationMin: number
 
-    if (Number.isInteger(durationMin) === false || durationMin <= 0) {
-      setErrorMessage('Enter whole minutes greater than 0.')
-      return
+    if (inputMode === 'duration') {
+      const parsed = Number(durationValue)
+      if (!Number.isInteger(parsed) || parsed <= 0) {
+        setDurationError('Enter whole minutes greater than 0.')
+        return
+      }
+      durationMin = parsed
+    } else {
+      if (walkingMinutes === null) return
+      durationMin = walkingMinutes
     }
 
     const { xpEarned } = addDurationEntry(durationMin)
     addXp(xpEarned)
-    setErrorMessage('')
+    setDurationError('')
     setConfirmation({
       xpEarned,
       message: getRandomMessage('log-confirm'),
@@ -124,6 +220,10 @@ export function LogEntrySheet() {
       closeTimeoutRef.current = null
     }, AUTO_CLOSE_DELAY_MS)
   }
+
+  const submitDisabled =
+    confirmation !== null ||
+    (inputMode === 'time-range' && !isTimeRangeValid)
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
@@ -140,24 +240,58 @@ export function LogEntrySheet() {
         </SheetHeader>
 
         <form className="flex flex-col gap-5 px-6 pb-6" onSubmit={handleSubmit}>
-          <DurationInput
-            value={durationValue}
-            inputRef={inputRef}
-            previousDailyMinutes={previousDailyMinutes}
-            disabled={confirmation !== null}
-            onValueChange={(nextValue) => {
-              setDurationValue(nextValue)
-              if (errorMessage) {
-                setErrorMessage('')
-              }
-            }}
-          />
+          {inputMode === 'duration' ? (
+            <>
+              <DurationInput
+                value={durationValue}
+                inputRef={inputRef}
+                previousDailyMinutes={previousDailyMinutes}
+                disabled={confirmation !== null}
+                onValueChange={(nextValue) => {
+                  setDurationValue(nextValue)
+                  if (durationError) {
+                    setDurationError('')
+                  }
+                }}
+              />
 
-          {errorMessage ? (
-            <p role="alert" className="-mt-2 text-sm/6 text-destructive">
-              {errorMessage}
-            </p>
-          ) : null}
+              {durationError ? (
+                <p role="alert" className="-mt-2 text-sm/6 text-destructive">
+                  {durationError}
+                </p>
+              ) : null}
+
+              <button
+                type="button"
+                disabled={confirmation !== null}
+                onClick={() => setInputMode('time-range')}
+                className="-mt-2 self-start text-xs/6 text-muted-foreground underline-offset-2 hover:underline disabled:pointer-events-none disabled:opacity-50">
+                Use start / end time instead
+              </button>
+            </>
+          ) : (
+            <>
+              <TimeRangeInput
+                startTime={startTime}
+                endTime={endTime}
+                nonWalking={nonWalking}
+                endTimeError={endTimeError}
+                nonWalkingError={nonWalkingError}
+                disabled={confirmation !== null}
+                onStartTimeChange={setStartTime}
+                onEndTimeChange={setEndTime}
+                onNonWalkingChange={setNonWalking}
+              />
+
+              <button
+                type="button"
+                disabled={confirmation !== null}
+                onClick={() => setInputMode('duration')}
+                className="-mt-2 self-start text-xs/6 text-muted-foreground underline-offset-2 hover:underline disabled:pointer-events-none disabled:opacity-50">
+                Use duration instead
+              </button>
+            </>
+          )}
 
           {confirmation ? (
             <div className="flex flex-col gap-2">
@@ -171,7 +305,7 @@ export function LogEntrySheet() {
           <Button
             type="submit"
             size="lg"
-            disabled={confirmation !== null}
+            disabled={submitDisabled}
             className="h-12 text-sm font-semibold">
             Log it
           </Button>

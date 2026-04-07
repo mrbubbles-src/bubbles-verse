@@ -131,6 +131,83 @@ describe('LogEntrySheet', () => {
     })
   })
 
+  it('toggles to time-range mode and back to duration mode', () => {
+    render(<LogEntrySheet />)
+
+    fireEvent.click(screen.getByRole('button', { name: /log activity/i }))
+
+    expect(screen.getByLabelText(/minutes/i)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /use start \/ end time instead/i }))
+
+    expect(screen.queryByLabelText(/^minutes$/i)).not.toBeInTheDocument()
+    expect(screen.getByLabelText(/start time/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/end time/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/non-walking/i)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /use duration instead/i }))
+
+    expect(screen.getByLabelText(/^minutes$/i)).toBeInTheDocument()
+    expect(screen.queryByLabelText(/start time/i)).not.toBeInTheDocument()
+  })
+
+  it('shows an error below end time when end is not after start', () => {
+    render(<LogEntrySheet />)
+
+    fireEvent.click(screen.getByRole('button', { name: /log activity/i }))
+    fireEvent.click(screen.getByRole('button', { name: /use start \/ end time instead/i }))
+
+    fireEvent.change(screen.getByLabelText(/start time/i), { target: { value: '10:00' } })
+    fireEvent.change(screen.getByLabelText(/end time/i), { target: { value: '09:30' } })
+
+    expect(screen.getByRole('alert')).toHaveTextContent('End time must be after start time.')
+    expect(screen.getByRole('button', { name: /log it/i })).toBeDisabled()
+  })
+
+  it('shows an error when non-walking exceeds total trip duration', () => {
+    render(<LogEntrySheet />)
+
+    fireEvent.click(screen.getByRole('button', { name: /log activity/i }))
+    fireEvent.click(screen.getByRole('button', { name: /use start \/ end time instead/i }))
+
+    fireEvent.change(screen.getByLabelText(/start time/i), { target: { value: '09:00' } })
+    fireEvent.change(screen.getByLabelText(/end time/i), { target: { value: '09:30' } })
+    fireEvent.change(screen.getByLabelText(/non-walking/i), { target: { value: '40' } })
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Non-walking time exceeds trip duration.')
+    expect(screen.getByRole('button', { name: /log it/i })).toBeDisabled()
+  })
+
+  it('submits with correct walking minutes in time-range mode', () => {
+    render(<LogEntrySheet />)
+
+    fireEvent.click(screen.getByRole('button', { name: /log activity/i }))
+    fireEvent.click(screen.getByRole('button', { name: /use start \/ end time instead/i }))
+
+    // 09:00 → 10:00 = 60 min total, 15 min non-walking → 45 min walking
+    fireEvent.change(screen.getByLabelText(/start time/i), { target: { value: '09:00' } })
+    fireEvent.change(screen.getByLabelText(/end time/i), { target: { value: '10:00' } })
+    fireEvent.change(screen.getByLabelText(/non-walking/i), { target: { value: '15' } })
+
+    fireEvent.click(screen.getByRole('button', { name: /log it/i }))
+
+    expect(addDurationEntryMock).toHaveBeenCalledWith(45)
+    expect(addXpMock).toHaveBeenCalledWith(5)
+    expect(screen.getByText('+5 XP · That counted.')).toBeInTheDocument()
+  })
+
+  it('submit is disabled in time-range mode when fields are incomplete', () => {
+    render(<LogEntrySheet />)
+
+    fireEvent.click(screen.getByRole('button', { name: /log activity/i }))
+    fireEvent.click(screen.getByRole('button', { name: /use start \/ end time instead/i }))
+
+    // Only fill start time, leave end empty
+    fireEvent.change(screen.getByLabelText(/start time/i), { target: { value: '09:00' } })
+
+    expect(screen.getByRole('button', { name: /log it/i })).toBeDisabled()
+  })
+
   it('opens the sheet, focuses the minutes input, and previews XP live', async () => {
     render(<LogEntrySheet />)
 

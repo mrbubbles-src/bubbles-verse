@@ -18,6 +18,10 @@
 - **touch-hitbox uses ::before pseudo-element** — could conflict with components that already use `::before` for decorative content.
 - **class-variance-authority added as TB dependency** — CVA consumer (`button.tsx`) lives in `@bubbles/ui`, not TB. Dependency may be misplaced.
 
+## Deferred from: code review of 2-3-start-end-time-logging-mode.md (2026-04-07)
+
+- **AC4 persistence not integration-tested for time-range submit** — Component tests mock `useActivityStore`; AC requires the same storage path as duration mode. Same pattern as existing duration tests; add store or e2e coverage in a later pass if desired.
+
 ## Deferred from: code review of 2-2-duration-based-activity-logging (2026-04-07)
 
 - **localStorage QuotaExceededError silent failure** — `saveEntries`/`saveCurrentLevel` catch block silently returns. In-memory state diverges from persisted state on storage full. Pre-existing pattern in `storage.ts`.

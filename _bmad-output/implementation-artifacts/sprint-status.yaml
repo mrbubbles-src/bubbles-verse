@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: '2026-04-07'
-last_updated: '2026-04-07'  # review 1-2 passed
+last_updated: '2026-04-07'
 project: bubbles-verse
 
 project_key: NOKEY
@@ -58,7 +58,7 @@ development_status:
   epic-2: in-progress
   2-1-dashboard-shell-with-typography-hero-layout: done
   2-2-duration-based-activity-logging: done
-  2-3-start-end-time-logging-mode: ready-for-dev
+  2-3-start-end-time-logging-mode: done
   2-4-multiple-entries-and-daily-xp-aggregation: ready-for-dev
   epic-2-retrospective: optional
 

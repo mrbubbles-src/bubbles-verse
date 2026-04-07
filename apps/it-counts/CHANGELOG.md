@@ -39,6 +39,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Imported `app/it-counts.css` from the root layout and kept the shared font variables, shared theme provider, and Next.js 16.2.2 monorepo wiring intact.
 - Added the shared `progress` primitive in `packages/ui` and updated the shared shadcn button to include the global `touch-hitbox` utility.
 
+### Fixed
+
+- `parseTimeToMinutes` in `components/logging/log-entry-sheet.tsx` now rejects non-integer hour/minute parts and values outside 0–23 / 0–59 so bogus `HH:MM` strings cannot produce false trip lengths.
+
 ### Documentation
 
 - Documented the new duration logging flow, dashboard session message, and fallback `/log` route behavior in the app README.
