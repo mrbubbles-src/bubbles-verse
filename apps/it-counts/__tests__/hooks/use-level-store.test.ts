@@ -95,6 +95,38 @@ describe('use-level-store', () => {
     })
   })
 
+  describe('addXp — write-through', () => {
+    it('increments xp, derives overXp, and persists immediately', () => {
+      useLevelStore.setState({
+        levelState: {
+          level: 1,
+          startDate: '2026-03-01',
+          xp: 98,
+          overXp: 0,
+        },
+        isEligible: false,
+      })
+
+      useLevelStore.getState().addXp(5)
+
+      const { levelState } = useLevelStore.getState()
+      expect(levelState.xp).toBe(103)
+      expect(levelState.overXp).toBe(3)
+      expect(useLevelStore.getState().isEligible).toBe(true)
+      expect(
+        JSON.parse(localStorage.getItem('it-counts:current-level') ?? 'null'),
+      ).toEqual(levelState)
+    })
+
+    it('ignores zero or negative xp updates', () => {
+      useLevelStore.getState().addXp(0)
+      useLevelStore.getState().addXp(-2)
+
+      expect(useLevelStore.getState().levelState.xp).toBe(0)
+      expect(localStorage.getItem('it-counts:current-level')).toBeNull()
+    })
+  })
+
   describe('triggerLevelUp — write-through', () => {
     it('increments level, resets xp, sets new startDate to today', () => {
       useLevelStore.setState({

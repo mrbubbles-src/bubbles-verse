@@ -12,6 +12,7 @@ vi.mock('@/hooks/use-level-store', () => ({
     selector({
       levelState: { level: 1, startDate: '2026-04-07', xp: 0, overXp: 0 },
       isEligible: false,
+      addXp: vi.fn(),
       loadFromStorage: vi.fn(),
       triggerLevelUp: vi.fn(),
     })
@@ -23,10 +24,25 @@ vi.mock('@/hooks/use-activity-store', () => ({
     selector({
       entries: [],
       addEntry: vi.fn(),
+      addDurationEntry: vi.fn(() => ({
+        entry: {
+          id: 'entry-1',
+          date: '2026-04-07',
+          durationMin: 30,
+          loggedAt: '2026-04-07T10:00:00.000Z',
+        },
+        xpEarned: 5,
+      })),
       loadFromStorage: vi.fn(),
       getDailyEntries: () => [],
       getWeeklyEntries: () => [],
     })
+  ),
+}))
+
+vi.mock('@/lib/messages', () => ({
+  getRandomMessage: vi.fn((context: string) =>
+    context === 'session-start' ? 'Everything you logged before still counts today.' : 'That counted.'
   ),
 }))
 

@@ -59,6 +59,15 @@ Story 1.7 scaffolds the Zustand state layer:
 - `hooks/use-ui-store.ts` tracks ephemeral session state (no persistence)
 - `components/shared/store-hydrator.tsx` hydrates activity and level stores on mount as a client component inside the server layout
 
+Story 2.2 adds the first end-user logging flow:
+
+- `components/logging/log-entry-sheet.tsx` opens the dashboard bottom sheet and owns validation, confirmation, and auto-close
+- `components/logging/duration-input.tsx` keeps minute entry mobile-first with live XP preview from `lib/xp.ts`
+- `hooks/use-activity-store.ts` now creates duration entries with `crypto.randomUUID()` and immediate localStorage write-through
+- `hooks/use-level-store.ts` now mirrors earned XP into `it-counts:current-level` immediately
+- `components/dashboard/session-start-message.tsx` shows one `session-start` message per in-memory app session
+- `components/shared/motivational-message.tsx` keeps confirmation and dashboard encouragement text-only and reusable
+
 ## Quality Checks
 
 Use the app-local scripts when validating changes:
@@ -73,6 +82,7 @@ bun run build
 
 ## Current Scope
 
-- `app/page.tsx` remains a starter placeholder on purpose
+- `app/page.tsx` is now the real duration-logging dashboard entry point
+- `/log` remains a lightweight fallback route that sends the user back to the dashboard flow
 - shared shadcn primitives live in `packages/ui/src/components/shadcn`
 - app-local documentation and release notes stay inside `apps/it-counts`

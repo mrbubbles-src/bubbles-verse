@@ -1,6 +1,7 @@
 # Story 1.2: Add Shared Fonts & Typography to `@bubbles/ui`
 
 Status: done
+Review: passed (2026-04-07)
 
 ## Story
 
@@ -36,6 +37,19 @@ so that all apps import pre-configured font objects and get consistent typograph
 - [ ] Task 3: Validate monorepo build (no unit tests — build validation is the acceptance test)
   - [x] `bun run typecheck` from monorepo root — must pass without errors
   - [x] `bun run lint` from monorepo root — must pass
+
+### Review Findings
+
+- [x] [Review][Defer] Scope creep — ~30 files changed beyond Story 1-2's 3 tasks — TB changes needed for theme package extraction + typecheck, VT refactoring intentional (performance fix), progress.tsx/button.tsx bundled for upcoming stories. Accepted by reviewer.
+- [x] [Review][Dismiss] TeacherBuddy layout.tsx modification — necessary for theme package extraction, not a font migration violation. Accepted by reviewer.
+- [x] [Review][Patch] CSS font variables in `@theme inline` lack fallback stacks — fixed: added system font fallback stacks to all five `var()` calls. [packages/ui/src/styles/globals.css:140-144]
+- [x] [Review][Defer] pickRandomItem duplicated in 3 TeacherBuddy files — deferred, out of scope
+- [x] [Review][Defer] ~40 non-null assertions (`!`) in TB tests paper over type safety — deferred, necessary for Task 3 typecheck pass
+- [x] [Review][Defer] postcss.config.mjs changed from package export to fragile relative path — deferred, out of scope
+- [x] [Review][Defer] progress.tsx shipped with no tests — deferred, out of scope
+- [x] [Review][Defer] ::selection/input vars reference undefined custom properties (--overlay-2, --text, --rosewater) — deferred, pre-existing
+- [x] [Review][Defer] touch-hitbox uses ::before pseudo-element which could conflict with components that already use ::before — deferred, out of scope
+- [x] [Review][Defer] class-variance-authority added as TB dependency but CVA consumer (button.tsx) lives in @bubbles/ui — deferred, possibly misplaced
 
 ## Dev Notes
 

@@ -11,9 +11,9 @@ describe('LogActivityButton', () => {
     ).toBeInTheDocument()
   })
 
-  it('is wrapped in a link to /log', () => {
+  it('keeps the shared primary CTA sizing', () => {
     render(<LogActivityButton />)
-    const link = screen.getByRole('link')
-    expect(link.getAttribute('href')).toBe('/log')
+    const button = screen.getByRole('button', { name: /log activity/i })
+    expect(button.className).toMatch(/h-12/)
   })
 })

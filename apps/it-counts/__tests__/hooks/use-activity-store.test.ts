@@ -1,7 +1,15 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useActivityStore } from '@/hooks/use-activity-store'
 import type { ActivityEntry } from '@/types'
+
+vi.mock('@/lib/dates', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/dates')>()
+  return {
+    ...actual,
+    getTodayString: vi.fn(() => '2026-04-07'),
+  }
+})
 
 const ENTRY_A: ActivityEntry = {
   id: 'a1',
@@ -32,6 +40,7 @@ describe('use-activity-store', () => {
   beforeEach(() => {
     localStorage.clear()
     resetStore()
+    vi.useRealTimers()
   })
 
   it('starts with an empty entries array', () => {
@@ -54,6 +63,51 @@ describe('use-activity-store', () => {
       useActivityStore.getState().addEntry(ENTRY_B)
 
       expect(useActivityStore.getState().entries).toEqual([ENTRY_A, ENTRY_B])
+    })
+  })
+
+  describe('addDurationEntry — generated entry', () => {
+    it('creates an entry with generated id, today date, ISO timestamp, and earned XP', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-04-07T10:15:00.000Z'))
+      const randomUuidSpy = vi
+        .spyOn(globalThis.crypto, 'randomUUID')
+        .mockReturnValue('generated-id')
+
+      const result = useActivityStore.getState().addDurationEntry(30)
+
+      expect(result).toEqual({
+        entry: {
+          id: 'generated-id',
+          date: '2026-04-07',
+          durationMin: 30,
+          loggedAt: '2026-04-07T10:15:00.000Z',
+        },
+        xpEarned: 5,
+      })
+      expect(useActivityStore.getState().entries).toEqual([result.entry])
+      expect(JSON.parse(localStorage.getItem('it-counts:entries') ?? '[]')).toEqual([
+        result.entry,
+      ])
+
+      randomUuidSpy.mockRestore()
+    })
+
+    it('calculates XP as cumulative daily delta, not per-entry', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-04-07T08:00:00.000Z'))
+      vi.spyOn(globalThis.crypto, 'randomUUID')
+        .mockReturnValueOnce('entry-1')
+        .mockReturnValueOnce('entry-2')
+
+      const first = useActivityStore.getState().addDurationEntry(15)
+      expect(first.xpEarned).toBe(2) // 15 min → tier 10+ = 2 XP
+
+      const second = useActivityStore.getState().addDurationEntry(15)
+      // cumulative 30 min → 5 XP total, minus previous 2 XP = 3 XP delta
+      expect(second.xpEarned).toBe(3)
+
+      vi.restoreAllMocks()
     })
   })
 

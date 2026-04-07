@@ -1,7 +1,8 @@
 import { ThemeToggle } from '@bubbles/theme';
 
 import { BottomNav } from '@/components/dashboard/bottom-nav';
-import { LogActivityButton } from '@/components/dashboard/log-activity-button';
+import { LogEntrySheet } from '@/components/logging/log-entry-sheet';
+import { SessionStartMessage } from '@/components/dashboard/session-start-message';
 import { XpHero } from '@/components/dashboard/xp-hero';
 
 /**
@@ -18,7 +19,8 @@ export default function Home() {
 
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center px-4">
         <XpHero />
-        <LogActivityButton />
+        <SessionStartMessage />
+        <LogEntrySheet />
       </main>
 
       <BottomNav />

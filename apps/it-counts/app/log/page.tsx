@@ -1,16 +1,18 @@
 import Link from 'next/link';
 
 /**
- * Placeholder for the activity logging page.
- * Will be replaced by the inline bottom-sheet flow in Story 2.2.
+ * Keeps the legacy `/log` route friendly while dashboard logging now happens
+ * inline through the Story 2.2 bottom-sheet flow.
  */
 export default function LogPage() {
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-md flex-col items-center justify-center px-4">
       <h1 className="mb-4">Log Activity</h1>
-      <p className="text-muted-foreground">Coming soon — Story 2.2</p>
+      <p className="text-center text-muted-foreground">
+        Duration logging now opens directly from the dashboard.
+      </p>
       <Link href="/" className="touch-hitbox mt-6 text-primary underline">
-        Back to Dashboard
+        Back to dashboard
       </Link>
     </main>
   );

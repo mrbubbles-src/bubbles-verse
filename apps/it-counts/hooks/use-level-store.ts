@@ -3,7 +3,7 @@ import { create } from 'zustand'
 import type { LevelState } from '@/types'
 import { loadCurrentLevel, saveCurrentLevel } from '@/lib/storage'
 import { getTodayString, getWeeksElapsedInLevel } from '@/lib/dates'
-import { isLevelUpEligible } from '@/lib/levels'
+import { calculateOverXp, isLevelUpEligible } from '@/lib/levels'
 
 /**
  * Builds a fresh default level state using today's date at call time,
@@ -20,6 +20,7 @@ function createDefaultLevelState(): LevelState {
 
 interface LevelStoreState {
   levelState: LevelState
+  addXp: (xpToAdd: number) => void
   loadFromStorage: () => void
   triggerLevelUp: () => void
   isEligible: boolean
@@ -33,6 +34,28 @@ interface LevelStoreState {
 export const useLevelStore = create<LevelStoreState>()((set, get) => ({
   levelState: createDefaultLevelState(),
   isEligible: false,
+
+  addXp: (xpToAdd) => {
+    if (Number.isFinite(xpToAdd) === false || xpToAdd <= 0) {
+      return
+    }
+
+    const current = get().levelState
+    const nextXp = current.xp + xpToAdd
+    const today = getTodayString()
+    const weeksElapsed = getWeeksElapsedInLevel(current.startDate, today)
+    const next: LevelState = {
+      ...current,
+      xp: nextXp,
+      overXp: calculateOverXp(nextXp),
+    }
+
+    saveCurrentLevel(next)
+    set({
+      levelState: next,
+      isEligible: isLevelUpEligible(nextXp, weeksElapsed),
+    })
+  },
 
   loadFromStorage: () => {
     const loaded = loadCurrentLevel()
