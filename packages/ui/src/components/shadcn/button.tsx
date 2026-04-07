@@ -40,6 +40,11 @@ const buttonVariants = cva(
   }
 )
 
+/**
+ * Renders the shared button primitive with bubbles-verse variants and sizing.
+ * Use it for all clickable actions so touch targets, icon spacing, and states
+ * stay consistent across apps.
+ */
 function Button({
   className,
   variant = "default",
@@ -49,7 +54,7 @@ function Button({
   return (
     <ButtonPrimitive
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn("touch-hitbox", buttonVariants({ variant, size, className }))}
       {...props}
     />
   )

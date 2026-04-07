@@ -1,5 +1,9 @@
 import Image from "next/image";
 
+/**
+ * Keeps the default starter screen in place until feature stories replace it.
+ * The page intentionally stays lightweight while the app wiring settles.
+ */
 export default function Home() {
   return (
     <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
@@ -10,6 +14,7 @@ export default function Home() {
           alt="Next.js logo"
           width={100}
           height={20}
+          style={{ height: "auto" }}
           priority
         />
         <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
@@ -41,13 +46,6 @@ export default function Home() {
             target="_blank"
             rel="noopener noreferrer"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
             Deploy Now
           </a>
           <a
