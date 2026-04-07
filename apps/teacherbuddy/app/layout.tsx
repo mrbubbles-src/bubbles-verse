@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 
+import { Geist, Geist_Mono } from 'next/font/google';
 import { cookies } from 'next/headers';
 
 import '@bubbles/ui/globals.css';
 
 import { ThemeProvider } from '@bubbles/theme';
-import { firaCode, montserrat, poppins } from '@bubbles/ui/fonts';
 import { Toaster } from '@bubbles/ui/shadcn/sonner';
 
 import AppShell from '@/components/app-shell';
@@ -13,6 +13,16 @@ import Footer from '@/components/footer';
 import PrivacyNotice from '@/components/privacy-notice';
 import { AppStoreProvider } from '@/context/app-store';
 import packageJson from '@/package.json';
+
+const geistSans = Geist({
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
+});
+
+const geistMono = Geist_Mono({
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(
@@ -89,7 +99,7 @@ export default async function RootLayout({
         />
       </head>
       <body
-        className={`${montserrat.variable} ${poppins.variable} ${firaCode.variable} antialiased`}>
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="dark">
           <AppStoreProvider>
             <AppShell

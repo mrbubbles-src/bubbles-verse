@@ -1,6 +1,6 @@
 # Story 1.2: Add Shared Fonts & Typography to `@bubbles/ui`
 
-Status: review
+Status: done
 
 ## Story
 
@@ -60,7 +60,13 @@ export const montserrat = Montserrat({
   weight: ['400', '500', '600', '700', '800'],
   variable: '--font-heading',
   display: 'swap',
-  fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+  fallback: [
+    'system-ui',
+    '-apple-system',
+    'BlinkMacSystemFont',
+    'Segoe UI',
+    'sans-serif',
+  ],
 });
 
 /**
@@ -73,7 +79,13 @@ export const poppins = Poppins({
   weight: ['400', '500', '600'],
   variable: '--font-body',
   display: 'swap',
-  fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+  fallback: [
+    'system-ui',
+    '-apple-system',
+    'BlinkMacSystemFont',
+    'Segoe UI',
+    'sans-serif',
+  ],
 });
 
 /**
@@ -84,7 +96,14 @@ export const firaCode = Fira_Code({
   subsets: ['latin'],
   variable: '--font-code',
   display: 'swap',
-  fallback: ['ui-monospace', 'Cascadia Code', 'Source Code Pro', 'Menlo', 'Consolas', 'monospace'],
+  fallback: [
+    'ui-monospace',
+    'Cascadia Code',
+    'Source Code Pro',
+    'Menlo',
+    'Consolas',
+    'monospace',
+  ],
 });
 ```
 
@@ -93,6 +112,7 @@ export const firaCode = Fira_Code({
 ### `packages/ui/package.json` — Changes
 
 1. Add to `devDependencies`:
+
    ```json
    "next": "16.2.2"
    ```
@@ -103,6 +123,7 @@ export const firaCode = Fira_Code({
    ```
 
 Resulting exports block (add `./fonts` alongside existing entries):
+
 ```json
 "exports": {
   "./globals.css": "./src/styles/globals.css",
@@ -132,6 +153,7 @@ Story 1.3 (adapt `apps/it-counts`) applies this pattern. TeacherBuddy can adopt 
 ### `globals.css` — Typography Defaults (add to existing `@layer base` block)
 
 The current `@layer base` block contains:
+
 ```css
 @layer base {
   * { @apply border-border outline-ring/50; }
@@ -144,53 +166,53 @@ The current `@layer base` block contains:
 **Append to `@layer base`** (inside the existing block, after the existing rules):
 
 ```css
-  h1 {
-    font-family: var(--font-heading);
-    font-size: 2.25rem;
-    font-weight: 800;
-    line-height: 1.2;
-  }
-  h2 {
-    font-family: var(--font-heading);
-    font-size: 1.875rem;
-    font-weight: 700;
-    line-height: 1.25;
-  }
-  h3 {
-    font-family: var(--font-heading);
-    font-size: 1.5rem;
-    font-weight: 700;
-    line-height: 1.3;
-  }
-  h4 {
-    font-family: var(--font-heading);
-    font-size: 1.25rem;
-    font-weight: 600;
-    line-height: 1.35;
-  }
-  h5 {
-    font-family: var(--font-heading);
-    font-size: 1.125rem;
-    font-weight: 600;
-    line-height: 1.4;
-  }
-  h6 {
-    font-family: var(--font-heading);
-    font-size: 1rem;
-    font-weight: 600;
-    line-height: 1.4;
-  }
-  body {
-    font-family: var(--font-body);
-    font-size: 1rem;
-    line-height: 1.6;
-  }
-  code,
-  kbd,
-  pre,
-  samp {
-    font-family: var(--font-code);
-  }
+h1 {
+  font-family: var(--font-heading);
+  font-size: 2.25rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+h2 {
+  font-family: var(--font-heading);
+  font-size: 1.875rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+h3 {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+h4 {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+h5 {
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+h6 {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+body {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+code,
+kbd,
+pre,
+samp {
+  font-family: var(--font-code);
+}
 ```
 
 These rules use CSS variable references — they are **no-ops** until an app applies the font variable classes to `<html>`. TeacherBuddy (which uses Geist) is unaffected until it explicitly adopts the new fonts.
@@ -198,31 +220,44 @@ These rules use CSS variable references — they are **no-ops** until an app app
 ### `globals.css` — `@theme inline` Block Updates
 
 The current `@theme inline` block contains these font-related entries:
+
 ```css
---font-sans: var(--font-sans);       /* self-referential placeholder — effectively undefined */
---font-mono: var(--font-geist-mono); /* maps to Geist Mono when TeacherBuddy sets it */
+--font-sans: var(
+  --font-sans
+); /* self-referential placeholder — effectively undefined */
+--font-mono: var(
+  --font-geist-mono
+); /* maps to Geist Mono when TeacherBuddy sets it */
 ```
 
 **Replace both lines** and add three new entries:
+
 ```css
---font-sans: var(--font-body);     /* Tailwind font-sans class → Poppins when --font-body set */
---font-mono: var(--font-code);     /* Tailwind font-mono class → Fira Code when --font-code set */
---font-heading: var(--font-heading); /* Tailwind font-heading class → Montserrat when set */
---font-body: var(--font-body);       /* Tailwind font-body class — direct access */
---font-code: var(--font-code);       /* Tailwind font-code class — direct access */
+--font-sans: var(
+  --font-body
+); /* Tailwind font-sans class → Poppins when --font-body set */
+--font-mono: var(
+  --font-code
+); /* Tailwind font-mono class → Fira Code when --font-code set */
+--font-heading: var(
+  --font-heading
+); /* Tailwind font-heading class → Montserrat when set */
+--font-body: var(--font-body); /* Tailwind font-body class — direct access */
+--font-code: var(--font-code); /* Tailwind font-code class — direct access */
 ```
 
 **Impact analysis — TeacherBuddy:**
+
 - `--font-sans` was previously `var(--font-sans)` (self-referential = undefined). Changing to `var(--font-body)` means `font-sans` class now resolves to Poppins IF `--font-body` is set on `<html>`. TeacherBuddy does NOT set `--font-body`, so `--font-sans` falls back to the system font (same as before, since the old value was also effectively undefined). No visual regression.
 - `--font-mono: var(--font-geist-mono)` → `var(--font-code)`. TeacherBuddy sets `--font-geist-mono` but NOT `--font-code`. Any `font-mono` usage in TeacherBuddy would change from Geist Mono to system mono. **Check:** TeacherBuddy currently applies `${geistMono.variable}` className which sets `--font-geist-mono`. The `font-mono` Tailwind class is used for code display only. Assess impact: likely negligible since `code` elements use the `@layer base` rule `font-family: var(--font-code)` which is also undefined in TeacherBuddy → system mono. Consistent fallback.
 
 ### What Already Exists vs. What Needs Creating
 
-| File | Status | Action |
-|------|--------|--------|
-| `packages/ui/src/fonts.ts` | Does not exist | CREATE |
-| `packages/ui/package.json` | Exists — no `./fonts` export, no `next` dep | MODIFY |
-| `packages/ui/src/styles/globals.css` | Exists — no typography defaults | MODIFY |
+| File                                 | Status                                      | Action |
+| ------------------------------------ | ------------------------------------------- | ------ |
+| `packages/ui/src/fonts.ts`           | Does not exist                              | CREATE |
+| `packages/ui/package.json`           | Exists — no `./fonts` export, no `next` dep | MODIFY |
+| `packages/ui/src/styles/globals.css` | Exists — no typography defaults             | MODIFY |
 
 ### Anti-Patterns to Avoid
 
