@@ -56,7 +56,7 @@ development_status:
 
   # Epic 2: Activity Logging & XP
   epic-2: in-progress
-  2-1-dashboard-shell-with-typography-hero-layout: ready-for-dev
+  2-1-dashboard-shell-with-typography-hero-layout: done
   2-2-duration-based-activity-logging: ready-for-dev
   2-3-start-end-time-logging-mode: ready-for-dev
   2-4-multiple-entries-and-daily-xp-aggregation: ready-for-dev

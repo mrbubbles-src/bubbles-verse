@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 
-import '@bubbles/ui/globals.css';
 import './it-counts.css';
 
 import { ThemeProvider } from '@bubbles/theme';
