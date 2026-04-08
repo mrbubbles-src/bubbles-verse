@@ -3,6 +3,7 @@
 import { startVt } from './view-transition';
 
 import { HugeiconsIcon, Moon02Icon, SunIcon } from '@bubbles/ui/lib/hugeicons';
+import { cn } from '@bubbles/ui/lib/utils';
 import { Button } from '@bubbles/ui/shadcn/button';
 import {
   Tooltip,
@@ -43,22 +44,26 @@ const ThemeToggle = () => {
               }}>
               <HugeiconsIcon
                 icon={Moon02Icon}
+                size={24}
                 strokeWidth={2}
-                className={`text-primary drop-shadow-secondary ${
+                className={cn(
+                  'absolute size-6 text-primary drop-shadow-secondary drop-shadow-xs transition-all duration-300 ease-in-out',
                   isHydrated && isDark
-                    ? 'scale-100 rotate-0'
-                    : 'scale-0 -rotate-90'
-                } absolute size-6 drop-shadow-xs transition-all duration-300 ease-in-out`}
+                    ? 'scale-100 rotate-0 opacity-100'
+                    : 'scale-0 -rotate-90 opacity-0',
+                )}
                 aria-hidden="true"
               />
               <HugeiconsIcon
                 icon={SunIcon}
+                size={24}
                 strokeWidth={2}
-                className={`text-secondary drop-shadow-primary ${
+                className={cn(
+                  'absolute size-6 text-secondary drop-shadow-primary drop-shadow-xs transition-all duration-300 ease-in-out',
                   isHydrated && !isDark
-                    ? 'scale-100 rotate-0'
-                    : 'scale-0 rotate-90'
-                } absolute size-6 drop-shadow-xs transition-all duration-300 ease-in-out`}
+                    ? 'scale-100 rotate-0 opacity-100'
+                    : 'scale-0 rotate-90 opacity-0',
+                )}
                 aria-hidden="true"
               />
               <span className="sr-only">{buttonLabel}</span>
