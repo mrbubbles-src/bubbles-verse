@@ -10,7 +10,6 @@ import { useLevelStore } from '@/hooks/use-level-store';
 import { getTodayString, getWeeksElapsedInLevel } from '@/lib/dates';
 import { calculateDailyXp } from '@/lib/xp';
 import { StatusBadge } from '@/components/dashboard/status-badge';
-import type { ActivityEntry } from '@/types';
 
 /**
  * Displays the primary "Typography Hero" dashboard composition:
@@ -27,22 +26,14 @@ export function XpHero() {
   const today = getTodayString();
   const weeksElapsed = getWeeksElapsedInLevel(startDate, today);
 
-  const todayRows = useMemo(() => {
-    const todayEntries = entries
+  const todayEntries = useMemo(() => {
+    return entries
       .filter((entry) => entry.date === today)
       .sort((a, b) => a.loggedAt.localeCompare(b.loggedAt));
-
-    let runningMinutes = 0;
-    let previousXp = 0;
-
-    return todayEntries.map((entry): { entry: ActivityEntry; gainedXp: number } => {
-      runningMinutes += entry.durationMin;
-      const currentXp = calculateDailyXp(runningMinutes);
-      const gainedXp = Math.max(0, currentXp - previousXp);
-      previousXp = currentXp;
-      return { entry, gainedXp };
-    });
   }, [entries, today]);
+
+  const todayTotalMin = todayEntries.reduce((sum, e) => sum + e.durationMin, 0);
+  const todayXp = calculateDailyXp(todayTotalMin);
 
   return (
     <section className="w-full">
@@ -76,26 +67,30 @@ export function XpHero() {
       </div>
 
       <div className="mt-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-          Today
-        </p>
+        <div className="flex items-baseline justify-between">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            Today
+          </p>
+          {todayEntries.length > 0 && (
+            <p className="text-sm font-semibold text-primary">
+              {todayTotalMin} min · {todayXp} XP
+            </p>
+          )}
+        </div>
 
-        {todayRows.length === 0 ? (
+        {todayEntries.length === 0 ? (
           <p className="mt-2 text-sm text-muted-foreground">No entries yet today.</p>
         ) : (
-          <ul className="mt-2 space-y-3">
-            {todayRows.map(({ entry, gainedXp }) => (
-              <li key={entry.id} className="flex items-center justify-between">
-                <div>
-                  <p className="text-base font-semibold text-foreground">{entry.durationMin} min</p>
-                  <p className="text-sm text-muted-foreground">{formatTime(entry.loggedAt)}</p>
-                </div>
-                <p className="text-sm font-semibold text-ctp-latte-blue dark:text-ctp-mocha-blue">
-                  +{gainedXp} XP
-                </p>
-              </li>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {todayEntries.map((entry) => (
+              <span
+                key={entry.id}
+                className="inline-flex items-center justify-center gap-1.5 rounded-full border border-border/70 bg-muted/40 px-3 py-1 text-xs font-medium text-foreground">
+                {entry.durationMin} min
+                <span className="text-muted-foreground">{formatTime(entry.loggedAt)}</span>
+              </span>
             ))}
-          </ul>
+          </div>
         )}
       </div>
     </section>
