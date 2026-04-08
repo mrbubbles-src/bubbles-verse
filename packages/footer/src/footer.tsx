@@ -21,7 +21,9 @@ export type FooterProps = {
   authorHref?: string;
   /** Navigation links rendered as a row (e.g. Impressum, Datenschutz). */
   links?: FooterLink[];
-  /** Extra content rendered between copyright and links. */
+  /** Hide the default Catppuccin color theme credit. */
+  hideCatppuccinCredit?: boolean;
+  /** Extra content rendered after the footer text. */
   children?: React.ReactNode;
 };
 
@@ -34,6 +36,7 @@ export function Footer({
   author = 'mrbubbles-src',
   authorHref = 'https://mrbubbles-src.dev',
   links = [],
+  hideCatppuccinCredit = false,
   children,
 }: FooterProps) {
   const currentYear = new Date().getFullYear();
@@ -57,7 +60,7 @@ export function Footer({
             href={authorHref}
             target="_blank"
             rel="noreferrer"
-            className="touch-hitbox hover:text-muted-foreground">
+            className="touch-hitbox text-primary hover:text-primary/70">
             {author}
           </Link>
           {links.length > 0 && (
@@ -70,7 +73,7 @@ export function Footer({
                     href={link.href}
                     target={link.external !== false ? '_blank' : undefined}
                     rel={link.external !== false ? 'noreferrer' : undefined}
-                    className="touch-hitbox hover:text-muted-foreground">
+                    className="touch-hitbox text-primary hover:text-primary/70">
                     {link.label}
                   </Link>
                 </span>
@@ -78,6 +81,19 @@ export function Footer({
             </>
           )}
         </p>
+
+        {!hideCatppuccinCredit && (
+          <p className="text-center">
+            Color theme based on{' '}
+            <Link
+              href="https://github.com/catppuccin/catppuccin"
+              target="_blank"
+              rel="noreferrer"
+              className="touch-hitbox text-primary hover:text-primary/70">
+              Catppuccin
+            </Link>
+          </p>
+        )}
 
         {children}
       </div>

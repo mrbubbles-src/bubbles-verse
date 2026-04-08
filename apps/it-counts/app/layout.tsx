@@ -5,6 +5,7 @@ import './it-counts.css';
 import { ThemeProvider } from '@bubbles/theme';
 import { firaCode, montserrat, poppins } from '@bubbles/ui/fonts';
 
+import Header from '@/components/global/header';
 import { ServiceWorkerRegistration } from '@/components/shared/service-worker-registration';
 import { StoreHydrator } from '@/components/shared/store-hydrator';
 
@@ -57,7 +58,10 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="dark">
           <ServiceWorkerRegistration />
           <StoreHydrator />
-          {children}
+          <div className="flex min-h-svh flex-col bg-background">
+            <Header />
+            {children}
+          </div>
         </ThemeProvider>
       </body>
     </html>
