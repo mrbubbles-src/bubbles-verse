@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-04-09
+
+### Documentation
+
+- Rewrote the app README to describe the current product, routes, persistence model, and workspace workflow.
+- Added focused app-local docs for structure, routes, state/storage, testing, and PWA behavior.
+
 ### Fixed
 
 - Stopped the custom PWA service worker from serving cached app HTML and `/_next/*` assets cache-first, so normal reloads now pick up the latest design without requiring a hard refresh.
@@ -16,16 +23,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added `/about` page with app concept, XP tier table, level definitions, and progression rules.
-- Added `/api/og` dynamic Open Graph image route (1200×630, Catppuccin Mocha background with logo and tagline).
+- Added `/api/og` dynamic Open Graph image route (1200x630, Catppuccin Mocha background with logo and tagline).
 - Added Twitter card and full OpenGraph metadata (images, siteName, locale) to root layout.
 - Added retroactive date logging: the log sheet now includes a date picker (defaults to today, past dates allowed, future dates blocked). Entries for past dates auto-sync into level XP.
-- Added About link to bottom navigation (4th item with help-circle icon).
-- Exported `XP_TIERS` from `lib/xp.ts` and `formatLocalDate`/`parseLocalDate` from `lib/dates.ts` for reuse.
+- Added About access from the shared header via `components/global/about-page-button.tsx`.
+- Exported `XP_TIERS` from `lib/xp.ts` and `formatLocalDate` / `parseLocalDate` from `lib/dates.ts` for reuse.
 
 ### Changed
 
-- Moved footer with legal links from dashboard to the about page.
+- Moved product explanation and progression guidance into the dedicated `/about` route.
 - Extended `addDurationEntry` in `use-activity-store` to accept an optional `date` parameter for retroactive logging.
+- Replaced the dashboard CTA link with the inline logging sheet on `app/page.tsx`.
+- Wired `StoreHydrator` into `app/layout.tsx` so activity, level, and settings stores hydrate from `localStorage` on mount.
 
 ### Previously added
 
@@ -47,30 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `hooks/use-activity-store.ts` Zustand store with entries, write-through persistence, and date/week selectors.
 - Added `hooks/use-level-store.ts` Zustand store with derived `isEligible`, `triggerLevelUp`, and write-through persistence.
 - Added `hooks/use-ui-store.ts` Zustand store for ephemeral session UI state.
+- Added `hooks/use-settings-store.ts` for persisted app settings.
 - Added `components/shared/store-hydrator.tsx` client component for store hydration on mount.
-- Added `__tests__/hooks/use-activity-store.test.ts`, `__tests__/hooks/use-level-store.test.ts`, and `__tests__/hooks/use-ui-store.test.ts`.
-- Added `zustand@5.0.12` as runtime dependency.
-
-### Changed
-
-- Replaced the dashboard CTA link with the inline Story 2.2 logging sheet on `app/page.tsx`.
-- Extended `hooks/use-activity-store.ts` with generated duration-entry creation and immediate write-through persistence.
-- Extended `hooks/use-level-store.ts` with `syncXpFromEntries()` (replacing `addXp`) so level XP matches aggregated daily minutes after each log and on hydration; log confirmation shows today's total daily XP.
-- Updated `app/log/page.tsx` to explain that logging now happens from the dashboard instead of showing stale Story 2.2 placeholder copy.
-- Wired `StoreHydrator` into `app/layout.tsx` so activity and level stores hydrate from localStorage on mount.
-- Imported `app/it-counts.css` from the root layout and kept the shared font variables, shared theme provider, and Next.js 16.2.2 monorepo wiring intact.
-- Added the shared `progress` primitive in `packages/ui` and updated the shared shadcn button to include the global `touch-hitbox` utility.
-
-### Fixed
-
-- `parseTimeToMinutes` in `components/logging/log-entry-sheet.tsx` now rejects non-integer hour/minute parts and values outside 0–23 / 0–59 so bogus `HH:MM` strings cannot produce false trip lengths.
-- Added `levelStartAt` timestamp-aware XP recomputation so same-day logs from before a level-up are not re-credited after hydration or additional entries.
-- Clamped `XpProgressBar` ARIA values to the declared 0-100 range and moved log-sheet daily-minute aggregation to the activity-store selector to avoid duplicated logic.
-- Expanded logging/level tests to cover same-day level-up recomputation, tier-crossing confirmation copy, and immutable entry snapshots passed into `syncXpFromEntries`.
-
-### Documentation
-
-- Documented the new duration logging flow, dashboard session message, and fallback `/log` route behavior in the app README.
-- Replaced the starter README with app-specific monorepo usage notes and Bun-based quality checks.
-- Documented the new date and XP business-logic modules in the app README.
-- Documented the new level and motivational-message modules in the app README.
+- Added `__tests__/hooks/use-activity-store.test.ts`, `__tests__/hooks/use-level-store.test.ts`, `__tests__/hooks/use-settings-store.test.ts`, and `__tests__/hooks/use-ui-store.test.ts`.
+- Added `zustand@5.0.12` as a runtime dependency.

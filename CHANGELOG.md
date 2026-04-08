@@ -1,16 +1,16 @@
 # Changelog
 
-All notable **cross-repo** changes (tooling, workspace layout, shared packages used by multiple apps) belong here. **App- or package-only** changes go in that workspace’s `CHANGELOG.md`.
+All notable cross-repo changes belong here. App- or package-only changes belong in that workspace's own `CHANGELOG.md`.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-### Added
+### Changed
 
-- Root monorepo documentation: `README.md`, `documentation/`, and this changelog.
+## [0.0.2] - 2026-04-09
 
 ### Changed
 
-- Expanded root and workspace documentation (onboarding, troubleshooting, thicker package/app guides).
-- TeacherBuddy: added `documentation/metadata-and-seo.md`; fixed doc index links.
+- Refreshed the root monorepo documentation to reflect the current 4-app / 5-package workspace graph.
+- Added `it-counts`, `@bubbles/theme`, and `@bubbles/footer` to the root architecture, onboarding, tooling, and generated repo-overview docs.

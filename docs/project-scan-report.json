@@ -1,1 +1,111 @@
-{"workflow_version":"1.2.0","timestamps":{"started":"2026-04-05T12:00:00Z","last_updated":"2026-04-05T12:45:00Z","completed":"2026-04-05T12:45:00Z"},"mode":"initial_scan","scan_level":"exhaustive","project_root":"/Users/mrbubbles/dev/bubbles-verse","project_knowledge":"/Users/mrbubbles/dev/bubbles-verse/docs","repository_type":"monorepo","project_types":[{"part_id":"portfolio","project_type_id":"web","display_name":"Portfolio (Next.js 16)","root_path":"apps/portfolio"},{"part_id":"teacherbuddy","project_type_id":"web","display_name":"TeacherBuddy (Next.js 16)","root_path":"apps/teacherbuddy"},{"part_id":"the-coding-vault","project_type_id":"web","display_name":"The Coding Vault (Next.js 16)","root_path":"apps/the-coding-vault"},{"part_id":"ui","project_type_id":"library","display_name":"@bubbles/ui (Design System)","root_path":"packages/ui"},{"part_id":"eslint-config","project_type_id":"library","display_name":"@bubbles/eslint-config","root_path":"packages/eslint-config"},{"part_id":"typescript-config","project_type_id":"library","display_name":"@bubbles/typescript-config","root_path":"packages/typescript-config"}],"completed_steps":[{"step":"step_1","status":"completed","timestamp":"2026-04-05T12:00:00Z","summary":"Classified as monorepo with 6 parts (3 web, 3 library)"},{"step":"step_2","status":"completed","timestamp":"2026-04-05T12:02:00Z","summary":"Found 32 existing docs across root, apps, packages"},{"step":"step_3","status":"completed","timestamp":"2026-04-05T12:05:00Z","summary":"Tech stack: Next.js 16, React 19, TS 5.9, Tailwind v4, Bun 1.3, Turbo 2.9"},{"step":"step_4","status":"completed","timestamp":"2026-04-05T12:25:00Z","summary":"Exhaustive scan: 142+ source files across 6 parts. APIs: 10 endpoints. Data: 3 DB tables + localStorage models. Components: 90+ total."},{"step":"step_5","status":"completed","timestamp":"2026-04-05T12:28:00Z","summary":"Source tree documented with annotations"},{"step":"step_6","status":"completed","timestamp":"2026-04-05T12:30:00Z","summary":"Dev/deployment guide written"},{"step":"step_7","status":"completed","timestamp":"2026-04-05T12:32:00Z","summary":"Integration architecture documented (unidirectional deps, no cross-app communication)"},{"step":"step_8","status":"completed","timestamp":"2026-04-05T12:36:00Z","summary":"Architecture docs written for all 6 parts"},{"step":"step_9","status":"completed","timestamp":"2026-04-05T12:40:00Z","summary":"Supporting docs: project-overview, 4 component inventories, 2 API contracts, data models, project-parts.json"},{"step":"step_10","status":"completed","timestamp":"2026-04-05T12:42:00Z","summary":"Master index generated with all links"},{"step":"step_11","status":"completed","timestamp":"2026-04-05T12:44:00Z","summary":"Validation complete: 0 incomplete markers, all files generated"},{"step":"step_12","status":"completed","timestamp":"2026-04-05T12:45:00Z","summary":"Workflow complete"}],"current_step":"completed","findings":{"project_classification":"monorepo, 6 parts, Next.js 16 + React 19 + Bun + Turborepo","technology_stack":"Next.js 16.1.6, React 19.2.4, TypeScript 5.9.3, Tailwind v4, Drizzle ORM 0.45, Vitest 4.0","api_summary":"10 endpoints (1 portfolio server action, 1 OG each, 8 vault API routes)","data_summary":"3 PostgreSQL tables (users, categories, vaultEntries) + 9 localStorage keys (TeacherBuddy)","component_summary":"26 shared shadcn + ~90 app-specific components"},"outputs_generated":["project-scan-report.json","source-tree-analysis.md","development-guide.md","integration-architecture.md","architecture-portfolio.md","architecture-teacherbuddy.md","architecture-the-coding-vault.md","architecture-ui.md","architecture-eslint-config.md","architecture-typescript-config.md","project-overview.md","component-inventory-portfolio.md","component-inventory-teacherbuddy.md","component-inventory-the-coding-vault.md","component-inventory-ui.md","api-contracts-portfolio.md","api-contracts-the-coding-vault.md","data-models-the-coding-vault.md","project-parts.json","index.md"],"resume_instructions":"Workflow complete. All 20 files generated."}
+{
+  "workflow_version": "1.2.0",
+  "timestamps": {
+    "started": "2026-04-09T11:00:00Z",
+    "last_updated": "2026-04-09T11:30:00Z",
+    "completed": "2026-04-09T11:30:00Z"
+  },
+  "mode": "full_rescan",
+  "scan_level": "targeted-root-and-app",
+  "project_root": "/Users/mrbubbles/dev/bubbles-verse",
+  "project_knowledge": "/Users/mrbubbles/dev/bubbles-verse/docs",
+  "repository_type": "monorepo",
+  "project_types": [
+    {
+      "part_id": "it-counts",
+      "project_type_id": "web",
+      "display_name": "It Counts (Next.js 16)",
+      "root_path": "apps/it-counts"
+    },
+    {
+      "part_id": "portfolio",
+      "project_type_id": "web",
+      "display_name": "Portfolio (Next.js 16)",
+      "root_path": "apps/portfolio"
+    },
+    {
+      "part_id": "teacherbuddy",
+      "project_type_id": "web",
+      "display_name": "TeacherBuddy (Next.js 16)",
+      "root_path": "apps/teacherbuddy"
+    },
+    {
+      "part_id": "the-coding-vault",
+      "project_type_id": "web",
+      "display_name": "The Coding Vault (Next.js 16)",
+      "root_path": "apps/the-coding-vault"
+    },
+    {
+      "part_id": "ui",
+      "project_type_id": "library",
+      "display_name": "@bubbles/ui",
+      "root_path": "packages/ui"
+    },
+    {
+      "part_id": "theme",
+      "project_type_id": "library",
+      "display_name": "@bubbles/theme",
+      "root_path": "packages/theme"
+    },
+    {
+      "part_id": "footer",
+      "project_type_id": "library",
+      "display_name": "@bubbles/footer",
+      "root_path": "packages/footer"
+    },
+    {
+      "part_id": "eslint-config",
+      "project_type_id": "library",
+      "display_name": "@bubbles/eslint-config",
+      "root_path": "packages/eslint-config"
+    },
+    {
+      "part_id": "typescript-config",
+      "project_type_id": "library",
+      "display_name": "@bubbles/typescript-config",
+      "root_path": "packages/typescript-config"
+    }
+  ],
+  "completed_steps": [
+    {
+      "step": "step_1",
+      "status": "completed",
+      "timestamp": "2026-04-09T11:05:00Z",
+      "summary": "Classified as monorepo with 9 parts (4 apps, 5 packages)"
+    },
+    {
+      "step": "step_2",
+      "status": "completed",
+      "timestamp": "2026-04-09T11:10:00Z",
+      "summary": "Updated root documentation to current workspace graph and tooling"
+    },
+    {
+      "step": "step_3",
+      "status": "completed",
+      "timestamp": "2026-04-09T11:20:00Z",
+      "summary": "Added app-local documentation for it-counts"
+    },
+    {
+      "step": "step_4",
+      "status": "completed",
+      "timestamp": "2026-04-09T11:30:00Z",
+      "summary": "Refreshed repo knowledge snapshots under docs/"
+    }
+  ],
+  "current_step": "completed",
+  "findings": {
+    "project_classification": "monorepo, 9 parts, Next.js 16 + React 19 + Bun + Turborepo",
+    "technology_stack": "Next.js 16.x, React 19.2.4, TypeScript 5.9.x, Tailwind v4, Zustand, Drizzle ORM, Vitest 4",
+    "testing_summary": "Vitest suites active in it-counts and TeacherBuddy",
+    "documentation_scope": "root monorepo docs plus app-local it-counts docs"
+  },
+  "outputs_generated": [
+    "index.md",
+    "project-overview.md",
+    "source-tree-analysis.md",
+    "integration-architecture.md",
+    "project-parts.json",
+    "project-scan-report.json"
+  ],
+  "resume_instructions": "Workflow complete."
+}

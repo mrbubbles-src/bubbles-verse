@@ -5,49 +5,64 @@
 ```bash
 git clone <repo-url> bubbles-verse
 cd bubbles-verse
-nvm use          # optional; reads .nvmrc
-bun --version    # expect 1.3.x per packageManager
+nvm use
+bun --version
 ```
 
-## 2. Install
+Expect Bun `1.3.11` and Node aligned with [`.nvmrc`](../.nvmrc).
+
+## 2. Install from root
 
 ```bash
 bun install
 ```
 
-Always install from the **repository root** so Bun links `workspace:*` packages (`@bubbles/ui`, configs).
+Always install from the repo root so `workspace:*` links resolve correctly.
 
-## 3. Run one application
+## 3. Start one workspace
 
 Examples:
 
 ```bash
+bunx turbo dev --filter=it-counts
 bunx turbo dev --filter=portfolio
 bunx turbo dev --filter=teacherbuddy
 bunx turbo dev --filter=the-coding-vault
 ```
 
-Open the URL Next prints (usually `http://localhost:3000`). Multiple `dev` tasks may use different ports if you run the full `bun run dev` without a filter.
+If you work directly inside `it-counts`:
+
+```bash
+cd apps/it-counts
+bun run dev
+```
+
+The script binds to `itcounts.mrbubbles.test:3003`.
 
 ## 4. Environment variables
 
-- **Portfolio / Coding Vault** — Copy each app’s `.env.example` → `.env` (secrets stay local).
-- **TeacherBuddy** — No env required for core features; optional `NEXT_PUBLIC_SITE_URL` for canonical/OG URLs.
-- **Turbo** — Keys that affect `next build` or `next dev` must appear in [`turbo.json`](../turbo.json) `tasks.build.env` and `tasks.dev.env` if you rely on Turbo cache or CI.
+- `it-counts` - no required server secrets; `NEXT_PUBLIC_SITE_URL` is optional for canonical metadata.
+- `portfolio` / `the-coding-vault` - copy local env files as required by each workspace.
+- Any build-time `process.env.*` key must also be declared in [`turbo.json`](../turbo.json).
 
-## 5. Before a PR
+## 5. Before opening a PR
 
-From root (adjust if you only touched one package):
+From the root:
 
 ```bash
 bun run lint
 bun run typecheck
 ```
 
-Apps with tests (e.g. TeacherBuddy): `cd apps/teacherbuddy && bun run test:run`.
+App-local example:
 
-## 6. Where to read next
+```bash
+cd apps/it-counts
+bun run test:run
+```
 
-- Repo standards: [`../AGENTS.md`](../AGENTS.md)
-- Architecture: [architecture.md](architecture.md)
-- When something breaks: [troubleshooting.md](troubleshooting.md)
+## 6. Read next
+
+- Repo rules: [`../AGENTS.md`](../AGENTS.md)
+- Monorepo structure: [architecture.md](architecture.md)
+- Broken cache / env / hostnames: [troubleshooting.md](troubleshooting.md)

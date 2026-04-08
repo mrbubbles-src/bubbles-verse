@@ -1,0 +1,85 @@
+# generated: 2026-04-07
+# last_updated: 2026-04-07
+# project: bubbles-verse
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: '2026-04-07'
+last_updated: '2026-04-08'
+project: bubbles-verse
+
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # Epic 1: Foundation — App Runs with Correct Monorepo Setup
+  epic-1: in-progress
+  1-1-extract-bubbles-theme-package: done
+  1-2-add-shared-fonts-and-typography-to-bubbles-ui: done
+  1-3-adapt-apps-it-counts-to-monorepo-conventions: done
+  1-4-core-types-and-persistence-abstraction: done
+  1-5-date-utilities-and-xp-engine: done
+  1-6-level-system-and-motivational-messages: done
+  1-7-zustand-stores-scaffolding: done
+  epic-1-retrospective: optional
+
+  # Epic 2: Activity Logging & XP
+  epic-2: in-progress
+  2-1-dashboard-shell-with-typography-hero-layout: done
+  2-2-duration-based-activity-logging: done
+  2-3-start-end-time-logging-mode: done
+  2-4-multiple-entries-and-daily-xp-aggregation: done
+  epic-2-retrospective: optional
+
+  # Epic 3: Level System & Full Dashboard
+  epic-3: in-progress
+  3-1-full-dashboard-level-info-weekly-progress-and-messages: done
+  3-2-overxp-display-and-pace-indicator: done
+  3-3-level-up-eligibility-cta: done
+  3-4-level-transition-and-level-up-page: done
+  epic-3-retrospective: optional
+
+  # Epic 4: Activity History
+  epic-4: in-progress
+  4-1-activity-history-page-chronological-daily-view: done
+  4-2-weekly-grouping-and-aggregated-xp-totals: done
+  epic-4-retrospective: optional
+
+  # Epic 5: PWA & Production
+  epic-5: in-progress
+  5-1-pwa-manifest-app-icons-and-basic-seo: done
+  5-2-custom-service-worker-and-offline-support: done
+  5-3-performance-accessibility-and-animation-audit: done
+  5-4-vercel-deployment: done
+  epic-5-retrospective: optional

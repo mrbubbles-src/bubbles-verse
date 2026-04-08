@@ -5,14 +5,29 @@
   "node_version": ">=22 <25 (pinned: 24.14.1)",
   "parts": [
     {
+      "part_id": "it-counts",
+      "name": "it-counts",
+      "project_type_id": "web",
+      "display_name": "It Counts",
+      "root_path": "apps/it-counts",
+      "framework": "Next.js 16.2.2",
+      "language": "TypeScript 5.x",
+      "description": "Walking XP tracker with Zustand stores, localStorage persistence, and PWA support",
+      "external_services": ["Browser localStorage", "PWA install surface", "Vercel"],
+      "has_tests": true,
+      "test_framework": "Vitest 4 + React Testing Library",
+      "has_database": false,
+      "persistence": "localStorage"
+    },
+    {
       "part_id": "portfolio",
       "name": "portfolio",
       "project_type_id": "web",
       "display_name": "Portfolio",
       "root_path": "apps/portfolio",
       "framework": "Next.js 16.1.6",
-      "language": "TypeScript 5.9.3",
-      "description": "Developer portfolio with i18n (DE/EN), email contact, CAPTCHA, PDF CV viewer",
+      "language": "TypeScript 5.x",
+      "description": "Developer portfolio with i18n, email contact, CAPTCHA, and PDF CV viewer",
       "external_services": ["Resend", "Cloudflare Turnstile", "Vercel"],
       "has_tests": false,
       "has_database": false
@@ -24,11 +39,11 @@
       "display_name": "TeacherBuddy",
       "root_path": "apps/teacherbuddy",
       "framework": "Next.js 16.1.6",
-      "language": "TypeScript 5.9.3",
-      "description": "Classroom tools: student management, quiz builder/player, breakout rooms, projects",
+      "language": "TypeScript 5.x",
+      "description": "Classroom tools with local persistence and route-based utilities",
       "external_services": ["Vercel"],
       "has_tests": true,
-      "test_framework": "Vitest 4.0 + React Testing Library",
+      "test_framework": "Vitest 4 + React Testing Library",
       "has_database": false,
       "persistence": "localStorage"
     },
@@ -39,22 +54,38 @@
       "display_name": "The Coding Vault",
       "root_path": "apps/the-coding-vault",
       "framework": "Next.js 16.1.6",
-      "language": "TypeScript 5.9.3",
-      "description": "CMS/knowledge base with Editor.js, MDX rendering, JWT auth, Cloudinary media",
+      "language": "TypeScript 5.x",
+      "description": "CMS and knowledge base with Drizzle, PostgreSQL, JWT auth, MDX, and Editor.js",
       "external_services": ["PostgreSQL", "Cloudinary", "Discord", "Vercel"],
       "has_tests": false,
       "has_database": true,
-      "database": "PostgreSQL (Drizzle ORM 0.45)"
+      "database": "PostgreSQL"
     },
     {
       "part_id": "ui",
       "name": "@bubbles/ui",
       "project_type_id": "library",
-      "display_name": "@bubbles/ui (Design System)",
+      "display_name": "@bubbles/ui",
       "root_path": "packages/ui",
-      "framework": "React 19.2.4 + Base UI + shadcn",
-      "language": "TypeScript 5.9.3",
-      "description": "26 shadcn components, hooks, utilities, global styles (Tailwind v4)",
+      "description": "Shared UI primitives, globals, fonts, hooks, and utilities",
+      "has_tests": false
+    },
+    {
+      "part_id": "theme",
+      "name": "@bubbles/theme",
+      "project_type_id": "library",
+      "display_name": "@bubbles/theme",
+      "root_path": "packages/theme",
+      "description": "Shared theme provider, toggle, and transition helpers",
+      "has_tests": false
+    },
+    {
+      "part_id": "footer",
+      "name": "@bubbles/footer",
+      "project_type_id": "library",
+      "display_name": "@bubbles/footer",
+      "root_path": "packages/footer",
+      "description": "Shared footer rendering surface for app layouts",
       "has_tests": false
     },
     {
@@ -63,7 +94,7 @@
       "project_type_id": "library",
       "display_name": "@bubbles/eslint-config",
       "root_path": "packages/eslint-config",
-      "description": "ESLint flat config presets: base, next-js, react-internal",
+      "description": "ESLint flat config presets",
       "has_tests": false
     },
     {
@@ -72,40 +103,8 @@
       "project_type_id": "library",
       "display_name": "@bubbles/typescript-config",
       "root_path": "packages/typescript-config",
-      "description": "Shared TypeScript profiles: base, nextjs, react-library",
+      "description": "Shared TypeScript profiles",
       "has_tests": false
-    }
-  ],
-  "integration_points": [
-    {
-      "from": "portfolio",
-      "to": "@bubbles/ui",
-      "type": "package_import",
-      "details": "Components, styles, hooks via subpath exports"
-    },
-    {
-      "from": "teacherbuddy",
-      "to": "@bubbles/ui",
-      "type": "package_import",
-      "details": "Components, styles, hooks via subpath exports"
-    },
-    {
-      "from": "the-coding-vault",
-      "to": "@bubbles/ui",
-      "type": "package_import",
-      "details": "Components, styles, hooks via subpath exports"
-    },
-    {
-      "from": "all_apps",
-      "to": "@bubbles/eslint-config",
-      "type": "dev_config",
-      "details": "ESLint presets (next-js profile)"
-    },
-    {
-      "from": "all_workspaces",
-      "to": "@bubbles/typescript-config",
-      "type": "dev_config",
-      "details": "TypeScript compiler profiles"
     }
   ]
 }

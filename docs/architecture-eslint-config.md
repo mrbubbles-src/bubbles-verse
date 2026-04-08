@@ -4,15 +4,15 @@
 
 ## Executive Summary
 
-Shared ESLint flat config presets for the monorepo. Provides 3 profiles: base (all projects), next-js (Next.js apps), react-internal (React libraries).
+Shared ESLint flat config presets for the monorepo. Provides 3 profiles: base (all projects), next-js (Next.js apps), react-internal (internal React packages).
 
 ## Exports
 
 | Export | File | Consumers |
 |--------|------|-----------|
 | `./base` | base.js | Foundation for all configs |
-| `./next-js` | next.js | portfolio, teacherbuddy, the-coding-vault |
-| `./react-internal` | react-internal.js | @bubbles/ui |
+| `./next-js` | next.js | it-counts, portfolio, teacherbuddy, the-coding-vault |
+| `./react-internal` | react-internal.js | @bubbles/ui, @bubbles/theme, @bubbles/footer |
 
 ## Config Presets
 
@@ -26,12 +26,12 @@ Shared ESLint flat config presets for the monorepo. Provides 3 profiles: base (a
 ### next.js (nextJsConfig)
 - **Extends:** base.js, Next.js recommended + core-web-vitals, react-hooks
 - **Rules:** React scope not required (new JSX transform), no prop-types
-- **Used by:** All 3 Next.js apps
+- **Used by:** All 4 Next.js apps
 
 ### react-internal.js
 - **Extends:** base.js, React plugin, react-hooks
 - **Rules:** React scope not required, no prop-types
-- **Used by:** @bubbles/ui
+- **Used by:** internal React packages (`@bubbles/ui`, `@bubbles/theme`, `@bubbles/footer`)
 
 ## Dependencies
 
