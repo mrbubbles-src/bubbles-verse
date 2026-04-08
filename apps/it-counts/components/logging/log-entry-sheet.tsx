@@ -9,16 +9,15 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from '@bubbles/ui/shadcn/sheet'
 
-import { LogActivityButton } from '@/components/dashboard/log-activity-button'
 import { DurationInput } from '@/components/logging/duration-input'
 import { TimeRangeInput } from '@/components/logging/time-range-input'
 import { MotivationalMessage } from '@/components/shared/motivational-message'
 import { useActivityStore } from '@/hooks/use-activity-store'
 import { useLevelStore } from '@/hooks/use-level-store'
 import { useSettingsStore } from '@/hooks/use-settings-store'
+import { useUiStore } from '@/hooks/use-ui-store'
 import { getTodayString, getWeekStart } from '@/lib/dates'
 import { getRandomMessage } from '@/lib/messages'
 
@@ -109,7 +108,8 @@ export function LogEntrySheet() {
   const previousDailyMinutes = useActivityStore((s) => s.getDailyTotalMinutes(today))
   const syncXpFromEntries = useLevelStore((s) => s.syncXpFromEntries)
 
-  const [open, setOpen] = useState(false)
+  const open = useUiStore((s) => s.logSheetOpen)
+  const setOpen = useUiStore((s) => s.setLogSheetOpen)
   const [inputMode, setInputMode] = useState<InputMode>('duration')
 
   // Duration mode state
@@ -239,7 +239,6 @@ export function LogEntrySheet() {
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetTrigger render={<LogActivityButton aria-label="Log Activity" />} />
       <SheetContent
         side="bottom"
         className="mx-auto w-full max-w-md rounded-t-[1.75rem] border-x-0 border-b-0 px-0">

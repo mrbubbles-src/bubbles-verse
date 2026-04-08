@@ -18,15 +18,15 @@ export default function Home() {
         <ThemeToggle />
       </header>
 
-      <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-8">
-        <XpHero />
-        <LevelRequirements />
-        <LevelUpIndicator />
+      <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-8 px-4 pb-8">
         <SessionStartMessage />
-        <LogEntrySheet />
+        <XpHero />
+        <LevelUpIndicator />
+        <LevelRequirements />
       </main>
 
       <BottomNav />
+      <LogEntrySheet />
     </div>
   );
 }

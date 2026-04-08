@@ -9,11 +9,15 @@ import {
   Notebook01Icon,
 } from '@bubbles/ui/lib/hugeicons'
 
+import { useUiStore } from '@/hooks/use-ui-store'
+
 /**
  * Bottom navigation: Dashboard, Log (+), History.
- * Sits at the bottom of the flex shell — no fixed positioning needed.
+ * The center "+" is a floating action button that triggers the log entry sheet.
  */
 export function BottomNav() {
+  const setLogSheetOpen = useUiStore((s) => s.setLogSheetOpen)
+
   return (
     <nav
       aria-label="Main navigation"
@@ -25,12 +29,13 @@ export function BottomNav() {
           <HugeiconsIcon icon={Home01Icon} className="size-5" />
           <span>Dashboard</span>
         </Link>
-        <Link
-          href="/log"
-          className="touch-hitbox flex flex-col items-center gap-1 text-xs font-medium text-muted-foreground">
-          <HugeiconsIcon icon={Add01Icon} className="size-6" />
-          <span className="sr-only">Log activity</span>
-        </Link>
+        <button
+          type="button"
+          onClick={() => setLogSheetOpen(true)}
+          className="touch-hitbox -mt-7 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg active:scale-95 motion-safe:transition-transform"
+          aria-label="Log activity">
+          <HugeiconsIcon icon={Add01Icon} className="size-7" />
+        </button>
         <Link
           href="/history"
           className="touch-hitbox flex flex-col items-center gap-1 text-xs font-medium text-muted-foreground">

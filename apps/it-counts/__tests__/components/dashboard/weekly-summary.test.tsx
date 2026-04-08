@@ -33,30 +33,27 @@ vi.mock('@/hooks/use-activity-store', () => ({
 }))
 
 describe('WeeklySummary', () => {
-  it('shows "Week 1 of 4+" when 0 weeks have elapsed (started today)', () => {
+  it('shows weekly XP and target with no entries', () => {
     render(<WeeklySummary />)
-    expect(screen.getByText('Week 1 of 4+')).toBeInTheDocument()
-  })
-
-  it('shows "0 XP · Goal: 10 XP" with no entries', () => {
-    render(<WeeklySummary />)
-    expect(screen.getByText('0 XP · Goal: 10 XP')).toBeInTheDocument()
+    expect(screen.getByText('/ 10 XP target')).toBeInTheDocument()
+    expect(screen.getByText('10 more to target')).toBeInTheDocument()
   })
 
   it('shows weekly XP without warning language when below 10', () => {
     mockGetWeeklyXp.mockReturnValue(5)
     render(<WeeklySummary />)
 
-    expect(screen.getByText('5 XP · Goal: 10 XP')).toBeInTheDocument()
+    expect(screen.getByText('/ 10 XP target')).toBeInTheDocument()
+    expect(screen.getByText('5 more to target')).toBeInTheDocument()
     // No negative language
     expect(screen.queryByText(/behind/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/not enough/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/warning/i)).not.toBeInTheDocument()
   })
 
-  it('shows "10 XP · Goal: 10 XP" when goal is reached', () => {
+  it('shows "Goal reached" when weekly XP hits target', () => {
     mockGetWeeklyXp.mockReturnValue(10)
     render(<WeeklySummary />)
-    expect(screen.getByText('10 XP · Goal: 10 XP')).toBeInTheDocument()
+    expect(screen.getByText('Goal reached')).toBeInTheDocument()
   })
 })

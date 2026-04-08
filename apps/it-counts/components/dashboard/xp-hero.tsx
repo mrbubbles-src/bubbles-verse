@@ -3,21 +3,14 @@
 import { useMemo } from 'react';
 
 import { useActivityStore } from '@/hooks/use-activity-store';
-import { LevelBadge } from '@/components/dashboard/level-badge';
 import { OverXpSection } from '@/components/dashboard/over-xp-section';
 import { WeeklySummary } from '@/components/dashboard/weekly-summary';
 import { XpProgressBar } from '@/components/dashboard/xp-progress-bar';
 import { useLevelStore } from '@/hooks/use-level-store';
-import { getTodayString } from '@/lib/dates';
+import { getTodayString, getWeeksElapsedInLevel } from '@/lib/dates';
 import { calculateDailyXp } from '@/lib/xp';
-import { getOverXpPace, type OverXpPace } from '@/lib/levels';
+import { StatusBadge } from '@/components/dashboard/status-badge';
 import type { ActivityEntry } from '@/types';
-
-const PACE_LABELS: Record<OverXpPace, string> = {
-  'on-track': 'On track',
-  'slightly-over': 'Slightly over',
-  'well-over': 'Well over',
-};
 
 /**
  * Displays the primary "Typography Hero" dashboard composition:
@@ -27,10 +20,12 @@ const PACE_LABELS: Record<OverXpPace, string> = {
 export function XpHero() {
   const xp = useLevelStore((s) => s.levelState.xp);
   const overXp = useLevelStore((s) => s.levelState.overXp);
+  const level = useLevelStore((s) => s.levelState.level);
+  const startDate = useLevelStore((s) => s.levelState.startDate);
   const entries = useActivityStore((s) => s.entries);
   const xpToGo = Math.max(0, 100 - xp);
-  const pace = getOverXpPace(overXp);
   const today = getTodayString();
+  const weeksElapsed = getWeeksElapsedInLevel(startDate, today);
 
   const todayRows = useMemo(() => {
     const todayEntries = entries
@@ -50,38 +45,37 @@ export function XpHero() {
   }, [entries, today]);
 
   return (
-    <section className="w-full rounded-2xl border border-border/60 bg-background/60 px-4 py-5">
-      <div className="mb-4 flex items-center">
-        <LevelBadge />
-      </div>
+    <section className="w-full">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        Level {level} · Week {weeksElapsed + 1} of 4
+      </p>
 
-      <div className="flex flex-col items-start gap-4">
-      <span
-          className="font-heading text-[clamp(4rem,11vw,5rem)] font-extrabold leading-[0.95] tracking-tight text-foreground"
-        aria-label={`${xp} of 100 XP`}>
-        {xp} / 100 XP
-      </span>
+      <div className="mt-2 flex items-baseline gap-2" aria-label={`${xp} of 100 XP`}>
+        <span className="font-heading text-[clamp(4rem,11vw,5rem)] font-extrabold leading-[0.95] tracking-tight text-foreground">
+          {xp}
+        </span>
+        <span className="text-base font-medium text-muted-foreground">
+          / 100 XP
+        </span>
       </div>
 
       <div className="mt-3">
-      <XpProgressBar />
+        <XpProgressBar />
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="mt-2 flex flex-wrap items-center gap-2">
         <span className="inline-flex items-center rounded-full border border-border/70 bg-muted/60 px-3 py-1 text-xs font-medium text-muted-foreground">
           {xpToGo} XP to go
         </span>
-        <span className="inline-flex items-center rounded-full border border-border/70 bg-muted/60 px-3 py-1 text-xs font-medium text-muted-foreground">
-          {PACE_LABELS[pace]}
-        </span>
+        <StatusBadge overXp={overXp} />
       </div>
 
-      <div className="mt-4 border-t border-border/60 pt-4">
+      <div className="mt-6">
         <OverXpSection />
         <WeeklySummary />
       </div>
 
-      <div className="mt-4 border-t border-border/60 pt-4">
+      <div className="mt-6">
         <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
           Today
         </p>

@@ -17,9 +17,10 @@ describe('HistoryPage — empty state', () => {
     ).toBeInTheDocument()
   })
 
-  it('has no button or link calling to log an activity', () => {
+  it('has no CTA button in the content area', () => {
     render(<HistoryPage />)
-    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    const main = screen.getByRole('main')
+    expect(main.querySelector('button')).toBeNull()
   })
 })
 

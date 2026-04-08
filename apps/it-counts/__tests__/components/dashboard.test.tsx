@@ -70,7 +70,7 @@ import Home from '@/app/page'
 describe('Dashboard Shell', () => {
   it('renders the XP hero number', () => {
     render(<Home />)
-    expect(screen.getByText(/0\s*\/\s*100\s*XP/)).toBeInTheDocument()
+    expect(screen.getByLabelText('0 of 100 XP')).toBeInTheDocument()
   })
 
   it('renders the Log Activity CTA', () => {

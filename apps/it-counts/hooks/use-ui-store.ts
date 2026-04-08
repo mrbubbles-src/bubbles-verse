@@ -3,6 +3,8 @@ import { create } from 'zustand'
 interface UiState {
   sessionMessageShown: boolean
   setSessionMessageShown: () => void
+  logSheetOpen: boolean
+  setLogSheetOpen: (open: boolean) => void
 }
 
 /**
@@ -14,5 +16,11 @@ export const useUiStore = create<UiState>()((set) => ({
 
   setSessionMessageShown: () => {
     set({ sessionMessageShown: true })
+  },
+
+  logSheetOpen: false,
+
+  setLogSheetOpen: (open: boolean) => {
+    set({ logSheetOpen: open })
   },
 }))

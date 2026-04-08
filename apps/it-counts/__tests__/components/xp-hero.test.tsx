@@ -12,12 +12,21 @@ vi.mock('@/hooks/use-level-store', () => ({
   ),
 }))
 
+vi.mock('@/lib/dates', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/dates')>()
+  return {
+    ...actual,
+    getTodayString: vi.fn(() => '2026-04-08'),
+  }
+})
+
 import { XpHero } from '@/components/dashboard/xp-hero'
 
 describe('XpHero', () => {
-  it('displays current XP out of 100', () => {
+  it('displays current XP as a dominant number with secondary "/ 100 XP"', () => {
     render(<XpHero />)
-    expect(screen.getByText('42 / 100 XP')).toBeInTheDocument()
+    expect(screen.getByText('42')).toBeInTheDocument()
+    expect(screen.getByText('/ 100 XP')).toBeInTheDocument()
   })
 
   it('has an accessible label for screen readers', () => {
@@ -25,10 +34,15 @@ describe('XpHero', () => {
     expect(screen.getByLabelText('42 of 100 XP')).toBeInTheDocument()
   })
 
-  it('uses heading font family', () => {
+  it('uses heading font family on the dominant number', () => {
     render(<XpHero />)
-    const xpElement = screen.getByText('42 / 100 XP')
+    const xpElement = screen.getByText('42')
     expect(xpElement.className).toMatch(/font-heading/)
+  })
+
+  it('shows combined level and week context label', () => {
+    render(<XpHero />)
+    expect(screen.getByText(/Level 1 · Week \d+ of 4/)).toBeInTheDocument()
   })
 
   it('renders level progress toward 100 XP', () => {

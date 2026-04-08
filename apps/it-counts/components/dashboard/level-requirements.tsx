@@ -16,7 +16,7 @@ export function LevelRequirements() {
   }
 
   return (
-    <div className="w-full space-y-3 rounded-xl bg-muted/40 px-4 py-3 text-sm">
+    <div className="w-full space-y-3 text-sm">
       <div>
         <p className="font-medium text-foreground">Requirements</p>
         <ul className="mt-1 space-y-0.5 text-muted-foreground">

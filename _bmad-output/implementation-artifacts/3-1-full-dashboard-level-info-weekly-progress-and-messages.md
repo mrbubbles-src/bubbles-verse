@@ -40,6 +40,14 @@ so that I have a calm, honest overview of where I stand without having to naviga
 - [x] Task 3: Add tests for the weekly rules
   - [x] Cover weekly XP totals, calm under-target rendering, weekly-reset gating, and goal-reached gating
 
+### Review Findings
+
+- [x] [Review][Patch] Double/inconsistent logging CTA — BottomNav "+" navigates to `/log` page instead of triggering `LogEntrySheet` inline; violates spec "no page change" + "one primary CTA per screen" [`bottom-nav.tsx:28-33`, `page.tsx:233`]
+- [x] [Review][Patch] XpHero card chrome — `rounded-2xl border border-border/60 bg-background/60` on section wrapper creates card look; spec: "section-based layout, not card-based" [`xp-hero.tsx:53`]
+- [x] [Review][Patch] XP number no typographic contrast — `{xp} / 100 XP` single string at uniform size; spec Direction 1 requires large number + visually secondary "/ 100 XP" [`xp-hero.tsx:59-63`]
+- [x] [Review][Patch] LEVEL·WEEK label split + internal dividers — level badge and week info separated by dividers instead of single compact label above XP number; two `border-t` dividers fragment the hero [`xp-hero.tsx:54-56,79-86`]
+- [x] [Review][Patch] LevelRequirements card overload — `bg-muted/40 rounded-xl` card below XpHero; spec warns against card overload + unnecessary wrapper elements [`level-requirements.tsx:19`, `page.tsx:231`]
+
 ## Dev Notes
 
 ### Implementation Focus

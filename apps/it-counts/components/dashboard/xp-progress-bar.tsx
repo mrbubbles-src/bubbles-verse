@@ -14,7 +14,7 @@ export function XpProgressBar() {
 
   return (
     <div
-      className="h-2 w-full max-w-[min(100%,20rem)] overflow-hidden rounded-full bg-muted"
+      className="h-2 w-full overflow-hidden rounded-full bg-muted"
       role="progressbar"
       aria-valuenow={clampedXp}
       aria-valuemin={0}

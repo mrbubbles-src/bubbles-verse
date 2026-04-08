@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { useUiStore } from '@/hooks/use-ui-store'
 
 function resetStore() {
-  useUiStore.setState({ sessionMessageShown: false })
+  useUiStore.setState({ sessionMessageShown: false, logSheetOpen: false })
 }
 
 describe('use-ui-store', () => {
@@ -24,5 +24,17 @@ describe('use-ui-store', () => {
     useUiStore.getState().setSessionMessageShown()
     useUiStore.getState().setSessionMessageShown()
     expect(useUiStore.getState().sessionMessageShown).toBe(true)
+  })
+
+  it('starts with logSheetOpen = false', () => {
+    expect(useUiStore.getState().logSheetOpen).toBe(false)
+  })
+
+  it('setLogSheetOpen toggles the sheet state', () => {
+    useUiStore.getState().setLogSheetOpen(true)
+    expect(useUiStore.getState().logSheetOpen).toBe(true)
+
+    useUiStore.getState().setLogSheetOpen(false)
+    expect(useUiStore.getState().logSheetOpen).toBe(false)
   })
 })

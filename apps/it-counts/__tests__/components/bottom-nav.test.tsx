@@ -4,20 +4,22 @@ import { describe, expect, it } from 'vitest'
 import { BottomNav } from '@/components/dashboard/bottom-nav'
 
 describe('BottomNav', () => {
-  it('renders exactly 3 navigation links', () => {
+  it('renders 2 navigation links and 1 log button', () => {
     render(<BottomNav />)
     const nav = screen.getByRole('navigation', { name: /main/i })
     const links = nav.querySelectorAll('a')
-    expect(links.length).toBe(3)
+    expect(links.length).toBe(2)
+    expect(screen.getByRole('button', { name: /log activity/i })).toBeInTheDocument()
   })
 
-  it('applies touch-hitbox class to all links', () => {
+  it('applies touch-hitbox class to all interactive elements', () => {
     render(<BottomNav />)
     const nav = screen.getByRole('navigation', { name: /main/i })
     const links = nav.querySelectorAll('a')
     links.forEach((link) => {
       expect(link.className).toMatch(/touch-hitbox/)
     })
+    expect(screen.getByRole('button', { name: /log activity/i }).className).toMatch(/touch-hitbox/)
   })
 
   it('has Dashboard link pointing to /', () => {

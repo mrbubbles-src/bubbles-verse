@@ -1,4 +1,4 @@
-import { cloneElement, createContext, type ReactElement, type ReactNode, useContext } from 'react'
+import { createContext, type ReactNode, useContext } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -88,28 +88,6 @@ vi.mock('@bubbles/ui/shadcn/sheet', () => {
     )
   }
 
-  function SheetTrigger({
-    render,
-    children,
-  }: {
-    render?: ReactElement<{ children?: ReactNode; onClick?: () => void }>
-    children?: ReactNode
-  }) {
-    const context = useContext(SheetContext)
-    const element = render ?? <button type="button" />
-
-    return cloneElement(
-      element,
-      {
-        onClick: () => {
-          element.props.onClick?.()
-          context.onOpenChange?.(true)
-        },
-      },
-      element.props.children ?? children,
-    )
-  }
-
   function SheetContent({ children }: { children: ReactNode }) {
     const context = useContext(SheetContext)
 
@@ -144,14 +122,15 @@ vi.mock('@bubbles/ui/shadcn/sheet', () => {
     SheetDescription,
     SheetHeader,
     SheetTitle,
-    SheetTrigger,
   }
 })
 
+import { useUiStore } from '@/hooks/use-ui-store'
 import { LogEntrySheet } from '@/components/logging/log-entry-sheet'
 
 describe('LogEntrySheet', () => {
   beforeEach(() => {
+    useUiStore.setState({ logSheetOpen: true })
     sheetMocks.entries = []
     sheetMocks.addDurationEntry.mockReset()
     sheetMocks.syncXpFromEntries.mockReset()
@@ -177,8 +156,6 @@ describe('LogEntrySheet', () => {
   it('toggles to time-range mode and back to duration mode', () => {
     render(<LogEntrySheet />)
 
-    fireEvent.click(screen.getByRole('button', { name: /log activity/i }))
-
     expect(screen.getByLabelText(/minutes/i)).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /use start \/ end time instead/i }))
@@ -197,7 +174,6 @@ describe('LogEntrySheet', () => {
   it('shows an error below end time when end is not after start', () => {
     render(<LogEntrySheet />)
 
-    fireEvent.click(screen.getByRole('button', { name: /log activity/i }))
     fireEvent.click(screen.getByRole('button', { name: /use start \/ end time instead/i }))
 
     fireEvent.change(screen.getByLabelText(/start time/i), { target: { value: '10:00' } })
@@ -210,7 +186,6 @@ describe('LogEntrySheet', () => {
   it('shows an error when non-walking exceeds total trip duration', () => {
     render(<LogEntrySheet />)
 
-    fireEvent.click(screen.getByRole('button', { name: /log activity/i }))
     fireEvent.click(screen.getByRole('button', { name: /use start \/ end time instead/i }))
 
     fireEvent.change(screen.getByLabelText(/start time/i), { target: { value: '09:00' } })
@@ -224,7 +199,6 @@ describe('LogEntrySheet', () => {
   it('submits with correct walking minutes in time-range mode', () => {
     render(<LogEntrySheet />)
 
-    fireEvent.click(screen.getByRole('button', { name: /log activity/i }))
     fireEvent.click(screen.getByRole('button', { name: /use start \/ end time instead/i }))
 
     // 09:00 → 10:00 = 60 min total, 15 min non-walking → 45 min walking
@@ -246,7 +220,6 @@ describe('LogEntrySheet', () => {
   it('submit is disabled in time-range mode when fields are incomplete', () => {
     render(<LogEntrySheet />)
 
-    fireEvent.click(screen.getByRole('button', { name: /log activity/i }))
     fireEvent.click(screen.getByRole('button', { name: /use start \/ end time instead/i }))
 
     // Only fill start time, leave end empty
@@ -255,10 +228,8 @@ describe('LogEntrySheet', () => {
     expect(screen.getByRole('button', { name: /log it/i })).toBeDisabled()
   })
 
-  it('opens the sheet, focuses the minutes input, and previews XP live', async () => {
+  it('focuses the minutes input when sheet opens and previews XP live', async () => {
     render(<LogEntrySheet />)
-
-    fireEvent.click(screen.getByRole('button', { name: /log activity/i }))
 
     const input = screen.getByLabelText(/minutes/i)
 
@@ -274,7 +245,6 @@ describe('LogEntrySheet', () => {
   it('submits the duration, mirrors earned xp into the level store, and shows inline confirmation', async () => {
     render(<LogEntrySheet />)
 
-    fireEvent.click(screen.getByRole('button', { name: /log activity/i }))
     fireEvent.change(screen.getByLabelText(/minutes/i), {
       target: { value: '30' },
     })
@@ -312,7 +282,6 @@ describe('LogEntrySheet', () => {
     ]
 
     render(<LogEntrySheet />)
-    fireEvent.click(screen.getByRole('button', { name: /log activity/i }))
     fireEvent.change(screen.getByLabelText(/minutes/i), { target: { value: '15' } })
     fireEvent.click(screen.getByRole('button', { name: /log it/i }))
 
@@ -322,7 +291,6 @@ describe('LogEntrySheet', () => {
   it('shows a validation error when the input is empty or invalid', () => {
     render(<LogEntrySheet />)
 
-    fireEvent.click(screen.getByRole('button', { name: /log activity/i }))
     fireEvent.click(screen.getByRole('button', { name: /log it/i }))
 
     expect(screen.getByRole('alert')).toHaveTextContent(
