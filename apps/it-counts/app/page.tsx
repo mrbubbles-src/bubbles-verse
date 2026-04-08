@@ -1,3 +1,4 @@
+import { Footer } from '@bubbles/footer';
 import { ThemeToggle } from '@bubbles/theme';
 
 import { BottomNav } from '@/components/dashboard/bottom-nav';
@@ -6,6 +7,11 @@ import { LevelUpIndicator } from '@/components/dashboard/level-up-indicator';
 import { SessionStartMessage } from '@/components/dashboard/session-start-message';
 import { XpHero } from '@/components/dashboard/xp-hero';
 import { LogEntrySheet } from '@/components/logging/log-entry-sheet';
+
+const LEGAL_LINKS = [
+  { label: 'Impressum', href: 'https://mrbubbles-src.dev/de/impressum' },
+  { label: 'Datenschutz', href: 'https://mrbubbles-src.dev/de/datenschutz' },
+];
 
 /**
  * Dashboard — full level overview with XP hero, weekly progress,
@@ -26,6 +32,7 @@ export default function Home() {
       </main>
 
       <BottomNav />
+      <Footer links={LEGAL_LINKS} />
       <LogEntrySheet />
     </div>
   );
