@@ -36,6 +36,7 @@ export function BottomNav() {
             pathname === '/' ? 'text-primary' : 'text-muted-foreground',
             'my-2'
           )}
+          nativeButton={false}
           render={
             <Link
               href="/"
@@ -52,6 +53,7 @@ export function BottomNav() {
           onClick={() => setLogSheetOpen(true)}
           className="-mt-7 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg active:scale-95 motion-safe:transition-transform"
           aria-label="Log activity"
+          nativeButton={false}
           render={<HugeiconsIcon icon={Add01Icon} />}
         />
 
@@ -64,6 +66,7 @@ export function BottomNav() {
             pathname === '/history' ? 'text-primary' : 'text-muted-foreground',
             'my-2'
           )}
+          nativeButton={false}
           render={
             <Link
               href="/history"

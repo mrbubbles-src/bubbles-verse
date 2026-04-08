@@ -118,7 +118,15 @@ bun run build
 - `app/favicon.ico`
 - `app/apple-icon.png`
 - `app/icon1.png`
-- `app/manifest.json` (currently references `icon1.png`; add a dedicated 192×192 icon file later for stricter installability checks)
+- `app/manifest.json` with dedicated 192×192 and 512×512 install icons plus `start_url: "/"`
+
+## PWA Caching
+
+- the custom service worker lives at `public/sw.js`
+- production keeps installability and caches only explicit public assets plus offline page fallbacks
+- app navigations use network-first so normal reloads always pick up the latest HTML and asset graph
+- `/_next/*` build assets are never cached by the custom service worker
+- local development does not keep the service worker registered; the client unregisters stale `it-counts-*` workers and clears matching caches on mount so design changes survive a normal reload
 
 ## Current Scope
 

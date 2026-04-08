@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Stopped the custom PWA service worker from serving cached app HTML and `/_next/*` assets cache-first, so normal reloads now pick up the latest design without requiring a hard refresh.
+- Added development-side service worker cleanup so stale `it-counts-*` caches and old `/sw.js` registrations are removed automatically outside production.
+- Restored the app-local PWA manifest test by aligning it with the static `app/manifest.json` file and adding `start_url: "/"`.
+
 ### Added
 
 - Added `/about` page with app concept, XP tier table, level definitions, and progression rules.

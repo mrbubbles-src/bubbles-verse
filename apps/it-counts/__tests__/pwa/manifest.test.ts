@@ -1,8 +1,8 @@
+import manifest from '@/app/manifest.json'
 import { describe, expect, it } from 'vitest'
-import manifest from '@/app/manifest'
 
 describe('PWA Manifest', () => {
-  const m = manifest()
+  const m = manifest
 
   it('has a name', () => {
     expect(m.name).toBeTruthy()
