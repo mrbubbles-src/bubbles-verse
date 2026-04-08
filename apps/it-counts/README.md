@@ -105,9 +105,11 @@ bun run build
 - HTTPS is provided by Vercel, enabling service worker registration and PWA installability
 - Preview deployments work automatically for all branches
 
-**PWA assets still needed for a full Lighthouse score:**
-- Place 192×192 and 512×512 PNG files at `public/icons/icon-192.png` and `public/icons/icon-512.png`
-- A placeholder SVG is at `public/icons/icon.svg` for development
+**PWA assets in app metadata convention:**
+- `app/favicon.ico`
+- `app/apple-icon.png`
+- `app/icon1.png`
+- `app/manifest.json` (currently references `icon1.png`; add a dedicated 192×192 icon file later for stricter installability checks)
 
 ## Current Scope
 

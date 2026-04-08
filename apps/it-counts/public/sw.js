@@ -13,8 +13,9 @@ const CACHE_NAME = 'it-counts-v1'
 const PRECACHE_URLS = [
   '/',
   '/history',
-  '/manifest.webmanifest',
-  '/icons/icon.svg',
+  '/manifest.json',
+  '/web-app-manifest-192x192.png',
+  '/web-app-manifest-512x512.png',
 ]
 
 self.addEventListener('install', (event) => {

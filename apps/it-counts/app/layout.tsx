@@ -4,6 +4,7 @@ import './it-counts.css';
 
 import { ThemeProvider } from '@bubbles/theme';
 import { firaCode, montserrat, poppins } from '@bubbles/ui/fonts';
+
 import { ServiceWorkerRegistration } from '@/components/shared/service-worker-registration';
 import { StoreHydrator } from '@/components/shared/store-hydrator';
 
@@ -12,17 +13,20 @@ export const metadata: Metadata = {
     default: 'It Counts',
     template: '%s · It Counts',
   },
-  description: 'Track your movement and watch your level grow — one walk at a time.',
+  description:
+    'Track your movement and watch your level grow — one walk at a time.',
   metadataBase: new URL('https://it-counts.vercel.app'),
   openGraph: {
     title: 'It Counts',
-    description: 'Track your movement and watch your level grow — one walk at a time.',
+    description:
+      'Track your movement and watch your level grow — one walk at a time.',
     type: 'website',
   },
-  manifest: '/manifest.webmanifest',
+  manifest: '/manifest.json',
   icons: {
-    icon: '/icons/icon.svg',
-    apple: '/icons/icon.svg',
+    icon: '/icon1.png',
+    shortcut: '/favicon.ico',
+    apple: '/apple-icon.png',
   },
   appleWebApp: {
     capable: true,
@@ -46,6 +50,9 @@ export default function RootLayout({
       lang="en"
       suppressHydrationWarning
       className={`${montserrat.variable} ${poppins.variable} ${firaCode.variable} antialiased`}>
+      <head>
+        <meta name="apple-mobile-web-app-title" content="It Counts" />
+      </head>
       <body>
         <ThemeProvider attribute="class" defaultTheme="dark">
           <ServiceWorkerRegistration />
