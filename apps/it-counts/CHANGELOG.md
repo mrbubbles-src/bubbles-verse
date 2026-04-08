@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added `/about` page with app concept, XP tier table, level definitions, and progression rules.
+- Added `/api/og` dynamic Open Graph image route (1200×630, Catppuccin Mocha background with logo and tagline).
+- Added Twitter card and full OpenGraph metadata (images, siteName, locale) to root layout.
+- Added retroactive date logging: the log sheet now includes a date picker (defaults to today, past dates allowed, future dates blocked). Entries for past dates auto-sync into level XP.
+- Added About link to bottom navigation (4th item with help-circle icon).
+- Exported `XP_TIERS` from `lib/xp.ts` and `formatLocalDate`/`parseLocalDate` from `lib/dates.ts` for reuse.
+
+### Changed
+
+- Moved footer with legal links from dashboard to the about page.
+- Extended `addDurationEntry` in `use-activity-store` to accept an optional `date` parameter for retroactive logging.
+
+### Previously added
+
 - Added `sumLevelXpFromEntries` in `lib/xp.ts` and `components/dashboard/xp-progress-bar.tsx` so current-level XP is the sum of daily tier XP across days in the level window.
 - Added `getDailyTotalMinutes` / `getDailyXpForDate` on the activity store and `__tests__/lib/sum-level-xp.test.ts` for aggregation guardrails.
 - Added `components/logging/log-entry-sheet.tsx` and `components/logging/duration-input.tsx` for the dashboard bottom-sheet logging flow with live XP preview and inline confirmation.

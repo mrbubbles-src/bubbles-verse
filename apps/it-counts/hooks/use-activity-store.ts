@@ -17,7 +17,7 @@ export type AddDurationEntryResult = {
 interface ActivityState {
   entries: ActivityEntry[]
   addEntry: (entry: ActivityEntry) => void
-  addDurationEntry: (durationMin: number) => AddDurationEntryResult
+  addDurationEntry: (durationMin: number, date?: string) => AddDurationEntryResult
   loadFromStorage: () => void
   getDailyEntries: (date: string) => ActivityEntry[]
   getDailyTotalMinutes: (date: string) => number
@@ -44,18 +44,18 @@ export const useActivityStore = create<ActivityState>()((set, get) => ({
     set({ entries: next })
   },
 
-  addDurationEntry: (durationMin) => {
-    const today = getTodayString()
+  addDurationEntry: (durationMin, date) => {
+    const targetDate = date ?? getTodayString()
     const entry: ActivityEntry = {
       id: crypto.randomUUID(),
-      date: today,
+      date: targetDate,
       durationMin,
       loggedAt: new Date().toISOString(),
     }
 
     const entries = get().entries
     const previousDailyTotal = entries
-      .filter((e) => e.date === today)
+      .filter((e) => e.date === targetDate)
       .reduce((sum, e) => sum + e.durationMin, 0)
 
     const previousXp = calculateDailyXp(previousDailyTotal)

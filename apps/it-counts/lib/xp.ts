@@ -1,6 +1,6 @@
 import type { ActivityEntry } from '@/types';
 
-const XP_TIERS = [
+export const XP_TIERS = [
   { minimumMinutes: 30, xp: 5 },
   { minimumMinutes: 20, xp: 3 },
   { minimumMinutes: 10, xp: 2 },

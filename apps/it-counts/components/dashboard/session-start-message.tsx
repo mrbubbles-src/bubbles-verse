@@ -28,17 +28,20 @@ export function SessionStartMessage() {
       return
     }
 
-    const currentWeekStart = getWeekStart(getTodayString())
-    const weeklyResetShownForWeek = getSetting('weeklyResetShownForWeek')
+    // Defer setState so it is not synchronous in the effect body (react-hooks/set-state-in-effect).
+    queueMicrotask(() => {
+      const currentWeekStart = getWeekStart(getTodayString())
+      const weeklyResetShownForWeek = getSetting('weeklyResetShownForWeek')
 
-    if (weeklyResetShownForWeek !== currentWeekStart) {
-      setMessage(getRandomMessage('weekly-reset'))
-      setSetting('weeklyResetShownForWeek', currentWeekStart)
-    } else {
-      setMessage(getRandomMessage('session-start'))
-    }
+      if (weeklyResetShownForWeek !== currentWeekStart) {
+        setMessage(getRandomMessage('weekly-reset'))
+        setSetting('weeklyResetShownForWeek', currentWeekStart)
+      } else {
+        setMessage(getRandomMessage('session-start'))
+      }
 
-    setSessionMessageShown()
+      setSessionMessageShown()
+    })
   }, [sessionMessageShown, setSessionMessageShown, getSetting, setSetting])
 
   if (!message) {

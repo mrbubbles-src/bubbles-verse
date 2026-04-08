@@ -105,12 +105,13 @@ function computeTimeRange(
 export function LogEntrySheet() {
   const today = getTodayString()
   const addDurationEntry = useActivityStore((s) => s.addDurationEntry)
-  const previousDailyMinutes = useActivityStore((s) => s.getDailyTotalMinutes(today))
   const syncXpFromEntries = useLevelStore((s) => s.syncXpFromEntries)
 
   const open = useUiStore((s) => s.logSheetOpen)
   const setOpen = useUiStore((s) => s.setLogSheetOpen)
   const [inputMode, setInputMode] = useState<InputMode>('duration')
+  const [selectedDate, setSelectedDate] = useState(today)
+  const previousDailyMinutes = useActivityStore((s) => s.getDailyTotalMinutes(selectedDate))
 
   // Duration mode state
   const [durationValue, setDurationValue] = useState('')
@@ -160,6 +161,7 @@ export function LogEntrySheet() {
    */
   function resetSheetState() {
     setInputMode('duration')
+    setSelectedDate(getTodayString())
     setDurationValue('')
     setDurationError('')
     setStartTime('')
@@ -206,11 +208,11 @@ export function LogEntrySheet() {
       durationMin = walkingMinutes
     }
 
-    const { dailyXpToday } = addDurationEntry(durationMin)
+    const { dailyXpToday } = addDurationEntry(durationMin, selectedDate)
     syncXpFromEntries(useActivityStore.getState().entries)
     setDurationError('')
 
-    const weekStart = getWeekStart(getTodayString())
+    const weekStart = getWeekStart(selectedDate)
     const weeklyXp = useActivityStore.getState().getWeeklyXp(weekStart)
     const goalReachedShownForWeek = useSettingsStore.getState().getSetting('goalReachedShownForWeek')
     const isGoalJustReached = weeklyXp >= WEEKLY_XP_GOAL && goalReachedShownForWeek !== weekStart
@@ -251,6 +253,21 @@ export function LogEntrySheet() {
         </SheetHeader>
 
         <form className="flex flex-col gap-5 px-6 pb-6" onSubmit={handleSubmit}>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="activity-date" className="text-sm font-medium">
+              Date
+            </label>
+            <input
+              id="activity-date"
+              type="date"
+              value={selectedDate}
+              max={today}
+              disabled={confirmation !== null}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+            />
+          </div>
+
           {inputMode === 'duration' ? (
             <>
               <DurationInput
@@ -307,7 +324,8 @@ export function LogEntrySheet() {
           {confirmation ? (
             <div className="flex flex-col gap-2">
               <p className="text-sm/6 font-semibold tabular-nums text-foreground">
-                Today total: {confirmation.dailyXpToday} XP · That counted.
+                {selectedDate !== today ? `${selectedDate}: ` : 'Today total: '}
+                {confirmation.dailyXpToday} XP · That counted.
               </p>
               <MotivationalMessage message={confirmation.message} className="text-left" />
             </div>

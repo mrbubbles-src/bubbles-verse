@@ -80,11 +80,11 @@ describe('Dashboard Shell', () => {
     ).toBeInTheDocument()
   })
 
-  it('renders the bottom navigation with 3 items', () => {
+  it('renders the bottom navigation with 4 items', () => {
     render(<Home />)
     const nav = screen.getByRole('navigation', { name: /main/i })
     const links = nav.querySelectorAll('a, button')
-    expect(links.length).toBe(3)
+    expect(links.length).toBe(4)
   })
 
   it('renders Dashboard nav item', () => {

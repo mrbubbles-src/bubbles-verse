@@ -1,15 +1,16 @@
 'use client';
 
-import { useMemo } from 'react';
-
-import { useActivityStore } from '@/hooks/use-activity-store';
-import { OverXpSection } from '@/components/dashboard/over-xp-section';
-import { WeeklySummary } from '@/components/dashboard/weekly-summary';
-import { XpProgressBar } from '@/components/dashboard/xp-progress-bar';
-import { useLevelStore } from '@/hooks/use-level-store';
 import { getTodayString, getWeeksElapsedInLevel } from '@/lib/dates';
 import { calculateDailyXp } from '@/lib/xp';
+
+import { useMemo } from 'react';
+
+import { OverXpSection } from '@/components/dashboard/over-xp-section';
 import { StatusBadge } from '@/components/dashboard/status-badge';
+import { WeeklySummary } from '@/components/dashboard/weekly-summary';
+import { XpProgressBar } from '@/components/dashboard/xp-progress-bar';
+import { useActivityStore } from '@/hooks/use-activity-store';
+import { useLevelStore } from '@/hooks/use-level-store';
 
 /**
  * Displays the primary "Typography Hero" dashboard composition:
@@ -38,10 +39,11 @@ export function XpHero() {
   return (
     <section className="w-full">
       <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-        Level {level} · Week {weeksElapsed + 1} of 4
+        Level {level} · Week {weeksElapsed + 1} of 4{' '}
       </p>
-
-      <div className="mt-2 flex items-baseline gap-2" aria-label={`${xp} of 100 XP`}>
+      <div
+        className="mt-2 flex items-baseline gap-2"
+        aria-label={`${xp} of 100 XP`}>
         <span className="font-heading text-[clamp(4rem,11vw,5rem)] font-extrabold leading-[0.95] tracking-tight text-foreground">
           {xp}
         </span>
@@ -79,7 +81,9 @@ export function XpHero() {
         </div>
 
         {todayEntries.length === 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground">No entries yet today.</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            No entries yet today.
+          </p>
         ) : (
           <div className="mt-2 grid grid-cols-3 gap-2">
             {todayEntries.map((entry) => (
@@ -87,7 +91,9 @@ export function XpHero() {
                 key={entry.id}
                 className="inline-flex items-center justify-center gap-1.5 rounded-full border border-border/70 bg-muted/40 px-3 py-1 text-xs font-medium text-foreground">
                 {entry.durationMin} min
-                <span className="text-muted-foreground">{formatTime(entry.loggedAt)}</span>
+                <span className="text-muted-foreground">
+                  {formatTime(entry.loggedAt)}
+                </span>
               </span>
             ))}
           </div>

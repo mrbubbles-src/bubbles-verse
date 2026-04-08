@@ -1,6 +1,15 @@
 # It Counts
 
-It Counts is the bubbles-verse app for the upcoming habit and XP tracking experience. Story 1.3 keeps this app intentionally lean: the app is wired into the monorepo, consumes shared packages, and keeps the starter route as a placeholder until feature work lands.
+It Counts is a walking and movement XP tracker. Log your daily walking minutes, earn tiered XP, and level up over time. No streaks, no punishment — just consistent effort that adds up.
+
+## Routes
+
+- `/` — Dashboard with XP hero, weekly progress, level requirements
+- `/about` — App concept, XP tier table, level rules, and legal links
+- `/history` — Activity log grouped by week and day
+- `/log` — Redirect info (logging happens via the dashboard sheet)
+- `/level-up` — Level transition screen
+- `/api/og` — Dynamic Open Graph image (1200×630)
 
 ## Monorepo Workflow
 

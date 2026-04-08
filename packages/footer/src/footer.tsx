@@ -1,5 +1,9 @@
-import Image, { type StaticImageData } from 'next/image';
+import type { StaticImageData } from 'next/image';
+
+import Image from 'next/image';
 import Link from 'next/link';
+
+import { cn } from '@bubbles/ui/lib/utils';
 
 export type FooterLink = {
   label: string;
@@ -23,6 +27,8 @@ export type FooterProps = {
   links?: FooterLink[];
   /** Hide the default Catppuccin color theme credit. */
   hideCatppuccinCredit?: boolean;
+  /** Optional class name for the footer. */
+  className?: string;
   /** Extra content rendered after the footer text. */
   children?: React.ReactNode;
 };
@@ -37,12 +43,13 @@ export function Footer({
   authorHref = 'https://mrbubbles-src.dev',
   links = [],
   hideCatppuccinCredit = false,
+  className,
   children,
 }: FooterProps) {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-border/40">
+    <footer className={cn('border-t border-border/40', className)}>
       <div className="mx-auto flex max-w-md flex-col items-center gap-2 px-4 py-4 text-[11px] text-muted-foreground/50">
         {image && (
           <Image

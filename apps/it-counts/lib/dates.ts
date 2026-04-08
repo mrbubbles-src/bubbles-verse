@@ -49,7 +49,7 @@ export function isSameDay(a: string, b: string): boolean {
 /**
  * Formats one local `Date` instance as a stable `YYYY-MM-DD` key.
  */
-function formatLocalDate(date: Date): string {
+export function formatLocalDate(date: Date): string {
   const year = String(date.getFullYear());
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
@@ -70,7 +70,7 @@ function getLocalDayNumber(date: Date): number {
 /**
  * Parses one persisted local day key and rejects impossible dates early.
  */
-function parseLocalDate(value: string): Date {
+export function parseLocalDate(value: string): Date {
   if (YYYY_MM_DD_PATTERN.test(value) === false) {
     throw new RangeError(
       `Expected YYYY-MM-DD date string, received "${value}".`

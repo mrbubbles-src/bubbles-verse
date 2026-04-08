@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { ThemeToggle } from '@bubbles/theme';
 
 import Logo from '@/public/images/it-counts-logo.webp';
+import AboutPageButton from './about-page-button';
 
 const Header = () => {
   return (
-    <header className="flex items-center justify-between px-4 py-3">
+    <header className="flex items-center justify-between px-4 py-3 w-full max-w-md mx-auto">
       <Link href="/" className="w-30 h-8">
         <Image
           src={Logo}
@@ -17,9 +18,8 @@ const Header = () => {
           loading="eager"
         />
       </Link>
-      <div>
-        <ThemeToggle />
-      </div>
+      <AboutPageButton />
+      <ThemeToggle />
     </header>
   );
 };

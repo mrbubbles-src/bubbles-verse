@@ -208,7 +208,7 @@ describe('LogEntrySheet', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /log it/i }))
 
-    expect(sheetMocks.addDurationEntry).toHaveBeenCalledWith(45)
+    expect(sheetMocks.addDurationEntry).toHaveBeenCalledWith(45, '2026-04-07')
     expect(sheetMocks.syncXpFromEntries).toHaveBeenCalledWith(
       expect.arrayContaining(sheetMocks.entries),
     )
@@ -250,7 +250,7 @@ describe('LogEntrySheet', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: /log it/i }))
 
-    expect(sheetMocks.addDurationEntry).toHaveBeenCalledWith(30)
+    expect(sheetMocks.addDurationEntry).toHaveBeenCalledWith(30, '2026-04-07')
     expect(sheetMocks.syncXpFromEntries).toHaveBeenCalledWith(
       expect.arrayContaining(sheetMocks.entries),
     )

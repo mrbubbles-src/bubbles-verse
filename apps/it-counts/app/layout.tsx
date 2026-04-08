@@ -2,12 +2,16 @@ import type { Metadata } from 'next';
 
 import './it-counts.css';
 
+import { Footer } from '@bubbles/footer';
 import { ThemeProvider } from '@bubbles/theme';
 import { firaCode, montserrat, poppins } from '@bubbles/ui/fonts';
 
+import { BottomNav } from '@/components/global/bottom-nav';
 import Header from '@/components/global/header';
+import { LogEntrySheet } from '@/components/logging/log-entry-sheet';
 import { ServiceWorkerRegistration } from '@/components/shared/service-worker-registration';
 import { StoreHydrator } from '@/components/shared/store-hydrator';
+import { FOOTER_LINKS } from '@/constants/footer-links';
 
 export const metadata: Metadata = {
   title: {
@@ -16,12 +20,29 @@ export const metadata: Metadata = {
   },
   description:
     'Track your movement and watch your level grow — one walk at a time.',
-  metadataBase: new URL('https://it-counts.vercel.app'),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? 'https://it-counts.mrbubbles-src.dev'
+  ),
   openGraph: {
+    siteName: 'It Counts',
     title: 'It Counts',
     description:
       'Track your movement and watch your level grow — one walk at a time.',
+    images: [
+      {
+        url: '/api/og',
+        width: 1200,
+        height: 630,
+        alt: 'It Counts — walk, log, level up',
+      },
+    ],
     type: 'website',
+    locale: 'en_GB',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    images: ['/api/og'],
+    creator: '@_MstrBubbles',
   },
   manifest: '/manifest.json',
   icons: {
@@ -48,7 +69,7 @@ export default function RootLayout({
 }) {
   return (
     <html
-      lang="en"
+      lang="en_GB"
       suppressHydrationWarning
       className={`${montserrat.variable} ${poppins.variable} ${firaCode.variable} antialiased`}>
       <head>
@@ -61,6 +82,9 @@ export default function RootLayout({
           <div className="flex min-h-svh flex-col bg-background">
             <Header />
             {children}
+            <BottomNav />
+            <Footer links={FOOTER_LINKS} className="w-full max-w-md mx-auto" />
+            <LogEntrySheet />
           </div>
         </ThemeProvider>
       </body>

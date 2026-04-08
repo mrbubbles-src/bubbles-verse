@@ -94,6 +94,44 @@ describe('use-activity-store', () => {
       randomUuidSpy.mockRestore()
     })
 
+    it('creates an entry for a specific past date when date parameter is provided', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-04-07T10:15:00.000Z'))
+      const randomUuidSpy = vi
+        .spyOn(globalThis.crypto, 'randomUUID')
+        .mockReturnValue('past-id')
+
+      const result = useActivityStore.getState().addDurationEntry(25, '2026-04-05')
+
+      expect(result.entry.date).toBe('2026-04-05')
+      expect(result.entry.loggedAt).toBe('2026-04-07T10:15:00.000Z')
+      expect(result.entry.durationMin).toBe(25)
+      expect(result.dailyXpToday).toBe(3) // 25 min → tier 20+ = 3 XP
+
+      randomUuidSpy.mockRestore()
+    })
+
+    it('calculates past-date XP delta against existing entries for that date', () => {
+      useActivityStore.getState().addEntry({
+        id: 'existing',
+        date: '2026-04-05',
+        durationMin: 10,
+        loggedAt: '2026-04-05T08:00:00Z',
+      })
+
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-04-07T12:00:00.000Z'))
+      vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValue('retro-id')
+
+      const result = useActivityStore.getState().addDurationEntry(20, '2026-04-05')
+
+      // existing 10 min = 2 XP, now 30 min total = 5 XP, delta = 3
+      expect(result.xpEarned).toBe(3)
+      expect(result.dailyXpToday).toBe(5)
+
+      vi.restoreAllMocks()
+    })
+
     it('calculates XP as cumulative daily delta, not per-entry', () => {
       vi.useFakeTimers()
       vi.setSystemTime(new Date('2026-04-07T08:00:00.000Z'))
