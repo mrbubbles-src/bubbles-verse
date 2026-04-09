@@ -12,6 +12,7 @@ import { useSettingsStore } from '@/hooks/use-settings-store'
  */
 export function StoreHydrator() {
   const loadEntries = useActivityStore((s) => s.loadFromStorage)
+  const entries = useActivityStore((s) => s.entries)
   const loadLevel = useLevelStore((s) => s.loadFromStorage)
   const syncXpFromEntries = useLevelStore((s) => s.syncXpFromEntries)
   const loadSettings = useSettingsStore((s) => s.loadFromStorage)
@@ -20,8 +21,11 @@ export function StoreHydrator() {
     loadEntries()
     loadLevel()
     loadSettings()
-    syncXpFromEntries(useActivityStore.getState().entries)
-  }, [loadEntries, loadLevel, loadSettings, syncXpFromEntries])
+  }, [loadEntries, loadLevel, loadSettings])
+
+  useEffect(() => {
+    syncXpFromEntries(entries)
+  }, [entries, syncXpFromEntries])
 
   return null
 }

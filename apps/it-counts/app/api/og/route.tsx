@@ -4,9 +4,11 @@ import { ImageResponse } from 'next/og';
 
 /**
  * Serves the It Counts Open Graph image (1200×630) for link previews.
- * Renders the logo and tagline on a Catppuccin Mocha base background.
+ * Uses the current request origin so the logo resolves on custom domains too.
  */
-export async function GET() {
+export async function GET(request: Request) {
+  const logoUrl = new URL('/images/it-counts-logo.png', request.url).toString()
+
   return new ImageResponse(
     <div
       style={{
@@ -21,7 +23,7 @@ export async function GET() {
         background: '#1e1e2e',
       }}>
       <img
-        src="https://it-counts.vercel.app/images/it-counts-logo.png"
+        src={logoUrl}
         style={{ width: 600, height: 168 }}
         alt="It Counts Logo"
       />

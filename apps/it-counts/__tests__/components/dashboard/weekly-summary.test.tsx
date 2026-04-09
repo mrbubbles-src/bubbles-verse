@@ -21,26 +21,26 @@ vi.mock('@/hooks/use-level-store', () => ({
   ),
 }))
 
-const mockGetWeeklyXp = vi.fn(() => 0)
+let mockEntries: Array<{ date: string; durationMin: number }> = []
 
 vi.mock('@/hooks/use-activity-store', () => ({
   useActivityStore: vi.fn((selector) =>
     selector({
-      entries: [],
-      getWeeklyXp: mockGetWeeklyXp,
+      entries: mockEntries,
     })
   ),
 }))
 
 describe('WeeklySummary', () => {
   it('shows weekly XP and target with no entries', () => {
+    mockEntries = []
     render(<WeeklySummary />)
     expect(screen.getByText('/ 10 XP target')).toBeInTheDocument()
     expect(screen.getByText('10 more to target')).toBeInTheDocument()
   })
 
   it('shows weekly XP without warning language when below 10', () => {
-    mockGetWeeklyXp.mockReturnValue(5)
+    mockEntries = [{ date: '2026-04-08', durationMin: 30 }]
     render(<WeeklySummary />)
 
     expect(screen.getByText('/ 10 XP target')).toBeInTheDocument()
@@ -52,7 +52,10 @@ describe('WeeklySummary', () => {
   })
 
   it('shows "Goal reached" when weekly XP hits target', () => {
-    mockGetWeeklyXp.mockReturnValue(10)
+    mockEntries = [
+      { date: '2026-04-08', durationMin: 30 },
+      { date: '2026-04-09', durationMin: 30 },
+    ]
     render(<WeeklySummary />)
     expect(screen.getByText('Goal reached')).toBeInTheDocument()
   })
