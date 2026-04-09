@@ -236,8 +236,8 @@ export function LogEntrySheet() {
       durationMin = walkingMinutes
     }
 
-    const { dailyXpToday } = addDurationEntry(durationMin, selectedDate)
-    syncXpFromEntries(useActivityStore.getState().entries)
+    const { dailyXpToday, nextEntries } = addDurationEntry(durationMin, selectedDate)
+    syncXpFromEntries(nextEntries)
     setDurationError('')
 
     const weekStart = getWeekStart(selectedDate)

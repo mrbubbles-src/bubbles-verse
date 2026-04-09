@@ -62,5 +62,6 @@ That recomputation matters because:
 3. load settings
 
 Then it recomputes current-level XP whenever the activity `entries` array changes.
+Additionally, the log submit path syncs from the exact post-write `entries` snapshot returned by `addDurationEntry`, preventing stale reads when users log retroactive dates.
 
 This keeps the persisted `levelState.xp` aligned with the real activity log.
