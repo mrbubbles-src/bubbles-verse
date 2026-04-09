@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Kept the dashboard weekly XP widget reactive after refresh by deriving weekly XP directly from `entries` state instead of selecting a non-reactive store getter.
 - Re-synced level XP whenever hydrated entries change, ensuring total XP reflects retroactive logs immediately and persists correctly across reloads.
+- Made log-save level sync deterministic by syncing from the `addDurationEntry` post-write snapshot, so backdated entries (e.g., yesterday) are always reflected in total level XP immediately.
 - Moved the log sheet above mobile soft keyboards (iOS/Android) by tracking `window.visualViewport` and offsetting the bottom sheet while inputs are focused.
 - Updated `/api/og` image generation to resolve the logo from the current request origin, fixing OpenGraph previews on custom domains.
 

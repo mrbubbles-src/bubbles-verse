@@ -64,6 +64,7 @@ bun run build
 - current level lives under `it-counts:current-level`
 - app settings live under `it-counts:settings`
 - session-only UI state stays in memory and resets on reload
+- after each log write, level XP is re-synced from the post-write entries snapshot so retroactive date logs update total level XP immediately
 
 ## Environment
 

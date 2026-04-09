@@ -12,6 +12,8 @@ export type AddDurationEntryResult = {
   xpEarned: number
   /** `calculateDailyXp` for today after this entry — use for confirmation copy. */
   dailyXpToday: number
+  /** Snapshot of all entries after insertion, used to keep cross-store sync deterministic. */
+  nextEntries: ActivityEntry[]
 }
 
 interface ActivityState {
@@ -70,6 +72,7 @@ export const useActivityStore = create<ActivityState>()((set, get) => ({
       entry,
       xpEarned: dailyXpToday - previousXp,
       dailyXpToday,
+      nextEntries: next,
     }
   },
 
