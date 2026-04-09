@@ -26,7 +26,7 @@ import {
 import { toast } from '@bubbles/ui/lib/sonner'
 import { useAppStore } from '@/context/app-store'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
-import { useTheme } from '@/hooks/use-theme'
+import { useTheme } from '@bubbles/theme'
 
 const DEFAULT_GROUP_SIZE = 3
 

@@ -7,7 +7,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@bubbles/ui/shadcn/select';
 
 /**
  * Renders an open select so popup-level behavior can be asserted in tests.

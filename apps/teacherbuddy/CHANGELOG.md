@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Restored `typecheck` stability by tightening test nullability assertions, adding the missing `class-variance-authority` dependency, and annotating the shared render test helper return type.
+- Kept TeacherBuddy on its existing Geist layout fonts and restored `next-themes` as an explicit app dependency after the shared font package work.
+
 ### Documentation
 
 - Doc index overhaul under `documentation/README.md`; added `metadata-and-seo.md` (OG, sitemap, `page-meta.ts`).

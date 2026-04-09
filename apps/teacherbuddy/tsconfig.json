@@ -4,6 +4,10 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
+      "@bubbles/theme": ["../../packages/theme/src/index.ts"],
+      "@bubbles/ui/fonts": ["../../packages/ui/src/fonts.ts"],
+      "@bubbles/ui/globals.css": ["../../packages/ui/src/styles/globals.css"],
+      "@bubbles/ui/postcss.config": ["../../packages/ui/postcss.config.mjs"],
       "@bubbles/ui/*": ["../../packages/ui/src/*"]
     },
     "plugins": [

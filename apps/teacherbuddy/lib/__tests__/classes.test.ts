@@ -43,7 +43,7 @@ describe("parseClassImportJson", () => {
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.classes).toHaveLength(1)
-    expect(result.classes[0].students).toHaveLength(2)
+    expect(result.classes[0]!.students).toHaveLength(2)
   })
 
   it("accepts an array of classes", () => {
@@ -84,8 +84,8 @@ describe("parseClassImportText", () => {
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.classes).toHaveLength(2)
-    expect(result.classes[0].className).toBe("Math 101")
-    expect(result.classes[0].students.map((entry) => entry.name)).toEqual([
+    expect(result.classes[0]!.className).toBe("Math 101")
+    expect(result.classes[0]!.students.map((entry) => entry.name)).toEqual([
       "Alex Johnson",
       "Sam Lee",
     ])

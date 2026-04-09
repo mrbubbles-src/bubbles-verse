@@ -1,52 +1,59 @@
 # Troubleshooting
 
-## Turbo: “wrong” build output or stale env
+## Turbo cache or env looks stale
 
-**Symptom:** Production build works locally with `bun run build` in the app folder but fails in CI, or behavior changes after Turbo cache hits.
+Symptom: a build works locally inside one app but behaves differently through Turbo or CI.
 
-**Cause:** Turborepo hashes **declared** environment variables for `build` / `dev`. Missing keys fall out of the hash and can serve a cached build built with different env.
+Fix:
 
-**Fix:**
-
-1. Add any new `process.env.X` used during `next build` or `next dev` to [`turbo.json`](../turbo.json) under `tasks.build.env` **and** `tasks.dev.env` (keep both lists in sync unless you have a reason not to).
-2. After changing `turbo.json`, treat the next CI run as a clean graph; use `--force` locally if you need to invalidate:  
-   `bunx turbo build --force`
-
-## Turbo: task runs for the whole repo
-
-**Symptom:** `bun run dev` starts every workspace with a `dev` script.
-
-**Fix:** Scope work:
+1. Add the new build-time env key to both `tasks.build.env` and `tasks.dev.env` in [`turbo.json`](../turbo.json).
+2. Re-run with a clean graph if needed:
 
 ```bash
-bunx turbo dev --filter=portfolio
+bunx turbo build --force
+```
+
+## A task runs for the whole repo
+
+Symptom: `bun run dev` starts more than the app you care about.
+
+Fix: scope it.
+
+```bash
+bunx turbo dev --filter=it-counts
 bunx turbo lint --filter=@bubbles/ui
 ```
 
-Use `package.json` `name` in `--filter` (e.g. `portfolio`, `teacherbuddy`, `@bubbles/ui`).
+## Workspace dependency cannot be resolved
 
-## Workspace dependency not found
+Symptom: imports like `@bubbles/ui` or `@bubbles/theme` fail.
 
-**Symptom:** `Cannot find module '@bubbles/ui'` or TypeScript can’t resolve workspace paths.
+Fix:
 
-**Fix:**
+1. Run `bun install` from the repo root.
+2. Verify the consumer declares the dependency as `workspace:*` or `workspace:^`.
+3. Check the workspace's local `tsconfig.json` if the issue is only path aliases like `@/`.
 
-1. Run `bun install` from **monorepo root**.
-2. Confirm the consumer’s `package.json` lists `"@bubbles/ui": "workspace:*"` (or `workspace:^`).
-3. For path aliases like `@/`, check that app’s `tsconfig.json` — that is per-app, not inherited from the root.
+## Dev hostname does not resolve
 
-## Bun vs Node for Next
+Some app scripts bind to fixed local hosts such as `itcounts.mrbubbles.test`.
 
-Apps use **`bun --bun next dev`** so the Next CLI runs on Bun’s runtime. If you bypass scripts and run `npx next dev`, behavior can differ (especially around native deps). Prefer the scripts in each app’s `package.json`.
+Fix:
 
-## ESLint: env / Turbo plugin noise
+1. Inspect the workspace `dev` script in its `package.json`.
+2. Ensure your local hostname setup resolves the `*.mrbubbles.test` domain.
+3. If you intentionally need a different host, override the script locally instead of assuming `localhost:3000`.
 
-`eslint-plugin-turbo` flags env vars that are not allowlisted in `turbo.json`. Either add the variable to Turbo’s `env` arrays or avoid referencing unknown keys in linted files without declaring them.
+## Bun vs Node behavior differs
 
-## Prettier: Tailwind class order surprises
+The app scripts intentionally run Next through Bun. If you swap to `npx next dev`, behavior can drift.
 
-Root [`.prettierrc`](../.prettierrc) sets `"tailwindStylesheet": "packages/ui/src/styles/globals.css"` so `prettier-plugin-tailwindcss` resolves your design tokens. If you move `globals.css`, update that path or class sorting may degrade.
+Prefer the checked-in scripts.
 
-## Next.js “this is not the Next you know”
+## Prettier sorts Tailwind classes strangely
 
-Internal docs ship under `node_modules/next/dist/docs/`. Prefer those over outdated blog posts when APIs look unfamiliar — see [`AGENTS.md`](../AGENTS.md).
+The root config points `tailwindStylesheet` at `packages/ui/src/styles/globals.css`. If that file moves, update the path in [`.prettierrc`](../.prettierrc).
+
+## Next.js docs feel unfamiliar
+
+Use the repo rules in [`AGENTS.md`](../AGENTS.md). For code changes, the repo expects contributors to lean on the in-install Next.js docs instead of memory.

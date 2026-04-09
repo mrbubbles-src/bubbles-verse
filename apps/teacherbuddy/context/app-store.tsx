@@ -187,11 +187,18 @@ const resolveActiveClassId = (
   if (activeClassId && classes.some((entry) => entry.id === activeClassId)) {
     return activeClassId
   }
-  return classes[0].id
+  return classes[0]!.id
 }
 
 const getStudentIdSet = (students: Student[]) =>
   new Set(students.map((student) => student.id))
+
+/**
+ * Returns a random item from a non-empty list.
+ * Expects at least one entry and throws if called with an empty array.
+ */
+const pickRandomItem = <T,>(items: [T, ...T[]]): T =>
+  items[Math.floor(Math.random() * items.length)]!
 
 const pruneGeneratorState = (
   generator: GeneratorState,
@@ -759,8 +766,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
 
       if (!availableStudentIds.length) return state
 
-      const nextStudentId =
-        availableStudentIds[Math.floor(Math.random() * availableStudentIds.length)]
+      const nextStudentId = pickRandomItem(availableStudentIds as [string, ...string[]])
 
       return {
         ...state,
@@ -964,10 +970,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
 
       if (!availableQuestionIds.length || !availableStudentIds.length) return state
 
-      const nextQuestionId =
-        availableQuestionIds[Math.floor(Math.random() * availableQuestionIds.length)]
-      const nextStudentId =
-        availableStudentIds[Math.floor(Math.random() * availableStudentIds.length)]
+      const nextQuestionId = pickRandomItem(availableQuestionIds as [string, ...string[]])
+      const nextStudentId = pickRandomItem(availableStudentIds as [string, ...string[]])
 
       return {
         ...state,

@@ -55,6 +55,14 @@ function saveNamesToStorage(names: string[]) {
 }
 
 /**
+ * Returns a random item from a non-empty list.
+ * Expects at least one entry and throws if called with an empty array.
+ */
+function pickRandomItem<T>(items: [T, ...T[]]): T {
+  return items[Math.floor(Math.random() * items.length)]!;
+}
+
+/**
  * Renders the standalone random student name generator experience.
  * Stores names in local storage, prevents repeats, and tracks generated history.
  */
@@ -126,8 +134,7 @@ export default function StudentNameGenerator() {
   const handleGenerate = () => {
     if (!remaining.length) return;
 
-    const nextIndex = Math.floor(Math.random() * remaining.length);
-    const nextName = remaining[nextIndex];
+    const nextName = pickRandomItem(remaining as [string, ...string[]]);
 
     setCurrentName(nextName);
     setGeneratedNames((prev) => {

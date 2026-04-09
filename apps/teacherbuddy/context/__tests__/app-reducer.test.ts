@@ -84,10 +84,10 @@ describe("appReducer", () => {
 
       const students = result.current.state.persisted.students
       expect(students).toHaveLength(1)
-      expect(students[0].name).toBe("John Doe")
-      expect(students[0].status).toBe("active")
-      expect(students[0].id).toBeDefined()
-      expect(students[0].createdAt).toBeDefined()
+      expect(students[0]!.name).toBe("John Doe")
+      expect(students[0]!.status).toBe("active")
+      expect(students[0]!.id).toBeDefined()
+      expect(students[0]!.createdAt).toBeDefined()
     })
 
     it("ADD_STUDENT rejects duplicate names (case-insensitive)", async () => {
@@ -147,7 +147,7 @@ describe("appReducer", () => {
         result.current.actions.addStudent("  John   Doe  ")
       })
 
-      expect(result.current.state.persisted.students[0].name).toBe("John Doe")
+      expect(result.current.state.persisted.students[0]!.name).toBe("John Doe")
     })
 
     it("UPDATE_STUDENT updates existing student", async () => {
@@ -161,13 +161,13 @@ describe("appReducer", () => {
         result.current.actions.addStudent("John Doe")
       })
 
-      const studentId = result.current.state.persisted.students[0].id
+      const studentId = result.current.state.persisted.students[0]!.id
 
       act(() => {
         result.current.actions.updateStudent(studentId, "Jane Doe", null)
       })
 
-      expect(result.current.state.persisted.students[0].name).toBe("Jane Doe")
+      expect(result.current.state.persisted.students[0]!.name).toBe("Jane Doe")
     })
 
     it("UPDATE_STUDENT rejects duplicate names", async () => {
@@ -182,14 +182,14 @@ describe("appReducer", () => {
         result.current.actions.addStudent("Jane Smith")
       })
 
-      const johnId = result.current.state.persisted.students[0].id
+      const johnId = result.current.state.persisted.students[0]!.id
 
       act(() => {
         result.current.actions.updateStudent(johnId, "Jane Smith", null)
       })
 
       // Name should not have changed
-      expect(result.current.state.persisted.students[0].name).toBe("John Doe")
+      expect(result.current.state.persisted.students[0]!.name).toBe("John Doe")
     })
 
     it("DELETE_STUDENT removes student", async () => {
@@ -203,7 +203,7 @@ describe("appReducer", () => {
         result.current.actions.addStudent("John Doe")
       })
 
-      const studentId = result.current.state.persisted.students[0].id
+      const studentId = result.current.state.persisted.students[0]!.id
 
       act(() => {
         result.current.actions.deleteStudent(studentId)
@@ -223,20 +223,20 @@ describe("appReducer", () => {
         result.current.actions.addStudent("John Doe")
       })
 
-      const studentId = result.current.state.persisted.students[0].id
-      expect(result.current.state.persisted.students[0].status).toBe("active")
+      const studentId = result.current.state.persisted.students[0]!.id
+      expect(result.current.state.persisted.students[0]!.status).toBe("active")
 
       act(() => {
         result.current.actions.toggleStudentExcluded(studentId)
       })
 
-      expect(result.current.state.persisted.students[0].status).toBe("excluded")
+      expect(result.current.state.persisted.students[0]!.status).toBe("excluded")
 
       act(() => {
         result.current.actions.toggleStudentExcluded(studentId)
       })
 
-      expect(result.current.state.persisted.students[0].status).toBe("active")
+      expect(result.current.state.persisted.students[0]!.status).toBe("active")
     })
 
     it("CLEAR_STUDENTS removes all students", async () => {
@@ -276,11 +276,11 @@ describe("appReducer", () => {
       })
 
       expect(result.current.state.persisted.quizIndex).toHaveLength(1)
-      expect(result.current.state.persisted.quizIndex[0].title).toBe("Math Quiz")
+      expect(result.current.state.persisted.quizIndex[0]!.title).toBe("Math Quiz")
 
-      const quizId = result.current.state.persisted.quizIndex[0].id
+      const quizId = result.current.state.persisted.quizIndex[0]!.id
       expect(result.current.state.persisted.quizzes[quizId]).toBeDefined()
-      expect(result.current.state.persisted.quizzes[quizId].questions).toHaveLength(1)
+      expect(result.current.state.persisted.quizzes[quizId]!.questions).toHaveLength(1)
     })
 
     it("CREATE_QUIZ rejects empty title", async () => {
@@ -308,7 +308,7 @@ describe("appReducer", () => {
         result.current.actions.createQuiz("Math Quiz", [])
       })
 
-      const quizId = result.current.state.persisted.quizIndex[0].id
+      const quizId = result.current.state.persisted.quizIndex[0]!.id
       expect(result.current.state.ui.quizEditor.activeQuizId).toBe(quizId)
     })
 
@@ -323,8 +323,8 @@ describe("appReducer", () => {
         result.current.actions.createQuiz("Math Quiz", [], "Chapter 3 review")
       })
 
-      const quizId = result.current.state.persisted.quizIndex[0].id
-      expect(result.current.state.persisted.quizzes[quizId].description).toBe(
+      const quizId = result.current.state.persisted.quizIndex[0]!.id
+      expect(result.current.state.persisted.quizzes[quizId]!.description).toBe(
         "Chapter 3 review"
       )
     })
@@ -340,7 +340,7 @@ describe("appReducer", () => {
         result.current.actions.createQuiz("Math Quiz", [])
       })
 
-      const quizId = result.current.state.persisted.quizIndex[0].id
+      const quizId = result.current.state.persisted.quizIndex[0]!.id
 
       act(() => {
         result.current.actions.updateQuiz(quizId, "Updated Quiz", [
@@ -348,8 +348,8 @@ describe("appReducer", () => {
         ])
       })
 
-      expect(result.current.state.persisted.quizzes[quizId].title).toBe("Updated Quiz")
-      expect(result.current.state.persisted.quizzes[quizId].questions).toHaveLength(1)
+      expect(result.current.state.persisted.quizzes[quizId]!.title).toBe("Updated Quiz")
+      expect(result.current.state.persisted.quizzes[quizId]!.questions).toHaveLength(1)
     })
 
     it("UPDATE_QUIZ clears description when empty", async () => {
@@ -363,13 +363,13 @@ describe("appReducer", () => {
         result.current.actions.createQuiz("Math Quiz", [], "Has description")
       })
 
-      const quizId = result.current.state.persisted.quizIndex[0].id
+      const quizId = result.current.state.persisted.quizIndex[0]!.id
 
       act(() => {
         result.current.actions.updateQuiz(quizId, "Math Quiz", [], "   ")
       })
 
-      expect(result.current.state.persisted.quizzes[quizId].description).toBeUndefined()
+      expect(result.current.state.persisted.quizzes[quizId]!.description).toBeUndefined()
     })
 
     it("UPDATE_QUIZ does nothing for non-existent quiz", async () => {
@@ -399,7 +399,7 @@ describe("appReducer", () => {
         result.current.actions.createQuiz("Math Quiz", [])
       })
 
-      const quizId = result.current.state.persisted.quizIndex[0].id
+      const quizId = result.current.state.persisted.quizIndex[0]!.id
 
       act(() => {
         result.current.actions.deleteQuiz(quizId)
@@ -420,7 +420,7 @@ describe("appReducer", () => {
         result.current.actions.createQuiz("Math Quiz", [])
       })
 
-      const quizId = result.current.state.persisted.quizIndex[0].id
+      const quizId = result.current.state.persisted.quizIndex[0]!.id
       expect(result.current.state.ui.quizEditor.activeQuizId).toBe(quizId)
 
       act(() => {
@@ -442,7 +442,7 @@ describe("appReducer", () => {
         result.current.actions.createQuiz("Quiz 2", [])
       })
 
-      const quiz1Id = result.current.state.persisted.quizIndex[1].id // older one
+      const quiz1Id = result.current.state.persisted.quizIndex[1]!.id // older one
 
       act(() => {
         result.current.actions.selectQuizForEditor(quiz1Id)
@@ -498,7 +498,7 @@ describe("appReducer", () => {
         ])
       })
 
-      const quizId = result.current.state.persisted.quizIndex[0].id
+      const quizId = result.current.state.persisted.quizIndex[0]!.id
 
       act(() => {
         result.current.actions.selectQuizForPlay(quizId)
@@ -523,7 +523,7 @@ describe("appReducer", () => {
         result.current.actions.createQuiz("Math Quiz", [])
       })
 
-      const quizId = result.current.state.persisted.quizIndex[0].id
+      const quizId = result.current.state.persisted.quizIndex[0]!.id
 
       act(() => {
         result.current.actions.selectQuizForPlay(quizId)
@@ -550,7 +550,7 @@ describe("appReducer", () => {
         ])
       })
 
-      const quizId = result.current.state.persisted.quizIndex[0].id
+      const quizId = result.current.state.persisted.quizIndex[0]!.id
 
       act(() => {
         result.current.actions.selectQuizForPlay(quizId)
@@ -594,7 +594,7 @@ describe("appReducer", () => {
         ])
       })
 
-      const quizId = result.current.state.persisted.quizIndex[0].id
+      const quizId = result.current.state.persisted.quizIndex[0]!.id
 
       act(() => {
         result.current.actions.selectQuizForPlay(quizId)
@@ -636,7 +636,7 @@ describe("appReducer", () => {
         ])
       })
 
-      const quizId = result.current.state.persisted.quizIndex[0].id
+      const quizId = result.current.state.persisted.quizIndex[0]!.id
 
       act(() => {
         result.current.actions.selectQuizForPlay(quizId)
@@ -687,7 +687,7 @@ describe("appReducer", () => {
         result.current.actions.addStudent("John Doe")
       })
 
-      const studentId = result.current.state.persisted.students[0].id
+      const studentId = result.current.state.persisted.students[0]!.id
 
       act(() => {
         result.current.actions.toggleStudentExcluded(studentId)
@@ -817,7 +817,7 @@ describe("appReducer", () => {
         result.current.actions.addStudent("John Doe")
       })
 
-      const studentId = result.current.state.persisted.students[0].id
+      const studentId = result.current.state.persisted.students[0]!.id
 
       act(() => {
         result.current.actions.createProjectList(
@@ -830,8 +830,8 @@ describe("appReducer", () => {
       })
 
       expect(result.current.state.persisted.projectLists).toHaveLength(1)
-      expect(result.current.state.persisted.projectLists[0].name).toBe("Project Alpha")
-      expect(result.current.state.persisted.projectLists[0].projectType).toBe("group")
+      expect(result.current.state.persisted.projectLists[0]!.name).toBe("Project Alpha")
+      expect(result.current.state.persisted.projectLists[0]!.projectType).toBe("group")
     })
 
     it("CREATE_PROJECT_LIST rejects empty name", async () => {
@@ -873,7 +873,7 @@ describe("appReducer", () => {
         result.current.actions.addStudent("John Doe")
       })
 
-      const studentId = result.current.state.persisted.students[0].id
+      const studentId = result.current.state.persisted.students[0]!.id
 
       act(() => {
         result.current.actions.createProjectList(
@@ -885,7 +885,7 @@ describe("appReducer", () => {
         )
       })
 
-      const projectId = result.current.state.persisted.projectLists[0].id
+      const projectId = result.current.state.persisted.projectLists[0]!.id
 
       act(() => {
         result.current.actions.updateProjectList(
@@ -898,9 +898,9 @@ describe("appReducer", () => {
         )
       })
 
-      expect(result.current.state.persisted.projectLists[0].name).toBe("Project Beta")
-      expect(result.current.state.persisted.projectLists[0].projectType).toBe("individual")
-      expect(result.current.state.persisted.projectLists[0].description).toBe("Updated description")
+      expect(result.current.state.persisted.projectLists[0]!.name).toBe("Project Beta")
+      expect(result.current.state.persisted.projectLists[0]!.projectType).toBe("individual")
+      expect(result.current.state.persisted.projectLists[0]!.description).toBe("Updated description")
     })
 
     it("DELETE_PROJECT_LIST removes list", async () => {
@@ -914,7 +914,7 @@ describe("appReducer", () => {
         result.current.actions.addStudent("John Doe")
       })
 
-      const studentId = result.current.state.persisted.students[0].id
+      const studentId = result.current.state.persisted.students[0]!.id
 
       act(() => {
         result.current.actions.createProjectList(
@@ -926,7 +926,7 @@ describe("appReducer", () => {
         )
       })
 
-      const projectId = result.current.state.persisted.projectLists[0].id
+      const projectId = result.current.state.persisted.projectLists[0]!.id
 
       act(() => {
         result.current.actions.deleteProjectList(projectId)

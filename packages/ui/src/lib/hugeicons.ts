@@ -1,49 +1,47 @@
-export {
-  Add01Icon,
-  AlertCircleIcon,
-  Alert01Icon,
-  ArrowDown01Icon,
-  ArrowLeft01Icon,
-  ArrowRight01Icon,
-  ArrowUp01Icon,
-  BookOpen01Icon,
-  BookOpen02Icon,
-  BulbIcon,
-  Cancel01Icon,
-  CheckListIcon,
-  CircleIcon,
-  Copy01Icon,
-  DashboardSquare01Icon,
-  Delete02Icon,
-  DoorOpenIcon,
-  FavouriteIcon,
-  Flag01Icon,
-  FlashIcon,
-  Folder01Icon,
-  GlobeIcon,
-  HelpCircleIcon,
-  Home01Icon,
-  Login01Icon,
-  MinusSignIcon,
-  Menu01Icon,
-  Moon02Icon,
-  Notebook01Icon,
-  PauseIcon,
-  PencilEdit01Icon,
-  PlayCircle02Icon,
-  PlayIcon,
-  Rotate01Icon,
-  ShuffleIcon,
-  SkullIcon,
-  SmileIcon,
-  SparklesIcon,
-  SunIcon,
-  Target01Icon,
-  Tick02Icon,
-  TriangleIcon,
-  User02Icon,
-  UserAdd01Icon,
-  UserGroupIcon,
-  VolumeHighIcon,
-} from '@hugeicons/core-free-icons';
+export { default as Add01Icon } from '@hugeicons/core-free-icons/Add01Icon';
+export { default as AlertCircleIcon } from '@hugeicons/core-free-icons/AlertCircleIcon';
+export { default as Alert01Icon } from '@hugeicons/core-free-icons/Alert01Icon';
+export { default as ArrowDown01Icon } from '@hugeicons/core-free-icons/ArrowDown01Icon';
+export { default as ArrowLeft01Icon } from '@hugeicons/core-free-icons/ArrowLeft01Icon';
+export { default as ArrowRight01Icon } from '@hugeicons/core-free-icons/ArrowRight01Icon';
+export { default as ArrowUp01Icon } from '@hugeicons/core-free-icons/ArrowUp01Icon';
+export { default as BookOpen01Icon } from '@hugeicons/core-free-icons/BookOpen01Icon';
+export { default as BookOpen02Icon } from '@hugeicons/core-free-icons/BookOpen02Icon';
+export { default as BulbIcon } from '@hugeicons/core-free-icons/BulbIcon';
+export { default as Cancel01Icon } from '@hugeicons/core-free-icons/Cancel01Icon';
+export { default as CheckListIcon } from '@hugeicons/core-free-icons/CheckListIcon';
+export { default as CircleIcon } from '@hugeicons/core-free-icons/CircleIcon';
+export { default as Copy01Icon } from '@hugeicons/core-free-icons/Copy01Icon';
+export { default as DashboardSquare01Icon } from '@hugeicons/core-free-icons/DashboardSquare01Icon';
+export { default as Delete02Icon } from '@hugeicons/core-free-icons/Delete02Icon';
+export { default as DoorOpenIcon } from '@hugeicons/core-free-icons/DoorOpenIcon';
+export { default as FavouriteIcon } from '@hugeicons/core-free-icons/FavouriteIcon';
+export { default as Flag01Icon } from '@hugeicons/core-free-icons/Flag01Icon';
+export { default as FlashIcon } from '@hugeicons/core-free-icons/FlashIcon';
+export { default as Folder01Icon } from '@hugeicons/core-free-icons/Folder01Icon';
+export { default as GlobeIcon } from '@hugeicons/core-free-icons/GlobeIcon';
+export { default as HelpCircleIcon } from '@hugeicons/core-free-icons/HelpCircleIcon';
+export { default as Home01Icon } from '@hugeicons/core-free-icons/Home01Icon';
+export { default as Login01Icon } from '@hugeicons/core-free-icons/Login01Icon';
+export { default as MinusSignIcon } from '@hugeicons/core-free-icons/MinusSignIcon';
+export { default as Menu01Icon } from '@hugeicons/core-free-icons/Menu01Icon';
+export { default as Moon02Icon } from '@hugeicons/core-free-icons/Moon02Icon';
+export { default as Notebook01Icon } from '@hugeicons/core-free-icons/Notebook01Icon';
+export { default as PauseIcon } from '@hugeicons/core-free-icons/PauseIcon';
+export { default as PencilEdit01Icon } from '@hugeicons/core-free-icons/PencilEdit01Icon';
+export { default as PlayCircle02Icon } from '@hugeicons/core-free-icons/PlayCircle02Icon';
+export { default as PlayIcon } from '@hugeicons/core-free-icons/PlayIcon';
+export { default as Rotate01Icon } from '@hugeicons/core-free-icons/Rotate01Icon';
+export { default as ShuffleIcon } from '@hugeicons/core-free-icons/ShuffleIcon';
+export { default as SkullIcon } from '@hugeicons/core-free-icons/SkullIcon';
+export { default as SmileIcon } from '@hugeicons/core-free-icons/SmileIcon';
+export { default as SparklesIcon } from '@hugeicons/core-free-icons/SparklesIcon';
+export { default as SunIcon } from '@hugeicons/core-free-icons/Sun01Icon';
+export { default as Target01Icon } from '@hugeicons/core-free-icons/Target01Icon';
+export { default as Tick02Icon } from '@hugeicons/core-free-icons/Tick02Icon';
+export { default as TriangleIcon } from '@hugeicons/core-free-icons/TriangleIcon';
+export { default as User02Icon } from '@hugeicons/core-free-icons/User02Icon';
+export { default as UserAdd01Icon } from '@hugeicons/core-free-icons/UserAdd01Icon';
+export { default as UserGroupIcon } from '@hugeicons/core-free-icons/UserGroupIcon';
+export { default as VolumeHighIcon } from '@hugeicons/core-free-icons/VolumeHighIcon';
 export { HugeiconsIcon } from '@hugeicons/react';

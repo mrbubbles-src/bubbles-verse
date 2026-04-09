@@ -96,6 +96,14 @@ function saveStateToStorage(state: StudentGeneratorState) {
 }
 
 /**
+ * Returns a random item from a non-empty list.
+ * Expects at least one entry and throws if called with an empty array.
+ */
+function pickRandomItem<T>(items: [T, ...T[]]): T {
+  return items[Math.floor(Math.random() * items.length)]!;
+}
+
+/**
  * Manages persisted random-student generator state and actions.
  * Returns normalized student lists, remaining candidates, and mutation helpers.
  */
@@ -156,8 +164,7 @@ export function useStudentGenerator() {
       );
       if (!remaining.length) return prev;
 
-      const nextName =
-        remaining[Math.floor(Math.random() * remaining.length)];
+      const nextName = pickRandomItem(remaining as [string, ...string[]]);
 
       return sanitizeState({
         students: prev.students,

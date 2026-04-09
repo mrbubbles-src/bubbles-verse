@@ -1,0 +1,25 @@
+{
+  "name": "@bubbles/footer",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@bubbles/ui": "workspace:*",
+    "next": "^15.4.0-canary.85",
+    "react": "^19.2.4"
+  },
+  "devDependencies": {
+    "@bubbles/eslint-config": "workspace:*",
+    "@bubbles/typescript-config": "workspace:*",
+    "@types/react": "^19.2.10",
+    "eslint": "^9.39.2",
+    "typescript": "^5.9.3"
+  }
+}

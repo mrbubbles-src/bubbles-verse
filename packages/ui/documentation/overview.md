@@ -6,10 +6,15 @@ This package is the **only** supported way to share visual language between apps
 
 ## Layering
 
-1. **`globals.css`** — Tailwind v4 layers, CSS variables, and global base styles. Every Next app that should look “on brand” imports this in its root layout **once**.
+1. **`globals.css`** — Tailwind v4 layers, CSS variables, and global base styles. Every Next app that should look “on brand” imports this in its root layout **once**. It also owns the shared typography baseline for headings, body copy, and code blocks.
 2. **`shadcn/*`** — Small, composable controls. Prefer these inside feature components rather than duplicating raw HTML + classes in apps.
 3. **`components/*`** — Larger pieces that are still domain-agnostic (e.g. a shell might stay in an app if it encodes routing).
 4. **`lib/*` / `hooks/*`** — Pure helpers and React hooks with **no** imports from `apps/`.
+
+## Shared fonts
+
+Use `@bubbles/ui/fonts` to import the package-owned `next/font/google` definitions for Montserrat, Poppins, and Fira Code.
+Apply their `.variable` classes on the app root element so `globals.css` can resolve `--font-heading`, `--font-body`, and `--font-code`.
 
 ## Conventions for new work
 
@@ -22,8 +27,9 @@ This package is the **only** supported way to share visual language between apps
 
 1. Add `"@bubbles/ui": "workspace:*"` and install from root.
 2. In `app/layout.tsx` (or equivalent): `import '@bubbles/ui/globals.css'`.
-3. Align **PostCSS** with `@bubbles/ui/postcss.config` if you want identical Tailwind processing (many Next apps already mirror the same plugins).
-4. Point ESLint at `@bubbles/eslint-config/react-internal` and TS at `react-library.json` **or** merge paths from the app’s Next `tsconfig` (follow an existing app’s `tsconfig.json`).
+3. If the app should use the shared typography system, also import `@bubbles/ui/fonts` and add the exported `.variable` classes to `<html>`.
+4. Align **PostCSS** with `@bubbles/ui/postcss.config` if you want identical Tailwind processing (many Next apps already mirror the same plugins).
+5. Point ESLint at `@bubbles/eslint-config/react-internal` and TS at `react-library.json` **or** merge paths from the app’s Next `tsconfig` (follow an existing app’s `tsconfig.json`).
 
 ## Quality gate
 

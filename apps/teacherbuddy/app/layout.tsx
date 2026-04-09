@@ -5,12 +5,13 @@ import { cookies } from 'next/headers';
 
 import '@bubbles/ui/globals.css';
 
+import { ThemeProvider } from '@bubbles/theme';
+import { Toaster } from '@bubbles/ui/shadcn/sonner';
+
 import AppShell from '@/components/app-shell';
 import Footer from '@/components/footer';
 import PrivacyNotice from '@/components/privacy-notice';
-import { Toaster } from '@bubbles/ui/shadcn/sonner';
 import { AppStoreProvider } from '@/context/app-store';
-import { ThemeProvider } from '@/context/theme-provider';
 import packageJson from '@/package.json';
 
 const geistSans = Geist({
@@ -25,8 +26,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ??
-      'https://teacherbuddy.mrbubbles-src.dev',
+    process.env.NEXT_PUBLIC_SITE_URL ?? 'https://teacherbuddy.mrbubbles-src.dev'
   ),
   title: {
     template: '%s | TeacherBuddy',

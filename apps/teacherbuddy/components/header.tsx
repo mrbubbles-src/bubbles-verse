@@ -8,7 +8,7 @@ import { SidebarTrigger } from '@bubbles/ui/shadcn/sidebar';
 
 import QuizTimerCard from './play/quiz-timer-card';
 import PageInfoDialog from './utility/page-info-dialog';
-import ThemeToggle from './utility/theme-toggle';
+import { ThemeToggle } from '@bubbles/theme';
 
 type HeaderProps = {
   meta: { title: string; description: string };
