@@ -49,6 +49,9 @@ All storage reads and writes go through [`../lib/storage.ts`](../lib/storage.ts)
 - XP is calculated per day, not per raw entry.
 - Multiple entries on the same date are aggregated first.
 - Daily tiers are fixed in [`../lib/xp.ts`](../lib/xp.ts).
+- The log sheet rejects invalid, empty, or future dates before writing.
+- As a second line of defense, the activity store normalizes invalid non-UI date inputs to today instead of persisting malformed entries.
+- Level-1 anchor establishment ignores malformed persisted date candidates defensively.
 - Current-level XP is recomputed from the activity history inside the current level window.
 - Level 1 establishes its start once from the first known Level-1 anchor, then stays frozen.
 - Level 2+ starts at the explicit level-up event.
@@ -70,5 +73,6 @@ That recomputation matters because:
 Then it recomputes current-level XP whenever the activity `entries` array changes, but only after skipping the pre-hydration default `[]` render.
 Additionally, the log submit path syncs from the exact post-write `entries` snapshot returned by `addDurationEntry`, preventing stale reads when users log retroactive dates.
 On hydration, existing unlocked Level-1 data with entries is backfilled once and then locked. Fresh Level 1 remains unlocked until the first real log establishes the frozen anchor date.
+The entry-id helper also keeps a final non-crypto fallback for older environments, and that branch is covered by tests.
 
 This keeps the persisted `levelState.xp` aligned with the real activity log.

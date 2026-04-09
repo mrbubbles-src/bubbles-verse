@@ -282,6 +282,51 @@ describe('use-level-store', () => {
       })
     })
 
+    it('ignores invalid entry dates during level 1 anchor establishment', () => {
+      useLevelStore.setState({
+        levelState: {
+          level: 1,
+          startDate: '2026-04-07',
+          levelStartAt: '2026-04-07T12:00:00.000Z',
+          xp: 0,
+          overXp: 0,
+        },
+        isEligible: false,
+      })
+
+      const entries: ActivityEntry[] = [
+        {
+          id: 'invalid-empty',
+          date: '',
+          durationMin: 30,
+          loggedAt: '2026-04-07T09:00:00.000Z',
+        },
+        {
+          id: 'invalid-calendar-day',
+          date: '2026-02-31',
+          durationMin: 20,
+          loggedAt: '2026-04-07T09:30:00.000Z',
+        },
+        {
+          id: 'valid',
+          date: '2026-04-06',
+          durationMin: 30,
+          loggedAt: '2026-04-07T10:00:00.000Z',
+        },
+      ]
+
+      expect(() =>
+        useLevelStore.getState().syncXpFromEntries(entries, {
+          establishLevelOneAnchor: true,
+        }),
+      ).not.toThrow()
+
+      expect(useLevelStore.getState().levelState).toMatchObject({
+        startDate: '2026-04-06',
+        xp: 5,
+      })
+    })
+
     it('backfills unlocked legacy level 1 data once and then locks that earlier day', () => {
       useLevelStore.setState({
         levelState: {

@@ -56,6 +56,29 @@ vi.mock('@/hooks/use-level-store', () => ({
 vi.mock('@/lib/dates', () => ({
   getTodayString: vi.fn(() => '2026-04-07'),
   getWeekStart: vi.fn(() => '2026-03-31'),
+  parseLocalDate: vi.fn((value: string) => {
+    const pattern = /^\d{4}-\d{2}-\d{2}$/
+
+    if (pattern.test(value) === false) {
+      throw new RangeError(`Expected YYYY-MM-DD date string, received "${value}".`)
+    }
+
+    const [yearString, monthString, dayString] = value.split('-')
+    const year = Number(yearString)
+    const month = Number(monthString)
+    const day = Number(dayString)
+    const parsedDate = new Date(year, month - 1, day)
+
+    if (
+      parsedDate.getFullYear() !== year ||
+      parsedDate.getMonth() !== month - 1 ||
+      parsedDate.getDate() !== day
+    ) {
+      throw new RangeError(`Invalid calendar day "${value}".`)
+    }
+
+    return parsedDate
+  }),
 }))
 
 vi.mock('@/hooks/use-settings-store', () => ({
@@ -249,6 +272,36 @@ describe('LogEntrySheet', () => {
     fireEvent.change(screen.getByLabelText(/start time/i), { target: { value: '09:00' } })
 
     expect(screen.getByRole('button', { name: /log it/i })).toBeDisabled()
+  })
+
+  it('blocks submit when the date input is empty', () => {
+    render(<LogEntrySheet />)
+
+    fireEvent.change(screen.getByLabelText(/date/i), {
+      target: { value: '' },
+    })
+    fireEvent.change(screen.getByLabelText(/minutes/i), {
+      target: { value: '30' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /log it/i }))
+
+    expect(sheetMocks.addDurationEntry).not.toHaveBeenCalled()
+    expect(screen.getByRole('alert')).toHaveTextContent('Choose a valid date.')
+  })
+
+  it('blocks submit when the date is in the future', () => {
+    render(<LogEntrySheet />)
+
+    fireEvent.change(screen.getByLabelText(/date/i), {
+      target: { value: '2026-04-08' },
+    })
+    fireEvent.change(screen.getByLabelText(/minutes/i), {
+      target: { value: '30' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /log it/i }))
+
+    expect(sheetMocks.addDurationEntry).not.toHaveBeenCalled()
+    expect(screen.getByRole('alert')).toHaveTextContent('Choose a valid date.')
   })
 
   it('focuses the minutes input when sheet opens and previews XP live', async () => {

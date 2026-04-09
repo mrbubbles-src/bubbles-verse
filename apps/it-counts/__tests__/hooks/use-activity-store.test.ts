@@ -120,6 +120,54 @@ describe('use-activity-store', () => {
       randomUuidSpy.mockRestore()
     })
 
+    it('falls back to today when the provided date is empty or invalid', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-04-07T10:15:00.000Z'))
+      vi.spyOn(globalThis.crypto, 'randomUUID')
+        .mockReturnValueOnce('fallback-empty')
+        .mockReturnValueOnce('fallback-invalid')
+
+      const emptyResult = useActivityStore.getState().addDurationEntry(25, '')
+      const invalidResult = useActivityStore.getState().addDurationEntry(
+        15,
+        '2026-02-31',
+      )
+
+      expect(emptyResult).toMatchObject({
+        entry: {
+          id: 'fallback-empty',
+          date: '2026-04-07',
+          durationMin: 25,
+        },
+        xpEarned: 3,
+        dailyXpToday: 3,
+      })
+      expect(invalidResult).toMatchObject({
+        entry: {
+          id: 'fallback-invalid',
+          date: '2026-04-07',
+          durationMin: 15,
+        },
+        xpEarned: 2,
+        dailyXpToday: 5,
+      })
+      expect(emptyResult.nextEntries).toEqual([emptyResult.entry])
+      expect(invalidResult.nextEntries).toEqual([
+        emptyResult.entry,
+        invalidResult.entry,
+      ])
+      expect(useActivityStore.getState().entries).toEqual([
+        emptyResult.entry,
+        invalidResult.entry,
+      ])
+      expect(JSON.parse(localStorage.getItem('it-counts:entries') ?? '[]')).toEqual([
+        emptyResult.entry,
+        invalidResult.entry,
+      ])
+
+      vi.restoreAllMocks()
+    })
+
     it('calculates past-date XP delta against existing entries for that date', () => {
       useActivityStore.getState().addEntry({
         id: 'existing',

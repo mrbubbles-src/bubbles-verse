@@ -39,4 +39,17 @@ describe('createEntryId', () => {
     expect(createEntryId()).toBe('00010203-0405-4607-8809-0a0b0c0d0e0f')
     expect(getRandomValues).toHaveBeenCalledOnce()
   })
+
+  it('falls back to a timestamp and random suffix when crypto helpers are missing', () => {
+    vi.stubGlobal('crypto', undefined)
+    vi.spyOn(Date, 'now').mockReturnValue(123456789)
+    vi.spyOn(Math, 'random').mockReturnValue(0.123456789)
+
+    const id = createEntryId()
+
+    expect(id).toMatch(/^entry-[a-z0-9]+-[a-z0-9]{8}$/)
+    expect(id).toBe(
+      `entry-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`,
+    )
+  })
 })

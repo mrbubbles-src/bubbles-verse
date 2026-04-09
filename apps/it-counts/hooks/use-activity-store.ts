@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 
 import type { ActivityEntry } from '@/types'
-import { getTodayString, getWeekStart } from '@/lib/dates'
+import { getTodayString, getWeekStart, parseLocalDate } from '@/lib/dates'
 import { createEntryId } from '@/lib/create-entry-id'
 import { loadEntries, saveEntries } from '@/lib/storage'
 import { calculateDailyXp } from '@/lib/xp'
@@ -30,6 +30,22 @@ interface ActivityState {
 }
 
 /**
+ * Returns `true` when the provided value is a valid persisted local day key.
+ */
+function isValidEntryDate(value: string | undefined): value is string {
+  if (typeof value !== 'string' || value.length === 0) {
+    return false
+  }
+
+  try {
+    parseLocalDate(value)
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
  * Manages the persisted activity log.
  * Every mutation writes through to `lib/storage.ts` immediately.
  */
@@ -47,7 +63,7 @@ export const useActivityStore = create<ActivityState>()((set, get) => ({
   },
 
   addDurationEntry: (durationMin, date) => {
-    const targetDate = date ?? getTodayString()
+    const targetDate = isValidEntryDate(date) ? date : getTodayString()
     const entry: ActivityEntry = {
       id: createEntryId(),
       date: targetDate,

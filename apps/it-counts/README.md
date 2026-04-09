@@ -65,6 +65,7 @@ bun run build
 - app settings live under `it-counts:settings`
 - session-only UI state stays in memory and resets on reload
 - the first level-XP recompute waits for hydrated entries, so returning users do not briefly persist a zero-XP snapshot on mount
+- invalid, empty, or future log dates are rejected in the sheet; if a non-UI caller still passes an invalid date, the activity store normalizes it to today as a second line of defense
 - after each log write, level XP is re-synced from the post-write entries snapshot so retroactive date logs update total level XP immediately
 - level 1 now establishes its start once from the first known Level-1 anchor, then freezes; later retro-logs before that frozen date do not add to current-level XP
 - entry ids prefer `crypto.randomUUID()` but fall back to older Web Crypto APIs, so local logging still works in browsers that lack `randomUUID`

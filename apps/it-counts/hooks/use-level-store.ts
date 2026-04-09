@@ -34,6 +34,12 @@ function getEarliestEntryDate(entries: readonly ActivityEntry[]): string | null 
   let earliestDate: string | null = null
 
   for (const entry of entries) {
+    try {
+      parseLocalDate(entry.date)
+    } catch {
+      continue
+    }
+
     if (earliestDate === null || entry.date < earliestDate) {
       earliestDate = entry.date
     }
