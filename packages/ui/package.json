@@ -15,8 +15,8 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "next-themes": "^0.4.6",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
     "react-hook-form": "^7.68.0",
     "shadcn": "^4.1.0",
     "sonner": "^2.0.7",
@@ -28,12 +28,12 @@
     "@tailwindcss/postcss": "^4.1.18",
     "@turbo/gen": "^2.8.1",
     "@types/node": "^25.1.0",
-    "@types/react": "^19.2.10",
-    "@types/react-dom": "^19.2.3",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
     "@bubbles/eslint-config": "workspace:*",
     "@bubbles/typescript-config": "workspace:*",
     "eslint": "^9.39.2",
-    "next": "16.2.2",
+    "next": "16.2.3",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3"
   },
@@ -45,5 +45,9 @@
     "./components/*": "./src/components/*.tsx",
     "./shadcn/*": "./src/components/shadcn/*.tsx",
     "./hooks/*": "./src/hooks/*.ts"
+  },
+  "overrides": {
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3"
   }
 }
