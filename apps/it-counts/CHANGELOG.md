@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Kept the dashboard weekly XP widget reactive after refresh by deriving weekly XP directly from `entries` state instead of selecting a non-reactive store getter.
+- Re-synced level XP whenever hydrated entries change, ensuring total XP reflects retroactive logs immediately and persists correctly across reloads.
+- Moved the log sheet above mobile soft keyboards (iOS/Android) by tracking `window.visualViewport` and offsetting the bottom sheet while inputs are focused.
+- Updated `/api/og` image generation to resolve the logo from the current request origin, fixing OpenGraph previews on custom domains.
+
 ## [1.0.0] - 2026-04-09
 
 ### Documentation

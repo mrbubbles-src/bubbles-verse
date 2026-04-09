@@ -55,11 +55,12 @@ That recomputation matters because:
 
 ## Hydration flow
 
-`StoreHydrator` runs on mount and does four things:
+`StoreHydrator` runs on mount and does three things:
 
 1. load entries
 2. load current level
 3. load settings
-4. recompute current-level XP from the loaded entries
+
+Then it recomputes current-level XP whenever the activity `entries` array changes.
 
 This keeps the persisted `levelState.xp` aligned with the real activity log.
