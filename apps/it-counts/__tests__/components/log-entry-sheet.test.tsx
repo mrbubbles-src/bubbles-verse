@@ -149,6 +149,7 @@ describe('LogEntrySheet', () => {
         entry,
         xpEarned: dailyXpToday - calculateDailyXp(previousTotal),
         dailyXpToday,
+        nextEntries: sheetMocks.entries,
       }
     })
   })
@@ -213,7 +214,7 @@ describe('LogEntrySheet', () => {
       expect.arrayContaining(sheetMocks.entries),
     )
     const syncedEntries = sheetMocks.syncXpFromEntries.mock.calls.at(-1)?.[0] as ActivityEntry[]
-    expect(syncedEntries).not.toBe(sheetMocks.entries)
+    expect(syncedEntries).toBe(sheetMocks.entries)
     expect(screen.getByText('Today total: 5 XP · That counted.')).toBeInTheDocument()
   })
 

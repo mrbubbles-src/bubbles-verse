@@ -4,11 +4,11 @@ import { describe, expect, it } from 'vitest';
 import { BottomNav } from '@/components/global/bottom-nav';
 
 describe('BottomNav', () => {
-  it('renders 3 navigation links and 1 log button', () => {
+  it('renders 2 navigation links and 1 log button', () => {
     render(<BottomNav />);
     const nav = screen.getByRole('navigation', { name: /main/i });
     const links = nav.querySelectorAll('a');
-    expect(links.length).toBe(3);
+    expect(links.length).toBe(2);
     expect(
       screen.getByRole('button', { name: /log activity/i })
     ).toBeInTheDocument();
@@ -22,7 +22,7 @@ describe('BottomNav', () => {
       expect(link.className).toMatch(/touch-hitbox/);
     });
     expect(
-      screen.getByRole('button', { name: /log activity/i }).className
+      screen.getByRole('button', { name: /log activity/i }).getAttribute('class')
     ).toMatch(/touch-hitbox/);
   });
 
@@ -38,9 +38,4 @@ describe('BottomNav', () => {
     expect(historyLink?.getAttribute('href')).toBe('/history');
   });
 
-  it('has About link pointing to /about', () => {
-    render(<BottomNav />);
-    const aboutLink = screen.getByText('About').closest('a');
-    expect(aboutLink?.getAttribute('href')).toBe('/about');
-  });
 });

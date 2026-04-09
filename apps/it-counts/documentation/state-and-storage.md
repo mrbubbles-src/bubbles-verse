@@ -61,7 +61,7 @@ That recomputation matters because:
 2. load current level
 3. load settings
 
-Then it recomputes current-level XP whenever the activity `entries` array changes.
+Then it recomputes current-level XP whenever the activity `entries` array changes, but only after skipping the pre-hydration default `[]` render.
 Additionally, the log submit path syncs from the exact post-write `entries` snapshot returned by `addDurationEntry`, preventing stale reads when users log retroactive dates.
 
 This keeps the persisted `levelState.xp` aligned with the real activity log.

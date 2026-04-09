@@ -7,13 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-04-09
+
+### Added
+
+- `.vscode/settings.json` with recommended TypeScript settings for the project.
+
 ### Fixed
 
+- Stopped `StoreHydrator` from persisting a zero-XP level snapshot on the first mount render before activity entries finish hydrating from storage.
 - Kept the dashboard weekly XP widget reactive after refresh by deriving weekly XP directly from `entries` state instead of selecting a non-reactive store getter.
 - Re-synced level XP whenever hydrated entries change, ensuring total XP reflects retroactive logs immediately and persists correctly across reloads.
 - Made log-save level sync deterministic by syncing from the `addDurationEntry` post-write snapshot, so backdated entries (e.g., yesterday) are always reflected in total level XP immediately.
 - Moved the log sheet above mobile soft keyboards (iOS/Android) by tracking `window.visualViewport` and offsetting the bottom sheet while inputs are focused.
 - Updated `/api/og` image generation to resolve the logo from the current request origin, fixing OpenGraph previews on custom domains.
+- Changed the dashboard week label to render open-ended progress (`Week 5`, `Week 6`, ...) after the 4-week target window, with the same calm green accent used by the “On track” badge.
 
 ## [1.0.0] - 2026-04-09
 

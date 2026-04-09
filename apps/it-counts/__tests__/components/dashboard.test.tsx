@@ -38,6 +38,14 @@ vi.mock('@/hooks/use-activity-store', () => ({
         },
         xpEarned: 5,
         dailyXpToday: 5,
+        nextEntries: [
+          {
+            id: 'entry-1',
+            date: '2026-04-07',
+            durationMin: 30,
+            loggedAt: '2026-04-07T10:00:00.000Z',
+          },
+        ],
       })),
       loadFromStorage: vi.fn(),
       getDailyEntries: () => [],
@@ -73,28 +81,19 @@ describe('Dashboard Shell', () => {
     expect(screen.getByLabelText('0 of 100 XP')).toBeInTheDocument()
   })
 
-  it('renders the Log Activity CTA', () => {
+  it('renders the weekly summary section', () => {
     render(<Home />)
-    expect(
-      screen.getByRole('button', { name: /log activity/i })
-    ).toBeInTheDocument()
+    expect(screen.getByText(/this week/i)).toBeInTheDocument()
   })
 
-  it('renders the bottom navigation with 4 items', () => {
+  it('renders the level requirements section', () => {
     render(<Home />)
-    const nav = screen.getByRole('navigation', { name: /main/i })
-    const links = nav.querySelectorAll('a, button')
-    expect(links.length).toBe(4)
+    expect(screen.getByText(/requirements/i)).toBeInTheDocument()
   })
 
-  it('renders Dashboard nav item', () => {
+  it('renders the unlocked abilities section', () => {
     render(<Home />)
-    expect(screen.getByText(/dashboard/i)).toBeInTheDocument()
-  })
-
-  it('renders History nav item', () => {
-    render(<Home />)
-    expect(screen.getByText(/history/i)).toBeInTheDocument()
+    expect(screen.getByText(/unlocked/i)).toBeInTheDocument()
   })
 
   it('uses single-column mobile layout with max-w-md on desktop', () => {

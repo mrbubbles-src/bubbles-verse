@@ -7,10 +7,14 @@ const PACE_LABELS: Record<OverXpPace, string> = {
   'well-over': 'Well over',
 }
 
+/** Shared text color for calm “healthy progress” UI accents. */
+export const ON_TRACK_TEXT_STYLES =
+  'text-ctp-latte-green dark:text-ctp-mocha-green'
+
 /** Tailwind classes per pace — text + background, never color alone. */
 const PACE_STYLES: Record<OverXpPace, string> = {
   'on-track':
-    'border-ctp-latte-green/30 bg-ctp-latte-green/10 text-ctp-latte-green dark:border-ctp-mocha-green/30 dark:bg-ctp-mocha-green/10 dark:text-ctp-mocha-green',
+    `border-ctp-latte-green/30 bg-ctp-latte-green/10 ${ON_TRACK_TEXT_STYLES} dark:border-ctp-mocha-green/30 dark:bg-ctp-mocha-green/10`,
   'slightly-over':
     'border-ctp-latte-teal/30 bg-ctp-latte-teal/10 text-ctp-latte-teal dark:border-ctp-mocha-teal/30 dark:bg-ctp-mocha-teal/10 dark:text-ctp-mocha-teal',
   'well-over':
