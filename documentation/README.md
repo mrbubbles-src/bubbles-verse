@@ -1,29 +1,22 @@
 # Monorepo documentation
 
-Material here describes **bubbles-verse as a whole**. It does not replace per-app guides (for example TeacherBuddy’s [`../apps/teacherbuddy/documentation/README.md`](../apps/teacherbuddy/documentation/README.md)).
+This folder documents **bubbles-verse as a repo**: workspace boundaries, setup, tooling, and repo-wide troubleshooting.
+
+App-specific details stay inside each workspace. For `it-counts`, start with [`../apps/it-counts/README.md`](../apps/it-counts/README.md) and [`../apps/it-counts/documentation/README.md`](../apps/it-counts/documentation/README.md).
 
 ## Reading order
 
-1. **[onboarding.md](onboarding.md)** — Checklist for a new machine or contributor.
-2. **[architecture.md](architecture.md)** — Workspaces, boundaries, where state lives.
-3. **[tooling.md](tooling.md)** — Bun, Turbo, Prettier, ESLint, TypeScript bases.
-4. **[troubleshooting.md](troubleshooting.md)** — Cache, env, filters, typical failures.
-
-## Reference
-
-| Document | Contents |
-| -------- | -------- |
-| [architecture.md](architecture.md) | Dependency direction, `@bubbles/ui`, Next.js note |
-| [tooling.md](tooling.md) | Tasks, `turbo.json` env allowlist, Prettier (`tailwindStylesheet`) |
-| [onboarding.md](onboarding.md) | Clone → install → run one app → PR checks |
-| [troubleshooting.md](troubleshooting.md) | Turbo cache, `--filter`, workspace protocol |
+1. [onboarding.md](onboarding.md) - new machine, install, first successful run
+2. [architecture.md](architecture.md) - workspace graph, boundaries, shared packages
+3. [tooling.md](tooling.md) - Bun, Turbo, ESLint, Prettier, TypeScript, test entrypoints
+4. [troubleshooting.md](troubleshooting.md) - stale cache, env drift, hostnames, workspace wiring
 
 ## Per workspace
 
-Each **app** and **package** under `apps/*` and `packages/*` should keep:
+Each app or package should keep its own:
 
-- `README.md` — how to run and what it does.
-- `CHANGELOG.md` — **scoped** releases (not duplicate root changelog).
-- `documentation/` — optional deeper notes for that scope only.
+- `README.md` - what it is and how to run it
+- `CHANGELOG.md` - scoped release notes only
+- `documentation/` - deeper notes for that workspace only
 
-Root [`CHANGELOG.md`](../CHANGELOG.md) is for **cross-repo** changes (tooling, workspace moves, shared breaking changes).
+Root [`CHANGELOG.md`](../CHANGELOG.md) stays reserved for cross-cutting repo changes.

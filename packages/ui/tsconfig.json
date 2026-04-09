@@ -2,10 +2,12 @@
   "extends": "@workspace/typescript-config/react-library.json",
   "compilerOptions": {
     "baseUrl": ".",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "paths": {
       "@bubbles/ui/*": ["./src/*"]
     }
   },
-  "include": ["."],
+  "include": [".", "types"],
   "exclude": ["node_modules", "dist"]
 }

@@ -2,7 +2,7 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
-  transpilePackages: ['@bubbles/ui'],
+  transpilePackages: ['@bubbles/ui', '@bubbles/theme'],
   reactCompiler: process.env.NEXT_DISABLE_REACT_COMPILER !== '1',
 };
 

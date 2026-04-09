@@ -20,21 +20,37 @@ Run `bun install` from the **monorepo root**.
 
 From [`package.json`](package.json) `exports` (wildcard = any file under that tree):
 
-| Specifier | Role |
-| --------- | ---- |
-| `@bubbles/ui/globals.css` | Tailwind / token entry — import **once** in the app root layout. |
+| Specifier                    | Role                                                                       |
+| ---------------------------- | -------------------------------------------------------------------------- |
+| `@bubbles/ui/globals.css`    | Tailwind / token entry — import **once** in the app root layout.           |
 | `@bubbles/ui/postcss.config` | Shared Postcss for apps that want identical pipeline to the design system. |
-| `@bubbles/ui/shadcn/*` | Low-level primitives (buttons, forms, dialog, …). |
-| `@bubbles/ui/components/*` | Higher-level composed components shipped with the package. |
-| `@bubbles/ui/lib/*` | Utilities (`cn`, helpers). |
-| `@bubbles/ui/hooks/*` | Hooks intended for reuse (forms, theme, etc.). |
+| `@bubbles/ui/fonts`          | Shared `next/font/google` objects for Montserrat, Poppins, and Fira Code.  |
+| `@bubbles/ui/shadcn/*`       | Low-level primitives (buttons, forms, dialog, …).                          |
+| `@bubbles/ui/components/*`   | Higher-level composed components shipped with the package.                 |
+| `@bubbles/ui/lib/*`          | Utilities (`cn`, helpers).                                                 |
+| `@bubbles/ui/hooks/*`        | Hooks intended for reuse (forms, theme, etc.).                             |
 
 ### Example
 
 ```tsx
+import { firaCode, montserrat, poppins } from '@bubbles/ui/fonts';
 import { Button } from '@bubbles/ui/shadcn/button';
 import { Toaster } from '@bubbles/ui/shadcn/sonner';
+
 import '@bubbles/ui/globals.css';
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html
+      className={`${montserrat.variable} ${poppins.variable} ${firaCode.variable}`}>
+      <body>{children}</body>
+    </html>
+  );
+}
 ```
 
 Do **not** deep-import paths that are not listed in `exports` — they may break under package encapsulation.
@@ -45,11 +61,11 @@ Root Prettier config sets `tailwindStylesheet` to **`packages/ui/src/styles/glob
 
 ## Scripts (from `packages/ui`)
 
-| Command | Purpose |
-| ------- | ------- |
-| `bun run lint` | ESLint |
-| `bun run format` | Prettier for `ts` / `tsx` |
-| `bun run typecheck` | `tsc --noEmit` |
+| Command             | Purpose                   |
+| ------------------- | ------------------------- |
+| `bun run lint`      | ESLint                    |
+| `bun run format`    | Prettier for `ts` / `tsx` |
+| `bun run typecheck` | `tsc --noEmit`            |
 
 Via Turbo: `bunx turbo run lint typecheck --filter=@bubbles/ui`.
 
@@ -57,5 +73,10 @@ Via Turbo: `bunx turbo run lint typecheck --filter=@bubbles/ui`.
 
 - **Do:** Visual primitives, shared hooks, token tweaks, cross-app form controls.
 - **Don’t:** App routes, server-only data loading, or copy that belongs to a single marketing site — keep those in `apps/<name>`.
+
+## Typography baseline
+
+`globals.css` ships heading, body, and code defaults that read `--font-heading`, `--font-body`, and `--font-code`.
+Those variables stay inert until a consuming app applies the classes from `@bubbles/ui/fonts` on `<html>`.
 
 More detail: [documentation/overview.md](documentation/overview.md) · [CHANGELOG.md](CHANGELOG.md)
