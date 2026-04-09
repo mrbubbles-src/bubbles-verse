@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react'
 
 import { useActivityStore } from '@/hooks/use-activity-store'
-import { useLevelStore } from '@/hooks/use-level-store'
+import { LEVEL_ONE_START_DATE_LOCK_KEY, useLevelStore } from '@/hooks/use-level-store'
 import { useSettingsStore } from '@/hooks/use-settings-store'
 
 /**
@@ -14,8 +14,13 @@ export function StoreHydrator() {
   const loadEntries = useActivityStore((s) => s.loadFromStorage)
   const entries = useActivityStore((s) => s.entries)
   const loadLevel = useLevelStore((s) => s.loadFromStorage)
+  const currentLevel = useLevelStore((s) => s.levelState.level)
   const syncXpFromEntries = useLevelStore((s) => s.syncXpFromEntries)
   const loadSettings = useSettingsStore((s) => s.loadFromStorage)
+  const levelOneStartDateLocked = useSettingsStore(
+    (s) => s.settings[LEVEL_ONE_START_DATE_LOCK_KEY] === true,
+  )
+  const setSetting = useSettingsStore((s) => s.setSetting)
   const skipInitialEntriesSyncRef = useRef(true)
 
   useEffect(() => {
@@ -32,8 +37,28 @@ export function StoreHydrator() {
       return
     }
 
-    syncXpFromEntries(entries)
-  }, [entries, syncXpFromEntries])
+    const shouldEstablishLevelOneAnchor =
+      currentLevel === 1 &&
+      levelOneStartDateLocked === false &&
+      entries.length > 0
+
+    syncXpFromEntries(
+      entries,
+      shouldEstablishLevelOneAnchor
+        ? { establishLevelOneAnchor: true }
+        : undefined,
+    )
+
+    if (shouldEstablishLevelOneAnchor) {
+      setSetting(LEVEL_ONE_START_DATE_LOCK_KEY, true)
+    }
+  }, [
+    currentLevel,
+    entries,
+    levelOneStartDateLocked,
+    setSetting,
+    syncXpFromEntries,
+  ])
 
   return null
 }

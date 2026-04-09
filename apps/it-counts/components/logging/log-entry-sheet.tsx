@@ -15,7 +15,7 @@ import { DurationInput } from '@/components/logging/duration-input'
 import { TimeRangeInput } from '@/components/logging/time-range-input'
 import { MotivationalMessage } from '@/components/shared/motivational-message'
 import { useActivityStore } from '@/hooks/use-activity-store'
-import { useLevelStore } from '@/hooks/use-level-store'
+import { LEVEL_ONE_START_DATE_LOCK_KEY, useLevelStore } from '@/hooks/use-level-store'
 import { useSettingsStore } from '@/hooks/use-settings-store'
 import { useUiStore } from '@/hooks/use-ui-store'
 import { getTodayString, getWeekStart } from '@/lib/dates'
@@ -105,7 +105,12 @@ function computeTimeRange(
 export function LogEntrySheet() {
   const today = getTodayString()
   const addDurationEntry = useActivityStore((s) => s.addDurationEntry)
+  const currentLevel = useLevelStore((s) => s.levelState.level)
   const syncXpFromEntries = useLevelStore((s) => s.syncXpFromEntries)
+  const levelOneStartDateLocked = useSettingsStore(
+    (s) => s.settings[LEVEL_ONE_START_DATE_LOCK_KEY] === true,
+  )
+  const setSetting = useSettingsStore((s) => s.setSetting)
 
   const open = useUiStore((s) => s.logSheetOpen)
   const setOpen = useUiStore((s) => s.setLogSheetOpen)
@@ -237,7 +242,20 @@ export function LogEntrySheet() {
     }
 
     const { dailyXpToday, nextEntries } = addDurationEntry(durationMin, selectedDate)
-    syncXpFromEntries(nextEntries)
+    const shouldEstablishLevelOneAnchor =
+      currentLevel === 1 &&
+      levelOneStartDateLocked === false &&
+      nextEntries.length > 0
+
+    syncXpFromEntries(
+      nextEntries,
+      shouldEstablishLevelOneAnchor
+        ? { establishLevelOneAnchor: true }
+        : undefined,
+    )
+    if (shouldEstablishLevelOneAnchor) {
+      setSetting(LEVEL_ONE_START_DATE_LOCK_KEY, true)
+    }
     setDurationError('')
 
     const weekStart = getWeekStart(selectedDate)
