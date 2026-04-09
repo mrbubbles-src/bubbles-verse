@@ -1,10 +1,10 @@
 import { create } from 'zustand'
 
 import type { ActivityEntry } from '@/types'
-import { getTodayString } from '@/lib/dates'
+import { getTodayString, getWeekStart } from '@/lib/dates'
+import { createEntryId } from '@/lib/create-entry-id'
 import { loadEntries, saveEntries } from '@/lib/storage'
 import { calculateDailyXp } from '@/lib/xp'
-import { getWeekStart } from '@/lib/dates'
 
 export type AddDurationEntryResult = {
   entry: ActivityEntry
@@ -49,7 +49,7 @@ export const useActivityStore = create<ActivityState>()((set, get) => ({
   addDurationEntry: (durationMin, date) => {
     const targetDate = date ?? getTodayString()
     const entry: ActivityEntry = {
-      id: crypto.randomUUID(),
+      id: createEntryId(),
       date: targetDate,
       durationMin,
       loggedAt: new Date().toISOString(),

@@ -66,6 +66,7 @@ bun run build
 - session-only UI state stays in memory and resets on reload
 - the first level-XP recompute waits for hydrated entries, so returning users do not briefly persist a zero-XP snapshot on mount
 - after each log write, level XP is re-synced from the post-write entries snapshot so retroactive date logs update total level XP immediately
+- entry ids prefer `crypto.randomUUID()` but fall back to older Web Crypto APIs, so local logging still works in browsers that lack `randomUUID`
 
 ## Environment
 
