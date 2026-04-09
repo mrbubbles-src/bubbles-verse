@@ -123,6 +123,7 @@ export function LogEntrySheet() {
   const [nonWalking, setNonWalking] = useState('')
 
   const [confirmation, setConfirmation] = useState<ConfirmationState | null>(null)
+  const [keyboardOffset, setKeyboardOffset] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
   const closeTimeoutRef = useRef<number | null>(null)
 
@@ -157,6 +158,32 @@ export function LogEntrySheet() {
   }, [])
 
   /**
+   * Tracks iOS/Android soft-keyboard height via VisualViewport so the bottom
+   * sheet stays above the keyboard instead of being covered by it.
+   */
+  useEffect(() => {
+    if (!open || typeof window === 'undefined' || !window.visualViewport) {
+      return
+    }
+
+    const viewport = window.visualViewport
+    const updateOffset = () => {
+      const rawOffset =
+        window.innerHeight - viewport.height - viewport.offsetTop
+      setKeyboardOffset(rawOffset > 0 ? rawOffset : 0)
+    }
+
+    updateOffset()
+    viewport.addEventListener('resize', updateOffset)
+    viewport.addEventListener('scroll', updateOffset)
+
+    return () => {
+      viewport.removeEventListener('resize', updateOffset)
+      viewport.removeEventListener('scroll', updateOffset)
+    }
+  }, [open])
+
+  /**
    * Resets all transient form state whenever the sheet is dismissed or reopened.
    */
   function resetSheetState() {
@@ -182,6 +209,7 @@ export function LogEntrySheet() {
 
     if (!nextOpen) {
       resetSheetState()
+      setKeyboardOffset(0)
     }
 
     setOpen(nextOpen)
@@ -243,6 +271,7 @@ export function LogEntrySheet() {
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent
         side="bottom"
+        style={{ bottom: keyboardOffset }}
         className="mx-auto w-full max-w-md rounded-t-[1.75rem] border-x-0 border-b-0 px-0">
         <div className="mx-auto mt-3 h-1.5 w-12 rounded-full bg-border" aria-hidden="true" />
         <SheetHeader className="gap-2 pr-12">
