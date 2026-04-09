@@ -16,6 +16,7 @@ function resetStore() {
     levelState: {
       level: 1,
       startDate: '2026-04-07',
+      levelStartAt: '2026-04-07T00:00:00.000Z',
       xp: 0,
       overXp: 0,
     },
@@ -56,7 +57,7 @@ describe('use-level-store', () => {
 
       expect(useLevelStore.getState().levelState).toEqual({
         ...stored,
-        levelStartAt: '2026-03-01T00:00:00.000Z',
+        levelStartAt: new Date(2026, 2, 1).toISOString(),
       })
     })
 
@@ -181,6 +182,7 @@ describe('use-level-store', () => {
         levelState: {
           level: 2,
           startDate: '2026-04-07',
+          levelStartAt: '2026-04-07T00:00:00.000Z',
           xp: 0,
           overXp: 0,
         },
@@ -205,6 +207,121 @@ describe('use-level-store', () => {
       useLevelStore.getState().syncXpFromEntries(entries)
 
       expect(useLevelStore.getState().levelState.xp).toBe(5)
+    })
+
+    it('establishes the level 1 anchor from the first known retroactive log', () => {
+      useLevelStore.setState({
+        levelState: {
+          level: 1,
+          startDate: '2026-04-07',
+          levelStartAt: '2026-04-07T12:00:00.000Z',
+          xp: 0,
+          overXp: 0,
+        },
+        isEligible: false,
+      })
+
+      const entries: ActivityEntry[] = [
+        {
+          id: 'retro',
+          date: '2026-04-06',
+          durationMin: 30,
+          loggedAt: '2026-04-07T09:00:00.000Z',
+        },
+      ]
+
+      useLevelStore.getState().syncXpFromEntries(entries, {
+        establishLevelOneAnchor: true,
+      })
+
+      expect(useLevelStore.getState().levelState).toMatchObject({
+        level: 1,
+        startDate: '2026-04-06',
+        xp: 5,
+        overXp: 0,
+      })
+      expect(useLevelStore.getState().levelState.levelStartAt).toBe(
+        new Date(2026, 3, 6).toISOString(),
+      )
+    })
+
+    it('does not move a locked level 1 anchor backward after it has been established', () => {
+      useLevelStore.setState({
+        levelState: {
+          level: 1,
+          startDate: '2026-04-07',
+          levelStartAt: new Date(2026, 3, 7).toISOString(),
+          xp: 5,
+          overXp: 0,
+        },
+        isEligible: false,
+      })
+
+      const entries: ActivityEntry[] = [
+        {
+          id: 'first-known',
+          date: '2026-04-07',
+          durationMin: 30,
+          loggedAt: '2026-04-07T11:00:00.000Z',
+        },
+        {
+          id: 'too-old',
+          date: '2026-04-01',
+          durationMin: 30,
+          loggedAt: '2026-04-09T12:00:00.000Z',
+        },
+      ]
+
+      useLevelStore.getState().syncXpFromEntries(entries)
+
+      expect(useLevelStore.getState().levelState).toMatchObject({
+        level: 1,
+        startDate: '2026-04-07',
+        xp: 5,
+        overXp: 0,
+      })
+    })
+
+    it('backfills unlocked legacy level 1 data once and then locks that earlier day', () => {
+      useLevelStore.setState({
+        levelState: {
+          level: 1,
+          startDate: '2026-04-07',
+          levelStartAt: '2026-04-07T12:00:00.000Z',
+          xp: 5,
+          overXp: 0,
+        },
+        isEligible: false,
+      })
+
+      const entries: ActivityEntry[] = [
+        {
+          id: 'backfill-old',
+          date: '2026-04-06',
+          durationMin: 30,
+          loggedAt: '2026-04-09T11:00:00.000Z',
+        },
+        {
+          id: 'backfill-new',
+          date: '2026-04-07',
+          durationMin: 30,
+          loggedAt: '2026-04-09T12:00:00.000Z',
+        },
+      ]
+
+      useLevelStore.getState().syncXpFromEntries(entries, {
+        establishLevelOneAnchor: true,
+      })
+
+      expect(useLevelStore.getState().levelState).toMatchObject({
+        level: 1,
+        startDate: '2026-04-06',
+        xp: 10,
+        overXp: 0,
+      })
+      expect(useLevelStore.getState().levelState.levelStartAt).toBe(
+        new Date(2026, 3, 6).toISOString(),
+      )
     })
 
     it('derives overXp and eligibility from recomputed total across many days', () => {
@@ -243,6 +360,7 @@ describe('use-level-store', () => {
         levelState: {
           level: 1,
           startDate: '2026-03-01',
+          levelStartAt: '2026-03-01T00:00:00.000Z',
           xp: 120,
           overXp: 20,
         },

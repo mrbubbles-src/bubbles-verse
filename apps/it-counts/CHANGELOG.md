@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Added a browser-safe client entry-id fallback so local logging still works in dev browsers that expose `crypto` without `crypto.randomUUID()`.
+- Changed Level 1 anchoring to establish once and then freeze, so later retroactive logs before the frozen Level-1 start date no longer add to current-level total XP.
+- Replaced the temporary Level-1 backfill marker with a persistent lock flag so legacy Level-1 data is corrected once, then kept stable across later retro-logs and reloads.
 
 ## [1.0.1] - 2026-04-09
 
