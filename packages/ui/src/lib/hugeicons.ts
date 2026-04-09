@@ -1,3 +1,5 @@
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
+/// <reference path="../../types/hugeicons.d.ts" />
 export { default as Add01Icon } from '@hugeicons/core-free-icons/Add01Icon';
 export { default as AlertCircleIcon } from '@hugeicons/core-free-icons/AlertCircleIcon';
 export { default as Alert01Icon } from '@hugeicons/core-free-icons/Alert01Icon';
