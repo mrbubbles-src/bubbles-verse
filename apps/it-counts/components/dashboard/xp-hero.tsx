@@ -5,6 +5,7 @@ import { calculateDailyXp } from '@/lib/xp';
 
 import { useMemo } from 'react';
 
+import { ON_TRACK_TEXT_STYLES } from '@/components/dashboard/status-badge';
 import { OverXpSection } from '@/components/dashboard/over-xp-section';
 import { StatusBadge } from '@/components/dashboard/status-badge';
 import { WeeklySummary } from '@/components/dashboard/weekly-summary';
@@ -26,6 +27,9 @@ export function XpHero() {
   const xpToGo = Math.max(0, 100 - xp);
   const today = getTodayString();
   const weeksElapsed = getWeeksElapsedInLevel(startDate, today);
+  const displayedWeek = weeksElapsed + 1;
+  const weekLabel =
+    displayedWeek <= 4 ? `Week ${displayedWeek} of 4` : `Week ${displayedWeek}`;
 
   const todayEntries = useMemo(() => {
     return entries
@@ -39,7 +43,10 @@ export function XpHero() {
   return (
     <section className="w-full">
       <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-        Level {level} · Week {weeksElapsed + 1} of 4{' '}
+        Level {level} ·{' '}
+        <span className={displayedWeek > 4 ? ON_TRACK_TEXT_STYLES : undefined}>
+          {weekLabel}
+        </span>
       </p>
       <div
         className="mt-2 flex items-baseline gap-2"
