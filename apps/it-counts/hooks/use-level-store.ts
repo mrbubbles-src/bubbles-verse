@@ -2,9 +2,16 @@ import { create } from 'zustand'
 
 import type { ActivityEntry, LevelState } from '@/types'
 import { loadCurrentLevel, saveCurrentLevel } from '@/lib/storage'
-import { getTodayString, getWeeksElapsedInLevel } from '@/lib/dates'
+import { getTodayString, getWeeksElapsedInLevel, parseLocalDate } from '@/lib/dates'
 import { calculateOverXp, isLevelUpEligible } from '@/lib/levels'
 import { sumLevelXpFromEntries } from '@/lib/xp'
+
+export const LEVEL_ONE_START_DATE_LOCK_KEY = 'levelOneStartDateLocked'
+
+export type SyncXpFromEntriesOptions = {
+  /** Establishes and freezes the Level-1 anchor from the earliest known entry. */
+  establishLevelOneAnchor?: boolean
+}
 
 /**
  * Builds a fresh default level state using today's date at call time,
@@ -20,13 +27,77 @@ function createDefaultLevelState(): LevelState {
   }
 }
 
+/**
+ * Returns the oldest logged calendar day, or `null` when there are no entries.
+ */
+function getEarliestEntryDate(entries: readonly ActivityEntry[]): string | null {
+  let earliestDate: string | null = null
+
+  for (const entry of entries) {
+    try {
+      parseLocalDate(entry.date)
+    } catch {
+      continue
+    }
+
+    if (earliestDate === null || entry.date < earliestDate) {
+      earliestDate = entry.date
+    }
+  }
+
+  return earliestDate
+}
+
+/**
+ * Returns the device-local start of a persisted calendar day as an ISO string.
+ */
+function getLocalDayStartIso(date: string): string {
+  return parseLocalDate(date).toISOString()
+}
+
+/**
+ * Establishes the Level-1 anchor once from the earliest known entry when asked.
+ * Later levels always keep the explicit level-up boundary unchanged.
+ */
+function getAnchoredLevelState(
+  current: LevelState,
+  entries: readonly ActivityEntry[],
+  options?: SyncXpFromEntriesOptions,
+): LevelState {
+  if (current.level !== 1 || options?.establishLevelOneAnchor !== true) {
+    return current
+  }
+
+  const earliestEntryDate = getEarliestEntryDate(entries)
+  if (earliestEntryDate === null) {
+    return current
+  }
+
+  const anchoredLevelStartAt = getLocalDayStartIso(earliestEntryDate)
+  if (
+    earliestEntryDate === current.startDate &&
+    current.levelStartAt === anchoredLevelStartAt
+  ) {
+    return current
+  }
+
+  return {
+    ...current,
+    startDate: earliestEntryDate,
+    levelStartAt: anchoredLevelStartAt,
+  }
+}
+
 interface LevelStoreState {
   levelState: LevelState
   /**
    * Recomputes persisted level XP from activity entries: sum of daily XP for
    * each day in `[levelState.startDate, today]` (device-local dates).
    */
-  syncXpFromEntries: (entries: ActivityEntry[]) => void
+  syncXpFromEntries: (
+    entries: ActivityEntry[],
+    options?: SyncXpFromEntriesOptions,
+  ) => void
   loadFromStorage: () => void
   triggerLevelUp: () => void
   isEligible: boolean
@@ -41,18 +112,19 @@ export const useLevelStore = create<LevelStoreState>()((set, get) => ({
   levelState: createDefaultLevelState(),
   isEligible: false,
 
-  syncXpFromEntries: (entries) => {
+  syncXpFromEntries: (entries, options) => {
     const current = get().levelState
+    const normalized = getAnchoredLevelState(current, entries, options)
     const today = getTodayString()
     const nextXp = sumLevelXpFromEntries(
       entries,
-      current.startDate,
+      normalized.startDate,
       today,
-      current.levelStartAt,
+      normalized.levelStartAt,
     )
-    const weeksElapsed = getWeeksElapsedInLevel(current.startDate, today)
+    const weeksElapsed = getWeeksElapsedInLevel(normalized.startDate, today)
     const next: LevelState = {
-      ...current,
+      ...normalized,
       xp: nextXp,
       overXp: calculateOverXp(nextXp),
     }
@@ -69,7 +141,7 @@ export const useLevelStore = create<LevelStoreState>()((set, get) => ({
     const state = loaded ?? createDefaultLevelState()
     const migratedState: LevelState = {
       ...state,
-      levelStartAt: state.levelStartAt ?? `${state.startDate}T00:00:00.000Z`,
+      levelStartAt: state.levelStartAt ?? getLocalDayStartIso(state.startDate),
     }
     const weeksElapsed = getWeeksElapsedInLevel(state.startDate, getTodayString())
 

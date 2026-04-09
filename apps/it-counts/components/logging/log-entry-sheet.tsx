@@ -15,10 +15,10 @@ import { DurationInput } from '@/components/logging/duration-input'
 import { TimeRangeInput } from '@/components/logging/time-range-input'
 import { MotivationalMessage } from '@/components/shared/motivational-message'
 import { useActivityStore } from '@/hooks/use-activity-store'
-import { useLevelStore } from '@/hooks/use-level-store'
+import { LEVEL_ONE_START_DATE_LOCK_KEY, useLevelStore } from '@/hooks/use-level-store'
 import { useSettingsStore } from '@/hooks/use-settings-store'
 import { useUiStore } from '@/hooks/use-ui-store'
-import { getTodayString, getWeekStart } from '@/lib/dates'
+import { getTodayString, getWeekStart, parseLocalDate } from '@/lib/dates'
 import { getRandomMessage } from '@/lib/messages'
 
 /** Weekly XP threshold for the goal-reached message (matches WeeklySummary). */
@@ -98,6 +98,23 @@ function computeTimeRange(
 }
 
 /**
+ * Returns `true` when the date string is a valid persisted local calendar day
+ * that does not exceed the sheet's current device-local "today" boundary.
+ */
+function isValidSelectedDate(value: string, maxDate: string): boolean {
+  if (value.length === 0) {
+    return false
+  }
+
+  try {
+    parseLocalDate(value)
+    return value <= maxDate
+  } catch {
+    return false
+  }
+}
+
+/**
  * Owns the activity logging flow: opening the bottom sheet, collecting either
  * a raw duration or a start/end time pair, writing the entry, and showing the
  * inline confirmation before close.
@@ -105,7 +122,12 @@ function computeTimeRange(
 export function LogEntrySheet() {
   const today = getTodayString()
   const addDurationEntry = useActivityStore((s) => s.addDurationEntry)
+  const currentLevel = useLevelStore((s) => s.levelState.level)
   const syncXpFromEntries = useLevelStore((s) => s.syncXpFromEntries)
+  const levelOneStartDateLocked = useSettingsStore(
+    (s) => s.settings[LEVEL_ONE_START_DATE_LOCK_KEY] === true,
+  )
+  const setSetting = useSettingsStore((s) => s.setSetting)
 
   const open = useUiStore((s) => s.logSheetOpen)
   const setOpen = useUiStore((s) => s.setLogSheetOpen)
@@ -116,6 +138,7 @@ export function LogEntrySheet() {
   // Duration mode state
   const [durationValue, setDurationValue] = useState('')
   const [durationError, setDurationError] = useState('')
+  const [selectedDateError, setSelectedDateError] = useState('')
 
   // Time-range mode state
   const [startTime, setStartTime] = useState('')
@@ -189,6 +212,7 @@ export function LogEntrySheet() {
   function resetSheetState() {
     setInputMode('duration')
     setSelectedDate(getTodayString())
+    setSelectedDateError('')
     setDurationValue('')
     setDurationError('')
     setStartTime('')
@@ -222,6 +246,11 @@ export function LogEntrySheet() {
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
+    if (!isValidSelectedDate(selectedDate, today)) {
+      setSelectedDateError('Choose a valid date.')
+      return
+    }
+
     let durationMin: number
 
     if (inputMode === 'duration') {
@@ -237,7 +266,21 @@ export function LogEntrySheet() {
     }
 
     const { dailyXpToday, nextEntries } = addDurationEntry(durationMin, selectedDate)
-    syncXpFromEntries(nextEntries)
+    const shouldEstablishLevelOneAnchor =
+      currentLevel === 1 &&
+      levelOneStartDateLocked === false &&
+      nextEntries.length > 0
+
+    syncXpFromEntries(
+      nextEntries,
+      shouldEstablishLevelOneAnchor
+        ? { establishLevelOneAnchor: true }
+        : undefined,
+    )
+    if (shouldEstablishLevelOneAnchor) {
+      setSetting(LEVEL_ONE_START_DATE_LOCK_KEY, true)
+    }
+    setSelectedDateError('')
     setDurationError('')
 
     const weekStart = getWeekStart(selectedDate)
@@ -280,8 +323,11 @@ export function LogEntrySheet() {
             Minutes moved today. Fast in, fast out.
           </SheetDescription>
         </SheetHeader>
-
-        <form className="flex flex-col gap-5 px-6 pb-6" onSubmit={handleSubmit}>
+        <form
+          noValidate
+          className="flex flex-col gap-5 px-6 pb-6"
+          onSubmit={handleSubmit}
+        >
           <div className="flex flex-col gap-1.5">
             <label htmlFor="activity-date" className="text-sm font-medium">
               Date
@@ -291,10 +337,22 @@ export function LogEntrySheet() {
               type="date"
               value={selectedDate}
               max={today}
+              required
+              aria-invalid={selectedDateError ? 'true' : 'false'}
               disabled={confirmation !== null}
-              onChange={(e) => setSelectedDate(e.target.value)}
+              onChange={(e) => {
+                setSelectedDate(e.target.value)
+                if (selectedDateError) {
+                  setSelectedDateError('')
+                }
+              }}
               className="h-10 rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
             />
+            {selectedDateError ? (
+              <p role="alert" className="text-sm/6 text-destructive">
+                {selectedDateError}
+              </p>
+            ) : null}
           </div>
 
           {inputMode === 'duration' ? (

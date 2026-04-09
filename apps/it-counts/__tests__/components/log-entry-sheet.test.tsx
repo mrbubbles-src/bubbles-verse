@@ -5,10 +5,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { calculateDailyXp } from '@/lib/xp'
 import type { ActivityEntry } from '@/types'
 
+const LEVEL_ONE_START_DATE_LOCK_KEY = 'levelOneStartDateLocked'
+
 const sheetMocks = vi.hoisted(() => ({
   entries: [] as ActivityEntry[],
   addDurationEntry: vi.fn(),
+  currentLevel: 1,
+  levelOneStartDateLocked: false,
   syncXpFromEntries: vi.fn(),
+  setSetting: vi.fn(),
 }))
 
 vi.mock('@/hooks/use-activity-store', () => ({
@@ -39,8 +44,10 @@ vi.mock('@/hooks/use-activity-store', () => ({
 }))
 
 vi.mock('@/hooks/use-level-store', () => ({
-  useLevelStore: vi.fn((selector: (state: { syncXpFromEntries: typeof sheetMocks.syncXpFromEntries }) => unknown) =>
+  LEVEL_ONE_START_DATE_LOCK_KEY: 'levelOneStartDateLocked',
+  useLevelStore: vi.fn((selector: (state: { levelState: { level: number }; syncXpFromEntries: typeof sheetMocks.syncXpFromEntries }) => unknown) =>
     selector({
+      levelState: { level: sheetMocks.currentLevel },
       syncXpFromEntries: sheetMocks.syncXpFromEntries,
     })
   ),
@@ -49,13 +56,43 @@ vi.mock('@/hooks/use-level-store', () => ({
 vi.mock('@/lib/dates', () => ({
   getTodayString: vi.fn(() => '2026-04-07'),
   getWeekStart: vi.fn(() => '2026-03-31'),
+  parseLocalDate: vi.fn((value: string) => {
+    const pattern = /^\d{4}-\d{2}-\d{2}$/
+
+    if (pattern.test(value) === false) {
+      throw new RangeError(`Expected YYYY-MM-DD date string, received "${value}".`)
+    }
+
+    const [yearString, monthString, dayString] = value.split('-')
+    const year = Number(yearString)
+    const month = Number(monthString)
+    const day = Number(dayString)
+    const parsedDate = new Date(year, month - 1, day)
+
+    if (
+      parsedDate.getFullYear() !== year ||
+      parsedDate.getMonth() !== month - 1 ||
+      parsedDate.getDate() !== day
+    ) {
+      throw new RangeError(`Invalid calendar day "${value}".`)
+    }
+
+    return parsedDate
+  }),
 }))
 
 vi.mock('@/hooks/use-settings-store', () => ({
-  useSettingsStore: Object.assign(vi.fn(), {
+  useSettingsStore: Object.assign((selector: (state: { settings: Record<string, boolean>; setSetting: typeof sheetMocks.setSetting }) => unknown) =>
+    selector({
+      settings: {
+        levelOneStartDateLocked: sheetMocks.levelOneStartDateLocked,
+      },
+      setSetting: sheetMocks.setSetting,
+    }),
+  {
     getState: () => ({
       getSetting: vi.fn(() => undefined),
-      setSetting: vi.fn(),
+      setSetting: sheetMocks.setSetting,
     }),
   }),
 }))
@@ -134,6 +171,9 @@ describe('LogEntrySheet', () => {
     sheetMocks.entries = []
     sheetMocks.addDurationEntry.mockReset()
     sheetMocks.syncXpFromEntries.mockReset()
+    sheetMocks.currentLevel = 1
+    sheetMocks.levelOneStartDateLocked = false
+    sheetMocks.setSetting.mockReset()
     sheetMocks.addDurationEntry.mockImplementation((durationMin: number) => {
       const entry: ActivityEntry = {
         id: 'generated-id',
@@ -212,9 +252,14 @@ describe('LogEntrySheet', () => {
     expect(sheetMocks.addDurationEntry).toHaveBeenCalledWith(45, '2026-04-07')
     expect(sheetMocks.syncXpFromEntries).toHaveBeenCalledWith(
       expect.arrayContaining(sheetMocks.entries),
+      { establishLevelOneAnchor: true },
     )
     const syncedEntries = sheetMocks.syncXpFromEntries.mock.calls.at(-1)?.[0] as ActivityEntry[]
     expect(syncedEntries).toBe(sheetMocks.entries)
+    expect(sheetMocks.setSetting).toHaveBeenCalledWith(
+      LEVEL_ONE_START_DATE_LOCK_KEY,
+      true,
+    )
     expect(screen.getByText('Today total: 5 XP · That counted.')).toBeInTheDocument()
   })
 
@@ -227,6 +272,36 @@ describe('LogEntrySheet', () => {
     fireEvent.change(screen.getByLabelText(/start time/i), { target: { value: '09:00' } })
 
     expect(screen.getByRole('button', { name: /log it/i })).toBeDisabled()
+  })
+
+  it('blocks submit when the date input is empty', () => {
+    render(<LogEntrySheet />)
+
+    fireEvent.change(screen.getByLabelText(/date/i), {
+      target: { value: '' },
+    })
+    fireEvent.change(screen.getByLabelText(/minutes/i), {
+      target: { value: '30' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /log it/i }))
+
+    expect(sheetMocks.addDurationEntry).not.toHaveBeenCalled()
+    expect(screen.getByRole('alert')).toHaveTextContent('Choose a valid date.')
+  })
+
+  it('blocks submit when the date is in the future', () => {
+    render(<LogEntrySheet />)
+
+    fireEvent.change(screen.getByLabelText(/date/i), {
+      target: { value: '2026-04-08' },
+    })
+    fireEvent.change(screen.getByLabelText(/minutes/i), {
+      target: { value: '30' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /log it/i }))
+
+    expect(sheetMocks.addDurationEntry).not.toHaveBeenCalled()
+    expect(screen.getByRole('alert')).toHaveTextContent('Choose a valid date.')
   })
 
   it('focuses the minutes input when sheet opens and previews XP live', async () => {
@@ -254,6 +329,7 @@ describe('LogEntrySheet', () => {
     expect(sheetMocks.addDurationEntry).toHaveBeenCalledWith(30, '2026-04-07')
     expect(sheetMocks.syncXpFromEntries).toHaveBeenCalledWith(
       expect.arrayContaining(sheetMocks.entries),
+      { establishLevelOneAnchor: true },
     )
     expect(screen.getByText('Today total: 5 XP · That counted.')).toBeInTheDocument()
     expect(screen.getByText('Quiet win.')).toBeInTheDocument()
@@ -287,6 +363,26 @@ describe('LogEntrySheet', () => {
     fireEvent.click(screen.getByRole('button', { name: /log it/i }))
 
     expect(screen.getByText('Today total: 5 XP · That counted.')).toBeInTheDocument()
+  })
+
+  it('does not re-establish the level 1 anchor once the lock flag exists', () => {
+    sheetMocks.levelOneStartDateLocked = true
+
+    render(<LogEntrySheet />)
+
+    fireEvent.change(screen.getByLabelText(/minutes/i), {
+      target: { value: '30' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /log it/i }))
+
+    expect(sheetMocks.syncXpFromEntries).toHaveBeenCalledWith(
+      expect.arrayContaining(sheetMocks.entries),
+      undefined,
+    )
+    expect(sheetMocks.setSetting).not.toHaveBeenCalledWith(
+      LEVEL_ONE_START_DATE_LOCK_KEY,
+      true,
+    )
   })
 
   it('shows a validation error when the input is empty or invalid', () => {

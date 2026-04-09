@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-04-09
+
+### Fixed
+
+- Changed Level 1 anchoring to establish once and then freeze, so later retroactive logs before the frozen Level-1 start date no longer add to current-level total XP.
+- Replaced the temporary Level-1 backfill marker with a persistent lock flag so legacy Level-1 data is corrected once, then kept stable across later retro-logs and reloads.
+- Rejected empty, invalid, and future log dates in the sheet, added a store fallback that normalizes invalid non-UI dates to today, and made Level-1 anchor establishment skip malformed dates instead of crashing.
+- Added coverage for the final `createEntryId()` compatibility fallback when Web Crypto helpers are unavailable.
+
 ## [1.0.1] - 2026-04-09
 
 ### Added
