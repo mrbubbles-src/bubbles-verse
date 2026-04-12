@@ -1,7 +1,7 @@
 ---
-story_id: "1.1"
-story_key: "1-1-scaffold-bubbles-markdown-renderer"
-epic: "Epic 1 — Package Infrastructure"
+story_id: '1.1'
+story_key: '1-1-scaffold-bubbles-markdown-renderer'
+epic: 'Epic 1 — Package Infrastructure'
 status: done
 created: 2026-04-12
 ---
@@ -21,6 +21,7 @@ So that I can consume it via `workspace:*` in any app without manual setup.
 This is a **pure scaffold story** — no component logic, no MDX rendering. The goal is a correctly wired, buildable package skeleton that future stories (Epic 2, Epic 5) will fill with implementation. Get the structure right once here; everything downstream depends on it.
 
 The monorepo already has three reference packages to copy conventions from:
+
 - `packages/theme` — minimal React package, cleanest example
 - `packages/footer` — React + Next.js dependency pattern
 - `packages/ui` — shows how to export CSS files (`"./globals.css": "./src/styles/globals.css"`)
@@ -32,7 +33,7 @@ The monorepo already has three reference packages to copy conventions from:
 ## Mandatory Implementation Directives
 
 - Follow `AGENTS.md` for every implementation decision in this story.
-- If relevant code already exists in `portal-ref` or `lms-ref`, reuse that working code first and port it cleanly into the target package or app.
+- If relevant code already exists in `portal-ref` or `lms-ref` or `to-be-integrated` or `/apps/the-coding-vault`, reuse that working code first and port it cleanly into the target package or app.
 - Adapt reference code only as needed for this monorepo plan, package boundaries, typing, naming, and acceptance criteria.
 - Do not rewrite or redesign working reference code unnecessarily when a clean extraction or transfer is sufficient.
 

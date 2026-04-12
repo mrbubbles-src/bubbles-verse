@@ -1,7 +1,7 @@
 ---
-story_id: "2.3"
-story_key: "2-3-renderer-css-stylesheet-renderer-css"
-epic: "Epic 2 — MDX Renderer & Default Components"
+story_id: '2.3'
+story_key: '2-3-renderer-css-stylesheet-renderer-css'
+epic: 'Epic 2 — MDX Renderer & Default Components'
 status: ready-for-dev
 created: 2026-04-12
 ---
@@ -19,6 +19,7 @@ So that I get correct typography, block styles, and syntax highlighting without 
 ## Context
 
 `renderer.css` is the only CSS file in `@bubbles/markdown-renderer`. It provides:
+
 1. Typography and block styles for rendered MDX content
 2. The `--sh-*` CSS variable definitions that drive Shiki CSS Variables Mode syntax highlighting
 3. Dark mode support via the `.dark` class on any ancestor element (consistent with the monorepo's `next-themes` dark mode strategy)
@@ -34,7 +35,7 @@ The `--sh-*` variable definitions that currently live in `apps/the-coding-vault/
 ## Mandatory Implementation Directives
 
 - Follow `AGENTS.md` for every implementation decision in this story.
-- If relevant code already exists in `portal-ref` or `lms-ref`, reuse that working code first and port it cleanly into the target package or app.
+- If relevant code already exists in `portal-ref` or `lms-ref` or `to-be-integrated` or `/apps/the-coding-vault`, reuse that working code first and port it cleanly into the target package or app.
 - Adapt reference code only as needed for this monorepo plan, package boundaries, typing, naming, and acceptance criteria.
 - Do not rewrite or redesign working reference code unnecessarily when a clean extraction or transfer is sufficient.
 
@@ -63,34 +64,34 @@ Shiki CSS Variables Mode requires these CSS custom properties to be defined. Map
 
 /* ── Syntax Highlighting: Catppuccin Latte (light) ── */
 :root {
-  --sh-keyword:    var(--ctp-latte-mauve);
-  --sh-string:     var(--ctp-latte-green);
-  --sh-comment:    var(--ctp-latte-overlay1);
-  --sh-function:   var(--ctp-latte-blue);
-  --sh-number:     var(--ctp-latte-peach);
-  --sh-operator:   var(--ctp-latte-sky);
-  --sh-type:       var(--ctp-latte-yellow);
-  --sh-variable:   var(--ctp-latte-text);
-  --sh-deleted:    var(--ctp-latte-red);
-  --sh-inserted:   var(--ctp-latte-green);
-  --sh-changed:    var(--ctp-latte-yellow);
-  --code-bg:       var(--ctp-latte-base);
+  --sh-keyword: var(--ctp-latte-mauve);
+  --sh-string: var(--ctp-latte-green);
+  --sh-comment: var(--ctp-latte-overlay1);
+  --sh-function: var(--ctp-latte-blue);
+  --sh-number: var(--ctp-latte-peach);
+  --sh-operator: var(--ctp-latte-sky);
+  --sh-type: var(--ctp-latte-yellow);
+  --sh-variable: var(--ctp-latte-text);
+  --sh-deleted: var(--ctp-latte-red);
+  --sh-inserted: var(--ctp-latte-green);
+  --sh-changed: var(--ctp-latte-yellow);
+  --code-bg: var(--ctp-latte-base);
 }
 
 /* ── Syntax Highlighting: Catppuccin Mocha (dark) ── */
 .dark {
-  --sh-keyword:    var(--ctp-mocha-mauve);
-  --sh-string:     var(--ctp-mocha-green);
-  --sh-comment:    var(--ctp-mocha-overlay1);
-  --sh-function:   var(--ctp-mocha-blue);
-  --sh-number:     var(--ctp-mocha-peach);
-  --sh-operator:   var(--ctp-mocha-sky);
-  --sh-type:       var(--ctp-mocha-yellow);
-  --sh-variable:   var(--ctp-mocha-text);
-  --sh-deleted:    var(--ctp-mocha-red);
-  --sh-inserted:   var(--ctp-mocha-green);
-  --sh-changed:    var(--ctp-mocha-yellow);
-  --code-bg:       var(--ctp-mocha-base);
+  --sh-keyword: var(--ctp-mocha-mauve);
+  --sh-string: var(--ctp-mocha-green);
+  --sh-comment: var(--ctp-mocha-overlay1);
+  --sh-function: var(--ctp-mocha-blue);
+  --sh-number: var(--ctp-mocha-peach);
+  --sh-operator: var(--ctp-mocha-sky);
+  --sh-type: var(--ctp-mocha-yellow);
+  --sh-variable: var(--ctp-mocha-text);
+  --sh-deleted: var(--ctp-mocha-red);
+  --sh-inserted: var(--ctp-mocha-green);
+  --sh-changed: var(--ctp-mocha-yellow);
+  --code-bg: var(--ctp-mocha-base);
 }
 ```
 
@@ -115,13 +116,28 @@ Add CSS for each rendered block type. Reference portal-ref and lms-ref for the e
 }
 
 /* ── Alerts ── */
-.markdown-renderer .alert-info    { border-left: 4px solid var(--info);    background: var(--info-bg);    }
-.markdown-renderer .alert-success { border-left: 4px solid var(--success); background: var(--success-bg); }
-.markdown-renderer .alert-warning { border-left: 4px solid var(--warning); background: var(--warning-bg); }
-.markdown-renderer .alert-danger  { border-left: 4px solid var(--danger);  background: var(--danger-bg);  }
+.markdown-renderer .alert-info {
+  border-left: 4px solid var(--info);
+  background: var(--info-bg);
+}
+.markdown-renderer .alert-success {
+  border-left: 4px solid var(--success);
+  background: var(--success-bg);
+}
+.markdown-renderer .alert-warning {
+  border-left: 4px solid var(--warning);
+  background: var(--warning-bg);
+}
+.markdown-renderer .alert-danger {
+  border-left: 4px solid var(--danger);
+  background: var(--danger-bg);
+}
 
 /* ── Toggle / Details ── */
-.markdown-renderer details summary { cursor: pointer; font-weight: 600; }
+.markdown-renderer details summary {
+  cursor: pointer;
+  font-weight: 600;
+}
 
 /* ... additional block styles from reference implementation ... */
 ```
@@ -141,6 +157,7 @@ Use only variables that exist there. Do not guess variable names — verify them
 ### 4. No Editor Styles
 
 This file must contain **zero** styles that relate to:
+
 - EditorJS toolbar or blocks
 - Split-pane preview layout
 - Import modal

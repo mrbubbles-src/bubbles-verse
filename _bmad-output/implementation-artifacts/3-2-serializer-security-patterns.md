@@ -1,7 +1,7 @@
 ---
-story_id: "3.2"
-story_key: "3-2-serializer-security-patterns"
-epic: "Epic 3 — EditorJS → MDX Serializer"
+story_id: '3.2'
+story_key: '3-2-serializer-security-patterns'
+epic: 'Epic 3 — EditorJS → MDX Serializer'
 status: ready-for-dev
 created: 2026-04-12
 ---
@@ -19,6 +19,7 @@ So that no JSX injection, invalid shortcodes, or malformed props reach the MDX o
 ## Context
 
 The serializer outputs MDX that is compiled at runtime by `@mdx-js/mdx`'s `evaluate()`. Without sanitization, a malicious user could:
+
 - Inject JSX via brace expressions (`{process.env.SECRET}`)
 - Insert arbitrary MDX components via shortcode syntax
 - Pass malformed prop strings that bypass JSON parsing
@@ -32,7 +33,7 @@ These security functions are part of `src/serializer/security.ts` in `@bubbles/m
 ## Mandatory Implementation Directives
 
 - Follow `AGENTS.md` for every implementation decision in this story.
-- If relevant code already exists in `portal-ref` or `lms-ref`, reuse that working code first and port it cleanly into the target package or app.
+- If relevant code already exists in `portal-ref` or `lms-ref` or `to-be-integrated` or `/apps/the-coding-vault`, reuse that working code first and port it cleanly into the target package or app.
 - Adapt reference code only as needed for this monorepo plan, package boundaries, typing, naming, and acceptance criteria.
 - Do not rewrite or redesign working reference code unnecessarily when a clean extraction or transfer is sufficient.
 
@@ -137,24 +138,24 @@ export function tryParseInlineComponent(
   allowlist: Set<string>
 ): ParsedShortcode | null {
   // Pattern: [[ComponentName]] or [[ComponentName {"key":"value"}]]
-  const match = raw.match(/^\[\[(\w+)(?:\s+(.+))?\]\]$/) 
-    ?? raw.match(/^<(\w+)\s*\/>$/);
-  
+  const match =
+    raw.match(/^\[\[(\w+)(?:\s+(.+))?\]\]$/) ?? raw.match(/^<(\w+)\s*\/>$/);
+
   if (!match) return null;
-  
+
   const componentName = match[1];
-  if (!allowlist.has(componentName)) return null;  // blocked — not in allowlist
-  
+  if (!allowlist.has(componentName)) return null; // blocked — not in allowlist
+
   const propsString = match[2];
   if (propsString) {
     try {
       const props = JSON.parse(propsString) as Record<string, unknown>;
       return { componentName, props };
     } catch {
-      return null;  // malformed JSON → plain text, never raw string
+      return null; // malformed JSON → plain text, never raw string
     }
   }
-  
+
   return { componentName, props: {} };
 }
 ```
@@ -178,6 +179,7 @@ Call `sanitizeMdxOutput(output)` as the final step in `serializeToMdx()`.
 ### 7. Integration with Block Handlers
 
 The security functions must be applied in `block-handlers.ts`:
+
 - `escapeMdxBraces(text)` — on every user text field before including in output
 - `tryParseInlineComponent(raw, allowlist)` — when processing paragraph content for shortcodes
 - `sanitizeMdxOutput(output)` — final pass in `serializeToMdx()`

@@ -1,7 +1,7 @@
 ---
-story_id: "4.6"
-story_key: "4-6-import-from-markdown-modal-and-editor-css"
-epic: "Epic 4 — Content Authoring Editor"
+story_id: '4.6'
+story_key: '4-6-import-from-markdown-modal-and-editor-css'
+epic: 'Epic 4 — Content Authoring Editor'
 status: ready-for-dev
 created: 2026-04-12
 ---
@@ -19,6 +19,7 @@ So that migrating existing content is easy and the editor looks right out of the
 ## Context
 
 Two deliverables in this story:
+
 1. **Import modal** — paste Markdown, convert to EditorJS blocks, replace editor content
 2. **Editor and preview CSS** — `editor.css` and `preview.css` stylesheets for the editor interface
 
@@ -31,7 +32,7 @@ CSS files are already scaffolded as empty placeholders (Story 1.2). This story f
 ## Mandatory Implementation Directives
 
 - Follow `AGENTS.md` for every implementation decision in this story.
-- If relevant code already exists in `portal-ref` or `lms-ref`, reuse that working code first and port it cleanly into the target package or app.
+- If relevant code already exists in `portal-ref` or `lms-ref` or `to-be-integrated` or `/apps/the-coding-vault`, reuse that working code first and port it cleanly into the target package or app.
 - Adapt reference code only as needed for this monorepo plan, package boundaries, typing, naming, and acceptance criteria.
 - Do not rewrite or redesign working reference code unnecessarily when a clean extraction or transfer is sufficient.
 
@@ -58,6 +59,7 @@ And editor and preview CSS are separate files — apps can import only what they
 
 ```tsx
 // components/import-modal.tsx
+
 import { Dialog, DialogContent, DialogHeader } from '@bubbles/ui/shadcn/dialog';
 
 interface ImportModalProps {
@@ -82,7 +84,7 @@ export function ImportModal({ open, onClose, onImport }: ImportModalProps) {
         <DialogHeader>Import Markdown</DialogHeader>
         <textarea
           value={value}
-          onChange={e => setValue(e.target.value)}
+          onChange={(e) => setValue(e.target.value)}
           placeholder="Paste Markdown here..."
           rows={15}
         />
@@ -102,6 +104,7 @@ Use the `markdownToBlocks` utility (from `@editorjs/editorjs` ecosystem or imple
 
 ```ts
 // utils/markdown-to-blocks.ts
+
 import type { OutputData } from '@editorjs/editorjs';
 
 /**
@@ -138,8 +141,12 @@ Fill `packages/markdown-editor/src/styles/editor.css` with styles for:
 /* @bubbles/markdown-editor — editor styles */
 
 /* ── EditorJS toolbar overrides ── */
-.ce-toolbar { /* ... */ }
-.ce-block { /* ... */ }
+.ce-toolbar {
+  /* ... */
+}
+.ce-block {
+  /* ... */
+}
 
 /* ── Split-pane layout ── */
 .markdown-editor-split-pane {
@@ -155,7 +162,9 @@ Fill `packages/markdown-editor/src/styles/editor.css` with styles for:
 }
 
 /* ── Import button ── */
-.import-markdown-btn { /* ... */ }
+.import-markdown-btn {
+  /* ... */
+}
 ```
 
 All colors via `@bubbles/ui/globals.css` custom properties only. Source the complete styles from portal-ref — do not invent styles from scratch.
@@ -180,6 +189,7 @@ The content typography styles are in `@bubbles/markdown-renderer/styles/renderer
 ### 6. Separate CSS Files
 
 The package exports three separate CSS entry points (scaffolded in Story 1.2):
+
 - `@bubbles/markdown-editor/styles/editor` — EditorJS toolbar, block styles, layout
 - `@bubbles/markdown-editor/styles/preview` — preview pane wrapper
 - `@bubbles/markdown-renderer/styles/renderer` — rendered content typography + syntax highlighting

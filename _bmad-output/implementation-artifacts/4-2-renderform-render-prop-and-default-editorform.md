@@ -1,7 +1,7 @@
 ---
-story_id: "4.2"
-story_key: "4-2-renderform-render-prop-and-default-editorform"
-epic: "Epic 4 — Content Authoring Editor"
+story_id: '4.2'
+story_key: '4-2-renderform-render-prop-and-default-editorform'
+epic: 'Epic 4 — Content Authoring Editor'
 status: ready-for-dev
 created: 2026-04-12
 ---
@@ -33,7 +33,7 @@ Different apps need different metadata forms — Vault entries have categories, 
 ## Mandatory Implementation Directives
 
 - Follow `AGENTS.md` for every implementation decision in this story.
-- If relevant code already exists in `portal-ref` or `lms-ref`, reuse that working code first and port it cleanly into the target package or app.
+- If relevant code already exists in `portal-ref` or `lms-ref` or `to-be-integrated` or `/apps/the-coding-vault`, reuse that working code first and port it cleanly into the target package or app.
 - Adapt reference code only as needed for this monorepo plan, package boundaries, typing, naming, and acceptance criteria.
 - Do not rewrite or redesign working reference code unnecessarily when a clean extraction or transfer is sufficient.
 
@@ -65,6 +65,7 @@ And the package never handles routing or navigation internally
 
 ```ts
 // types/editor-types.ts
+
 import type { OutputData } from '@editorjs/editorjs';
 
 export interface TopicEditorDraft {
@@ -105,12 +106,12 @@ function MarkdownEditor({
 }: MarkdownEditorProps) {
   const [editorOutput, setEditorOutput] = useState<OutputData | null>(null);
   const [editorReady, setEditorReady] = useState(false);
-  
+
   const editorContent = useMemo(
-    () => editorOutput ? serializeToMdx(editorOutput) : '',
+    () => (editorOutput ? serializeToMdx(editorOutput) : ''),
     [editorOutput]
   );
-  
+
   const formProps: EditorRenderFormProps = {
     editorOutput,
     editorContent,
@@ -121,11 +122,13 @@ function MarkdownEditor({
 
   return (
     <div className="markdown-editor-root">
-      <div className="editor-pane">
-        {/* EditorJS mount point */}
-      </div>
+      <div className="editor-pane">{/* EditorJS mount point */}</div>
       <div className="form-pane">
-        {renderForm ? renderForm(formProps) : <EditorForm {...formProps} onSuccess={onSuccess} />}
+        {renderForm ? (
+          renderForm(formProps)
+        ) : (
+          <EditorForm {...formProps} onSuccess={onSuccess} />
+        )}
       </div>
     </div>
   );
@@ -175,12 +178,14 @@ export function EditorForm({ editorOutput, editorContent, editorReady, isEditMod
 
 ```ts
 // NEVER DO THIS in any file in @bubbles/markdown-editor:
-import { useRouter } from 'next/navigation';  // ❌
-router.push('/some-path');                     // ❌
-window.location.href = '...';                  // ❌
+
+import { useRouter } from 'next/navigation'; // ❌
+
+router.push('/some-path'); // ❌
+window.location.href = '...'; // ❌
 
 // ALWAYS DO THIS:
-onSuccess(payload);  // ✅ — app decides what happens next
+onSuccess(payload); // ✅ — app decides what happens next
 ```
 
 ### 5. Exported `<EditorForm>`
@@ -189,7 +194,10 @@ onSuccess(payload);  // ✅ — app decides what happens next
 
 ```ts
 export { EditorForm } from './components/editor-form';
-export type { EditorRenderFormProps, TopicEditorDraft } from './types/editor-types';
+export type {
+  EditorRenderFormProps,
+  TopicEditorDraft,
+} from './types/editor-types';
 ```
 
 ---

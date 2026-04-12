@@ -1,7 +1,7 @@
 ---
-story_id: "2.1"
-story_key: "2-1-default-mdx-block-components-markdown"
-epic: "Epic 2 — MDX Renderer & Default Components"
+story_id: '2.1'
+story_key: '2-1-default-mdx-block-components-markdown'
+epic: 'Epic 2 — MDX Renderer & Default Components'
 status: ready-for-dev
 created: 2026-04-12
 ---
@@ -29,7 +29,7 @@ The reference implementation exists in `lms-ref` — components are named `Modul
 ## Mandatory Implementation Directives
 
 - Follow `AGENTS.md` for every implementation decision in this story.
-- If relevant code already exists in `portal-ref` or `lms-ref`, reuse that working code first and port it cleanly into the target package or app.
+- If relevant code already exists in `portal-ref` or `lms-ref` or `to-be-integrated` or `/apps/the-coding-vault`, reuse that working code first and port it cleanly into the target package or app.
 - Adapt reference code only as needed for this monorepo plan, package boundaries, typing, naming, and acceptance criteria.
 - Do not rewrite or redesign working reference code unnecessarily when a clean extraction or transfer is sufficient.
 
@@ -57,13 +57,18 @@ And all components are fully typed with no any
 ```
 src/
 ├── components/
+│   ├── mardodwon-code/
+│   │   ├── markdown-code-block.tsx
+│   │   └── markdown-code-copy-button.tsx
+│   ├── mardodwon-image/
+│   │   ├── markdown-cdimage.tsx
+│   │   └── markdown-image.tsx
 │   ├── markdown-alerts.tsx
 │   ├── markdown-checklist.tsx
-│   ├── markdown-code-block.tsx
 │   ├── markdown-embed.tsx
-│   ├── markdown-image.tsx
 │   ├── markdown-link.tsx
-│   ├── markdown-toggle.tsx
+│   ├── markdown-details-toggle.tsx
+│   ├── markdown-toc.tsx
 │   └── index.ts               # re-exports all + defaultComponents map
 ├── index.ts                   # public API
 └── styles/
@@ -83,7 +88,7 @@ interface MarkdownAlertsProps {
 // markdown-code-block.tsx
 interface MarkdownCodeBlockProps {
   children: string;
-  className?: string;  // MDX passes language as className="language-ts"
+  className?: string; // MDX passes language as className="language-ts"
 }
 
 // markdown-checklist.tsx
@@ -182,10 +187,10 @@ export {
   MarkdownLink,
   defaultComponents,
 } from './components';
-export { MdxRenderer } from './mdx-renderer';  // added in Story 2.2
+export { MdxRenderer } from './mdx-renderer'; // added in Story 2.2
 
 // Re-export prop types for consumer use
-export type { /* all prop interfaces */ } from './components';
+export type {} from /* all prop interfaces */ './components';
 ```
 
 ### 6. Dependencies to Add to `packages/markdown-renderer/package.json`

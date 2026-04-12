@@ -1,7 +1,7 @@
 ---
-story_id: "3.1"
-story_key: "3-1-core-serializer-block-type-handlers"
-epic: "Epic 3 — EditorJS → MDX Serializer"
+story_id: '3.1'
+story_key: '3-1-core-serializer-block-type-handlers'
+epic: 'Epic 3 — EditorJS → MDX Serializer'
 status: ready-for-dev
 created: 2026-04-12
 ---
@@ -21,6 +21,7 @@ So that EditorJS output is converted to valid MDX I can store and render.
 The serializer is the bridge between EditorJS JSON output and the MDX strings stored in the database and rendered by `<MdxRenderer>`. It's the most critical piece of the entire package.
 
 **Two diverging reference implementations must be merged:**
+
 - `portal-ref`: all 15 block type handlers, including `inlineCode`, `strikethrough`, `annotation`, `InlineHotkey`
 - `lms-ref`: `headingAnchorIdsByBlockId` option for TOC generation
 
@@ -35,7 +36,7 @@ The serializer must be **tree-shakeable** — importable without loading React o
 ## Mandatory Implementation Directives
 
 - Follow `AGENTS.md` for every implementation decision in this story.
-- If relevant code already exists in `portal-ref` or `lms-ref`, reuse that working code first and port it cleanly into the target package or app.
+- If relevant code already exists in `portal-ref` or `lms-ref` or `to-be-integrated` or `/apps/the-coding-vault`, reuse that working code first and port it cleanly into the target package or app.
 - Adapt reference code only as needed for this monorepo plan, package boundaries, typing, naming, and acceptance criteria.
 - Do not rewrite or redesign working reference code unnecessarily when a clean extraction or transfer is sufficient.
 
@@ -75,14 +76,17 @@ import type { OutputData } from '@editorjs/editorjs';
 
 interface SerializeOptions {
   headingAnchorIdsByBlockId?: Record<string, string>; // Story 3.4
-  allowedComponents?: string[];                        // extends DEFAULT_ALLOWED_MDX_COMPONENTS
+  allowedComponents?: string[]; // extends DEFAULT_ALLOWED_MDX_COMPONENTS
 }
 
 /**
  * Serializes EditorJS OutputData blocks to a valid MDX string.
  * Every block is wrapped in <div data-block-id="{id}"> for scroll sync targeting.
  */
-export function serializeToMdx(data: OutputData, options?: SerializeOptions): string;
+export function serializeToMdx(
+  data: OutputData,
+  options?: SerializeOptions
+): string;
 ```
 
 ### 3. Block-Wrapping Pattern
@@ -97,25 +101,25 @@ function wrapBlock(blockId: string, content: string): string {
 
 ### 4. All 15 Block Type Handlers
 
-| Block Type | EditorJS Tool | Expected MDX Output |
-|---|---|---|
-| `paragraph` | default | `<p>` or raw text with inline formatting |
-| `header` | `@editorjs/header` | `# text` / `## text` etc. by level |
-| `list` (unordered) | `@editorjs/list` | `- item` |
-| `list` (ordered) | `@editorjs/list` | `1. item` |
-| `list` (checklist) | `@editorjs/list` | `- [ ] item` / `- [x] item` |
-| `code` | `@calumk/editorjs-codecup` | ` ```lang\n...\n``` ` |
-| `quote` | `@editorjs/quote` | `> text\n> — caption` |
-| `alert` | `editorjs-alert` | `<MarkdownAlerts type="info">...</MarkdownAlerts>` |
-| `delimiter` | `@coolbytes/editorjs-delimiter` | `---` |
-| `toggle` | `editorjs-toggle-block` | `<MarkdownToggle summary="...">` + recursive children |
-| `table` | `@editorjs/table` | GFM markdown table with padding |
-| `embed` | `@editorjs/embed` | `<MarkdownEmbed url="..." />` |
-| `image` | `@editorjs/image` | `<MarkdownImage src="..." alt="..." />` |
-| `inlineCode` | `@editorjs/inline-code` | `` `code` `` inline |
-| `strikethrough` | `@sotaproject/strikethrough` | `~~text~~` |
-| `annotation` | `editorjs-annotation` | `<mark>text</mark>` or custom component |
-| `InlineHotkey` | `editorjs-inline-hotkey` | `<kbd>key</kbd>` |
+| Block Type         | EditorJS Tool                   | Expected MDX Output                                   |
+| ------------------ | ------------------------------- | ----------------------------------------------------- |
+| `paragraph`        | default                         | `<p>` or raw text with inline formatting              |
+| `header`           | `@editorjs/header`              | `# text` / `## text` etc. by level                    |
+| `list` (unordered) | `@editorjs/list`                | `- item`                                              |
+| `list` (ordered)   | `@editorjs/list`                | `1. item`                                             |
+| `list` (checklist) | `@editorjs/list`                | `- [ ] item` / `- [x] item`                           |
+| `code`             | `@calumk/editorjs-codecup`      | ` ```lang\n...\n``` `                                 |
+| `quote`            | `@editorjs/quote`               | `> text\n> — caption`                                 |
+| `alert`            | `editorjs-alert`                | `<MarkdownAlerts type="info">...</MarkdownAlerts>`    |
+| `delimiter`        | `@coolbytes/editorjs-delimiter` | `---`                                                 |
+| `toggle`           | `editorjs-toggle-block`         | `<MarkdownToggle summary="...">` + recursive children |
+| `table`            | `@editorjs/table`               | GFM markdown table with padding                       |
+| `embed`            | `@editorjs/embed`               | `<MarkdownEmbed url="..." />`                         |
+| `image`            | `@editorjs/image`               | `<MarkdownImage src="..." alt="..." />`               |
+| `inlineCode`       | `@editorjs/inline-code`         | `` `code` `` inline                                   |
+| `strikethrough`    | `@sotaproject/strikethrough`    | `~~text~~`                                            |
+| `annotation`       | `editorjs-annotation`           | `<mark>text</mark>` or custom component               |
+| `InlineHotkey`     | `editorjs-inline-hotkey`        | `<kbd>key</kbd>`                                      |
 
 **Verify exact data shapes** by inspecting portal-ref's serializer output for each block type — the EditorJS JSON structure varies by plugin version.
 
@@ -126,9 +130,9 @@ Toggle blocks contain nested blocks as children. The handler must recursively ca
 ```ts
 function handleToggle(block: ToggleBlock, options: SerializeOptions): string {
   const childContent = block.data.items
-    .map(child => serializeBlock(child, options))
+    .map((child) => serializeBlock(child, options))
     .join('\n\n');
-  
+
   return `<MarkdownToggle summary="${escapeMdxBraces(block.data.text)}">\n\n${childContent}\n\n</MarkdownToggle>`;
 }
 ```

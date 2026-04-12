@@ -1,7 +1,7 @@
 ---
-story_id: "4.5"
-story_key: "4-5-live-split-pane-mdx-preview-with-scroll-sync"
-epic: "Epic 4 — Content Authoring Editor"
+story_id: '4.5'
+story_key: '4-5-live-split-pane-mdx-preview-with-scroll-sync'
+epic: 'Epic 4 — Content Authoring Editor'
 status: ready-for-dev
 created: 2026-04-12
 ---
@@ -31,7 +31,7 @@ Two hooks handle scroll sync: `useScrollSync` (bidirectional coordinator) and `u
 ## Mandatory Implementation Directives
 
 - Follow `AGENTS.md` for every implementation decision in this story.
-- If relevant code already exists in `portal-ref` or `lms-ref`, reuse that working code first and port it cleanly into the target package or app.
+- If relevant code already exists in `portal-ref` or `lms-ref` or `to-be-integrated` or `/apps/the-coding-vault`, reuse that working code first and port it cleanly into the target package or app.
 - Adapt reference code only as needed for this monorepo plan, package boundaries, typing, naming, and acceptance criteria.
 - Do not rewrite or redesign working reference code unnecessarily when a clean extraction or transfer is sufficient.
 
@@ -63,7 +63,7 @@ And every block in the preview is addressable by EditorJS block ID via data-bloc
 // markdown-editor.tsx
 <div className="markdown-editor-split-pane">
   <div ref={editorPaneRef} className="editor-pane">
-    <div id={EDITOR_HOLDER_ID} />  {/* EditorJS mount point */}
+    <div id={EDITOR_HOLDER_ID} /> {/* EditorJS mount point */}
   </div>
   <div ref={previewPaneRef} className="preview-pane">
     <MdxRenderer content={editorContent} />
@@ -90,7 +90,7 @@ export function useScrollSync(
   editorPaneRef: React.RefObject<HTMLDivElement>,
   previewPaneRef: React.RefObject<HTMLDivElement>
 ) {
-  const isSyncingRef = useRef(false);  // prevent scroll event loops
+  const isSyncingRef = useRef(false); // prevent scroll event loops
 
   useEffect(() => {
     const editorEl = editorPaneRef.current;
@@ -100,26 +100,32 @@ export function useScrollSync(
     function syncEditorToPreview() {
       if (isSyncingRef.current) return;
       isSyncingRef.current = true;
-      
+
       // Find the topmost visible block in the editor pane
       // Scroll the corresponding data-block-id element in the preview pane into view
-      
-      requestAnimationFrame(() => { isSyncingRef.current = false; });
+
+      requestAnimationFrame(() => {
+        isSyncingRef.current = false;
+      });
     }
 
     function syncPreviewToEditor() {
       if (isSyncingRef.current) return;
       isSyncingRef.current = true;
-      
+
       // Find the topmost visible data-block-id element in the preview
       // Scroll the corresponding EditorJS block into view in the editor pane
-      
-      requestAnimationFrame(() => { isSyncingRef.current = false; });
+
+      requestAnimationFrame(() => {
+        isSyncingRef.current = false;
+      });
     }
 
     editorEl.addEventListener('scroll', syncEditorToPreview, { passive: true });
-    previewEl.addEventListener('scroll', syncPreviewToEditor, { passive: true });
-    
+    previewEl.addEventListener('scroll', syncPreviewToEditor, {
+      passive: true,
+    });
+
     return () => {
       editorEl.removeEventListener('scroll', syncEditorToPreview);
       previewEl.removeEventListener('scroll', syncPreviewToEditor);
@@ -136,7 +142,7 @@ The `isSyncingRef` flag prevents scroll event loops (editor scroll triggers prev
 function findTopmostVisibleBlockId(paneEl: HTMLElement): string | null {
   const blocks = paneEl.querySelectorAll('[data-block-id]');
   const paneTop = paneEl.scrollTop;
-  
+
   for (const block of blocks) {
     const blockTop = (block as HTMLElement).offsetTop;
     if (blockTop >= paneTop) {

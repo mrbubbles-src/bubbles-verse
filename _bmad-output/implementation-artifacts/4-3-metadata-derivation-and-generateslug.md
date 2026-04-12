@@ -1,7 +1,7 @@
 ---
-story_id: "4.3"
-story_key: "4-3-metadata-derivation-and-generateslug"
-epic: "Epic 4 — Content Authoring Editor"
+story_id: '4.3'
+story_key: '4-3-metadata-derivation-and-generateslug'
+epic: 'Epic 4 — Content Authoring Editor'
 status: ready-for-dev
 created: 2026-04-12
 ---
@@ -29,7 +29,7 @@ When an author types a heading level 1 block, the title field auto-populates. Th
 ## Mandatory Implementation Directives
 
 - Follow `AGENTS.md` for every implementation decision in this story.
-- If relevant code already exists in `portal-ref` or `lms-ref`, reuse that working code first and port it cleanly into the target package or app.
+- If relevant code already exists in `portal-ref` or `lms-ref` or `to-be-integrated` or `/apps/the-coding-vault`, reuse that working code first and port it cleanly into the target package or app.
 - Adapt reference code only as needed for this monorepo plan, package boundaries, typing, naming, and acceptance criteria.
 - Do not rewrite or redesign working reference code unnecessarily when a clean extraction or transfer is sufficient.
 
@@ -75,20 +75,29 @@ And unit tests cover special characters, unicode, empty string, and German umlau
  */
 export function generateSlug(text: string): string {
   return text
-    .normalize('NFD')                        // decompose unicode (ü → u + combining)
-    .replace(/[\u0300-\u036f]/g, '')         // remove combining diacritics
-    .replace(/[äöüÄÖÜ]/g, char => ({         // handle remaining German umlauts
-      'ä': 'ae', 'ö': 'oe', 'ü': 'ue',
-      'Ä': 'ae', 'Ö': 'oe', 'Ü': 'ue'
-    })[char] ?? char)
-    .replace(/ß/g, 'ss')                     // eszett
+    .normalize('NFD') // decompose unicode (ü → u + combining)
+    .replace(/[\u0300-\u036f]/g, '') // remove combining diacritics
+    .replace(
+      /[äöüÄÖÜ]/g,
+      (char) =>
+        ({
+          // handle remaining German umlauts
+          ä: 'ae',
+          ö: 'oe',
+          ü: 'ue',
+          Ä: 'ae',
+          Ö: 'oe',
+          Ü: 'ue',
+        })[char] ?? char
+    )
+    .replace(/ß/g, 'ss') // eszett
     .toLowerCase()
-    .replace(/&/g, 'and')                    // & → and
-    .replace(/[^a-z0-9\s-]/g, '')            // strip non-alphanumeric except spaces and hyphens
+    .replace(/&/g, 'and') // & → and
+    .replace(/[^a-z0-9\s-]/g, '') // strip non-alphanumeric except spaces and hyphens
     .trim()
-    .replace(/[\s]+/g, '-')                  // spaces → hyphens
-    .replace(/-+/g, '-')                     // collapse multiple hyphens
-    .replace(/^-|-$/g, '');                  // strip leading/trailing hyphens
+    .replace(/[\s]+/g, '-') // spaces → hyphens
+    .replace(/-+/g, '-') // collapse multiple hyphens
+    .replace(/^-|-$/g, ''); // strip leading/trailing hyphens
 }
 ```
 
@@ -96,6 +105,7 @@ export function generateSlug(text: string): string {
 
 ```ts
 // src/utils/get-header-title.ts
+
 import type { OutputData } from '@editorjs/editorjs';
 
 /**
@@ -103,7 +113,7 @@ import type { OutputData } from '@editorjs/editorjs';
  * Returns empty string if no H1 is present.
  */
 export function getHeaderLevelOneTitle(data: OutputData): string {
-  const h1 = data.blocks.find(b => b.type === 'header' && b.data.level === 1);
+  const h1 = data.blocks.find((b) => b.type === 'header' && b.data.level === 1);
   return h1 ? (h1.data.text as string) : '';
 }
 ```
@@ -127,7 +137,7 @@ function handleTitleChange(newTitle: string) {
 // When user manually edits the slug field:
 function handleSlugChange(newSlug: string) {
   setSlug(newSlug);
-  slugManuallyEdited.current = true;  // lock slug from auto-updates
+  slugManuallyEdited.current = true; // lock slug from auto-updates
 }
 ```
 
@@ -142,12 +152,12 @@ new EditorJS({
   onChange: async (api) => {
     const data = await api.saver.save();
     setEditorOutput(data);
-    
+
     const derivedTitle = getHeaderLevelOneTitle(data);
     if (derivedTitle) {
       handleTitleChange(derivedTitle);
     }
-  }
+  },
 });
 ```
 
@@ -164,7 +174,8 @@ export { generateSlug } from './utils/generate-slug';
 Add to `packages/markdown-editor/tests/utils/generate-slug.test.ts`:
 
 ```ts
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import { generateSlug } from '../../src/utils/generate-slug';
 
 describe('generateSlug', () => {

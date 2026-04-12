@@ -1,7 +1,7 @@
 ---
-story_id: "4.1"
-story_key: "4-1-editorjs-wrapper-with-configurable-plugin-subset"
-epic: "Epic 4 — Content Authoring Editor"
+story_id: '4.1'
+story_key: '4-1-editorjs-wrapper-with-configurable-plugin-subset'
+epic: 'Epic 4 — Content Authoring Editor'
 status: ready-for-dev
 created: 2026-04-12
 ---
@@ -29,7 +29,7 @@ The `plugins` prop controls which block types appear in the toolbar. Default: al
 ## Mandatory Implementation Directives
 
 - Follow `AGENTS.md` for every implementation decision in this story.
-- If relevant code already exists in `portal-ref` or `lms-ref`, reuse that working code first and port it cleanly into the target package or app.
+- If relevant code already exists in `portal-ref` or `lms-ref` or `to-be-integrated` or `/apps/the-coding-vault`, reuse that working code first and port it cleanly into the target package or app.
 - Adapt reference code only as needed for this monorepo plan, package boundaries, typing, naming, and acceptance criteria.
 - Do not rewrite or redesign working reference code unnecessarily when a clean extraction or transfer is sufficient.
 
@@ -93,7 +93,7 @@ export type PluginKey =
 ```ts
 // Full props are added across Stories 4.1–4.6
 interface MarkdownEditorProps {
-  plugins?: PluginKey[];                              // defaults to all 15
+  plugins?: PluginKey[]; // defaults to all 15
   imageUploader: (file: File) => Promise<{ success: 1; file: { url: string } }>;
   onSuccess: (data: unknown) => void;
   renderForm?: (props: EditorRenderFormProps) => React.ReactNode;
@@ -111,20 +111,21 @@ This is the most critical implementation detail. Copy from `portal-ref/editor.ts
 // hooks/use-editor-instance.ts
 'use client';
 
-import { useEffect, useRef } from 'react';
 import type EditorJS from '@editorjs/editorjs';
+
+import { useEffect, useRef } from 'react';
 
 export function useEditorInstance(/* ... */) {
   const editorRef = useRef<EditorJS | null>(null);
-  const cleanupHasRunOnceRef = useRef(false);  // React 18 StrictMode guard
+  const cleanupHasRunOnceRef = useRef(false); // React 18 StrictMode guard
 
   useEffect(() => {
-    if (editorRef.current) return;  // already initialized
+    if (editorRef.current) return; // already initialized
 
     // Dynamically import EditorJS to avoid SSR issues (deferred init, NFR3)
     import('@editorjs/editorjs').then(({ default: EditorJS }) => {
       const tools = buildToolConfig(plugins, imageUploader);
-      
+
       editorRef.current = new EditorJS({
         holder: holderId,
         tools,
@@ -144,7 +145,7 @@ export function useEditorInstance(/* ... */) {
       editorRef.current?.destroy();
       editorRef.current = null;
     };
-  }, []);  // intentionally empty deps — EditorJS manages its own state
+  }, []); // intentionally empty deps — EditorJS manages its own state
 
   return editorRef;
 }
@@ -161,16 +162,16 @@ function buildToolConfig(
   imageUploader: MarkdownEditorProps['imageUploader']
 ): Record<string, unknown> {
   const allTools: Record<PluginKey, unknown> = {
-    paragraph: { /* ... */ },
+    paragraph: {
+      /* ... */
+    },
     header: Header,
     list: { class: List, inlineToolbar: true },
     code: CodeCup,
     // ... all 15
   };
-  
-  return Object.fromEntries(
-    pluginKeys.map(key => [key, allTools[key]])
-  );
+
+  return Object.fromEntries(pluginKeys.map((key) => [key, allTools[key]]));
 }
 ```
 
@@ -182,9 +183,27 @@ The `@calumk/editorjs-codecup` plugin requires a language list config. Use exact
 
 ```ts
 const languages = [
-  'bash', 'shell', 'powershell', 'git', 'markup', 'html', 'css', 'sass', 'scss',
-  'javascript', 'typescript', 'jsx', 'tsx', 'json', 'mongodb', 'sql', 'docker',
-  'python', 'regex', 'lua', 'none'
+  'bash',
+  'shell',
+  'powershell',
+  'git',
+  'markup',
+  'html',
+  'css',
+  'sass',
+  'scss',
+  'javascript',
+  'typescript',
+  'jsx',
+  'tsx',
+  'json',
+  'mongodb',
+  'sql',
+  'docker',
+  'python',
+  'regex',
+  'lua',
+  'none',
 ];
 ```
 

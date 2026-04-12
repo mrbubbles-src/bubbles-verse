@@ -1,7 +1,7 @@
 ---
-story_id: "4.4"
-story_key: "4-4-draft-autosave-and-restore"
-epic: "Epic 4 — Content Authoring Editor"
+story_id: '4.4'
+story_key: '4-4-draft-autosave-and-restore'
+epic: 'Epic 4 — Content Authoring Editor'
 status: ready-for-dev
 created: 2026-04-12
 ---
@@ -29,7 +29,7 @@ The reference implementation uses `useDraftAutosave` hook in `portal-ref`. This 
 ## Mandatory Implementation Directives
 
 - Follow `AGENTS.md` for every implementation decision in this story.
-- If relevant code already exists in `portal-ref` or `lms-ref`, reuse that working code first and port it cleanly into the target package or app.
+- If relevant code already exists in `portal-ref` or `lms-ref` or `to-be-integrated` or `/apps/the-coding-vault`, reuse that working code first and port it cleanly into the target package or app.
 - Adapt reference code only as needed for this monorepo plan, package boundaries, typing, naming, and acceptance criteria.
 - Do not rewrite or redesign working reference code unnecessarily when a clean extraction or transfer is sufficient.
 
@@ -81,7 +81,7 @@ interface EditorDraft {
     tags: string[];
     status: 'published' | 'unpublished';
   };
-  savedAt: number;  // timestamp for display/debug purposes
+  savedAt: number; // timestamp for display/debug purposes
 }
 ```
 
@@ -106,11 +106,14 @@ export function useDraftAutosave(
 
   useEffect(() => {
     if (!draft || draftDisabledRef.current) return;
-    
+
     const key = isEditMode ? DRAFT_KEYS.edit : DRAFT_KEYS.create;
-    
+
     try {
-      localStorage.setItem(key, JSON.stringify({ ...draft, savedAt: Date.now() }));
+      localStorage.setItem(
+        key,
+        JSON.stringify({ ...draft, savedAt: Date.now() })
+      );
     } catch {
       // localStorage full or unavailable — fail silently
     }
@@ -137,7 +140,7 @@ function loadDraft(isEditMode: boolean): EditorDraft | null {
     if (!raw) return null;
     return JSON.parse(raw) as EditorDraft;
   } catch {
-    return null;  // corrupted or unavailable — fail silently
+    return null; // corrupted or unavailable — fail silently
   }
 }
 
@@ -159,8 +162,8 @@ Wire `disableDraftSaving` to the `onSuccess` flow in `<EditorForm>`:
 const { disableDraftSaving } = useDraftAutosave(currentDraft, isEditMode);
 
 async function handleSubmit(formData: FormValues) {
-  disableDraftSaving();         // disable before calling onSuccess
-  onSuccess(payload);           // app navigates away — no more saves after this
+  disableDraftSaving(); // disable before calling onSuccess
+  onSuccess(payload); // app navigates away — no more saves after this
 }
 ```
 

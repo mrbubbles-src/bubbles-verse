@@ -1,7 +1,7 @@
 ---
-story_id: "1.2"
-story_key: "1-2-scaffold-bubbles-markdown-editor-with-editorjs-plugin-declarations"
-epic: "Epic 1 — Package Infrastructure"
+story_id: '1.2'
+story_key: '1-2-scaffold-bubbles-markdown-editor-with-editorjs-plugin-declarations'
+epic: 'Epic 1 — Package Infrastructure'
 status: done
 created: 2026-04-12
 ---
@@ -29,7 +29,7 @@ The reference implementation lives in `portal-ref`. All plugins are pinned there
 ## Mandatory Implementation Directives
 
 - Follow `AGENTS.md` for every implementation decision in this story.
-- If relevant code already exists in `portal-ref` or `lms-ref`, reuse that working code first and port it cleanly into the target package or app.
+- If relevant code already exists in `portal-ref` or `lms-ref` or `to-be-integrated` or `/apps/the-coding-vault`, reuse that working code first and port it cleanly into the target package or app.
 - Adapt reference code only as needed for this monorepo plan, package boundaries, typing, naming, and acceptance criteria.
 - Do not rewrite or redesign working reference code unnecessarily when a clean extraction or transfer is sufficient.
 
@@ -196,6 +196,7 @@ declare module '@sotaproject/strikethrough' {
 ### 6. CSS Placeholders
 
 `src/styles/editor.css`:
+
 ```css
 /* @bubbles/markdown-editor — editor styles
  * Import: import '@bubbles/markdown-editor/styles/editor'
@@ -204,6 +205,7 @@ declare module '@sotaproject/strikethrough' {
 ```
 
 `src/styles/preview.css`:
+
 ```css
 /* @bubbles/markdown-editor — preview pane styles
  * Import: import '@bubbles/markdown-editor/styles/preview'

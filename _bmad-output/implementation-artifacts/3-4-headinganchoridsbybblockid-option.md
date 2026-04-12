@@ -1,7 +1,7 @@
 ---
-story_id: "3.4"
-story_key: "3-4-headinganchoridsbybblockid-option"
-epic: "Epic 3 — EditorJS → MDX Serializer"
+story_id: '3.4'
+story_key: '3-4-headinganchoridsbybblockid-option'
+epic: 'Epic 3 — EditorJS → MDX Serializer'
 status: ready-for-dev
 created: 2026-04-12
 ---
@@ -29,7 +29,7 @@ This is an additive option on the existing `serializeToMdx()` signature. When om
 ## Mandatory Implementation Directives
 
 - Follow `AGENTS.md` for every implementation decision in this story.
-- If relevant code already exists in `portal-ref` or `lms-ref`, reuse that working code first and port it cleanly into the target package or app.
+- If relevant code already exists in `portal-ref` or `lms-ref` or `to-be-integrated` or `/apps/the-coding-vault`, reuse that working code first and port it cleanly into the target package or app.
 - Adapt reference code only as needed for this monorepo plan, package boundaries, typing, naming, and acceptance criteria.
 - Do not rewrite or redesign working reference code unnecessarily when a clean extraction or transfer is sufficient.
 
@@ -72,12 +72,12 @@ function handleHeader(block: HeaderBlock, options: SerializeOptions): string {
   const prefix = '#'.repeat(level);
 
   const anchorId = options.headingAnchorIdsByBlockId?.[block.id];
-  
+
   if (anchorId) {
     // MDX-compatible heading with id attribute
     return `<h${level} id="${anchorId}">${text}</h${level}>`;
   }
-  
+
   return `${prefix} ${text}`;
 }
 ```
@@ -93,13 +93,15 @@ The `headingAnchorIdsByBlockId` map is **built by the app**, not the serializer.
 function buildAnchorMap(blocks: Block[]): Record<string, string> {
   return Object.fromEntries(
     blocks
-      .filter(b => b.type === 'header')
-      .map(b => [b.id, generateSlug(b.data.text)])
+      .filter((b) => b.type === 'header')
+      .map((b) => [b.id, generateSlug(b.data.text)])
   );
 }
 
 const anchorMap = buildAnchorMap(editorData.blocks);
-const mdx = serializeToMdx(editorData, { headingAnchorIdsByBlockId: anchorMap });
+const mdx = serializeToMdx(editorData, {
+  headingAnchorIdsByBlockId: anchorMap,
+});
 ```
 
 The serializer doesn't generate the map — it just applies it. Document this in the README.
@@ -111,16 +113,20 @@ Add to `serialize-to-mdx.test.ts`:
 ```ts
 it('headingAnchorIdsByBlockId — applies anchor id to matching header', () => {
   const result = serializeToMdx(
-    { blocks: [{ id: 'h1', type: 'header', data: { text: 'Section', level: 2 } }] },
+    {
+      blocks: [
+        { id: 'h1', type: 'header', data: { text: 'Section', level: 2 } },
+      ],
+    },
     { headingAnchorIdsByBlockId: { h1: 'section' } }
   );
   expect(result).toContain('id="section"');
 });
 
 it('headingAnchorIdsByBlockId — no option → standard markdown heading', () => {
-  const result = serializeToMdx(
-    { blocks: [{ id: 'h1', type: 'header', data: { text: 'Section', level: 2 } }] }
-  );
+  const result = serializeToMdx({
+    blocks: [{ id: 'h1', type: 'header', data: { text: 'Section', level: 2 } }],
+  });
   expect(result).toContain('## Section');
   expect(result).not.toContain('id=');
 });

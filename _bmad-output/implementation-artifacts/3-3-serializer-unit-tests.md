@@ -1,7 +1,7 @@
 ---
-story_id: "3.3"
-story_key: "3-3-serializer-unit-tests"
-epic: "Epic 3 — EditorJS → MDX Serializer"
+story_id: '3.3'
+story_key: '3-3-serializer-unit-tests'
+epic: 'Epic 3 — EditorJS → MDX Serializer'
 status: ready-for-dev
 created: 2026-04-12
 ---
@@ -27,7 +27,7 @@ The serializer is pure logic — no React, no DOM, no async — which makes it s
 ## Mandatory Implementation Directives
 
 - Follow `AGENTS.md` for every implementation decision in this story.
-- If relevant code already exists in `portal-ref` or `lms-ref`, reuse that working code first and port it cleanly into the target package or app.
+- If relevant code already exists in `portal-ref` or `lms-ref` or `to-be-integrated` or `/apps/the-coding-vault`, reuse that working code first and port it cleanly into the target package or app.
 - Adapt reference code only as needed for this monorepo plan, package boundaries, typing, naming, and acceptance criteria.
 - Do not rewrite or redesign working reference code unnecessarily when a clean extraction or transfer is sufficient.
 
@@ -74,6 +74,7 @@ Add `vitest` as a dev dependency in `packages/markdown-editor/package.json`:
 ```
 
 Add test script:
+
 ```json
 "scripts": {
   "test": "vitest run",
@@ -85,14 +86,17 @@ Add test script:
 
 ```ts
 // serialize-to-mdx.test.ts
-import { describe, it, expect } from 'vitest';
+
+import { describe, expect, it } from 'vitest';
+
 import { serializeToMdx } from '../../src/serializer';
 
 describe('serializeToMdx — block handlers', () => {
-  
   it('paragraph → wrapped plain text', () => {
     const result = serializeToMdx({
-      blocks: [{ id: 'abc123', type: 'paragraph', data: { text: 'Hello world' } }]
+      blocks: [
+        { id: 'abc123', type: 'paragraph', data: { text: 'Hello world' } },
+      ],
     });
     expect(result).toContain('data-block-id="abc123"');
     expect(result).toContain('Hello world');
@@ -100,35 +104,65 @@ describe('serializeToMdx — block handlers', () => {
 
   it('header level 2 → ## heading', () => {
     const result = serializeToMdx({
-      blocks: [{ id: 'h1', type: 'header', data: { text: 'My Title', level: 2 } }]
+      blocks: [
+        { id: 'h1', type: 'header', data: { text: 'My Title', level: 2 } },
+      ],
     });
     expect(result).toContain('## My Title');
   });
 
-  it('unordered list → - items', () => { /* ... */ });
-  it('ordered list → 1. items', () => { /* ... */ });
-  it('checklist → - [ ] / - [x] items', () => { /* ... */ });
-  it('code block → fenced code with language', () => { /* ... */ });
-  it('quote → > blockquote with caption', () => { /* ... */ });
-  it('alert → <MarkdownAlerts type="...">', () => { /* ... */ });
-  it('delimiter → ---', () => { /* ... */ });
-  it('embed → <MarkdownEmbed url="...">', () => { /* ... */ });
-  it('image → <MarkdownImage src="..." alt="...">', () => { /* ... */ });
-  it('table with headings → valid GFM table with header separator', () => { /* ... */ });
-  it('table without headings → valid GFM table', () => { /* ... */ });
-  
+  it('unordered list → - items', () => {
+    /* ... */
+  });
+  it('ordered list → 1. items', () => {
+    /* ... */
+  });
+  it('checklist → - [ ] / - [x] items', () => {
+    /* ... */
+  });
+  it('code block → fenced code with language', () => {
+    /* ... */
+  });
+  it('quote → > blockquote with caption', () => {
+    /* ... */
+  });
+  it('alert → <MarkdownAlerts type="...">', () => {
+    /* ... */
+  });
+  it('delimiter → ---', () => {
+    /* ... */
+  });
+  it('embed → <MarkdownEmbed url="...">', () => {
+    /* ... */
+  });
+  it('image → <MarkdownImage src="..." alt="...">', () => {
+    /* ... */
+  });
+  it('table with headings → valid GFM table with header separator', () => {
+    /* ... */
+  });
+  it('table without headings → valid GFM table', () => {
+    /* ... */
+  });
+
   it('toggle with nested children → recursive MDX output', () => {
     const result = serializeToMdx({
-      blocks: [{
-        id: 'toggle1',
-        type: 'toggle',
-        data: {
-          text: 'Show details',
-          items: [
-            { id: 'child1', type: 'paragraph', data: { text: 'Nested paragraph' } }
-          ]
-        }
-      }]
+      blocks: [
+        {
+          id: 'toggle1',
+          type: 'toggle',
+          data: {
+            text: 'Show details',
+            items: [
+              {
+                id: 'child1',
+                type: 'paragraph',
+                data: { text: 'Nested paragraph' },
+              },
+            ],
+          },
+        },
+      ],
     });
     expect(result).toContain('<MarkdownToggle summary="Show details">');
     expect(result).toContain('Nested paragraph');
@@ -138,8 +172,8 @@ describe('serializeToMdx — block handlers', () => {
     const result = serializeToMdx({
       blocks: [
         { id: 'p1', type: 'paragraph', data: { text: 'test' } },
-        { id: 'd1', type: 'delimiter', data: {} }
-      ]
+        { id: 'd1', type: 'delimiter', data: {} },
+      ],
     });
     expect(result).toContain('data-block-id="p1"');
     expect(result).toContain('data-block-id="d1"');
@@ -151,18 +185,29 @@ describe('serializeToMdx — block handlers', () => {
 
 ```ts
 // security.test.ts
-import { describe, it, expect } from 'vitest';
-import { escapeMdxBraces, tryParseInlineComponent, sanitizeMdxOutput, DEFAULT_ALLOWED_MDX_COMPONENTS } from '../../src/serializer/security';
+
+import { describe, expect, it } from 'vitest';
+
+import {
+  DEFAULT_ALLOWED_MDX_COMPONENTS,
+  escapeMdxBraces,
+  sanitizeMdxOutput,
+  tryParseInlineComponent,
+} from '../../src/serializer/security';
 
 describe('escapeMdxBraces', () => {
   it('escapes single brace pair', () => {
     expect(escapeMdxBraces('{value}')).toBe('&#123;value&#125;');
   });
   it('escapes nested braces', () => {
-    expect(escapeMdxBraces('{{nested}}')).toBe('&#123;&#123;nested&#125;&#125;');
+    expect(escapeMdxBraces('{{nested}}')).toBe(
+      '&#123;&#123;nested&#125;&#125;'
+    );
   });
   it('escapes JSX-like expression', () => {
-    expect(escapeMdxBraces('{process.env.SECRET}')).toBe('&#123;process.env.SECRET&#125;');
+    expect(escapeMdxBraces('{process.env.SECRET}')).toBe(
+      '&#123;process.env.SECRET&#125;'
+    );
   });
   it('returns empty string unchanged', () => {
     expect(escapeMdxBraces('')).toBe('');
@@ -180,8 +225,14 @@ describe('tryParseInlineComponent', () => {
     expect(result).toEqual({ componentName: 'MarkdownAlerts', props: {} });
   });
   it('parses valid shortcode with JSON props', () => {
-    const result = tryParseInlineComponent('[[MarkdownAlerts {"type":"info"}]]', allowlist);
-    expect(result).toEqual({ componentName: 'MarkdownAlerts', props: { type: 'info' } });
+    const result = tryParseInlineComponent(
+      '[[MarkdownAlerts {"type":"info"}]]',
+      allowlist
+    );
+    expect(result).toEqual({
+      componentName: 'MarkdownAlerts',
+      props: { type: 'info' },
+    });
   });
   it('parses JSX-style <Name /> syntax', () => {
     const result = tryParseInlineComponent('<MarkdownEmbed />', allowlist);
@@ -189,14 +240,20 @@ describe('tryParseInlineComponent', () => {
     expect(result?.componentName).toBe('MarkdownEmbed');
   });
   it('returns null for blocked component name', () => {
-    expect(tryParseInlineComponent('[[DangerousComponent]]', allowlist)).toBeNull();
+    expect(
+      tryParseInlineComponent('[[DangerousComponent]]', allowlist)
+    ).toBeNull();
   });
   it('returns null for malformed JSON props', () => {
-    expect(tryParseInlineComponent('[[MarkdownAlerts {bad json}]]', allowlist)).toBeNull();
+    expect(
+      tryParseInlineComponent('[[MarkdownAlerts {bad json}]]', allowlist)
+    ).toBeNull();
   });
   it('app-extended allowlist allows custom component', () => {
     const extended = new Set([...allowlist, 'MyAppComponent']);
-    expect(tryParseInlineComponent('[[MyAppComponent]]', extended)).not.toBeNull();
+    expect(
+      tryParseInlineComponent('[[MyAppComponent]]', extended)
+    ).not.toBeNull();
   });
 });
 
@@ -216,13 +273,17 @@ describe('sanitizeMdxOutput', () => {
 ### 5. Run Command
 
 Tests must pass with:
+
 ```
 bun run test
 ```
+
 from inside `packages/markdown-editor/` or:
+
 ```
 bun run test --filter @bubbles/markdown-editor
 ```
+
 from the monorepo root.
 
 ---

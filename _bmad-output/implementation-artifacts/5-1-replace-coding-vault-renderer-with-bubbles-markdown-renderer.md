@@ -1,7 +1,7 @@
 ---
-story_id: "5.1"
-story_key: "5-1-replace-coding-vault-renderer-with-bubbles-markdown-renderer"
-epic: "Epic 5 — Coding Vault Migration"
+story_id: '5.1'
+story_key: '5-1-replace-coding-vault-renderer-with-bubbles-markdown-renderer'
+epic: 'Epic 5 — Coding Vault Migration'
 status: ready-for-dev
 created: 2026-04-12
 ---
@@ -31,7 +31,7 @@ The `--sh-*` Shiki CSS variable definitions currently live in `apps/the-coding-v
 ## Mandatory Implementation Directives
 
 - Follow `AGENTS.md` for every implementation decision in this story.
-- If relevant code already exists in `portal-ref` or `lms-ref`, reuse that working code first and port it cleanly into the target package or app.
+- If relevant code already exists in `portal-ref` or `lms-ref` or `to-be-integrated` or `/apps/the-coding-vault`, reuse that working code first and port it cleanly into the target package or app.
 - Adapt reference code only as needed for this monorepo plan, package boundaries, typing, naming, and acceptance criteria.
 - Do not rewrite or redesign working reference code unnecessarily when a clean extraction or transfer is sufficient.
 
@@ -95,6 +95,7 @@ Add alongside existing `@bubbles/ui/globals.css` import.
 Find the Vault entry page that currently renders MDX. Replace the compilation/rendering code:
 
 **Before (approximately):**
+
 ```tsx
 import { compileMDX } from 'next-mdx-remote-client';
 
@@ -103,6 +104,7 @@ return <div>{content}</div>;
 ```
 
 **After:**
+
 ```tsx
 import { MdxRenderer } from '@bubbles/markdown-renderer';
 
@@ -153,6 +155,7 @@ Check for any other usages before removing — do not remove if still used elsew
 ### 7. Visual Regression Check
 
 After the migration:
+
 - Open a Vault entry page in the browser
 - Verify: text renders, code blocks are syntax-highlighted, alerts show correctly, toggles collapse/expand
 - Check light and dark mode

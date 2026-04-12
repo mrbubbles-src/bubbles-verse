@@ -1,7 +1,7 @@
 ---
-story_id: "2.2"
-story_key: "2-2-mdxrenderer-component"
-epic: "Epic 2 — MDX Renderer & Default Components"
+story_id: '2.2'
+story_key: '2-2-mdxrenderer-component'
+epic: 'Epic 2 — MDX Renderer & Default Components'
 status: ready-for-dev
 created: 2026-04-12
 ---
@@ -29,7 +29,7 @@ The reference implementation (`lms-ref`) uses `next-mdx-remote-client` — this 
 ## Mandatory Implementation Directives
 
 - Follow `AGENTS.md` for every implementation decision in this story.
-- If relevant code already exists in `portal-ref` or `lms-ref`, reuse that working code first and port it cleanly into the target package or app.
+- If relevant code already exists in `portal-ref` or `lms-ref` or `to-be-integrated` or `/apps/the-coding-vault`, reuse that working code first and port it cleanly into the target package or app.
 - Adapt reference code only as needed for this monorepo plan, package boundaries, typing, naming, and acceptance criteria.
 - Do not rewrite or redesign working reference code unnecessarily when a clean extraction or transfer is sufficient.
 
@@ -69,20 +69,25 @@ interface MdxRendererProps {
 ### 2. Runtime MDX Compilation with `evaluate()`
 
 ```ts
-import { evaluate } from '@mdx-js/mdx';
 import * as runtime from 'react/jsx-runtime';
+
+import { evaluate } from '@mdx-js/mdx';
 import remarkGfm from 'remark-gfm';
+
 import { defaultComponents } from './components';
 
-async function compileMdx(content: string, components?: MdxRendererProps['components']) {
+async function compileMdx(
+  content: string,
+  components?: MdxRendererProps['components']
+) {
   const { default: Content } = await evaluate(content, {
     ...runtime,
     remarkPlugins: [remarkGfm],
   });
-  
+
   const mergedComponents = {
     ...defaultComponents,
-    ...components,  // consumer overrides take precedence
+    ...components, // consumer overrides take precedence
   };
 
   return { Content, mergedComponents };
