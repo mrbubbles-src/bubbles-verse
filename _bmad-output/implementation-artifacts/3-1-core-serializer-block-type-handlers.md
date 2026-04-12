@@ -2,7 +2,7 @@
 story_id: '3.1'
 story_key: '3-1-core-serializer-block-type-handlers'
 epic: 'Epic 3 — EditorJS → MDX Serializer'
-status: ready-for-dev
+status: review
 created: 2026-04-12
 ---
 
@@ -185,3 +185,65 @@ Only adapt naming or exports where explicitly required by the agreed package API
 ## Dev Notes
 
 _To be filled in during implementation._
+
+## Tasks / Subtasks
+
+- [x] Task 1: Port the reference serializer block handlers into `@bubbles/markdown-editor` (AC: all)
+  - [x] Add typed serializer input and block/list helper types
+  - [x] Port paragraph, header, list, code, quote, alert, delimiter, toggle, table, embed, and image handling from the reference serializer
+  - [x] Preserve block wrapper behavior with `<div data-block-id="...">` for every serialized block
+  - [x] Preserve recursive toggle serialization and table padding behavior from the reference implementation
+
+- [x] Task 2: Expose the serializer through the package public API and package-local docs (AC: all)
+  - [x] Export `serializeToMdx` from `packages/markdown-editor/src/index.ts`
+  - [x] Keep the serializer tree-shakeable by avoiding React and EditorJS runtime imports
+  - [x] Update the package README with serializer usage
+  - [x] Update the package CHANGELOG with the new export
+
+- [x] Task 3: Add regression tests and run implementation validations (AC: all)
+  - [x] Add serializer unit tests in `packages/markdown-editor/__tests__/`
+  - [x] Run `bun install` to sync the package test dependency
+  - [x] Run `bun run --cwd packages/markdown-editor test`
+  - [x] Run `bun run --cwd packages/markdown-editor typecheck`
+  - [x] Run `bun run typecheck`
+  - [x] Run `bun run lint`
+
+## Dev Agent Record
+
+### Debug Log
+
+- 2026-04-12: Loaded `bmad-dev-story` workflow, BMAD config, sprint status, and Story 3.1 context. Confirmed the first `ready-for-dev` story is `3-1-core-serializer-block-type-handlers`.
+- 2026-04-12: Initialized Next.js DevTools MCP per repo rules, then inspected `to-be-integrated/` and `portal-ref` to confirm the serializer baseline and wrapper behavior.
+- 2026-04-12: Verified the primary reference serializer lives in `to-be-integrated/md-editor/markdown-editor/editor/convert-editor-js-to-mdx.tsx` and that inline EditorJS tools are preserved as inline HTML within text blocks, not as standalone block handlers.
+- 2026-04-12: Added package-local serializer modules, exported `serializeToMdx`, and adapted the emitted MDX component names from the reference `Modules*` names to the package API `Markdown*` names already established by `@bubbles/markdown-renderer`.
+- 2026-04-12: Added package serializer tests, synced the new Vitest dependency with `bun install`, and validated package + monorepo typecheck/lint after fixing TypeScript narrowing issues in the serializer implementation.
+
+### Completion Notes
+
+- `@bubbles/markdown-editor` now exports a standalone `serializeToMdx()` utility that converts EditorJS block output into the MDX dialect consumed by `@bubbles/markdown-renderer`.
+- The serializer preserves the reference wrapper behavior (`data-block-id`), recursive toggle handling, padded GFM table output, checklist component output, and final `<br>` sanitization.
+- Inline EditorJS tools (`inlineCode`, `strikethrough`, `annotation`, `InlineHotkey`) continue to flow through as inline HTML embedded inside text-based blocks, matching the inspected reference implementation.
+- Validation passed with package tests, package typecheck, monorepo typecheck, and monorepo lint.
+
+### File List
+
+- `packages/markdown-editor/package.json`
+- `packages/markdown-editor/README.md`
+- `packages/markdown-editor/CHANGELOG.md`
+- `packages/markdown-editor/src/index.ts`
+- `packages/markdown-editor/src/lib/serialize-to-mdx.ts`
+- `packages/markdown-editor/src/lib/serializer-utils.ts`
+- `packages/markdown-editor/src/types/serializer.ts`
+- `packages/markdown-editor/__tests__/serialize-to-mdx.test.ts`
+- `_bmad-output/implementation-artifacts/3-1-core-serializer-block-type-handlers.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `bun.lock`
+
+## Change Log
+
+- 2026-04-12: Ported the core EditorJS-to-MDX serializer into `@bubbles/markdown-editor` and exposed it as the package's first runtime utility export.
+- 2026-04-12: Added serializer regression tests plus package-local README and changelog updates for the new API surface.
+
+## Status
+
+review

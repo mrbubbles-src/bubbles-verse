@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "lint": "eslint",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "exports": {
@@ -37,6 +38,7 @@
     "@bubbles/typescript-config": "workspace:*",
     "@types/react": "^19.2.10",
     "eslint": "^9.39.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
   }
 }

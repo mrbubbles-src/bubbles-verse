@@ -3,3 +3,4 @@
 ## 0.0.0 — 2026-04-12
 
 - Initial package scaffold.
+- Add the standalone `serializeToMdx()` export for core EditorJS block handling.

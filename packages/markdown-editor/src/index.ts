@@ -1,5 +1,6 @@
-/**
- * Public entrypoint for the markdown editor package scaffold.
- * Future stories expose the editor surface from here.
- */
-export {};
+export { serializeToMdx } from './lib/serialize-to-mdx';
+export type {
+  EditorBlock,
+  EditorJsListItem,
+  SerializeToMdxInput,
+} from './types/serializer';
