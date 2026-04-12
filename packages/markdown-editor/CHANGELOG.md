@@ -8,3 +8,5 @@
   `src/serializer/security.ts` and cover brace escaping, inline shortcode
   allowlisting, malformed prop fallback, and final `<br />` sanitization with
   regression tests.
+- Move serializer regression coverage into `tests/serializer/` with reusable
+  block fixtures and per-handler parity assertions.

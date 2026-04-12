@@ -12,6 +12,7 @@ components land in later stories.
 
 ```ts
 import { serializeToMdx } from '@bubbles/markdown-editor';
+
 import '@bubbles/markdown-editor/styles/editor';
 import '@bubbles/markdown-editor/styles/preview';
 ```
@@ -29,6 +30,9 @@ implementation:
 - rejects malformed shortcode JSON props and falls back to plain text
 - normalizes `<br>` tags to `<br />` in the final MDX output
 
+Serializer regression coverage lives in `tests/serializer/` with shared block
+fixtures in `tests/serializer/fixtures/blocks.ts`.
+
 ```ts
 const mdx = serializeToMdx({
   blocks: [
@@ -39,4 +43,18 @@ const mdx = serializeToMdx({
     },
   ],
 });
+```
+
+## Tests
+
+Run the package suite directly:
+
+```bash
+bun run --cwd packages/markdown-editor test
+```
+
+Or from the monorepo root:
+
+```bash
+bun run test
 ```

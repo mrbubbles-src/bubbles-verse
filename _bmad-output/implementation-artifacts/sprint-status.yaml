@@ -59,7 +59,7 @@ development_status:
   epic-3: backlog
   3-1-core-serializer-block-type-handlers: review
   3-2-serializer-security-patterns: review
-  3-3-serializer-unit-tests: ready-for-dev
+  3-3-serializer-unit-tests: review
   3-4-headinganchoridsbybblockid-option: ready-for-dev
   epic-3-retrospective: optional
 

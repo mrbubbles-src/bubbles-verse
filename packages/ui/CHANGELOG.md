@@ -15,3 +15,5 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Richer README and `documentation/overview.md` (layering, conventions, anti-patterns).
 - `globals.css` typography defaults now read shared heading, body, and code font variables.
+- `SelectContent` defaults back to popper-style content-fit positioning; opt
+  into trigger alignment with `alignItemWithTrigger={true}`.

@@ -4,10 +4,10 @@ Monorepo for personal web apps and shared frontend packages. Installs run throug
 
 ## Requirements
 
-| Tool | Version | Notes |
-| ---- | ------- | ----- |
+| Tool    | Version    | Notes                                               |
+| ------- | ---------- | --------------------------------------------------- |
 | Node.js | `>=22 <25` | [`.nvmrc`](.nvmrc) pins `24.14.1` for local parity. |
-| Bun | `1.3.11` | Declared as the root `packageManager`. |
+| Bun     | `1.3.11`   | Declared as the root `packageManager`.              |
 
 ## First-time setup
 
@@ -26,13 +26,14 @@ bunx turbo run typecheck --filter=it-counts
 
 Run from the repository root unless you are intentionally working inside one app or package.
 
-| Script | What it does |
-| ------ | ------------- |
-| `bun run dev` | Starts every workspace that exposes `dev`. |
-| `bun run build` | Builds the dependency graph in `^build` order. |
-| `bun run lint` | Runs the lint graph. |
-| `bun run format` | Runs formatting where a workspace defines `format`. |
-| `bun run typecheck` | Runs `tsc --noEmit` where configured. |
+| Script              | What it does                                        |
+| ------------------- | --------------------------------------------------- |
+| `bun run dev`       | Starts every workspace that exposes `dev`.          |
+| `bun run build`     | Builds the dependency graph in `^build` order.      |
+| `bun run lint`      | Runs the lint graph.                                |
+| `bun run test`      | Runs every workspace `test` script through Turbo.   |
+| `bun run format`    | Runs formatting where a workspace defines `format`. |
+| `bun run typecheck` | Runs `tsc --noEmit` where configured.               |
 
 Single-workspace examples:
 
@@ -40,7 +41,7 @@ Single-workspace examples:
 bunx turbo dev --filter=it-counts
 bunx turbo build --filter=teacherbuddy
 bunx turbo lint --filter=@bubbles/ui
-cd apps/it-counts && bun run test:run
+bunx turbo test --filter=@bubbles/markdown-editor
 ```
 
 ## Repository layout
@@ -63,14 +64,14 @@ Dependency rule: apps may depend on packages; packages must not import app code.
 
 ## Documentation map
 
-| Scope | Start here |
-| ----- | ---------- |
-| Monorepo overview and setup | [`documentation/README.md`](documentation/README.md) |
-| Generated repo knowledge snapshot | [`docs/index.md`](docs/index.md) |
-| Coding and documentation rules | [`AGENTS.md`](AGENTS.md) |
-| Story implementation artifacts | `_bmad-output/implementation-artifacts/*.md` |
-| Cross-cutting changes only | [`CHANGELOG.md`](CHANGELOG.md) |
-| `it-counts` app docs | [`apps/it-counts/README.md`](apps/it-counts/README.md) |
+| Scope                             | Start here                                             |
+| --------------------------------- | ------------------------------------------------------ |
+| Monorepo overview and setup       | [`documentation/README.md`](documentation/README.md)   |
+| Generated repo knowledge snapshot | [`docs/index.md`](docs/index.md)                       |
+| Coding and documentation rules    | [`AGENTS.md`](AGENTS.md)                               |
+| Story implementation artifacts    | `_bmad-output/implementation-artifacts/*.md`           |
+| Cross-cutting changes only        | [`CHANGELOG.md`](CHANGELOG.md)                         |
+| `it-counts` app docs              | [`apps/it-counts/README.md`](apps/it-counts/README.md) |
 
 ## Workspace notes
 

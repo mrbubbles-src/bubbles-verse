@@ -2,7 +2,7 @@
 story_id: '3.3'
 story_key: '3-3-serializer-unit-tests'
 epic: 'Epic 3 — EditorJS → MDX Serializer'
-status: ready-for-dev
+status: review
 created: 2026-04-12
 ---
 
@@ -167,3 +167,68 @@ Tests must pass with the package's standard test command after aligning the pack
 ## Dev Notes
 
 _To be filled in during implementation._
+
+## Tasks / Subtasks
+
+- [x] Task 1: Move serializer coverage into the required `packages/markdown-editor/tests/serializer/` layout (AC: 1, 4, 5)
+  - [x] Add shared block fixtures under `tests/serializer/fixtures/blocks.ts`
+  - [x] Replace the old `__tests__` files with focused serializer parity tests
+  - [x] Keep test assertions aligned with `to-be-integrated/` / `portal-ref` behavior
+
+- [x] Task 2: Expand serializer parity and security coverage to the full story scope (AC: 1, 2, 3, 4, 5)
+  - [x] Add explicit coverage for all serializer block handlers plus inline tool passthrough expectations
+  - [x] Add helper-level tests for `escapeMdxBraces()`, `tryParseInlineComponent()`, and `<br />` sanitization
+  - [x] Add recursive toggle and table formatting assertions
+
+- [x] Task 3: Align monorepo test execution with repo tooling and validate the full graph (AC: 6)
+  - [x] Add a root `bun run test` entrypoint through Turbo single-run mode
+  - [x] Resolve the shared `SelectContent` default mismatch surfaced by the root test run
+  - [x] Run package tests plus root test/lint/typecheck successfully
+
+## Dev Agent Record
+
+### Debug Log
+
+- 2026-04-12: Loaded BMAD config, sprint status, Story 3.3, and the reference serializer sources from `to-be-integrated/` and `portal-ref`.
+- 2026-04-12: Verified the repo had no root `test` script, and that `bun run test` failed before implementation because the script was missing.
+- 2026-04-12: Replaced the package-local `__tests__` layout with the required `tests/serializer/` structure and added reusable block fixtures to keep parity assertions readable.
+- 2026-04-12: Expanded serializer coverage to 29 passing tests spanning block handlers, inline EditorJS markup passthrough, shortcode parsing, brace escaping, recursive toggles, tables, and `<br />` sanitization.
+- 2026-04-12: Added a root Turbo `test` task and switched the entrypoint to single-run mode (`turbo test -- --run`) so monorepo tests terminate cleanly.
+- 2026-04-12: Root test validation exposed an existing mismatch between the documented `SelectContent` default and the shared UI implementation; corrected the shared component default so the repo-wide suite passes.
+
+### Completion Notes
+
+- Serializer regression coverage now lives in `packages/markdown-editor/tests/serializer/` with fixture-driven tests for every required handler path and security edge case from the inspected reference implementation.
+- `bun run test` now works from the monorepo root and completes in single-run mode, which satisfies the story acceptance criterion and makes the command CI-friendly.
+- The root validation surfaced and resolved a shared UI regression: `packages/ui` now defaults `SelectContent` back to popper-style content-fit positioning, matching existing TeacherBuddy docs and tests.
+- Repo validation passed with `bun run --cwd packages/markdown-editor test`, `bun run test`, `bun run lint`, and `bun run typecheck`.
+- The `it-counts` suite still emits pre-existing jsdom canvas / `act(...)` warnings during `bun run test`, but the suite exits successfully and did not require code changes for this story.
+
+### File List
+
+- `package.json`
+- `turbo.json`
+- `README.md`
+- `CHANGELOG.md`
+- `packages/markdown-editor/README.md`
+- `packages/markdown-editor/CHANGELOG.md`
+- `packages/markdown-editor/tests/serializer/fixtures/blocks.ts`
+- `packages/markdown-editor/tests/serializer/serialize-to-mdx.test.ts`
+- `packages/markdown-editor/tests/serializer/security.test.ts`
+- `packages/markdown-editor/__tests__/serialize-to-mdx.test.ts` (deleted)
+- `packages/markdown-editor/__tests__/serializer-security.test.ts` (deleted)
+- `packages/ui/src/components/shadcn/select.tsx`
+- `packages/ui/README.md`
+- `packages/ui/CHANGELOG.md`
+- `_bmad-output/implementation-artifacts/3-3-serializer-unit-tests.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+
+## Change Log
+
+- 2026-04-12: Moved serializer tests into `packages/markdown-editor/tests/serializer/`, added fixture-driven parity/security coverage, and removed the old `__tests__` files.
+- 2026-04-12: Added the root Turbo `bun run test` entrypoint and updated root/package docs for the new monorepo test flow.
+- 2026-04-12: Fixed the shared `SelectContent` default so the repo-wide root test command passes against the documented behavior.
+
+## Status
+
+review
