@@ -1,11 +1,13 @@
 # @bubbles/markdown-renderer
 
-Shared MDX building blocks and runtime rendering for bubbles-verse apps.
+Shared MDX building blocks, runtime rendering, and renderer-only CSS for
+bubbles-verse apps.
 
 ## Current Scope
 
-Stories 2.1 and 2.2 port the default `Markdown*` components, the typed
-`defaultComponents` map, and the runtime `<MdxRenderer>` component.
+Stories 2.1 to 2.3 port the default `Markdown*` components, the typed
+`defaultComponents` map, the runtime `<MdxRenderer>` component, and the
+standalone `renderer.css` stylesheet export.
 
 ## Available Imports
 
@@ -23,6 +25,9 @@ import {
 } from '@bubbles/markdown-renderer';
 import '@bubbles/markdown-renderer/styles/renderer';
 ```
+
+The stylesheet export defines the renderer syntax-highlighting variables and
+inline-code treatment without importing any editor toolbar or split-pane CSS.
 
 ## Runtime Rendering
 

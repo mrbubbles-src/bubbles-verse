@@ -2,7 +2,7 @@
 story_id: '2.3'
 story_key: '2-3-renderer-css-stylesheet-renderer-css'
 epic: 'Epic 2 — MDX Renderer & Default Components'
-status: ready-for-dev
+status: review
 created: 2026-04-12
 ---
 
@@ -190,3 +190,42 @@ Once this file is complete, `apps/the-coding-vault/app/globals.css` contains dup
 ## Dev Notes
 
 _To be filled in during implementation._
+
+## Tasks / Subtasks
+
+- [x] Port the renderer stylesheet from the designated reference source into `packages/markdown-renderer/src/styles/renderer.css`
+- [x] Add regression tests for renderer token wiring and renderer-only CSS scope
+- [x] Update package documentation and changelog for the renderer stylesheet export
+
+## Dev Agent Record
+
+### Debug Log
+
+- 2026-04-12: Story file shipped without implementation task scaffolding; derived the minimum task list directly from the Implementation Guide and Acceptance Criteria to keep work traceable.
+- 2026-04-12: `bun test` invoked Bun's native runner and failed because the package test setup depends on Vitest `jsdom`; switched validation to the package script `bun run test`.
+
+### Completion Notes
+
+- Ported the renderer token-variable contract from the designated reference styling, but rewired it to verified `@bubbles/ui/globals.css` Catppuccin variables already available in this monorepo.
+- Kept the stylesheet renderer-scoped: syntax token variables, dark-mode overrides via `.dark`, and inline-code styling only; no EditorJS, toolbar, split-pane, or form selectors were carried over.
+- Added a regression test that locks the stylesheet contract for token presence, renderer-only scope, and shared-token color wiring.
+- Updated package README and CHANGELOG so the stylesheet export is documented alongside the existing component/runtime API.
+- Validation: `bun run test`, `./node_modules/.bin/eslint .`, and `bun run typecheck` in `packages/markdown-renderer`.
+
+## File List
+
+- _bmad-output/implementation-artifacts/2-3-renderer-css-stylesheet-renderer-css.md
+- _bmad-output/implementation-artifacts/sprint-status.yaml
+- packages/markdown-renderer/__tests__/renderer-styles.test.ts
+- packages/markdown-renderer/CHANGELOG.md
+- packages/markdown-renderer/README.md
+- packages/markdown-renderer/src/styles/renderer.css
+
+## Change Log
+
+- 2026-04-12: Development started.
+- 2026-04-12: Ported `renderer.css`, added stylesheet regression coverage, and documented the stylesheet export.
+
+## Status
+
+review

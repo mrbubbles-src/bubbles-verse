@@ -6,3 +6,5 @@
 - Port default `Markdown*` MDX block components and `defaultComponents`.
 - Add runtime `<MdxRenderer>` with package defaults, component overrides, and
   local compilation error handling.
+- Add standalone `renderer.css` with renderer-scoped Shiki token variables and
+  inline-code styling.

@@ -52,7 +52,7 @@ development_status:
   epic-2: backlog
   2-1-default-mdx-block-components-markdown: review
   2-2-mdxrenderer-component: review
-  2-3-renderer-css-stylesheet-renderer-css: ready-for-dev
+  2-3-renderer-css-stylesheet-renderer-css: review
   epic-2-retrospective: optional
 
   # ─── Epic 3: EditorJS → MDX Serializer ────────────────────────────────────

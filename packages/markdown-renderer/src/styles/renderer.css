@@ -1,3 +1,55 @@
-/* @bubbles/markdown-renderer scaffold stylesheet.
- * Public import path is reserved for renderer styles added in Epic 2.
- */
+:root {
+  --sh-class: oklch(var(--ctp-latte-yellow));
+  --sh-identifier: oklch(var(--ctp-latte-red));
+  --sh-sign: oklch(var(--ctp-latte-mauve));
+  --sh-property: oklch(var(--ctp-latte-peach));
+  --sh-entity: oklch(var(--ctp-latte-blue));
+  --sh-jsxliterals: oklch(var(--ctp-latte-green));
+  --sh-string: oklch(var(--ctp-latte-green));
+  --sh-keyword: oklch(var(--ctp-latte-mauve));
+  --sh-number: oklch(var(--ctp-latte-peach));
+  --sh-null: oklch(var(--ctp-latte-peach));
+  --sh-break: oklch(var(--ctp-latte-mauve));
+  --sh-comment: oklch(var(--ctp-latte-subtext-0));
+  --code-bg: oklch(var(--ctp-latte-base));
+
+  --color-sh-class: var(--sh-class);
+  --color-sh-identifier: var(--sh-identifier);
+  --color-sh-sign: var(--sh-sign);
+  --color-sh-property: var(--sh-property);
+  --color-sh-entity: var(--sh-entity);
+  --color-sh-jsxliterals: var(--sh-jsxliterals);
+  --color-sh-string: var(--sh-string);
+  --color-sh-keyword: var(--sh-keyword);
+  --color-sh-number: var(--sh-number);
+  --color-sh-null: var(--sh-null);
+  --color-sh-break: var(--sh-break);
+  --color-sh-comment: var(--sh-comment);
+  --color-code-bg: var(--code-bg);
+}
+
+.dark {
+  --sh-class: oklch(var(--ctp-mocha-yellow));
+  --sh-identifier: oklch(var(--ctp-mocha-red));
+  --sh-sign: oklch(var(--ctp-mocha-mauve));
+  --sh-property: oklch(var(--ctp-mocha-peach));
+  --sh-entity: oklch(var(--ctp-mocha-blue));
+  --sh-jsxliterals: oklch(var(--ctp-mocha-green));
+  --sh-string: oklch(var(--ctp-mocha-green));
+  --sh-keyword: oklch(var(--ctp-mocha-mauve));
+  --sh-number: oklch(var(--ctp-mocha-peach));
+  --sh-null: oklch(var(--ctp-mocha-peach));
+  --sh-break: oklch(var(--ctp-mocha-mauve));
+  --sh-comment: oklch(var(--ctp-mocha-subtext-0));
+  --code-bg: oklch(var(--ctp-mocha-base));
+}
+
+code:not(pre code) {
+  font-family: var(--font-code);
+  font-weight: 700;
+  font-style: italic;
+  background-color: var(--code-bg);
+  padding: 0.2rem 0.4rem;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
