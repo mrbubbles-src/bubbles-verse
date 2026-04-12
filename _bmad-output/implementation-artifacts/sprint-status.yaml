@@ -45,7 +45,7 @@ development_status:
   # ─── Epic 1: Package Infrastructure ───────────────────────────────────────
   epic-1: in-progress
   1-1-scaffold-bubbles-markdown-renderer: done
-  1-2-scaffold-bubbles-markdown-editor-with-editorjs-plugin-declarations: ready-for-dev
+  1-2-scaffold-bubbles-markdown-editor-with-editorjs-plugin-declarations: done
   epic-1-retrospective: optional
 
   # ─── Epic 2: MDX Renderer & Default Components ────────────────────────────

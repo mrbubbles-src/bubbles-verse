@@ -2,7 +2,7 @@
 story_id: "1.2"
 story_key: "1-2-scaffold-bubbles-markdown-editor-with-editorjs-plugin-declarations"
 epic: "Epic 1 — Package Infrastructure"
-status: ready-for-dev
+status: done
 created: 2026-04-12
 ---
 
@@ -278,3 +278,65 @@ Same reasoning as Story 1.1. Bun workspace auto-discovers `packages/*`. Turbo pi
 ## Dev Notes
 
 _To be filled in by the developer during/after implementation._
+
+## Tasks / Subtasks
+
+- [x] Task 1: Create `packages/markdown-editor` scaffold (AC: #1)
+  - [x] Create package root plus `src/styles` and `src/types`
+  - [x] Add `package.json` with workspace dependencies, exports, and pinned EditorJS plugin versions
+  - [x] Add `tsconfig.json` extending `@bubbles/typescript-config/react-library.json`
+  - [x] Add `eslint.config.mjs` extending `@bubbles/eslint-config/react-internal`
+
+- [x] Task 2: Add placeholder source files, styles, and declarations (AC: #1)
+  - [x] Add `src/index.ts` placeholder export
+  - [x] Add `src/styles/editor.css` placeholder stylesheet
+  - [x] Add `src/styles/preview.css` placeholder stylesheet
+  - [x] Add `src/types/editorjs-plugins.d.ts` for the seven untyped EditorJS plugins
+
+- [x] Task 3: Add package-local docs and verify workspace integration (AC: #1)
+  - [x] Add package `README.md`
+  - [x] Add package `CHANGELOG.md`
+  - [x] Run `bun install`
+  - [x] Run `bun run typecheck` from monorepo root
+  - [x] Run `bun run lint` from monorepo root
+  - [x] Confirm workspace package discoverable via `bun pm ls`
+
+## Dev Agent Record
+
+### Debug Log
+
+- 2026-04-12: Loaded `bmad-dev-story` workflow, BMAD config, sprint status, story context, and the completed Story 1.1 for section/update conventions.
+- 2026-04-12: Initialized Next.js DevTools MCP per repo rules before implementation work.
+- 2026-04-12: Pulled exact EditorJS plugin versions from `portal-ref/package.json` and checked existing declaration patterns in `apps/the-coding-vault/types/editorjs-plugins.d.ts`.
+- 2026-04-12: Scaffolded `packages/markdown-editor` with source exports, stylesheet exports, package-local docs, and plugin declaration stubs without introducing permanent `any` usage.
+- 2026-04-12: Verified `bun install`, root `bun run typecheck`, root `bun run lint`, and `bun pm ls` all pass with the new workspace package.
+
+### Completion Notes
+
+- `@bubbles/markdown-editor` now owns the EditorJS plugin dependency surface so consuming apps do not need direct plugin dependencies.
+- Plugin versions are pinned to the current `portal-ref` source of truth, including `editorjs-toggle-block`.
+- The declaration file is intentionally scaffold-level and can be refined in later serializer/editor implementation stories as concrete plugin APIs are introduced.
+
+### File List
+
+- `packages/markdown-editor/package.json`
+- `packages/markdown-editor/tsconfig.json`
+- `packages/markdown-editor/eslint.config.mjs`
+- `packages/markdown-editor/src/index.ts`
+- `packages/markdown-editor/src/styles/editor.css`
+- `packages/markdown-editor/src/styles/preview.css`
+- `packages/markdown-editor/src/types/editorjs-plugins.d.ts`
+- `packages/markdown-editor/README.md`
+- `packages/markdown-editor/CHANGELOG.md`
+- `_bmad-output/implementation-artifacts/1-2-scaffold-bubbles-markdown-editor-with-editorjs-plugin-declarations.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `bun.lock`
+
+## Change Log
+
+- 2026-04-12: Added the initial `@bubbles/markdown-editor` workspace scaffold with pinned EditorJS plugin dependencies and package-local declaration stubs.
+- 2026-04-12: Verified install, typecheck, lint, and workspace discovery from the monorepo root.
+
+## Status
+
+done
