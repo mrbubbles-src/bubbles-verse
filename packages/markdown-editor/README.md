@@ -7,6 +7,7 @@ Shared markdown editor package for bubbles-verse apps.
 This package now ships:
 
 - the standalone `serializeToMdx()` utility
+- the standalone `generateSlug()` utility from the shared metadata flow
 - the shared `MarkdownEditor` wrapper around EditorJS plus metadata form hooks
 - the exported default `EditorForm` fallback for app-agnostic entry metadata
 - stylesheet exports and the shared EditorJS plugin dependency surface
@@ -18,6 +19,7 @@ import {
   DEFAULT_PLUGIN_KEYS,
   EditorForm,
   MarkdownEditor,
+  generateSlug,
   serializeToMdx,
 } from '@bubbles/markdown-editor';
 
@@ -94,6 +96,16 @@ You can also import and render the default form directly:
   isEditMode={isEditMode}
   onSuccess={(entry) => saveEntry(entry)}
 />
+```
+
+## `generateSlug`
+
+Use the exported helper when an app needs the exact same slug normalization as
+the package form.
+
+```ts
+const slug = generateSlug('Grüß&nbsp;Gott');
+// "gruess-gott"
 ```
 
 ## `serializeToMdx`

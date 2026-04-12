@@ -67,7 +67,7 @@ development_status:
   epic-4: backlog
   4-1-editorjs-wrapper-with-configurable-plugin-subset: review
   4-2-renderform-render-prop-and-default-editorform: review
-  4-3-metadata-derivation-and-generateslug: ready-for-dev
+  4-3-metadata-derivation-and-generateslug: review
   4-4-draft-autosave-and-restore: ready-for-dev
   4-5-live-split-pane-mdx-preview-with-scroll-sync: ready-for-dev
   4-6-import-from-markdown-modal-and-editor-css: ready-for-dev

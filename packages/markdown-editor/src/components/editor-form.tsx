@@ -25,10 +25,10 @@ import {
 } from '@bubbles/ui/shadcn/select';
 import { Textarea } from '@bubbles/ui/shadcn/textarea';
 import type { FormEvent } from 'react';
-import { useId, useMemo, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 
 import { serializeToMdx } from '../lib/serialize-to-mdx';
-import { getHeaderLevelOneTitle, slugify } from '../lib/slug-utils';
+import { generateSlug, getHeaderLevelOneTitle } from '../lib/slug-utils';
 import type { EditorFormProps, MarkdownEditorStatus } from '../types/editor';
 
 /**
@@ -68,29 +68,59 @@ export function EditorForm({
   const [status, setStatus] = useState<MarkdownEditorStatus>(
     initialData?.status ?? 'unpublished'
   );
-  const [manualSlug, setManualSlug] = useState(initialData?.slug ?? '');
+  const [title, setTitle] = useState(initialData?.title ?? '');
+  const [autoTitle, setAutoTitle] = useState<string | undefined>(
+    initialData?.title
+  );
+  const [slug, setSlug] = useState(initialData?.slug ?? '');
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const statusLabelId = useId();
 
-  const title = useMemo(() => {
-    if (!editorReady) {
-      return initialData?.title ?? '';
-    }
-
-    return getHeaderLevelOneTitle(editorContent) ?? '';
-  }, [editorContent, editorReady, initialData?.title]);
-
-  const slug = useMemo(() => {
-    if (slugManuallyEdited) {
-      return manualSlug;
-    }
+  useEffect(() => {
+    let cancelled = false;
 
     if (!editorReady) {
-      return initialData?.slug ?? '';
+      return () => {
+        cancelled = true;
+      };
     }
 
-    return title ? slugify(title) : initialData?.slug ?? '';
-  }, [editorReady, initialData?.slug, manualSlug, slugManuallyEdited, title]);
+    const syncDerivedMetadata = async () => {
+      const content = editorContent ?? (await editorOutput());
+
+      if (cancelled || !content) {
+        return;
+      }
+
+      const derivedTitle = getHeaderLevelOneTitle(content);
+
+      if (derivedTitle) {
+        setAutoTitle(derivedTitle);
+        setTitle(derivedTitle);
+        setSlug((currentSlug) => {
+          if (!slugManuallyEdited || currentSlug.length === 0) {
+            return generateSlug(derivedTitle);
+          }
+
+          return currentSlug;
+        });
+        return;
+      }
+
+      setAutoTitle(undefined);
+      setTitle('');
+
+      if (!slugManuallyEdited) {
+        setSlug('');
+      }
+    };
+
+    void syncDerivedMetadata();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [editorContent, editorOutput, editorReady, slugManuallyEdited]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -106,8 +136,8 @@ export function EditorForm({
     }
 
     const normalizedTitle = getHeaderLevelOneTitle(output) ?? title;
-    const normalizedSlug = slugify(slug);
-    setManualSlug(normalizedSlug);
+    const normalizedSlug = generateSlug(slug);
+    setSlug(normalizedSlug);
 
     onSuccess?.({
       description: description.trim(),
@@ -136,7 +166,9 @@ export function EditorForm({
             <Field>
               <FieldLabel>Title</FieldLabel>
               <div className="rounded-md border border-input bg-input/20 px-2 py-2 text-sm">
-                {title || 'The first H1 block becomes the entry title.'}
+                {autoTitle ||
+                  title ||
+                  'The first H1 block becomes the entry title.'}
               </div>
               <FieldDescription>
                 Derived from the first level-1 heading in the editor content.
@@ -150,11 +182,11 @@ export function EditorForm({
                 placeholder="story-driven-editor"
                 value={slug}
                 onBlur={(event) => {
-                  setManualSlug(slugify(event.target.value));
+                  setSlug(generateSlug(event.target.value));
                 }}
                 onChange={(event) => {
-                  setManualSlug(event.target.value);
                   setSlugManuallyEdited(true);
+                  setSlug(event.target.value);
                 }}
               />
               <FieldDescription>

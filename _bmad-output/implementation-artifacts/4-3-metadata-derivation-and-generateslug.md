@@ -2,7 +2,7 @@
 story_id: '4.3'
 story_key: '4-3-metadata-derivation-and-generateslug'
 epic: 'Epic 4 — Content Authoring Editor'
-status: ready-for-dev
+status: review
 created: 2026-04-12
 ---
 
@@ -197,4 +197,55 @@ Cover the reference edge cases that actually exist in the source implementation,
 
 ## Dev Notes
 
-_To be filled in during implementation._
+Ported from `to-be-integrated/md-editor/markdown-editor/editor/utils/slug-utils.ts`
+and the metadata flow in
+`to-be-integrated/md-editor/markdown-editor/editor/editor-form.tsx`.
+
+The package keeps the existing read-only title presentation, but now mirrors the
+reference derivation flow:
+
+- H1 text is synced into local title state when editor content changes
+- slug auto-follows the derived title until the author edits the slug field
+- a manually edited slug is preserved across later H1/title changes for the session
+- `generateSlug()` is exported publicly while `slugify()` remains as an internal compatibility alias
+
+## Tasks / Subtasks
+
+- [x] Port the reference slug generation behavior into the shared utility surface
+- [x] Align `EditorForm` title/slug derivation with the reference manual-override flow
+- [x] Add regression coverage for `generateSlug()` and metadata derivation behavior
+- [x] Update package-local documentation and changelog
+
+## Dev Agent Record
+
+### Debug Log
+
+- 2026-04-12: Read the BMAD config, sprint status, and full story file.
+- 2026-04-12: Verified the primary reference implementation in `to-be-integrated/`; fallback `portal-ref` was not needed.
+- 2026-04-12: Implemented the package port in `packages/markdown-editor` and added regression coverage for slug parity plus form metadata behavior.
+- 2026-04-12: Verified `bun run test` in `packages/markdown-editor` on the final implementation tree.
+- 2026-04-12: Verified `bun run typecheck` and `bun run lint src tests --max-warnings=0` in `packages/markdown-editor`.
+
+### Completion Notes
+
+- Exported `generateSlug` from `@bubbles/markdown-editor` without expanding the public utility surface beyond the story requirement.
+- Switched the default `EditorForm` from memo-derived metadata to reference-style effect-driven derivation so H1 changes and manual slug overrides behave like `to-be-integrated`.
+- Added package tests for the real reference edge cases: umlaut/entity normalization, accent stripping, duplicate separator collapse, empty input, derived slug updates, and manual slug preservation.
+
+## File List
+
+- `packages/markdown-editor/src/lib/slug-utils.ts`
+- `packages/markdown-editor/src/components/editor-form.tsx`
+- `packages/markdown-editor/src/index.ts`
+- `packages/markdown-editor/tests/editor/editor-form-metadata.test.tsx`
+- `packages/markdown-editor/tests/editor/generate-slug.test.ts`
+- `packages/markdown-editor/README.md`
+- `packages/markdown-editor/CHANGELOG.md`
+
+## Change Log
+
+- 2026-04-12: Implemented Story 4.3 metadata derivation and `generateSlug` export in `@bubbles/markdown-editor`.
+
+## Status
+
+review

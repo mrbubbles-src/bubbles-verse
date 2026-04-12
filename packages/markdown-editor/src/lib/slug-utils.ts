@@ -20,7 +20,7 @@ export function sanitizeTitleText(value: string): string {
  * @param value - Human-readable title or manual slug input.
  * @returns URL-safe slug with stable umlaut and separator handling.
  */
-export function slugify(value: string): string {
+export function generateSlug(value: string): string {
   const sanitized = sanitizeTitleText(value);
   const mapped = sanitized
     .replace(/ß/g, 'ss')
@@ -37,6 +37,16 @@ export function slugify(value: string): string {
     .replace(/-{2,}/g, '-')
     .replace(/[^a-z0-9-]/g, '')
     .replace(/(^-+)|(-+$)/g, '');
+}
+
+/**
+ * Backwards-compatible alias for the reference slug generator.
+ *
+ * @param value - Human-readable title or manual slug input.
+ * @returns URL-safe slug with stable umlaut and separator handling.
+ */
+export function slugify(value: string): string {
+  return generateSlug(value);
 }
 
 /**

@@ -1,5 +1,6 @@
 export { EditorForm } from './components/editor-form';
 export { MarkdownEditor } from './components/markdown-editor';
+export { generateSlug } from './lib/slug-utils';
 export { serializeToMdx } from './lib/serialize-to-mdx';
 export { DEFAULT_PLUGIN_KEYS } from './lib/editor-tools';
 export type {

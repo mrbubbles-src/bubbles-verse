@@ -21,3 +21,6 @@
   MDX output.
 - Add internal title/slug helpers plus jsdom/RTL coverage for custom form
   props, default form fallback, and submit serialization behavior.
+- Align Story 4.3 metadata derivation with the `to-be-integrated` reference:
+  H1-driven title updates, session-scoped manual slug override preservation,
+  and the public `generateSlug()` export with regression coverage.
