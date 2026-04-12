@@ -27,6 +27,10 @@ so that {{benefit}}.
 - Source tree components to touch
 - Testing standards summary
 
+### Mandatory Story Note
+
+- Every story must state that `AGENTS.md` must be followed during implementation.
+
 ### Project Structure Notes
 
 - Alignment with unified project structure (paths, modules, naming)

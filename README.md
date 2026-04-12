@@ -68,6 +68,7 @@ Dependency rule: apps may depend on packages; packages must not import app code.
 | Monorepo overview and setup | [`documentation/README.md`](documentation/README.md) |
 | Generated repo knowledge snapshot | [`docs/index.md`](docs/index.md) |
 | Coding and documentation rules | [`AGENTS.md`](AGENTS.md) |
+| Story implementation artifacts | `_bmad-output/implementation-artifacts/*.md` |
 | Cross-cutting changes only | [`CHANGELOG.md`](CHANGELOG.md) |
 | `it-counts` app docs | [`apps/it-counts/README.md`](apps/it-counts/README.md) |
 
@@ -77,6 +78,7 @@ Dependency rule: apps may depend on packages; packages must not import app code.
 - `portfolio` and `the-coding-vault` use server-side integrations and environment variables.
 - `teacherbuddy` and `it-counts` both ship Vitest suites, but their state models differ: reducer/context vs Zustand stores.
 - Shared UI, theme, and footer concerns live in packages, not in app-local component folders.
+- Story files in `_bmad-output/implementation-artifacts/` should explicitly tell implementers to follow `AGENTS.md`.
 
 ## Common issues
 

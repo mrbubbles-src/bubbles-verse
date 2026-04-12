@@ -30,6 +30,13 @@ Different apps need different metadata forms — Vault entries have categories, 
 
 ---
 
+## Mandatory Implementation Directives
+
+- Follow `AGENTS.md` for every implementation decision in this story.
+- If relevant code already exists in `portal-ref` or `lms-ref`, reuse that working code first and port it cleanly into the target package or app.
+- Adapt reference code only as needed for this monorepo plan, package boundaries, typing, naming, and acceptance criteria.
+- Do not rewrite or redesign working reference code unnecessarily when a clean extraction or transfer is sufficient.
+
 ## Acceptance Criteria
 
 ```gherkin
