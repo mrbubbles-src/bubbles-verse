@@ -113,139 +113,57 @@ Then draft saving is disabled — the draft is not overwritten with stale post-s
 
 ## Implementation Guide
 
-### 1. localStorage Keys
+### 1. Reference-First Extraction
 
-```ts
-// Draft key convention — scoped to prevent cross-mode collisions
-const DRAFT_KEYS = {
-  create: '@bubbles/markdown-editor:draft:create',
-  edit: '@bubbles/markdown-editor:draft:edit',
-} as const;
-```
+Inspect `to-be-integrated/` first and port the draft autosave and restore behavior from there.
 
-If multiple editor instances exist on different pages, consider scoping by route — but for v1, the two keys are sufficient.
+If the relevant implementation is not available there, inspect `portal-ref` and port the behavior from there.
 
-### 2. Draft Shape
+Do not redesign key naming, draft shape, persistence timing, restore precedence, or post-submit behavior unless the user explicitly approves a deviation.
 
-```ts
-interface EditorDraft {
-  content: OutputData;
-  formValues: {
-    title: string;
-    slug: string;
-    description: string;
-    tags: string[];
-    status: 'published' | 'unpublished';
-  };
-  savedAt: number; // timestamp for display/debug purposes
-}
-```
+### 2. Storage Keys and Draft Shape
 
-### 3. `useDraftAutosave` Hook
+Preserve the exact storage keys and stored draft shape from the designated reference implementation.
 
-```ts
-// hooks/use-draft-autosave.ts
-'use client';
+If the reference scopes drafts by mode, route, content id, or another keying strategy, keep that strategy.
 
-import { useEffect, useRef } from 'react';
+### 3. Save and Restore Flow
 
-/**
- * Automatically saves editor draft to localStorage.
- * Does nothing after submit (controlled by draftDisabledRef).
- * Internal hook — not exported from the package.
- */
-export function useDraftAutosave(
-  draft: EditorDraft | null,
-  isEditMode: boolean
-) {
-  const draftDisabledRef = useRef(false);
+Port the exact reference behavior for:
 
-  useEffect(() => {
-    if (!draft || draftDisabledRef.current) return;
+- when drafts are written
+- when drafts are restored
+- how corrupted or unavailable storage is handled
+- how draft state interacts with initial server state
 
-    const key = isEditMode ? DRAFT_KEYS.edit : DRAFT_KEYS.create;
+Do not invent a new restore-precedence model.
 
-    try {
-      localStorage.setItem(
-        key,
-        JSON.stringify({ ...draft, savedAt: Date.now() })
-      );
-    } catch {
-      // localStorage full or unavailable — fail silently
-    }
-  }, [draft, isEditMode]);
+### 4. Post-Submit and Multi-Tab Behavior
 
-  /** Call this after successful submit to prevent stale draft persistence. */
-  function disableDraftSaving() {
-    draftDisabledRef.current = true;
-  }
+Preserve the designated reference implementation's behavior for:
 
-  return { disableDraftSaving };
-}
-```
-
-### 4. Draft Restore on Mount
-
-Restore happens in the editor initialization effect, before EditorJS mounts:
-
-```ts
-function loadDraft(isEditMode: boolean): EditorDraft | null {
-  const key = isEditMode ? DRAFT_KEYS.edit : DRAFT_KEYS.create;
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    return JSON.parse(raw) as EditorDraft;
-  } catch {
-    return null; // corrupted or unavailable — fail silently
-  }
-}
-
-// In the editor's useEffect:
-const draft = loadDraft(isEditMode);
-if (draft) {
-  // Pass draft.content as initialData to EditorJS
-  // Populate form fields from draft.formValues
-}
-```
-
-**Priority:** If `initialData` is provided (edit mode) AND a draft exists, restore the **draft** (more recent). The `initialData` prop represents the last saved server state; the draft is the user's unsaved work.
-
-### 5. Disable After Submit
-
-Wire `disableDraftSaving` to the `onSuccess` flow in `<EditorForm>`:
-
-```ts
-const { disableDraftSaving } = useDraftAutosave(currentDraft, isEditMode);
-
-async function handleSubmit(formData: FormValues) {
-  disableDraftSaving(); // disable before calling onSuccess
-  onSuccess(payload); // app navigates away — no more saves after this
-}
-```
-
-### 6. Multi-tab Note (out of scope)
-
-v1 is last-write-wins. If two tabs edit the same draft simultaneously, the last save wins. No conflict resolution is needed. Do not add it.
+- disabling or clearing draft persistence after submit
+- multi-tab behavior, if any
+- internal vs public hook boundaries
 
 ---
 
 ## Anti-Patterns to Avoid
 
-- **Do not export `useDraftAutosave`.** Internal hook only (per API contract: "Internal only (not exported)").
-- **Do not use `sessionStorage`.** Drafts must survive tab close → use `localStorage`.
-- **Do not save post-submit state.** `draftDisabledRef.current = true` before calling `onSuccess`.
-- **Do not crash on localStorage errors** (quota exceeded, private browsing mode). Always wrap in try/catch.
+- **Do not design a new draft persistence contract** if the designated reference implementation already defines one.
+- **Do not change storage medium, keys, or draft shape** without verifying them against the designated reference implementation.
+- **Do not change post-submit or restore-precedence behavior** without approval.
+- **Do not expose internal draft hooks** unless the designated reference implementation or agreed package API does so.
 
 ---
 
 ## Verification Checklist
 
-- [ ] Create mode saves to `@bubbles/markdown-editor:draft:create`
-- [ ] Edit mode saves to `@bubbles/markdown-editor:draft:edit`
-- [ ] Draft restores on mount (both content and form values)
-- [ ] Draft NOT saved after `disableDraftSaving()` called
-- [ ] `useDraftAutosave` NOT exported from `src/index.ts`
-- [ ] localStorage errors handled silently (try/catch)
+- [ ] Storage keys and draft shape match the designated reference implementation
+- [ ] Save and restore timing match the designated reference implementation
+- [ ] Restore precedence matches the designated reference implementation
+- [ ] Post-submit behavior matches the designated reference implementation
+- [ ] Internal vs public hook boundaries match the designated reference implementation
 
 ---
 

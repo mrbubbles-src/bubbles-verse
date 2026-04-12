@@ -114,248 +114,52 @@ packages/markdown-editor/tests/
 
 **Tests live in a separate `tests/` directory**, not alongside source files. This is the monorepo convention (per AGENTS.md: "Keep test files in their own directory").
 
-### 2. Vitest Setup
+### 2. Test Setup
 
-Add `vitest` as a dev dependency in `packages/markdown-editor/package.json`:
+Use the test runner, scripts, fixtures, and package conventions already established in this repo and in the designated reference implementation.
 
-```json
-"devDependencies": {
-  "vitest": "^3.0.0",
-  "@vitest/coverage-v8": "^3.0.0"
-}
-```
+Do not introduce a new test stack or test layout unless the user explicitly approves that deviation.
 
-Add test script:
+### 3. Serializer Parity Tests
 
-```json
-"scripts": {
-  "test": "vitest run",
-  "test:watch": "vitest"
-}
-```
+Write tests that prove serializer parity with the designated reference implementation.
 
-### 3. Block Handler Tests — Template
+Cover:
 
-```ts
-// serialize-to-mdx.test.ts
+- each block type actually supported by the reference serializer
+- wrapper and metadata behavior
+- nested or recursive block handling
+- output formatting for structured content such as tables, quotes, toggles, embeds, and alerts
 
-import { describe, expect, it } from 'vitest';
+Prefer fixture inputs and assertions that mirror the reference implementation's real behavior.
 
-import { serializeToMdx } from '../../src/serializer';
+### 4. Security and Edge-Case Tests
 
-describe('serializeToMdx — block handlers', () => {
-  it('paragraph → wrapped plain text', () => {
-    const result = serializeToMdx({
-      blocks: [
-        { id: 'abc123', type: 'paragraph', data: { text: 'Hello world' } },
-      ],
-    });
-    expect(result).toContain('data-block-id="abc123"');
-    expect(result).toContain('Hello world');
-  });
+Add tests for the actual escaping, allowlist, parsing, and sanitization behavior present in the designated reference implementation.
 
-  it('header level 2 → ## heading', () => {
-    const result = serializeToMdx({
-      blocks: [
-        { id: 'h1', type: 'header', data: { text: 'My Title', level: 2 } },
-      ],
-    });
-    expect(result).toContain('## My Title');
-  });
-
-  it('unordered list → - items', () => {
-    /* ... */
-  });
-  it('ordered list → 1. items', () => {
-    /* ... */
-  });
-  it('checklist → - [ ] / - [x] items', () => {
-    /* ... */
-  });
-  it('code block → fenced code with language', () => {
-    /* ... */
-  });
-  it('quote → > blockquote with caption', () => {
-    /* ... */
-  });
-  it('alert → <MarkdownAlerts type="...">', () => {
-    /* ... */
-  });
-  it('delimiter → ---', () => {
-    /* ... */
-  });
-  it('embed → <MarkdownEmbed url="...">', () => {
-    /* ... */
-  });
-  it('image → <MarkdownImage src="..." alt="...">', () => {
-    /* ... */
-  });
-  it('table with headings → valid GFM table with header separator', () => {
-    /* ... */
-  });
-  it('table without headings → valid GFM table', () => {
-    /* ... */
-  });
-
-  it('toggle with nested children → recursive MDX output', () => {
-    const result = serializeToMdx({
-      blocks: [
-        {
-          id: 'toggle1',
-          type: 'toggle',
-          data: {
-            text: 'Show details',
-            items: [
-              {
-                id: 'child1',
-                type: 'paragraph',
-                data: { text: 'Nested paragraph' },
-              },
-            ],
-          },
-        },
-      ],
-    });
-    expect(result).toContain('<MarkdownToggle summary="Show details">');
-    expect(result).toContain('Nested paragraph');
-  });
-
-  it('all blocks get data-block-id wrapper', () => {
-    const result = serializeToMdx({
-      blocks: [
-        { id: 'p1', type: 'paragraph', data: { text: 'test' } },
-        { id: 'd1', type: 'delimiter', data: {} },
-      ],
-    });
-    expect(result).toContain('data-block-id="p1"');
-    expect(result).toContain('data-block-id="d1"');
-  });
-});
-```
-
-### 4. Security Tests
-
-```ts
-// security.test.ts
-
-import { describe, expect, it } from 'vitest';
-
-import {
-  DEFAULT_ALLOWED_MDX_COMPONENTS,
-  escapeMdxBraces,
-  sanitizeMdxOutput,
-  tryParseInlineComponent,
-} from '../../src/serializer/security';
-
-describe('escapeMdxBraces', () => {
-  it('escapes single brace pair', () => {
-    expect(escapeMdxBraces('{value}')).toBe('&#123;value&#125;');
-  });
-  it('escapes nested braces', () => {
-    expect(escapeMdxBraces('{{nested}}')).toBe(
-      '&#123;&#123;nested&#125;&#125;'
-    );
-  });
-  it('escapes JSX-like expression', () => {
-    expect(escapeMdxBraces('{process.env.SECRET}')).toBe(
-      '&#123;process.env.SECRET&#125;'
-    );
-  });
-  it('returns empty string unchanged', () => {
-    expect(escapeMdxBraces('')).toBe('');
-  });
-  it('leaves text without braces unchanged', () => {
-    expect(escapeMdxBraces('hello world')).toBe('hello world');
-  });
-});
-
-describe('tryParseInlineComponent', () => {
-  const allowlist = DEFAULT_ALLOWED_MDX_COMPONENTS;
-
-  it('parses valid shortcode without props', () => {
-    const result = tryParseInlineComponent('[[MarkdownAlerts]]', allowlist);
-    expect(result).toEqual({ componentName: 'MarkdownAlerts', props: {} });
-  });
-  it('parses valid shortcode with JSON props', () => {
-    const result = tryParseInlineComponent(
-      '[[MarkdownAlerts {"type":"info"}]]',
-      allowlist
-    );
-    expect(result).toEqual({
-      componentName: 'MarkdownAlerts',
-      props: { type: 'info' },
-    });
-  });
-  it('parses JSX-style <Name /> syntax', () => {
-    const result = tryParseInlineComponent('<MarkdownEmbed />', allowlist);
-    expect(result).not.toBeNull();
-    expect(result?.componentName).toBe('MarkdownEmbed');
-  });
-  it('returns null for blocked component name', () => {
-    expect(
-      tryParseInlineComponent('[[DangerousComponent]]', allowlist)
-    ).toBeNull();
-  });
-  it('returns null for malformed JSON props', () => {
-    expect(
-      tryParseInlineComponent('[[MarkdownAlerts {bad json}]]', allowlist)
-    ).toBeNull();
-  });
-  it('app-extended allowlist allows custom component', () => {
-    const extended = new Set([...allowlist, 'MyAppComponent']);
-    expect(
-      tryParseInlineComponent('[[MyAppComponent]]', extended)
-    ).not.toBeNull();
-  });
-});
-
-describe('sanitizeMdxOutput', () => {
-  it('replaces <br> with <br />', () => {
-    expect(sanitizeMdxOutput('line1<br>line2')).toBe('line1<br />line2');
-  });
-  it('handles multiple <br> occurrences', () => {
-    expect(sanitizeMdxOutput('<br><br>')).toBe('<br /><br />');
-  });
-  it('is case-insensitive', () => {
-    expect(sanitizeMdxOutput('<BR>')).toBe('<br />');
-  });
-});
-```
+Do not create a new normative security test matrix that exceeds the reference behavior unless the user approves a deviation.
 
 ### 5. Run Command
 
-Tests must pass with:
-
-```
-bun run test
-```
-
-from inside `packages/markdown-editor/` or:
-
-```
-bun run test --filter @bubbles/markdown-editor
-```
-
-from the monorepo root.
+Tests must pass with the package's standard test command after aligning the package with the repo's existing tooling.
 
 ---
 
 ## Anti-Patterns to Avoid
 
-- **Do not put test files in `src/`.** Tests live in `packages/markdown-editor/tests/` per AGENTS.md.
-- **Do not test implementation details.** Test the public API (`serializeToMdx`, security exports) via input/output assertions.
-- **Do not mock `serializeToMdx` in its own tests** — test the real function with real block data.
+- **Do not design a new serializer spec through tests.**
+- **Do not pick a different test runner or fixture layout** unless the repo or reference already does so.
+- **Do not assert invented behavior** that is not present in the designated reference implementation.
+- **Do not rely only on vague snapshots.** Use assertions that prove real parity.
 
 ---
 
 ## Verification Checklist
 
-- [ ] `tests/serializer/` directory exists in `packages/markdown-editor/`
-- [ ] All 15 block types covered by at least one test
-- [ ] `escapeMdxBraces` tests: nested braces, JSX expression, empty string, plain text
-- [ ] `tryParseInlineComponent` tests: valid, blocked, malformed JSON, JSX syntax, extended allowlist
-- [ ] Toggle recursive test passing
-- [ ] `<br>` sanitization test passing
+- [ ] Test layout follows repo conventions and the designated reference implementation
+- [ ] Tests cover the actual block types supported by the designated reference implementation
+- [ ] Tests cover the designated reference implementation's wrapper and metadata behavior
+- [ ] Tests cover the designated reference implementation's security and edge-case behavior
 - [ ] `bun run test` passes from monorepo root
 
 ---

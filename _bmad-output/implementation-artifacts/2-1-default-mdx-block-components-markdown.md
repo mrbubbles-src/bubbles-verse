@@ -95,10 +95,9 @@ When I import the default components
 Then MarkdownAlerts, MarkdownCodeBlock, MarkdownChecklist, MarkdownImage,
      MarkdownEmbed, MarkdownToggle, MarkdownLink are all exported individually
      and as a combined defaultComponents map
-And MarkdownCodeBlock renders syntax-highlighted code using Shiki CSS Variables Mode
-    with Catppuccin Latte (light) and Catppuccin Mocha (dark) themes
-And MarkdownAlerts supports info, success, warning, danger types
-And MarkdownToggle is a collapsible section (details/summary pattern)
+And each component preserves the rendering behavior of the designated reference implementation
+And code block rendering and theme behavior preserve the designated reference implementation
+And alert and toggle behavior preserve the designated reference implementation
 And all components are fully typed with no any
 ```
 
@@ -106,186 +105,79 @@ And all components are fully typed with no any
 
 ## Implementation Guide
 
-### 1. File Structure in `packages/markdown-renderer/src/`
+### 1. Reference-First Extraction
 
-```
-src/
-├── components/
-│   ├── mardodwon-code/
-│   │   ├── markdown-code-block.tsx
-│   │   └── markdown-code-copy-button.tsx
-│   ├── mardodwon-image/
-│   │   ├── markdown-cdimage.tsx
-│   │   └── markdown-image.tsx
-│   ├── markdown-alerts.tsx
-│   ├── markdown-checklist.tsx
-│   ├── markdown-embed.tsx
-│   ├── markdown-link.tsx
-│   ├── markdown-details-toggle.tsx
-│   ├── markdown-toc.tsx
-│   └── index.ts               # re-exports all + defaultComponents map
-├── index.ts                   # public API
-└── styles/
-    └── renderer.css           # filled in Story 2.3
-```
+Inspect `to-be-integrated/` first and port the existing default Markdown block components into `packages/markdown-renderer`.
 
-### 2. Component Props — Full Type Signatures (no `any`)
+If the relevant implementation is not available there, inspect `lms-ref` and port the behavior from there.
 
-```ts
-// markdown-alerts.tsx
-type AlertType = 'info' | 'success' | 'warning' | 'danger';
-interface MarkdownAlertsProps {
-  type?: AlertType;
-  children: React.ReactNode;
-}
+Do not redesign component structure, prop contracts, rendering strategy, icon choices, or syntax-highlighting approach unless the user explicitly approves a deviation.
 
-// markdown-code-block.tsx
-interface MarkdownCodeBlockProps {
-  children: string;
-  className?: string; // MDX passes language as className="language-ts"
-}
+### 2. Component Set and Boundaries
 
-// markdown-checklist.tsx
-interface MarkdownChecklistProps {
-  items: Array<{ text: string; checked: boolean }>;
-}
+Preserve the exact default component set from the designated reference implementation, including:
 
-// markdown-image.tsx
-interface MarkdownImageProps {
-  src: string;
-  alt?: string;
-  caption?: string;
-}
+- component names
+- component boundaries
+- helper components used internally
+- which components are public vs internal
 
-// markdown-embed.tsx
-interface MarkdownEmbedProps {
-  url: string;
-  caption?: string;
-}
+If the reference implementation exposes a combined `defaultComponents` map, preserve that behavior.
 
-// markdown-toggle.tsx
-interface MarkdownToggleProps {
-  summary: string;
-  children: React.ReactNode;
-}
+### 3. Props and Typing
 
-// markdown-link.tsx
-interface MarkdownLinkProps {
-  href: string;
-  children: React.ReactNode;
-}
-```
+Port the prop contracts from the designated reference implementation and keep them fully typed.
 
-**No `any`.** TypeScript strict mode is active — all props fully typed.
+Only adapt type names or import locations where required by the monorepo package structure.
 
-### 3. `MarkdownCodeBlock` — Shiki CSS Variables Mode
+### 4. Rendering Behavior
 
-This is the most complex component. Use Shiki's CSS Variables Mode so that token colors are driven by CSS custom properties (enabling dark mode via `.dark` class). Theme: Catppuccin Latte (light) and Catppuccin Mocha (dark).
+Preserve the rendering behavior of each reference component, including:
 
-```ts
-import { codeToHtml } from 'shiki';
+- alert rendering
+- checklist rendering
+- image and embed rendering
+- toggle behavior
+- link behavior
+- code block rendering and syntax-highlighting strategy
 
-// Extract language from MDX className prop: "language-typescript" → "typescript"
-function extractLanguage(className?: string): string {
-  return className?.replace('language-', '') ?? 'text';
-}
+Do not swap in a new highlighting library, code-rendering flow, or icon system unless the reference already uses it or the user approves a deviation.
 
-// Render server-side or use useEffect for client rendering
-// Use CSS Variables Mode: theme = 'css-variables'
-const html = await codeToHtml(code, {
-  lang: extractLanguage(className),
-  theme: 'css-variables',
-});
-```
+### 5. File Layout and Public Exports
 
-The `--sh-*` CSS variable definitions live in `renderer.css` (Story 2.3) — this component does NOT define them inline.
+Use the reference implementation to determine:
 
-**Note:** `codeToHtml` is async. If used in a React Server Component context that's fine. For client-side, consider `codeToHtml` with `useEffect` or a server-side rendering approach. Prefer server rendering for performance (NFR3).
+- file layout under `src/`
+- component re-export structure
+- public exports from `src/index.ts`
+- prop-type re-exports, if present
 
-### 4. `defaultComponents` Map
+Only adapt file placement for package organization.
 
-Export a combined map for use as the `components` prop default in `<MdxRenderer>`:
+### 6. Dependency Alignment
 
-```ts
-// src/components/index.ts
-export { MarkdownAlerts } from './markdown-alerts';
-export { MarkdownCodeBlock } from './markdown-code-block';
-export { MarkdownChecklist } from './markdown-checklist';
-export { MarkdownImage } from './markdown-image';
-export { MarkdownEmbed } from './markdown-embed';
-export { MarkdownToggle } from './markdown-toggle';
-export { MarkdownLink } from './markdown-link';
+Add only the dependencies actually required by the designated reference implementation and the agreed package API.
 
-export const defaultComponents = {
-  MarkdownAlerts,
-  MarkdownCodeBlock,
-  MarkdownChecklist,
-  MarkdownImage,
-  MarkdownEmbed,
-  MarkdownToggle,
-  MarkdownLink,
-};
-```
-
-### 5. `src/index.ts` — Public Exports
-
-```ts
-// @bubbles/markdown-renderer — public API
-export {
-  MarkdownAlerts,
-  MarkdownCodeBlock,
-  MarkdownChecklist,
-  MarkdownImage,
-  MarkdownEmbed,
-  MarkdownToggle,
-  MarkdownLink,
-  defaultComponents,
-} from './components';
-export { MdxRenderer } from './mdx-renderer'; // added in Story 2.2
-
-// Re-export prop types for consumer use
-export type {} from /* all prop interfaces */ './components';
-```
-
-### 6. Dependencies to Add to `packages/markdown-renderer/package.json`
-
-```json
-"dependencies": {
-  "@bubbles/ui": "workspace:*",
-  "react": "^19.2.4",
-  "shiki": "^3.19.0"
-}
-```
-
-`@mdx-js/mdx`, `remark-gfm`, `unified` are added in Story 2.2.
-
-### 7. Icons
-
-- Use HugeIcons (`@hugeicons/react`) for any icons in components (alert icons, toggle chevron, etc.)
-- Do NOT use Lucide (`lucide-react`) — not in the monorepo standard
-- `@fortawesome/free-brands-svg-icons` only for brand logos (YouTube in embed, GitHub, etc.)
-- Non-brand Font Awesome → replace with HugeIcons equivalent
+Do not add libraries purely because they seem convenient if the reference implementation already solves the problem differently.
 
 ---
 
 ## Anti-Patterns to Avoid
 
-- **No `any` types — anywhere.** All props must be fully typed.
-- **No hardcoded colors.** All styles via `@bubbles/ui/globals.css` CSS custom properties.
-- **No `lucide-react` import.** HugeIcons only.
-- **No editor imports.** These components must work with zero dependency on `@bubbles/markdown-editor`.
-- **Do not define `--sh-*` variables inside component files.** They belong in `renderer.css` (Story 2.3).
+- **Do not invent a new default component set.**
+- **Do not replace the reference code-block rendering strategy** with a new one without approval.
+- **Do not introduce editor-package coupling** if the reference renderer is independent.
+- **Do not make new icon, styling, or dependency choices** unless they come from the designated reference implementation.
 
 ---
 
 ## Verification Checklist
 
-- [ ] All 7 `Markdown*` components exist and are exported from `src/index.ts`
-- [ ] `defaultComponents` map exported
-- [ ] All components fully typed (no `any` in props or return types)
-- [ ] `MarkdownCodeBlock` uses Shiki CSS Variables Mode
-- [ ] `MarkdownAlerts` handles all 4 alert types
-- [ ] `MarkdownToggle` uses `<details>`/`<summary>` or equivalent collapsible pattern
+- [ ] Default component set matches the designated reference implementation
+- [ ] Public exports match the designated reference implementation or agreed package API
+- [ ] Prop contracts are fully typed and match the designated reference implementation
+- [ ] Rendering behavior for each default component matches the designated reference implementation
+- [ ] Dependency choices align with the designated reference implementation
 - [ ] `bun run typecheck` passes
 
 ---

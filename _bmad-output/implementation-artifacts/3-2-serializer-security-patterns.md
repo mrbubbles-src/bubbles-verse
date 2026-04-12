@@ -98,21 +98,20 @@ Wait for explicit user approval before implementing any deviation.
 ```gherkin
 Given user-authored text containing {, }, or MDX-like expressions
 When serializeToMdx() processes the content
-Then escapeMdxBraces() is applied to all user text before serialization
+Then the designated reference implementation's escaping behavior is applied before serialization
 
 Given a paragraph containing [[ComponentName]] or <ComponentName /> shortcode syntax
 When the serializer processes it
-Then only names in DEFAULT_ALLOWED_MDX_COMPONENTS are rendered as MDX components
-And apps can extend via allowedComponents — merged as a superset, never reduced
+Then inline component handling matches the designated reference implementation
+And any allowlist extension behavior matches the designated reference implementation
 
 Given a shortcode with JSON props [[Component {"key":"value"}]]
 When the serializer processes it
-Then props are JSON-parsed and re-serialized before insertion
-And malformed JSON props result in plain text output, never raw string insertion
+Then prop parsing, validation, and fallback behavior match the designated reference implementation
 
 Given block content containing <br> tags
 When serialization completes
-Then all <br> occurrences are replaced with <br /> for MDX compatibility
+Then post-processing sanitization matches the designated reference implementation
 ```
 
 ---
@@ -133,140 +132,70 @@ Only if both sources are unavailable or there is a verified gap may you escalate
 
 ### 3. `escapeMdxBraces()`
 
-Prevent JSX expression injection from user text. Replace `{` and `}` with their HTML entity equivalents:
+Port the text-escaping behavior used by the designated reference implementation.
 
-```ts
-/**
- * Escapes MDX brace expressions in user-authored content.
- * Prevents JSX injection: {expression} → &#123;expression&#125;
- * Apply to ALL user text content before including in MDX output.
- */
-export function escapeMdxBraces(text: string): string {
-  return text.replace(/\{/g, '&#123;').replace(/\}/g, '&#125;');
-}
-```
+If the reference exposes a helper such as `escapeMdxBraces`, preserve its name, scope, and behavior unless the user explicitly approves a change.
 
-**Apply this to every user text field** — paragraph text, header text, quote content, alert message, list items, table cells, toggle summary, etc. No exception.
+Apply the reference escaping behavior to the same text fields and serialization stages that the reference implementation uses. Do not widen or narrow coverage on your own.
 
 ### 4. `DEFAULT_ALLOWED_MDX_COMPONENTS`
 
-The allowlist of component names that are valid as inline shortcodes in MDX output:
+If the reference serializer defines a default MDX component allowlist, port that allowlist exactly:
 
-```ts
-/**
- * Default set of MDX component names allowed as inline shortcodes in serialized output.
- * Apps can extend this via the allowedComponents prop — they can never reduce it.
- */
-export const DEFAULT_ALLOWED_MDX_COMPONENTS = new Set<string>([
-  'MarkdownAlerts',
-  'MarkdownCodeBlock',
-  'MarkdownChecklist',
-  'MarkdownImage',
-  'MarkdownEmbed',
-  'MarkdownToggle',
-  'MarkdownLink',
-]);
-```
+- preserve the same exported constant name if present
+- preserve the same default entries
+- preserve the same extension rules, if any
 
-This list mirrors the `defaultComponents` map from `@bubbles/markdown-renderer`. Apps add their own custom component names via `allowedComponents` prop.
+Do not invent a new allowlist contract, merge policy, or default component set.
 
 ### 5. Allowlist Enforcement Helper
 
-```ts
-/**
- * Returns the merged allowlist from DEFAULT_ALLOWED_MDX_COMPONENTS plus any app-provided extensions.
- * Apps can only extend — never reduce — the default set.
- */
-export function getMergedAllowlist(extensions?: string[]): Set<string> {
-  return new Set([...DEFAULT_ALLOWED_MDX_COMPONENTS, ...(extensions ?? [])]);
-}
-```
+If the reference implementation includes allowlist merge or validation helpers, port those helpers and preserve their behavior.
 
 ### 6. `tryParseInlineComponent()`
 
-Parses shortcode syntax and validates against the allowlist:
+If the reference implementation parses inline MDX components or shortcode-like content, port the exact accepted syntax, validation rules, fallback behavior, and failure handling.
 
-```ts
-interface ParsedShortcode {
-  componentName: string;
-  props: Record<string, unknown>;
-}
-
-/**
- * Parses [[ComponentName {"key":"value"}]] or <ComponentName /> shortcode syntax.
- * Returns null if the component is not in the allowlist or props JSON is malformed.
- * On null, the caller renders the shortcode as plain text instead.
- */
-export function tryParseInlineComponent(
-  raw: string,
-  allowlist: Set<string>
-): ParsedShortcode | null {
-  // Pattern: [[ComponentName]] or [[ComponentName {"key":"value"}]]
-  const match =
-    raw.match(/^\[\[(\w+)(?:\s+(.+))?\]\]$/) ?? raw.match(/^<(\w+)\s*\/>$/);
-
-  if (!match) return null;
-
-  const componentName = match[1];
-  if (!allowlist.has(componentName)) return null; // blocked — not in allowlist
-
-  const propsString = match[2];
-  if (propsString) {
-    try {
-      const props = JSON.parse(propsString) as Record<string, unknown>;
-      return { componentName, props };
-    } catch {
-      return null; // malformed JSON → plain text, never raw string
-    }
-  }
-
-  return { componentName, props: {} };
-}
-```
+Do not define new shortcode grammars, prop parsing rules, or component parsing helpers unless the reference already does so or the user approves a deviation.
 
 ### 7. `<br>` → `<br />` Sanitization Pass
 
-Applied as a post-processing pass at the end of `serializeToMdx()`, after all block handlers run:
+If the reference serializer performs post-processing or sanitization passes, preserve those passes exactly:
 
-```ts
-/**
- * Sanitizes HTML artifacts in serialized MDX for JSX compatibility.
- * Currently handles: <br> → <br />
- */
-export function sanitizeMdxOutput(mdx: string): string {
-  return mdx.replace(/<br>/gi, '<br />');
-}
-```
+- same stage in the serialization flow
+- same transformations
+- same scope
 
-Call `sanitizeMdxOutput(output)` as the final step in `serializeToMdx()`.
+Do not add new sanitization passes or remove existing ones without user approval.
 
 ### 8. Integration with Block Handlers
 
-The security functions must be applied in `block-handlers.ts`:
+Preserve the same integration points used by the reference implementation:
 
-- `escapeMdxBraces(text)` — on every user text field before including in output
-- `tryParseInlineComponent(raw, allowlist)` — when processing paragraph content for shortcodes
-- `sanitizeMdxOutput(output)` — final pass in `serializeToMdx()`
+- pre-serialization escaping
+- inline component validation, if present
+- post-processing sanitization, if present
+
+The designated reference implementation is the source of truth for where these protections are applied.
 
 ---
 
 ## Anti-Patterns to Avoid
 
-- **Never insert raw user text into MDX output without `escapeMdxBraces`.** No exception.
-- **Never allow a component name outside the merged allowlist** to appear as a JSX element in MDX output.
-- **Never insert raw shortcode prop strings** without JSON.parse validation. Malformed → plain text.
-- **Do not allow the default allowlist to be reduced.** `getMergedAllowlist` always starts from `DEFAULT_ALLOWED_MDX_COMPONENTS` — the consumer can only add.
-- **Do not silently harden or redesign the security model beyond the reference behavior.** If a real gap exists, stop and ask the user before deviating.
+- **Do not silently author a new serializer security model.**
+- **Do not change escaping, allowlisting, or sanitization behavior** without first verifying it against the designated reference implementation.
+- **Do not add or remove parsing rules** just because they seem safer or simpler.
+- **If a real security gap appears to exist, stop and ask the user before deviating.**
 
 ---
 
 ## Verification Checklist
 
-- [ ] `escapeMdxBraces` applied to all user text in every block handler
-- [ ] `DEFAULT_ALLOWED_MDX_COMPONENTS` exported from `src/index.ts`
-- [ ] `tryParseInlineComponent` returns `null` for blocked names and malformed JSON
-- [ ] `sanitizeMdxOutput` called as final step in `serializeToMdx`
-- [ ] Security behavior matches the designated reference implementation before any approved deviations
+- [ ] Escaping behavior matches the designated reference implementation
+- [ ] Allowlist behavior matches the designated reference implementation
+- [ ] Inline component parsing behavior matches the designated reference implementation, if present there
+- [ ] Post-processing sanitization matches the designated reference implementation, if present there
+- [ ] No new security model was introduced without user approval
 - [ ] `bun run typecheck` passes (no `any`)
 
 ---

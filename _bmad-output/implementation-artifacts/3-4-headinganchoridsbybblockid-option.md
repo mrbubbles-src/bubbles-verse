@@ -117,90 +117,47 @@ interface SerializeOptions {
 
 ### 2. Header Handler — Apply Anchor ID
 
-In `block-handlers.ts`, update the `header` handler to use the map when available:
+Port the reference behavior for applying heading anchor IDs when the option is provided.
 
-```ts
-function handleHeader(block: HeaderBlock, options: SerializeOptions): string {
-  const level = block.data.level ?? 2;
-  const text = escapeMdxBraces(block.data.text);
-  const prefix = '#'.repeat(level);
+Preserve:
 
-  const anchorId = options.headingAnchorIdsByBlockId?.[block.id];
+- option name and type
+- which block types consume the option
+- output shape when an anchor exists
+- output shape when no anchor exists
 
-  if (anchorId) {
-    // MDX-compatible heading with id attribute
-    return `<h${level} id="${anchorId}">${text}</h${level}>`;
-  }
-
-  return `${prefix} ${text}`;
-}
-```
-
-**Note on MDX heading syntax:** Markdown `# Heading` doesn't support `id` attributes directly. Use JSX heading element (`<h2 id="...">`) when an anchor ID is needed. This is valid in MDX.
+Do not invent a different anchor-rendering strategy unless the reference already uses it or the user approves a deviation.
 
 ### 3. Map Population — App Responsibility
 
-The `headingAnchorIdsByBlockId` map is **built by the app**, not the serializer. A typical pattern:
+Preserve the exact reference boundary between app responsibility and serializer responsibility.
 
-```ts
-// App-side: generate anchors from EditorJS output before serializing
-function buildAnchorMap(blocks: Block[]): Record<string, string> {
-  return Object.fromEntries(
-    blocks
-      .filter((b) => b.type === 'header')
-      .map((b) => [b.id, generateSlug(b.data.text)])
-  );
-}
-
-const anchorMap = buildAnchorMap(editorData.blocks);
-const mdx = serializeToMdx(editorData, {
-  headingAnchorIdsByBlockId: anchorMap,
-});
-```
-
-The serializer doesn't generate the map — it just applies it. Document this in the README.
+If the reference builds the map outside the serializer, keep that behavior. If the reference handles part of this internally, preserve that instead.
 
 ### 4. No Regression Test
 
-Add to `serialize-to-mdx.test.ts`:
+Add tests that prove parity with the designated reference implementation for:
 
-```ts
-it('headingAnchorIdsByBlockId — applies anchor id to matching header', () => {
-  const result = serializeToMdx(
-    {
-      blocks: [
-        { id: 'h1', type: 'header', data: { text: 'Section', level: 2 } },
-      ],
-    },
-    { headingAnchorIdsByBlockId: { h1: 'section' } }
-  );
-  expect(result).toContain('id="section"');
-});
-
-it('headingAnchorIdsByBlockId — no option → standard markdown heading', () => {
-  const result = serializeToMdx({
-    blocks: [{ id: 'h1', type: 'header', data: { text: 'Section', level: 2 } }],
-  });
-  expect(result).toContain('## Section');
-  expect(result).not.toContain('id=');
-});
-```
+- header output with anchor option present
+- header output with anchor option absent
+- any fallback behavior the reference already supports
 
 ---
 
 ## Anti-Patterns to Avoid
 
-- **Do not auto-generate the anchor map inside `serializeToMdx`.** Keeping generation outside the serializer means the app controls anchor format (slug, UUID, etc.).
-- **Do not break base behavior** when the option is omitted — the `?.` optional chaining on the map access ensures this.
+- **Do not move anchor-generation responsibility** unless the designated reference implementation already does so.
+- **Do not change base heading behavior** when the option is omitted.
+- **Do not design a new anchor format or generation flow** in this story.
 
 ---
 
 ## Verification Checklist
 
-- [ ] Header handler applies `id` attribute when map entry exists
-- [ ] No `id` attribute output when option is omitted
-- [ ] Two tests added: with map, without map
-- [ ] Option type is `Record<string, string>` (no `any`)
+- [ ] Anchor-option behavior matches the designated reference implementation
+- [ ] App vs serializer responsibility matches the designated reference implementation
+- [ ] Tests cover with-option and without-option behavior
+- [ ] Option typing remains explicit and fully typed
 - [ ] `bun run test` passes
 
 ---

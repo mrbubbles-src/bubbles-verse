@@ -119,161 +119,54 @@ And the package never handles routing or navigation internally
 
 ### 1. `EditorRenderFormProps` — Full Typed Interface
 
-```ts
-// types/editor-types.ts
+Port the form-related types from the designated reference implementation and keep them fully typed.
 
-import type { OutputData } from '@editorjs/editorjs';
-
-export interface TopicEditorDraft {
-  content: OutputData;
-  title: string;
-  slug: string;
-  description?: string;
-  tags?: string[];
-  status: 'published' | 'unpublished';
-}
-
-export interface EditorRenderFormProps {
-  /** Current EditorJS block output. null until editor is ready. */
-  editorOutput: OutputData | null;
-  /** Serialized MDX content from the editor. Empty string until editor is ready. */
-  editorContent: string;
-  /** True once EditorJS has fully initialized. */
-  editorReady: boolean;
-  /** True when editing existing content. */
-  isEditMode: boolean;
-  /** The initial data passed to the editor in edit mode. Undefined in create mode. */
-  initialData?: TopicEditorDraft;
-}
-```
-
-No `any` anywhere.
+Preserve the same state surface passed into custom forms unless the agreed package API explicitly requires a naming adjustment.
 
 ### 2. Render Prop Integration in `<MarkdownEditor>`
 
-```tsx
-// markdown-editor.tsx
-function MarkdownEditor({
-  renderForm,
-  onSuccess,
-  imageUploader,
-  isEditMode = false,
-  initialData,
-}: MarkdownEditorProps) {
-  const [editorOutput, setEditorOutput] = useState<OutputData | null>(null);
-  const [editorReady, setEditorReady] = useState(false);
+Port the render-prop integration behavior from the designated reference implementation, including:
 
-  const editorContent = useMemo(
-    () => (editorOutput ? serializeToMdx(editorOutput) : ''),
-    [editorOutput]
-  );
-
-  const formProps: EditorRenderFormProps = {
-    editorOutput,
-    editorContent,
-    editorReady,
-    isEditMode,
-    initialData,
-  };
-
-  return (
-    <div className="markdown-editor-root">
-      <div className="editor-pane">{/* EditorJS mount point */}</div>
-      <div className="form-pane">
-        {renderForm ? (
-          renderForm(formProps)
-        ) : (
-          <EditorForm {...formProps} onSuccess={onSuccess} />
-        )}
-      </div>
-    </div>
-  );
-}
-```
+- when custom form rendering is used
+- what props are passed into it
+- how the default form is selected as fallback
+- how editor state flows into the form layer
 
 ### 3. Default `<EditorForm>`
 
-```tsx
-// components/editor-form.tsx
-interface EditorFormProps extends EditorRenderFormProps {
-  onSuccess: (data: unknown) => void;
-}
+Port the default form behavior from the designated reference implementation, including:
 
-export function EditorForm({ editorOutput, editorContent, editorReady, isEditMode, initialData, onSuccess }: EditorFormProps) {
-  // Title and slug managed by Story 4.3 hooks
-  // Draft autosave managed by Story 4.4 hook
+- which fields exist
+- submit payload shape
+- how editor output and serialized content are passed through
+- what stays app-controlled vs package-controlled
 
-  async function handleSubmit(formData: FormValues) {
-    const payload = {
-      ...formData,
-      content: editorOutput,
-      mdxContent: editorContent,
-    };
-    onSuccess(payload);  // app handles navigation — never call router here
-  }
-
-  return (
-    <form onSubmit={...}>
-      <input name="title" /* auto-populated from H1 in Story 4.3 */ />
-      <input name="slug"  /* auto-generated in Story 4.3 */ />
-      <textarea name="description" />
-      <input name="tags" /* comma-separated or multi-select */ />
-      <select name="status">
-        <option value="published">Published</option>
-        <option value="unpublished">Unpublished</option>
-      </select>
-      <button type="submit" disabled={!editorReady}>Submit</button>
-    </form>
-  );
-}
-```
-
-**Form libraries:** Use `react-hook-form` + `zod` for validation — both are already in `@bubbles/ui` and available via workspace.
+Do not invent a new default form shape, validation library choice, or field set unless the reference already uses it or the user approves a deviation.
 
 ### 4. No Router — Ever
 
-```ts
-// NEVER DO THIS in any file in @bubbles/markdown-editor:
-
-import { useRouter } from 'next/navigation'; // ❌
-
-router.push('/some-path'); // ❌
-window.location.href = '...'; // ❌
-
-// ALWAYS DO THIS:
-onSuccess(payload); // ✅ — app decides what happens next
-```
+Preserve the reference boundary for submission side effects. If the reference delegates navigation and app-specific behavior through callbacks, keep that contract.
 
 ### 5. Exported `<EditorForm>`
 
-`<EditorForm>` is exported as a named export from `src/index.ts` so apps can use it as a standalone starting point for custom forms:
-
-```ts
-export { EditorForm } from './components/editor-form';
-export type {
-  EditorRenderFormProps,
-  TopicEditorDraft,
-} from './types/editor-types';
-```
+Mirror the reference export surface for the default form and related types.
 
 ---
 
 ## Anti-Patterns to Avoid
 
-- **Never add routing inside this package.** `onSuccess` only.
-- **No `any` in `EditorRenderFormProps`** or any prop type.
-- **Do not include LMS-specific fields** (`level`, `duration`, `order`, `versionBump`, etc.) in `<EditorForm>`.
-- **Do not use `lucide-react`** for form icons. HugeIcons only.
+- **Do not design a new form contract** if the designated reference implementation already defines one.
+- **Do not move app-owned side effects into the package** unless the reference already does so.
+- **Do not add or remove fields** unless the designated reference implementation or accepted criteria require it.
 
 ---
 
 ## Verification Checklist
 
-- [ ] `renderForm` receives all 5 typed props
-- [ ] Default `<EditorForm>` renders when `renderForm` not provided
-- [ ] `<EditorForm>` has exactly: title, slug, description, tags, status fields
-- [ ] `onSuccess` called on submit — no router/navigation calls anywhere
-- [ ] `EditorForm`, `EditorRenderFormProps`, `TopicEditorDraft` exported from `src/index.ts`
+- [ ] Render-prop behavior matches the designated reference implementation
+- [ ] Default form behavior and field set match the designated reference implementation
+- [ ] Submission contract matches the designated reference implementation
+- [ ] `EditorForm`, `EditorRenderFormProps`, and related types are exported only if the designated reference implementation or agreed package API requires it
 - [ ] `bun run typecheck` passes (no `any`)
 
 ---

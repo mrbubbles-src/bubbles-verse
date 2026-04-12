@@ -123,139 +123,63 @@ Do not invent a new preview pipeline, update strategy, or scroll-mapping approac
 
 ### 2. Split-Pane Layout
 
-```tsx
-// markdown-editor.tsx
-<div className="markdown-editor-split-pane">
-  <div ref={editorPaneRef} className="editor-pane">
-    <div id={EDITOR_HOLDER_ID} /> {/* EditorJS mount point */}
-  </div>
-  <div ref={previewPaneRef} className="preview-pane">
-    <MdxRenderer content={editorContent} />
-  </div>
-</div>
-```
+Port the exact editor/preview layout structure from the designated reference implementation, including:
+
+- pane structure
+- mount points
+- wrapper elements
+- CSS hooks and class naming where relevant
+
+Do not redesign the split-pane DOM structure unless the user explicitly approves a deviation.
 
 ### 3. Scroll Sync — How It Works
 
-Each block in the editor pane has a DOM element that EditorJS generates. Each block in the preview pane is wrapped in `<div data-block-id="{id}">` (from the serializer).
+Port the exact scroll-sync strategy from the designated reference implementation, including:
 
-Scroll sync maps editor block DOM position → preview block DOM position:
+- how blocks are identified across panes
+- which pane drives which updates
+- how scroll feedback loops are prevented
+- whether hooks, refs, listeners, or helper utilities are internal or exported
 
-```ts
-// hooks/use-scroll-sync.ts
-'use client';
-
-/**
- * Bidirectional scroll sync between editor and preview panes.
- * Uses data-block-id attributes for positional mapping.
- * Internal hook — not exported.
- */
-export function useScrollSync(
-  editorPaneRef: React.RefObject<HTMLDivElement>,
-  previewPaneRef: React.RefObject<HTMLDivElement>
-) {
-  const isSyncingRef = useRef(false); // prevent scroll event loops
-
-  useEffect(() => {
-    const editorEl = editorPaneRef.current;
-    const previewEl = previewPaneRef.current;
-    if (!editorEl || !previewEl) return;
-
-    function syncEditorToPreview() {
-      if (isSyncingRef.current) return;
-      isSyncingRef.current = true;
-
-      // Find the topmost visible block in the editor pane
-      // Scroll the corresponding data-block-id element in the preview pane into view
-
-      requestAnimationFrame(() => {
-        isSyncingRef.current = false;
-      });
-    }
-
-    function syncPreviewToEditor() {
-      if (isSyncingRef.current) return;
-      isSyncingRef.current = true;
-
-      // Find the topmost visible data-block-id element in the preview
-      // Scroll the corresponding EditorJS block into view in the editor pane
-
-      requestAnimationFrame(() => {
-        isSyncingRef.current = false;
-      });
-    }
-
-    editorEl.addEventListener('scroll', syncEditorToPreview, { passive: true });
-    previewEl.addEventListener('scroll', syncPreviewToEditor, {
-      passive: true,
-    });
-
-    return () => {
-      editorEl.removeEventListener('scroll', syncEditorToPreview);
-      previewEl.removeEventListener('scroll', syncPreviewToEditor);
-    };
-  }, [editorPaneRef, previewPaneRef]);
-}
-```
-
-The `isSyncingRef` flag prevents scroll event loops (editor scroll triggers preview scroll, which would trigger editor scroll again).
+Do not substitute a newly designed synchronization algorithm just because it seems cleaner.
 
 ### 4. Block Position Lookup
 
-```ts
-function findTopmostVisibleBlockId(paneEl: HTMLElement): string | null {
-  const blocks = paneEl.querySelectorAll('[data-block-id]');
-  const paneTop = paneEl.scrollTop;
+Preserve the exact lookup and mapping behavior used by the reference implementation:
 
-  for (const block of blocks) {
-    const blockTop = (block as HTMLElement).offsetTop;
-    if (blockTop >= paneTop) {
-      return block.getAttribute('data-block-id');
-    }
-  }
-  return null;
-}
+- block selectors or identifiers
+- visible-block detection rules
+- scroll target resolution
+- offset handling
+- scrolling behavior
 
-function scrollToBlockInPane(paneEl: HTMLElement, blockId: string) {
-  const target = paneEl.querySelector(`[data-block-id="${blockId}"]`);
-  target?.scrollIntoView({ block: 'start', behavior: 'instant' });
-}
-```
+If the reference implementation relies on serializer-provided metadata, preserve that contract rather than replacing it.
 
 ### 5. Preview Updates — No Debounce
-
-EditorJS `onChange` calls `serializeToMdx` synchronously and updates `editorContent` state immediately. React re-renders `<MdxRenderer>` with the new content. No `setTimeout` or `debounce` — NFR1 requires perceptible real-time updates.
 
 Preserve the preview update and re-render behavior from the reference implementation. Do not assume a specific MDX runtime pipeline beyond what the designated reference source already uses.
 
 ### 6. Internal Hooks — Not Exported
 
-```ts
-// These hooks are internal implementation details.
-// They appear in the package but are NOT in src/index.ts exports.
-// useScrollSync, useDraftAutosave, usePreviewScroll
-```
+Mirror the reference package boundary for any preview or scroll-sync hooks and helpers. If the reference keeps them internal, keep them internal.
 
 ---
 
 ## Anti-Patterns to Avoid
 
-- **No debounce on preview updates.** The preview should feel live — any delay disrupts authoring flow (NFR1).
-- **Do not export `useScrollSync` or `usePreviewScroll`.** Internal only.
-- **Use `isSyncingRef` to prevent scroll loops.** Without it, scroll events will infinitely trigger each other.
-- **Use `passive: true` on scroll listeners** for performance — these don't call `preventDefault`.
-- **Do not redesign preview or scroll-sync behavior away from the reference implementation** unless the user explicitly approves the deviation.
+- **Do not redesign preview layout or scroll-sync strategy** away from the designated reference implementation.
+- **Do not invent new block-mapping rules** if the reference already defines them.
+- **Do not expose internal hooks or helpers** unless the reference or agreed package API does so.
+- **Do not add debouncing or alternate update timing** unless the reference already uses it or the user approves the change.
 
 ---
 
 ## Verification Checklist
 
-- [ ] Preview pane updates immediately when editor content changes (no debounce)
-- [ ] Editor scroll → preview scrolls to corresponding block
-- [ ] Preview scroll → editor scrolls to corresponding block
-- [ ] `isSyncingRef` prevents scroll event loops
-- [ ] Every preview block has `data-block-id` attribute (from serializer)
-- [ ] `useScrollSync` NOT exported from `src/index.ts`
+- [ ] Preview update timing matches the designated reference implementation
+- [ ] Cross-pane block mapping matches the designated reference implementation
+- [ ] Scroll-sync behavior matches the designated reference implementation in both directions, if supported there
+- [ ] Internal vs public hook boundaries match the designated reference implementation
 - [ ] Preview and scroll-sync behavior match the designated reference implementation
 
 ---

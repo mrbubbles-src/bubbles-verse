@@ -286,14 +286,8 @@ draft autosave, and a configurable plugin subset.
 ## Usage
 
 \`\`\`tsx
-import { MarkdownEditor } from '@bubbles/markdown-editor';
-import '@bubbles/markdown-editor/styles/editor';
-import '@bubbles/markdown-editor/styles/preview';
-
-<MarkdownEditor
-  imageUploader={uploadFn}
-  onSuccess={handleSuccess}
-/>
+// Keep README usage aligned with the designated reference implementation.
+// Do not invent final component props before the real package API is ported.
 \`\`\`
 
 ## API

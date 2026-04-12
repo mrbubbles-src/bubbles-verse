@@ -117,47 +117,13 @@ Port the stylesheet from `to-be-integrated/` first. If the implementation is not
 
 Do not write a new stylesheet from examples or templates. The reference implementation is the source of truth for selectors, spacing, visual states, and block-level styling behavior.
 
-### 2. Shiki CSS Variables Mode — Required `--sh-*` Variables
+### 2. Syntax Highlighting Variables and Token Wiring
 
-Preserve the reference token behavior while wiring the variables to tokens that actually exist in `@bubbles/ui/globals.css`.
+Preserve the syntax-highlighting variable strategy used by the designated reference implementation.
 
-```css
-/* renderer.css */
+If the reference defines `--sh-*` variables or similar theme hooks, port those definitions and wire them only to verified tokens that already exist in `@bubbles/ui/globals.css`.
 
-/* ── Syntax Highlighting: Catppuccin Latte (light) ── */
-:root {
-  --sh-keyword: var(--ctp-latte-mauve);
-  --sh-string: var(--ctp-latte-green);
-  --sh-comment: var(--ctp-latte-overlay1);
-  --sh-function: var(--ctp-latte-blue);
-  --sh-number: var(--ctp-latte-peach);
-  --sh-operator: var(--ctp-latte-sky);
-  --sh-type: var(--ctp-latte-yellow);
-  --sh-variable: var(--ctp-latte-text);
-  --sh-deleted: var(--ctp-latte-red);
-  --sh-inserted: var(--ctp-latte-green);
-  --sh-changed: var(--ctp-latte-yellow);
-  --code-bg: var(--ctp-latte-base);
-}
-
-/* ── Syntax Highlighting: Catppuccin Mocha (dark) ── */
-.dark {
-  --sh-keyword: var(--ctp-mocha-mauve);
-  --sh-string: var(--ctp-mocha-green);
-  --sh-comment: var(--ctp-mocha-overlay1);
-  --sh-function: var(--ctp-mocha-blue);
-  --sh-number: var(--ctp-mocha-peach);
-  --sh-operator: var(--ctp-mocha-sky);
-  --sh-type: var(--ctp-mocha-yellow);
-  --sh-variable: var(--ctp-mocha-text);
-  --sh-deleted: var(--ctp-mocha-red);
-  --sh-inserted: var(--ctp-mocha-green);
-  --sh-changed: var(--ctp-mocha-yellow);
-  --code-bg: var(--ctp-mocha-base);
-}
-```
-
-**Note:** The `--ctp-latte-*` and `--ctp-mocha-*` custom properties are defined in `@bubbles/ui/globals.css`. These are Catppuccin palette tokens already available in all apps. Verify exact variable names by checking `packages/ui/src/styles/globals.css`.
+Do not invent a new palette contract or hardcode a token map in the story. If required tokens are missing, stop and ask the user before introducing replacements.
 
 ### 3. Block Styles
 
@@ -212,15 +178,12 @@ Once this file is complete, `apps/the-coding-vault/app/globals.css` contains dup
 
 ## Verification Checklist
 
-- [ ] `--sh-*` variables defined for both `:root` (Latte) and `.dark` (Mocha) themes
-- [ ] `--code-bg` defined for both themes
-- [ ] Code blocks use `var(--code-bg)` for background
-- [ ] Alert block styles cover all 4 types
-- [ ] Toggle/details styled
-- [ ] Selectors and styling behavior match the designated reference implementation
+- [ ] Syntax-highlighting variables and token wiring match the designated reference implementation
+- [ ] Code block styling behavior matches the designated reference implementation
+- [ ] Block styling behavior matches the designated reference implementation
 - [ ] No hardcoded color values
 - [ ] No editor/toolbar CSS
-- [ ] Dark mode works by toggling `.dark` class on a parent element
+- [ ] Theme switching behavior matches the designated reference implementation
 
 ---
 

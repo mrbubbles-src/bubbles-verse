@@ -125,39 +125,17 @@ packages/markdown-renderer/
 
 ### 2. `package.json`
 
-Mirror `packages/theme/package.json` exactly — it's the cleanest reference. Key fields:
+Mirror the closest in-repo package scaffold while preserving any package fields required by the designated reference implementation and the agreed public API.
 
-```json
-{
-  "name": "@bubbles/markdown-renderer",
-  "version": "0.0.0",
-  "type": "module",
-  "private": true,
-  "scripts": {
-    "lint": "eslint",
-    "typecheck": "tsc --noEmit"
-  },
-  "exports": {
-    ".": "./src/index.ts",
-    "./styles/renderer": "./src/styles/renderer.css"
-  },
-  "dependencies": {
-    "@bubbles/ui": "workspace:*",
-    "react": "^19.2.4"
-  },
-  "devDependencies": {
-    "@bubbles/eslint-config": "workspace:*",
-    "@bubbles/typescript-config": "workspace:*",
-    "@types/react": "^19.2.10",
-    "eslint": "^9.39.2",
-    "typescript": "^5.9.3"
-  }
-}
-```
+Preserve only the fields that are actually needed for the scaffold:
 
-**Why `@bubbles/ui` dep?** The renderer CSS (`renderer.css`) will reference `@bubbles/ui/globals.css` custom properties. Declaring it as a dependency makes the intent explicit. Actual CSS import chain is handled at app level.
+- package name
+- module type
+- scripts aligned with monorepo standards
+- exports required by the agreed package API
+- dependencies required by the designated reference implementation
 
-**Why CSS export in scaffold?** The `"./styles/renderer"` export path is part of the public API contract (FR30). Reserve the path now so Epic 2 can fill it without changing the package API.
+Do not treat this story as permission to lock in speculative dependency choices or final API details beyond the scaffold.
 
 ### 3. `tsconfig.json`
 

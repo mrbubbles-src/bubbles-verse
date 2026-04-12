@@ -111,166 +111,57 @@ And editor and preview CSS are separate files — apps can import only what they
 
 ## Implementation Guide
 
-### 1. Import Modal Component
+### 1. Reference-First Extraction
 
-```tsx
-// components/import-modal.tsx
+Inspect `to-be-integrated/` first and port the import-modal behavior, markdown-import flow, and editor CSS structure from there.
 
-import { Dialog, DialogContent, DialogHeader } from '@bubbles/ui/shadcn/dialog';
+If the relevant implementation is not available there, inspect `portal-ref` and port the behavior from there.
 
-interface ImportModalProps {
-  open: boolean;
-  onClose: () => void;
-  onImport: (markdownContent: string) => void;
-}
+Do not redesign modal composition, markdown conversion strategy, editor replacement flow, or CSS entry-point structure unless the user explicitly approves a deviation.
 
-export function ImportModal({ open, onClose, onImport }: ImportModalProps) {
-  const [value, setValue] = useState('');
+### 2. Import UX and Markdown Conversion
 
-  function handleConfirm() {
-    if (value.trim()) {
-      onImport(value);
-      onClose();
-    }
-  }
+Preserve the exact reference behavior for:
 
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>Import Markdown</DialogHeader>
-        <textarea
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="Paste Markdown here..."
-          rows={15}
-        />
-        <div>
-          <button onClick={onClose}>Cancel</button>
-          <button onClick={handleConfirm}>Import</button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-```
+- modal open/close flow
+- confirm/cancel behavior
+- markdown-to-block conversion path
+- how imported content replaces current editor content
 
-### 2. Markdown → EditorJS Block Conversion
+If the reference already uses a specific converter or helper, port that helper rather than inventing a fallback implementation in the story.
 
-Use the `markdownToBlocks` utility (from `@editorjs/editorjs` ecosystem or implement inline). If no suitable package exists, a basic converter handles the common cases:
+### 3. CSS Structure
 
-```ts
-// utils/markdown-to-blocks.ts
+Port the exact CSS file split and style responsibilities from the designated reference implementation, including:
 
-import type { OutputData } from '@editorjs/editorjs';
+- editor-only styles
+- preview-wrapper styles
+- renderer-content styles that remain in the renderer package
 
-/**
- * Converts a Markdown string to EditorJS OutputData blocks.
- * Handles: headings, paragraphs, lists, code blocks, blockquotes.
- * For richer conversion, consider @editorjs/paste-handler or similar.
- */
-export function markdownToBlocks(markdown: string): OutputData {
-  // parse markdown lines into EditorJS block objects
-  // ...
-}
-```
+Only adapt token wiring or import paths for the monorepo.
 
-Check portal-ref for the existing implementation — use it verbatim if present.
+### 4. Public Style Entry Points
 
-### 3. Replace Editor Content
-
-When the author confirms the import, replace the current EditorJS content:
-
-```ts
-async function handleImport(markdown: string) {
-  const data = markdownToBlocks(markdown);
-  await editorRef.current?.render(data);
-  const newOutput = await editorRef.current?.save();
-  if (newOutput) setEditorOutput(newOutput);
-}
-```
-
-### 4. `editor.css` — EditorJS Toolbar and Layout
-
-Fill `packages/markdown-editor/src/styles/editor.css` with styles for:
-
-```css
-/* @bubbles/markdown-editor — editor styles */
-
-/* ── EditorJS toolbar overrides ── */
-.ce-toolbar {
-  /* ... */
-}
-.ce-block {
-  /* ... */
-}
-
-/* ── Split-pane layout ── */
-.markdown-editor-split-pane {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  height: 100%;
-  gap: var(--spacing-4);
-}
-
-.editor-pane {
-  overflow-y: auto;
-  border-right: 1px solid var(--border);
-}
-
-/* ── Import button ── */
-.import-markdown-btn {
-  /* ... */
-}
-```
-
-All colors via `@bubbles/ui/globals.css` custom properties only. Source the complete styles from portal-ref — do not invent styles from scratch.
-
-### 5. `preview.css` — Preview Pane
-
-Fill `packages/markdown-editor/src/styles/preview.css` with styles for the preview wrapper:
-
-```css
-/* @bubbles/markdown-editor — preview pane styles */
-
-.preview-pane {
-  overflow-y: auto;
-  padding: var(--spacing-4);
-}
-
-/* No editor toolbar or block creation styles here */
-```
-
-The content typography styles are in `@bubbles/markdown-renderer/styles/renderer` — import both in the app.
-
-### 6. Separate CSS Files
-
-The package exports three separate CSS entry points (scaffolded in Story 1.2):
-
-- `@bubbles/markdown-editor/styles/editor` — EditorJS toolbar, block styles, layout
-- `@bubbles/markdown-editor/styles/preview` — preview pane wrapper
-- `@bubbles/markdown-renderer/styles/renderer` — rendered content typography + syntax highlighting
-
-An app that only renders content (no editing) imports only `renderer`. An app using the full editor imports all three.
+Preserve the designated reference implementation's CSS entry-point contract so apps can import only the parts they need.
 
 ---
 
 ## Anti-Patterns to Avoid
 
+- **Do not invent a new markdown-import flow** if the designated reference implementation already defines one.
+- **Do not mix editor, preview, and renderer style responsibilities** if the designated reference implementation keeps them separate.
+- **Do not make new modal-library or converter choices** unless they come from the designated reference implementation.
 - **No hardcoded colors** in any CSS file.
-- **No editor styles in `preview.css`** and vice versa — keep them cleanly separated.
-- **Do not add content typography styles to `editor.css` or `preview.css`** — those belong in `renderer.css`.
-- **Use `@bubbles/ui/shadcn/dialog`** for the modal — do not build a custom modal from scratch.
 
 ---
 
 ## Verification Checklist
 
-- [ ] Import modal opens, accepts Markdown, replaces editor content on confirm
-- [ ] `editor.css` styles EditorJS toolbar and split-pane layout
-- [ ] `preview.css` styles the preview pane wrapper
-- [ ] Both CSS files use only CSS custom properties from `@bubbles/ui/globals.css`
+- [ ] Import modal behavior matches the designated reference implementation
+- [ ] Markdown conversion and editor replacement behavior match the designated reference implementation
+- [ ] CSS file split matches the designated reference implementation
+- [ ] CSS entry-point contract matches the designated reference implementation or agreed package API
 - [ ] No hardcoded color values
-- [ ] `editor.css` and `preview.css` are separate — apps can import only one
 
 ---
 

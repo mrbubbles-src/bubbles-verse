@@ -103,22 +103,16 @@ And @bubbles/markdown-renderer has zero dependency on @bubbles/markdown-editor
 
 ## Implementation Guide
 
-### 1. Props Interface
+### 1. Public Props and API Surface
 
-```ts
-import type { ComponentType } from 'react';
+Port the prop interface and public API from the designated reference implementation.
 
-interface MdxRendererProps {
-  /** Stored MDX string to compile and render. */
-  content: string;
-  /**
-   * Override or extend default Markdown* components.
-   * Keys must match the component names used in MDX output.
-   * Default components are always available; this prop extends/overrides them.
-   */
-  components?: Record<string, ComponentType<Record<string, unknown>>>;
-}
-```
+Preserve:
+
+- required vs optional props
+- extension/override behavior for default components
+- public component name and export shape
+- any supported error or fallback props, if present
 
 ### 2. Reference-First Extraction
 
@@ -132,11 +126,7 @@ Do not choose a different MDX compilation library, rendering flow, or component 
 
 Port the same runtime MDX pipeline used by the reference implementation.
 
-If the reference source uses `next-mdx-remote-client`, preserve that unless the user approves a different approach.
-
-If the reference source uses `@mdx-js/mdx`, preserve that unless the user approves a different approach.
-
-Do not silently replace the reference pipeline with a newly designed one.
+Do not redefine the compilation, evaluation, hydration, or render flow in the story. The designated reference implementation is the source of truth.
 
 ### 4. Error Handling — Never Throw
 
@@ -162,7 +152,7 @@ Export from `src/index.ts` as part of the public API.
 ## Verification Checklist
 
 - [ ] `<MdxRenderer content={...} />` renders MDX without manual component registration
-- [ ] `components` prop correctly overrides individual components while keeping defaults
+- [ ] Public props and component override behavior match the designated reference implementation
 - [ ] Compilation error renders error state, does not throw
 - [ ] No import from `@bubbles/markdown-editor` anywhere in `packages/markdown-renderer`
 - [ ] Runtime MDX pipeline matches the designated reference implementation

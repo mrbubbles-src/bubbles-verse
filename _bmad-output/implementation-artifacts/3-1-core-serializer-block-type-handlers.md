@@ -112,137 +112,72 @@ And the function is tree-shakeable — importable standalone without loading Edi
 
 ## Implementation Guide
 
-### 1. File Location
+### 1. Reference-First Extraction
 
-```
-packages/markdown-editor/src/serializer/
-├── index.ts              # exports serializeToMdx and DEFAULT_ALLOWED_MDX_COMPONENTS
-├── serialize-to-mdx.ts   # main function
-├── block-handlers.ts     # handler per block type
-├── security.ts           # escapeMdxBraces, allowlist (Story 3.2)
-└── types.ts              # EditorJS block type interfaces (no any)
-```
+Inspect `to-be-integrated/` first and port the serializer module layout, handler boundaries, and output behavior from there.
 
-### 2. Function Signature
+If the relevant implementation is not available there, inspect `portal-ref` and port the behavior from there.
 
-```ts
-import type { OutputData } from '@editorjs/editorjs';
+Do not invent a new serializer architecture, handler taxonomy, wrapper strategy, or export surface unless the user explicitly approves a deviation.
 
-interface SerializeOptions {
-  headingAnchorIdsByBlockId?: Record<string, string>; // Story 3.4
-  allowedComponents?: string[]; // extends DEFAULT_ALLOWED_MDX_COMPONENTS
-}
+### 2. File and Module Placement
 
-/**
- * Serializes EditorJS OutputData blocks to a valid MDX string.
- * Every block is wrapped in <div data-block-id="{id}"> for scroll sync targeting.
- */
-export function serializeToMdx(
-  data: OutputData,
-  options?: SerializeOptions
-): string;
-```
+Use the reference implementation to determine:
 
-### 3. Block-Wrapping Pattern
+- serializer file layout
+- handler file boundaries
+- public vs internal modules
+- exported vs non-exported helpers
 
-Every block output must be wrapped:
+Only adapt file placement as needed for the monorepo package structure.
 
-```ts
-function wrapBlock(blockId: string, content: string): string {
-  return `<div data-block-id="${blockId}">\n\n${content}\n\n</div>`;
-}
-```
+### 3. Block Handler Scope
 
-### 4. All 15 Block Type Handlers
+Port the exact set of block handlers supported by the designated reference implementation.
 
-| Block Type         | EditorJS Tool                   | Expected MDX Output                                   |
-| ------------------ | ------------------------------- | ----------------------------------------------------- |
-| `paragraph`        | default                         | `<p>` or raw text with inline formatting              |
-| `header`           | `@editorjs/header`              | `# text` / `## text` etc. by level                    |
-| `list` (unordered) | `@editorjs/list`                | `- item`                                              |
-| `list` (ordered)   | `@editorjs/list`                | `1. item`                                             |
-| `list` (checklist) | `@editorjs/list`                | `- [ ] item` / `- [x] item`                           |
-| `code`             | `@calumk/editorjs-codecup`      | ` ```lang\n...\n``` `                                 |
-| `quote`            | `@editorjs/quote`               | `> text\n> — caption`                                 |
-| `alert`            | `editorjs-alert`                | `<MarkdownAlerts type="info">...</MarkdownAlerts>`    |
-| `delimiter`        | `@coolbytes/editorjs-delimiter` | `---`                                                 |
-| `toggle`           | `editorjs-toggle-block`         | `<MarkdownToggle summary="...">` + recursive children |
-| `table`            | `@editorjs/table`               | GFM markdown table with padding                       |
-| `embed`            | `@editorjs/embed`               | `<MarkdownEmbed url="..." />`                         |
-| `image`            | `@editorjs/image`               | `<MarkdownImage src="..." alt="..." />`               |
-| `inlineCode`       | `@editorjs/inline-code`         | `` `code` `` inline                                   |
-| `strikethrough`    | `@sotaproject/strikethrough`    | `~~text~~`                                            |
-| `annotation`       | `editorjs-annotation`           | `<mark>text</mark>` or custom component               |
-| `InlineHotkey`     | `editorjs-inline-hotkey`        | `<kbd>key</kbd>`                                      |
+Do not expand, shrink, rename, or reinterpret the supported block set based on preference. If the reference supports a block type, preserve it. If the reference omits a block type, do not add one unless the story or user explicitly requires it.
 
-**Verify exact data shapes** by inspecting portal-ref's serializer output for each block type — the EditorJS JSON structure varies by plugin version.
+### 4. Wrapper and Metadata Behavior
 
-### 5. Toggle — Recursive Serialization
+Preserve the exact wrapper behavior used by the reference serializer, including any block container elements, metadata attributes, or per-block identifiers used by downstream features such as preview mapping or scroll sync.
 
-Toggle blocks contain nested blocks as children. The handler must recursively call `serializeToMdx` (or the block array serializer):
+If the reference wraps every block, keep that behavior. If it applies wrapper behavior selectively, preserve that behavior instead. Do not normalize this on your own.
 
-```ts
-function handleToggle(block: ToggleBlock, options: SerializeOptions): string {
-  const childContent = block.data.items
-    .map((child) => serializeBlock(child, options))
-    .join('\n\n');
+### 5. Nested and Structured Blocks
 
-  return `<MarkdownToggle summary="${escapeMdxBraces(block.data.text)}">\n\n${childContent}\n\n</MarkdownToggle>`;
-}
-```
+Preserve the exact handling of nested or structured content from the reference implementation, including recursive serialization, list nesting, table formatting, embeds, alerts, and other compound block output.
 
-### 6. Table — GFM Formatting
+Where the reference includes normalization or cleanup helpers for specific block types, port those helpers rather than designing new ones.
 
-Tables need column padding for readability. Build the header row, separator row, and data rows. Use `withHeadings` flag from EditorJS table data:
+### 6. Public API Surface
 
-```ts
-// [header row]
-// |---|---|---|
-// [data rows]
-```
+Mirror the reference serializer API as closely as possible:
 
-If `withHeadings: false`, the first row is data, not a header — still output a valid GFM table (use empty header row).
+- main serializer entry point
+- option names and option behavior
+- exported constants and helpers
+- internal-only helpers that should remain unexported
 
-### 7. `normalizeAlertMessage()`
-
-Alert blocks from EditorJS may contain HTML artifacts. Strip them before serialization:
-
-```ts
-function normalizeAlertMessage(html: string): string {
-  // Remove <br>, <b>, <i>, etc. — keep text content only
-  return html.replace(/<[^>]+>/g, '').trim();
-}
-```
-
-### 8. Tree-Shakeability
-
-The serializer is exported from `src/index.ts` as a named export. It imports no React, no EditorJS runtime — only TypeScript types from EditorJS (`import type`). This makes it usable in server environments and tree-shakeable:
-
-```ts
-// src/index.ts
-export { serializeToMdx } from './serializer';
-export { DEFAULT_ALLOWED_MDX_COMPONENTS } from './serializer/security';
-export { generateSlug } from './utils/generate-slug'; // Story 4.3
-```
+Only adapt naming or exports where explicitly required by the agreed package API.
 
 ---
 
 ## Anti-Patterns to Avoid
 
-- **No `any` in block type interfaces.** Define proper interfaces for each block's `data` shape.
-- **Do not import EditorJS runtime** (`import EditorJS from '@editorjs/editorjs'`) in the serializer. Only `import type` for types.
-- **Do not skip the `data-block-id` wrapper.** Every block, every type — even delimiters.
-- **Do not use raw string concatenation without `escapeMdxBraces`.** All user text content goes through the escape function (Story 3.2 — implement together or apply after).
+- **Do not replace the reference serializer structure with a new one** because it seems cleaner or more generic.
+- **Do not hardcode a new canonical block taxonomy** unless the reference already does so.
+- **Do not change wrapper behavior or metadata attributes** without first verifying them against the reference implementation.
+- **Do not author new helper behavior** where the reference already has working handling for the same case.
 
 ---
 
 ## Verification Checklist
 
-- [ ] All 15 block types have handlers
-- [ ] Every block output wrapped in `<div data-block-id="...">`
-- [ ] Toggle blocks recursively serialize children
-- [ ] Table blocks produce valid GFM tables
-- [ ] No React or EditorJS runtime import (types only)
+- [ ] Supported block handlers match the designated reference implementation
+- [ ] Wrapper and metadata behavior match the designated reference implementation
+- [ ] Nested and structured block output matches the designated reference implementation
+- [ ] Public serializer API matches the designated reference implementation unless an approved deviation exists
+- [ ] No new serializer architecture was introduced without user approval
 - [ ] `bun run typecheck` passes
 
 ---

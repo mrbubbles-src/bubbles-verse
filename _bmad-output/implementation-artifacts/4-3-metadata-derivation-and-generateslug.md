@@ -98,7 +98,7 @@ Then the title field is automatically updated to the H1 text
 
 Given a title that was auto-derived from the H1
 When the title changes
-Then the slug field is automatically updated via generateSlug(title)
+Then the slug field is automatically updated using the designated reference implementation's slug behavior
 
 Given a slug that has been manually edited by the author
 When the title or H1 changes afterward
@@ -106,8 +106,8 @@ Then the slug is no longer auto-updated — the manual value is preserved
 
 Given import { generateSlug } from '@bubbles/markdown-editor'
 When called with any string
-Then it returns a URL-safe slug
-And unit tests cover special characters, unicode, empty string, and German umlauts
+Then it preserves the designated reference implementation's slug output behavior
+And unit tests cover the designated reference implementation's real edge cases
 ```
 
 ---
@@ -124,175 +124,73 @@ Do not invent a new slug algorithm, normalization rule set, or manual-override f
 
 ### 2. `generateSlug()` Utility
 
-```ts
-// src/utils/generate-slug.ts
+Port the slug utility from the designated reference implementation and preserve:
 
-/**
- * Converts a string to a URL-safe slug.
- * Handles unicode, German umlauts, and special characters.
- * Returns empty string for empty input.
- *
- * @example
- * generateSlug('Hello, World!')      // 'hello-world'
- * generateSlug('Über TypeScript')    // 'uber-typescript'
- * generateSlug('React & Next.js')    // 'react-and-nextjs'
- */
-export function generateSlug(text: string): string {
-  return text
-    .normalize('NFD') // decompose unicode (ü → u + combining)
-    .replace(/[\u0300-\u036f]/g, '') // remove combining diacritics
-    .replace(
-      /[äöüÄÖÜ]/g,
-      (char) =>
-        ({
-          // handle remaining German umlauts
-          ä: 'ae',
-          ö: 'oe',
-          ü: 'ue',
-          Ä: 'ae',
-          Ö: 'oe',
-          Ü: 'ue',
-        })[char] ?? char
-    )
-    .replace(/ß/g, 'ss') // eszett
-    .toLowerCase()
-    .replace(/&/g, 'and') // & → and
-    .replace(/[^a-z0-9\s-]/g, '') // strip non-alphanumeric except spaces and hyphens
-    .trim()
-    .replace(/[\s]+/g, '-') // spaces → hyphens
-    .replace(/-+/g, '-') // collapse multiple hyphens
-    .replace(/^-|-$/g, ''); // strip leading/trailing hyphens
-}
-```
+- normalization rules
+- transliteration rules
+- special-character handling
+- empty-input behavior
+- duplicate separator handling
+- output casing
 
-Treat the code above as the expected kind of utility shape, not as permission to replace the reference implementation with a newly invented one. The reference implementation remains the source of truth.
+Do not invent or simplify a slug algorithm in the story implementation.
 
 ### 3. `getHeaderLevelOneTitle()` Utility
 
-```ts
-// src/utils/get-header-title.ts
+Port the reference utility or inline logic used to derive the title from editor content.
 
-import type { OutputData } from '@editorjs/editorjs';
+Preserve the same source of truth for the derived title, including:
 
-/**
- * Extracts the text of the first H1 block from EditorJS output.
- * Returns empty string if no H1 is present.
- */
-export function getHeaderLevelOneTitle(data: OutputData): string {
-  const h1 = data.blocks.find((b) => b.type === 'header' && b.data.level === 1);
-  return h1 ? (h1.data.text as string) : '';
-}
-```
+- which block types are eligible
+- which heading level is used
+- how missing titles are handled
+- how rich text or inline markup is normalized before use
 
 ### 4. Manual Override Flag — `slugManuallyEdited`
 
-In the editor form state, track whether the slug was manually edited:
+Preserve the exact reference behavior for manual slug override flow:
 
-```ts
-const [slug, setSlug] = useState('');
-const slugManuallyEdited = useRef(false);
-
-// When title changes (from H1 derivation):
-function handleTitleChange(newTitle: string) {
-  setTitle(newTitle);
-  if (!slugManuallyEdited.current) {
-    setSlug(generateSlug(newTitle));
-  }
-}
-
-// When user manually edits the slug field:
-function handleSlugChange(newSlug: string) {
-  setSlug(newSlug);
-  slugManuallyEdited.current = true; // lock slug from auto-updates
-}
-```
-
-**Reset on navigation:** `slugManuallyEdited.current` resets on component unmount naturally. No explicit reset needed.
+- when auto-derivation starts
+- when auto-derivation stops
+- what counts as a manual override
+- whether manual override can be reset
+- how edit mode behaves compared with create mode
 
 ### 5. EditorJS `onChange` → Title Derivation
 
-Wire `getHeaderLevelOneTitle` to EditorJS's `onChange` callback:
+Preserve the same trigger points and update flow used by the reference implementation for:
 
-```ts
-new EditorJS({
-  onChange: async (api) => {
-    const data = await api.saver.save();
-    setEditorOutput(data);
-
-    const derivedTitle = getHeaderLevelOneTitle(data);
-    if (derivedTitle) {
-      handleTitleChange(derivedTitle);
-    }
-  },
-});
-```
+- deriving title from editor content
+- syncing title into form state
+- syncing slug from title while auto-derivation is still active
 
 ### 6. Public Exports
 
-```ts
-// src/index.ts
-export { generateSlug } from './utils/generate-slug';
-// getHeaderLevelOneTitle is internal — NOT exported
-```
+Mirror the reference export surface for slug-related utilities. Only expose what the reference package or agreed package API exposes.
 
 ### 7. Unit Tests for `generateSlug`
 
-Add to `packages/markdown-editor/tests/utils/generate-slug.test.ts`:
+Add tests that prove parity with the designated reference implementation rather than asserting a newly invented rule set.
 
-```ts
-import { describe, expect, it } from 'vitest';
-
-import { generateSlug } from '../../src/utils/generate-slug';
-
-describe('generateSlug', () => {
-  it('basic text → kebab-case', () => {
-    expect(generateSlug('Hello World')).toBe('hello-world');
-  });
-  it('special characters stripped', () => {
-    expect(generateSlug('Hello, World!')).toBe('hello-world');
-  });
-  it('German umlauts transliterated', () => {
-    expect(generateSlug('Über TypeScript')).toBe('uber-typescript');
-  });
-  it('ß → ss', () => {
-    expect(generateSlug('Straße')).toBe('strasse');
-  });
-  it('& → and', () => {
-    expect(generateSlug('React & Next.js')).toBe('react-and-nextjs');
-  });
-  it('empty string → empty string', () => {
-    expect(generateSlug('')).toBe('');
-  });
-  it('multiple spaces → single hyphen', () => {
-    expect(generateSlug('hello   world')).toBe('hello-world');
-  });
-  it('leading/trailing hyphens stripped', () => {
-    expect(generateSlug('  hello  ')).toBe('hello');
-  });
-  it('unicode characters', () => {
-    expect(generateSlug('café au lait')).toBe('cafe-au-lait');
-  });
-});
-```
+Cover the reference edge cases that actually exist in the source implementation, including any normalization, transliteration, empty-state, and manual-override behavior that the reference already handles.
 
 ---
 
 ## Anti-Patterns to Avoid
 
-- **Do not export `getHeaderLevelOneTitle`.** Internal utility only — it's tightly coupled to EditorJS data shapes.
-- **Do not auto-generate slug after manual edit.** Once `slugManuallyEdited.current = true`, only user input changes the slug.
-- **Do not swap in a new slug library or a newly designed algorithm** unless the user explicitly approves the deviation.
+- **Do not design a new slug algorithm.**
+- **Do not change manual-override flow** without first verifying it against the designated reference implementation.
+- **Do not export additional slug utilities** unless the reference or agreed package API requires them.
 
 ---
 
 ## Verification Checklist
 
-- [ ] `generateSlug` exported from `src/index.ts`
-- [ ] H1 block changes → title field updates
-- [ ] Title change → slug auto-updates (unless manually edited)
-- [ ] Manual slug edit → auto-update locked
-- [ ] `generateSlug` unit tests cover: special chars, German umlauts, ß, &, empty string, unicode
-- [ ] Metadata derivation and slug behavior match the designated reference implementation
+- [ ] Title derivation behavior matches the designated reference implementation
+- [ ] Slug generation behavior matches the designated reference implementation
+- [ ] Manual override behavior matches the designated reference implementation
+- [ ] Export surface matches the designated reference implementation or agreed package API
+- [ ] Tests cover the actual reference edge cases
 - [ ] `bun run test` passes
 
 ---
