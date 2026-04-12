@@ -2,7 +2,7 @@
 story_id: '5.1'
 story_key: '5-1-replace-coding-vault-renderer-with-bubbles-markdown-renderer'
 epic: 'Epic 5 — Coding Vault Migration'
-status: ready-for-dev
+status: review
 created: 2026-04-12
 ---
 
@@ -245,3 +245,60 @@ The rendering result should be **visually identical** to the pre-migration state
 ## Dev Notes
 
 _To be filled in during implementation._
+
+## Tasks / Subtasks
+
+- [x] Add `@bubbles/markdown-renderer` as a Vault workspace dependency and import `renderer.css` from the Vault layout
+- [x] Replace the public Vault entry page `MDXRemote` path with package `<MdxRenderer>` rendering
+- [x] Rebase `apps/the-coding-vault/mdx-components.tsx` on shared package defaults while preserving Vault-only MDX tags
+- [x] Remove local `--sh-*` / `--code-bg` declarations and the unused `next-mdx-remote-client` dependency
+- [x] Add migration regression coverage in the Vault app and fix typed-route compatibility surfaced in `@bubbles/markdown-renderer`
+- [x] Update app-scoped documentation and changelog entries for the shared renderer migration
+
+## Dev Agent Record
+
+### Completion Notes
+
+- Migrated `app/(vault)/vault/[slug]/page.tsx` from `next-mdx-remote-client` to `@bubbles/markdown-renderer` `<MdxRenderer>` while preserving the existing Editor.js-block-to-MDX conversion step.
+- Switched the Vault MDX registry to extend `defaultComponents` from the shared renderer package and kept Vault-specific tags such as `VaultAlerts`, `VaultImage`, and `VaultDetailsToggle`.
+- Imported `@bubbles/markdown-renderer/styles/renderer` from the Vault layout and removed the duplicated local Shiki token declarations from `app/globals.css`.
+- Fixed two package-level typed-route issues (`MarkdownImage`, `MarkdownLink`) that only surfaced once the Vault started consuming the shared renderer during build verification.
+
+### Debug Log
+
+- Ran `bun install` from the monorepo root to refresh workspace links and the lockfile after the dependency change.
+- Added a lightweight Bun regression test in `apps/the-coding-vault/tests/renderer-migration.test.js` to assert the story's migration contract without introducing a new test harness.
+- Verified quality gates with:
+  - `bun run --cwd apps/the-coding-vault test`
+  - `bun run --cwd apps/the-coding-vault typecheck`
+  - `bun run --cwd apps/the-coding-vault lint`
+  - `bun run --cwd packages/markdown-renderer test`
+  - `bun run --cwd packages/markdown-renderer typecheck`
+  - `bun run --cwd packages/markdown-renderer lint src __tests__ --max-warnings=0`
+  - `bun run --cwd apps/the-coding-vault build`
+- Started the Vault dev server with `THE_CODING_VAULT_ENABLE_NO_DB_FALLBACK=1` and confirmed the `/vault` runtime session reported no Next.js session errors. A populated `/vault/[slug]` browser check was not possible locally because `DATABASE_URL` is absent, so real entry-content visual parity remains a review-time check.
+
+## File List
+
+- `bun.lock`
+- `apps/the-coding-vault/package.json`
+- `apps/the-coding-vault/README.md`
+- `apps/the-coding-vault/CHANGELOG.md`
+- `apps/the-coding-vault/documentation/overview.md`
+- `apps/the-coding-vault/app/(vault)/layout.tsx`
+- `apps/the-coding-vault/app/(vault)/vault/[slug]/page.tsx`
+- `apps/the-coding-vault/app/globals.css`
+- `apps/the-coding-vault/mdx-components.tsx`
+- `apps/the-coding-vault/tests/renderer-migration.test.js`
+- `packages/markdown-renderer/src/components/markdown-image/markdown-image.tsx`
+- `packages/markdown-renderer/src/components/markdown-link.tsx`
+- `packages/markdown-renderer/__tests__/markdown-image.test.tsx`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+
+## Change Log
+
+- 2026-04-13: Replaced The Coding Vault public entry renderer with `@bubbles/markdown-renderer`, removed local Shiki token duplication, added migration regression checks, and fixed shared renderer typed-route issues uncovered by the Vault build.
+
+## Status
+
+review

@@ -98,19 +98,6 @@
   --sidebar-accent-foreground: oklch(var(--ctp-latte-base));
   --sidebar-border: oklch(var(--ctp-latte-surface-0));
   --sidebar-ring: oklch(var(--ctp-latte-mauve));
-  --sh-class: oklch(var(--ctp-latte-yellow));
-  --sh-identifier: oklch(var(--ctp-latte-red));
-  --sh-sign: oklch(var(--ctp-latte-mauve));
-  --sh-property: oklch(var(--ctp-latte-peach));
-  --sh-entity: oklch(var(--ctp-latte-blue));
-  --sh-jsxliterals: oklch(var(--ctp-latte-green));
-  --sh-string: oklch(var(--ctp-latte-green));
-  --sh-keyword: oklch(var(--ctp-latte-mauve));
-  --sh-number: oklch(var(--ctp-latte-peach));
-  --sh-null: oklch(var(--ctp-latte-peach));
-  --sh-break: oklch(var(--ctp-latte-mauve));
-  --sh-comment: oklch(var(--ctp-latte-subtext-0));
-  --code-bg: oklch(var(--ctp-latte-base));
 }
 
 .dark {
@@ -146,19 +133,6 @@
   --sidebar-accent-foreground: oklch(var(--ctp-mocha-base));
   --sidebar-border: oklch(var(--ctp-mocha-surface-0));
   --sidebar-ring: oklch(var(--ctp-mocha-mauve));
-  --sh-class: oklch(var(--ctp-mocha-yellow));
-  --sh-identifier: oklch(var(--ctp-mocha-red));
-  --sh-sign: oklch(var(--ctp-mocha-mauve));
-  --sh-property: oklch(var(--ctp-mocha-peach));
-  --sh-entity: oklch(var(--ctp-mocha-blue));
-  --sh-jsxliterals: oklch(var(--ctp-mocha-green));
-  --sh-string: oklch(var(--ctp-mocha-green));
-  --sh-keyword: oklch(var(--ctp-mocha-mauve));
-  --sh-number: oklch(var(--ctp-mocha-peach));
-  --sh-null: oklch(var(--ctp-mocha-peach));
-  --sh-break: oklch(var(--ctp-mocha-mauve));
-  --sh-comment: oklch(var(--ctp-mocha-subtext-0));
-  --code-bg: oklch(var(--ctp-mocha-base));
 }
 
 @theme inline {

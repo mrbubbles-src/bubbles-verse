@@ -5,6 +5,7 @@ import type {
   ReactElement,
   ReactNode,
 } from 'react';
+import type { Route } from 'next';
 
 import {
   Children,
@@ -93,7 +94,7 @@ export function MarkdownLink({
         <TooltipTrigger
           render={
             <Link
-              href={href}
+              href={href as Route}
               className={cn(className, 'touch-hitbox')}
               {...props}>
               {sanitizedChildren}

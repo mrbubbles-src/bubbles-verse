@@ -1,6 +1,5 @@
 import { Buffer } from 'node:buffer';
 
-import Link from 'next/link';
 import { getCldImageUrl } from 'next-cloudinary';
 
 import { MarkdownCldImage } from './markdown-cld-image';
@@ -45,7 +44,7 @@ export async function MarkdownImage({
 
   return (
     <figure className="mx-auto my-8 w-fit">
-      <Link
+      <a
         href={url}
         target="_blank"
         rel="noopener noreferrer"
@@ -63,7 +62,7 @@ export async function MarkdownImage({
         <span className="sr-only">
           Klicken auf das Bild um es in voller Groesse zu sehen
         </span>
-      </Link>
+      </a>
 
       <figcaption className="mt-2 text-center text-sm text-muted-foreground/50">
         {caption !== '' || original_filename !== '' ? (

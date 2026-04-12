@@ -7,6 +7,7 @@ import { ThemeProvider } from '@/context/theme-provider';
 import VaultSidebar from '@/components/layout/vault/sidebar/vault-sidebar';
 import Navbar from '@/components/layout/general/navbar';
 import Footer from '@/components/layout/general/footer';
+import '@bubbles/markdown-renderer/styles/renderer';
 import '@bubbles/ui/globals.css';
 import '@/app/globals.css';
 import { ICategories } from '@/types/types';

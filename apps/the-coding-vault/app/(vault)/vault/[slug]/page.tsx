@@ -1,9 +1,7 @@
-import { MDXRemote } from 'next-mdx-remote-client/rsc';
-import type { MDXRemoteOptions } from 'next-mdx-remote-client/rsc';
+import { MdxRenderer } from '@bubbles/markdown-renderer';
 import ConvertEditorJsToMDX from '@/components/layout/admin/editor/convert-editor-js-to-mdx';
 import { Suspense } from 'react';
 import { components } from '@/mdx-components';
-import remarkGfm from 'remark-gfm';
 import { notFound } from 'next/navigation';
 import { getVaultEntryBySlug } from '@/lib/db';
 import VaultAuthor from '@/components/layout/vault/vault-author/vault-author';
@@ -92,13 +90,8 @@ export default async function VaultEntryPage({
   if (!entry || !entry.published) {
     return notFound();
   }
+
   const mdx = ConvertEditorJsToMDX({ blocks: entry.content.blocks });
-  const options: MDXRemoteOptions = {
-    mdxOptions: {
-      remarkPlugins: [remarkGfm],
-    },
-    parseFrontmatter: true,
-  };
 
   return (
     <section className="container mx-auto flex flex-col gap-4 p-2 text-pretty">
@@ -108,7 +101,7 @@ export default async function VaultEntryPage({
           dates={{ createdAt: entry.createdAt, updatedAt: entry.updatedAt }}
         />
         <hr className="border-muted-foreground/15 rounded-md" />
-        <MDXRemote source={mdx} options={options} components={components} />
+        <MdxRenderer content={mdx} components={components} />
       </Suspense>
     </section>
   );

@@ -47,8 +47,9 @@ Start from **`.env.example`**. Groups you normally need:
 
 ## Content stack
 
-- **MDX:** loaders and MDX remote client for static/remote content; keep remark plugins (`remark-gfm`, etc.) aligned with renderer features.
+- **Public entry rendering:** stored Editor.js blocks are converted to MDX and rendered via **`@bubbles/markdown-renderer`** in the Vault route. Import `@bubbles/markdown-renderer/styles/renderer` from the Vault layout for syntax highlighting variables and inline-code styles.
 - **Editor.js:** Plugin set in dependencies — upgrading **@editorjs/\*** majors can change JSON output; regression-test save/load when bumping versions.
+- **Legacy MDX app config:** if `next.config.ts` still carries MDX support for historical reasons, treat the shared renderer package as the source of truth for public entry rendering behavior.
 
 ## Auth and security
 

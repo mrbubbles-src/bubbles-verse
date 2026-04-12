@@ -75,5 +75,5 @@ development_status:
 
   # ─── Epic 5: Coding Vault Migration ───────────────────────────────────────
   epic-5: backlog
-  5-1-replace-coding-vault-renderer-with-bubbles-markdown-renderer: ready-for-dev
+  5-1-replace-coding-vault-renderer-with-bubbles-markdown-renderer: review
   epic-5-retrospective: optional

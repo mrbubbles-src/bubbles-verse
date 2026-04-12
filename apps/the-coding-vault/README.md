@@ -1,6 +1,6 @@
 # The Coding Vault (`apps/the-coding-vault`)
 
-Knowledge / CMS-style application: **Next.js 16**, **MDX**, **Editor.js**, **Drizzle ORM**, **PostgreSQL** (often via Supabase or any hosted Postgres), **JWT** auth (**jose**), **bcryptjs**, **Cloudinary** media, and shared **`@bubbles/ui`**.
+Knowledge / CMS-style application: **Next.js 16**, shared **`@bubbles/markdown-renderer`** + **MDX**, **Editor.js**, **Drizzle ORM**, **PostgreSQL** (often via Supabase or any hosted Postgres), **JWT** auth (**jose**), **bcryptjs**, **Cloudinary** media, and shared **`@bubbles/ui`**.
 
 **Status:** Active development — verify `drizzle/` and routes in source when docs and code disagree.
 
@@ -37,6 +37,11 @@ bun run dev
 | `bun run seed` | `tsx ./drizzle/db/seed.ts` — development data (verify before prod). |
 
 Database schema and migrations live under **`drizzle/`**. Use Drizzle Kit (`bunx drizzle-kit …`) after schema changes; commit generated SQL.
+
+Public Vault entries now render stored Editor.js content through
+**`@bubbles/markdown-renderer`**. The app imports
+**`@bubbles/markdown-renderer/styles/renderer`** from the Vault layout instead
+of maintaining local Shiki renderer variables.
 
 ## Environment (summary)
 
