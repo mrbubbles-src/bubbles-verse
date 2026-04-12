@@ -2,7 +2,7 @@
 story_id: '4.4'
 story_key: '4-4-draft-autosave-and-restore'
 epic: 'Epic 4 — Content Authoring Editor'
-status: ready-for-dev
+status: review
 created: 2026-04-12
 ---
 
@@ -169,4 +169,70 @@ Preserve the designated reference implementation's behavior for:
 
 ## Dev Notes
 
-_To be filled in during implementation._
+Ported from the primary reference source:
+
+- `to-be-integrated/md-editor/markdown-editor/editor/hooks/use-draft-autosave.ts`
+- `to-be-integrated/md-editor/markdown-editor/lib/topic-draft-storage.ts`
+- `to-be-integrated/md-editor/markdown-editor/editor/editor-form.tsx`
+
+Package-specific integration adjustments:
+
+- keep the reference storage keys and event names unchanged
+- keep draft persistence internal to `@bubbles/markdown-editor`
+- load the stored draft before exposing the package form surface, so the
+  default form does not overwrite an existing edit draft during first mount
+- sync restored editor content into an already-created EditorJS instance via
+  `render()` when the resolved initial payload changes after mount
+
+## Tasks / Subtasks
+
+- [x] Port the reference draft storage helpers and autosave behavior into the package internals
+- [x] Restore create-mode and edit-mode drafts on `<MarkdownEditor>` mount using separate localStorage keys
+- [x] Preserve post-submit behavior by clearing the active draft and preventing stale rewrites after successful submit
+- [x] Add regression coverage plus package-local documentation and changelog updates
+
+## Dev Agent Record
+
+### Implementation Plan
+
+- Port the reference localStorage contract into internal package helpers first.
+- Add a non-exported autosave hook for the default package form.
+- Resolve the current-mode draft before rendering the package form surface.
+- Re-render EditorJS with restored content when the effective initial payload changes.
+- Add regression tests for restore, mode-specific keys, and post-submit clearing.
+
+### Debug Log
+
+- 2026-04-12: Read BMAD config, sprint status, and the full story file.
+- 2026-04-12: Verified the primary reference implementation in `to-be-integrated/`; fallback `portal-ref` was not needed.
+- 2026-04-12: Ported draft storage, autosave, restore, and post-submit clearing into `packages/markdown-editor`.
+- 2026-04-12: Added package tests for create/edit restore, mode-specific draft keys, and submit-time draft clearing.
+- 2026-04-12: Verified `bun run test`, `bun run typecheck`, and `bun run lint src tests --max-warnings=0` in `packages/markdown-editor`.
+
+### Completion Notes
+
+- Kept the reference storage keys `topic-editor-create-draft` and `topic-editor-edit-draft` plus their browser events unchanged.
+- Added an internal `useDraftAutosave` hook and draft storage helpers without expanding the public package API.
+- Delayed form rendering until the current-mode draft is resolved, which prevents the default edit form from overwriting a stored draft on first mount.
+- Synced restored editor content into the live EditorJS instance so the editor body and metadata form stay aligned after restore.
+- Added regression coverage for create-mode restore, edit-mode restore, edit-key writes, and post-submit draft clearing.
+
+## File List
+
+- `packages/markdown-editor/src/lib/draft-storage.ts`
+- `packages/markdown-editor/src/hooks/use-draft-autosave.ts`
+- `packages/markdown-editor/src/lib/load-editorjs.ts`
+- `packages/markdown-editor/src/components/editor-form.tsx`
+- `packages/markdown-editor/src/components/markdown-editor.tsx`
+- `packages/markdown-editor/tests/editor/editor-form-metadata.test.tsx`
+- `packages/markdown-editor/tests/editor/markdown-editor-form.test.tsx`
+- `packages/markdown-editor/README.md`
+- `packages/markdown-editor/CHANGELOG.md`
+
+## Change Log
+
+- 2026-04-12: Implemented Story 4.4 draft autosave and restore parity in `@bubbles/markdown-editor`.
+
+## Status
+
+review

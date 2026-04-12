@@ -24,3 +24,6 @@
 - Align Story 4.3 metadata derivation with the `to-be-integrated` reference:
   H1-driven title updates, session-scoped manual slug override preservation,
   and the public `generateSlug()` export with regression coverage.
+- Add Story 4.4 draft autosave/restore parity with `to-be-integrated`,
+  including mode-specific localStorage keys, mount-time draft restoration,
+  and post-submit draft clearing for the shared package form surface.

@@ -11,12 +11,14 @@ import {
   normalizeInitialFormData,
   shouldSkipInitialCleanup,
 } from '../lib/editor-content';
+import { loadCreateDraft, loadEditDraft } from '../lib/draft-storage';
 import {
   buildEditorTools,
   loadEditorToolRegistry,
   resolveDefaultBlock,
   resolvePluginKeys,
 } from '../lib/editor-tools';
+import { loadEditorJs } from '../lib/load-editorjs';
 import type { MarkdownEditorProps } from '../types/editor';
 
 /**
@@ -47,14 +49,19 @@ export function MarkdownEditor({
   const cleanupHasRunOnceRef = useRef(false);
   const onChangeRef = useRef(onChange);
   const onReadyRef = useRef(onReady);
+  const editorOutputRef = useRef<() => Promise<OutputData | undefined>>(
+    async () => undefined
+  );
+  const [resolvedInitialData, setResolvedInitialData] = useState(initialData);
+  const [draftResolved, setDraftResolved] = useState(false);
   const [editorReady, setEditorReady] = useState(false);
   const normalizedInitialEditorData = useMemo(
-    () => normalizeInitialEditorData(initialData),
-    [initialData]
+    () => normalizeInitialEditorData(resolvedInitialData),
+    [resolvedInitialData]
   );
   const normalizedInitialFormData = useMemo(
-    () => normalizeInitialFormData(initialData),
-    [initialData]
+    () => normalizeInitialFormData(resolvedInitialData),
+    [resolvedInitialData]
   );
   const defaultFormKey = useMemo(
     () =>
@@ -87,8 +94,50 @@ export function MarkdownEditor({
   }, [onReady]);
 
   useEffect(() => {
+    setDraftResolved(false);
+    setResolvedInitialData(
+      (isEditMode ? loadEditDraft() : loadCreateDraft()) ?? initialData
+    );
+    setDraftResolved(true);
+  }, [initialData, isEditMode]);
+
+  useEffect(() => {
     setEditorContent(normalizedInitialEditorData);
-    setEditorReady(false);
+
+    if (!editorRef.current) {
+      setEditorReady(false);
+    }
+  }, [normalizedInitialEditorData]);
+
+  useEffect(() => {
+    const editorInstance = editorRef.current;
+
+    if (!editorInstance) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void editorInstance.isReady
+      .then(async () => {
+        if (cancelled || editorRef.current !== editorInstance) {
+          return;
+        }
+
+        await editorInstance.render(normalizedInitialEditorData);
+
+        if (cancelled || editorRef.current !== editorInstance) {
+          return;
+        }
+
+        setEditorContent(normalizedInitialEditorData);
+        setEditorReady(true);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
   }, [normalizedInitialEditorData]);
 
   useEffect(() => {
@@ -103,8 +152,8 @@ export function MarkdownEditor({
     }
 
     const initializeEditor = async () => {
-      const [{ default: EditorJs }, toolRegistry] = await Promise.all([
-        import('@editorjs/editorjs'),
+      const [EditorJs, toolRegistry] = await Promise.all([
+        loadEditorJs(),
         loadEditorToolRegistry(activePluginKeys),
       ]);
 
@@ -112,10 +161,9 @@ export function MarkdownEditor({
         return;
       }
 
-      const initialEditorData = normalizeInitialEditorData(initialData);
       const editor = new EditorJs({
         autofocus,
-        data: initialEditorData,
+        data: normalizedInitialEditorData,
         defaultBlock: resolveDefaultBlock(activePluginKeys),
         holder: holderRef.current,
         onReady: () => {
@@ -174,27 +222,35 @@ export function MarkdownEditor({
     activePluginSignature,
     autofocus,
     imageUploader,
-    initialData,
+    normalizedInitialEditorData,
     placeholder,
     readOnly,
   ]);
 
-  const editorOutput = async (): Promise<OutputData | undefined> => {
-    if (!editorRef.current || typeof editorRef.current.save !== 'function') {
-      return editorContent ?? undefined;
-    }
+  useEffect(() => {
+    editorOutputRef.current = async (): Promise<OutputData | undefined> => {
+      if (!editorRef.current || typeof editorRef.current.save !== 'function') {
+        return editorContent ?? undefined;
+      }
 
-    try {
-      return await editorRef.current.save();
-    } catch {
-      return editorContent ?? undefined;
-    }
+      try {
+        return await editorRef.current.save();
+      } catch {
+        return editorContent ?? undefined;
+      }
+    };
+  }, [editorContent]);
+
+  const editorOutput = async (): Promise<OutputData | undefined> => {
+    return editorOutputRef.current();
   };
 
   return (
     <section className="flex flex-col gap-4">
       <div ref={holderRef} className={className} data-testid="markdown-editor" />
-      {readOnly ? null : renderForm ? (
+      {readOnly || !draftResolved ? null : renderForm ? (
+        // The render prop is the public API for custom forms; invoking it here is intentional.
+        // eslint-disable-next-line react-hooks/refs
         renderForm({
           editorOutput,
           editorContent,

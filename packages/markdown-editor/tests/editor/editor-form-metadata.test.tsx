@@ -1,7 +1,7 @@
 import type { OutputData } from '@editorjs/editorjs';
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { EditorForm } from '../../src/index';
 
@@ -55,6 +55,14 @@ function renderEditorForm(editorContent: OutputData) {
 }
 
 describe('EditorForm metadata derivation', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  afterEach(() => {
+    window.localStorage.clear();
+  });
+
   it('derives title and slug from the first H1 block', async () => {
     renderEditorForm(FIRST_OUTPUT);
 

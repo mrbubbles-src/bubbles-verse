@@ -27,6 +27,8 @@ import { Textarea } from '@bubbles/ui/shadcn/textarea';
 import type { FormEvent } from 'react';
 import { useEffect, useId, useState } from 'react';
 
+import { useDraftAutosave } from '../hooks/use-draft-autosave';
+import { clearCreateDraft, clearEditDraft } from '../lib/draft-storage';
 import { serializeToMdx } from '../lib/serialize-to-mdx';
 import { generateSlug, getHeaderLevelOneTitle } from '../lib/slug-utils';
 import type { EditorFormProps, MarkdownEditorStatus } from '../types/editor';
@@ -63,6 +65,7 @@ export function EditorForm({
   isEditMode,
   onSuccess,
 }: EditorFormProps) {
+  const [draftSavingDisabled, setDraftSavingDisabled] = useState(false);
   const [description, setDescription] = useState(initialData?.description ?? '');
   const [tagsText, setTagsText] = useState((initialData?.tags ?? []).join(', '));
   const [status, setStatus] = useState<MarkdownEditorStatus>(
@@ -122,6 +125,20 @@ export function EditorForm({
     };
   }, [editorContent, editorOutput, editorReady, slugManuallyEdited]);
 
+  useDraftAutosave({
+    editorContent,
+    formValues: {
+      description,
+      slug,
+      status,
+      tags: parseTags(tagsText),
+      title,
+    },
+    initialData,
+    isEditMode,
+    disabled: draftSavingDisabled,
+  });
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -139,16 +156,36 @@ export function EditorForm({
     const normalizedSlug = generateSlug(slug);
     setSlug(normalizedSlug);
 
-    onSuccess?.({
-      description: description.trim(),
-      editorContent: output,
-      isEditMode,
-      serializedContent: serializeToMdx(output),
-      slug: normalizedSlug,
-      status,
-      tags: parseTags(tagsText),
-      title: normalizedTitle,
-    });
+    if (!onSuccess) {
+      return;
+    }
+
+    setDraftSavingDisabled(true);
+
+    try {
+      await Promise.resolve(
+        onSuccess({
+          description: description.trim(),
+          editorContent: output,
+          isEditMode,
+          serializedContent: serializeToMdx(output),
+          slug: normalizedSlug,
+          status,
+          tags: parseTags(tagsText),
+          title: normalizedTitle,
+        })
+      );
+
+      if (isEditMode) {
+        clearEditDraft();
+        return;
+      }
+
+      clearCreateDraft();
+    } catch (error) {
+      setDraftSavingDisabled(false);
+      throw error;
+    }
   };
 
   return (

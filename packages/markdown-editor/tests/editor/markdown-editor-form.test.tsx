@@ -2,9 +2,10 @@ import type { OutputData } from '@editorjs/editorjs';
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useState } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { MarkdownEditor } from '../../src/components/markdown-editor';
+import { CREATE_DRAFT_KEY, EDIT_DRAFT_KEY } from '../../src/lib/draft-storage';
 import type {
   EditorRenderFormProps,
   MarkdownEditorInitialData,
@@ -44,31 +45,39 @@ const INITIAL_DATA: MarkdownEditorInitialData = {
 
 const latestOutput: OutputData = INITIAL_OUTPUT;
 
-vi.mock('@editorjs/editorjs', () => {
-  class MockEditorJs {
-    public isReady: Promise<void>;
-    private readonly saveMock: () => Promise<OutputData>;
-    private readonly destroyMock: () => void;
+class MockEditorJs {
+  public isReady: Promise<void>;
+  private currentOutput: OutputData;
+  private readonly destroyMock: () => void;
+  private readonly renderMock: (data: OutputData) => Promise<void>;
 
-    constructor(config: { onReady?: () => void }) {
-      this.saveMock = vi.fn(async () => latestOutput);
-      this.destroyMock = vi.fn();
-      this.isReady = Promise.resolve().then(() => {
-        config.onReady?.();
-      });
-    }
-
-    async save() {
-      return this.saveMock();
-    }
-
-    destroy() {
-      this.destroyMock();
-    }
+  constructor(config: { data?: OutputData; onReady?: () => void }) {
+    this.currentOutput = config.data ?? latestOutput;
+    this.destroyMock = vi.fn();
+    this.renderMock = vi.fn(async (data: OutputData) => {
+      this.currentOutput = data;
+    });
+    this.isReady = Promise.resolve().then(() => {
+      config.onReady?.();
+    });
   }
 
+  async save() {
+    return this.currentOutput;
+  }
+
+  async render(data: OutputData) {
+    await this.renderMock(data);
+  }
+
+  destroy() {
+    this.destroyMock();
+  }
+}
+
+vi.mock('../../src/lib/load-editorjs', () => {
   return {
-    default: MockEditorJs,
+    loadEditorJs: vi.fn(async () => MockEditorJs),
   };
 });
 
@@ -116,6 +125,14 @@ function RenderFormProbe({
 }
 
 describe('MarkdownEditor form surface', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  afterEach(() => {
+    window.localStorage.clear();
+  });
+
   it('passes typed editor state into the renderForm callback', async () => {
     render(
       <MarkdownEditor
@@ -186,6 +203,153 @@ describe('MarkdownEditor form surface', () => {
       status: 'published',
       tags: ['alpha', 'beta'],
       title: 'Story Driven Editor',
+    });
+  });
+
+  it('restores create-mode drafts from localStorage when the editor mounts', async () => {
+    const restoredOutput: OutputData = {
+      blocks: [
+        {
+          id: 'draft-heading',
+          type: 'header',
+          data: {
+            level: 1,
+            text: 'Restored Draft Title',
+          },
+        },
+      ],
+      time: 999,
+      version: '2.31.0',
+    };
+
+    window.localStorage.setItem(
+      CREATE_DRAFT_KEY,
+      JSON.stringify({
+        content: restoredOutput,
+        description: 'Draft description',
+        slug: 'restored-draft-title',
+        status: 'unpublished',
+        tags: ['draft'],
+        title: 'Restored Draft Title',
+      } satisfies MarkdownEditorInitialData)
+    );
+
+    render(
+      <MarkdownEditor
+        initialData={INITIAL_DATA}
+        renderForm={(props) => <RenderFormProbe {...props} />}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('initial-title')).toHaveTextContent(
+        'Restored Draft Title'
+      );
+      expect(screen.getByTestId('editor-block-count')).toHaveTextContent('1');
+    });
+  });
+
+  it('restores edit-mode form fields from the separate edit draft key', async () => {
+    window.localStorage.setItem(
+      EDIT_DRAFT_KEY,
+      JSON.stringify({
+        content: {
+          blocks: [
+            {
+              id: 'edit-draft-heading',
+              type: 'header',
+              data: {
+                level: 1,
+                text: 'Edit Draft Title',
+              },
+            },
+          ],
+          time: 111,
+          version: '2.31.0',
+        },
+        description: 'Edit draft description',
+        slug: 'edit-draft-title',
+        status: 'unpublished',
+        tags: ['edit', 'draft'],
+        title: 'Edit Draft Title',
+      } satisfies MarkdownEditorInitialData)
+    );
+
+    render(<MarkdownEditor initialData={INITIAL_DATA} isEditMode />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Slug')).toHaveValue('edit-draft-title');
+      expect(screen.getByLabelText('Description')).toHaveValue(
+        'Edit draft description'
+      );
+      expect(screen.getByLabelText('Tags')).toHaveValue('edit, draft');
+    });
+
+    expect(screen.getByText('Edit Draft Title')).toBeInTheDocument();
+  });
+
+  it('saves edit-mode drafts to the edit localStorage key', async () => {
+    render(<MarkdownEditor initialData={INITIAL_DATA} isEditMode />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Description')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText('Description'), {
+      target: { value: 'Changed in edit mode' },
+    });
+
+    await waitFor(() => {
+      const storedDraft = JSON.parse(
+        window.localStorage.getItem(EDIT_DRAFT_KEY) ?? 'null'
+      ) as MarkdownEditorInitialData | null;
+
+      expect(storedDraft?.description).toBe('Changed in edit mode');
+    });
+
+    expect(window.localStorage.getItem(CREATE_DRAFT_KEY)).toBeNull();
+  });
+
+  it('clears and disables create-mode draft persistence after a successful submit', async () => {
+    function SubmitHarness() {
+      const [submitCount, setSubmitCount] = useState(0);
+
+      return (
+        <div>
+          <div data-testid="submit-count">{submitCount}</div>
+          <MarkdownEditor
+            initialData={INITIAL_DATA}
+            onSuccess={() => {
+              setSubmitCount((currentCount) => currentCount + 1);
+            }}
+          />
+        </div>
+      );
+    }
+
+    render(<SubmitHarness />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Description')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText('Description'), {
+      target: { value: 'Draft before submit' },
+    });
+
+    await waitFor(() => {
+      const storedDraft = JSON.parse(
+        window.localStorage.getItem(CREATE_DRAFT_KEY) ?? 'null'
+      ) as MarkdownEditorInitialData | null;
+
+      expect(storedDraft?.description).toBe('Draft before submit');
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('submit-count')).toHaveTextContent('1');
+      expect(window.localStorage.getItem(CREATE_DRAFT_KEY)).toBeNull();
     });
   });
 });

@@ -35,6 +35,8 @@ Shared client wrapper around the reference EditorJS setup from
 - keeps the reference StrictMode cleanup guard to avoid double initialization
 - enables the full 15-tool surface by default
 - accepts `plugins` to subset the toolbar without changing the canonical order
+- restores mode-specific drafts from localStorage on mount
+- autosaves create/edit drafts to the reference storage keys while authors type
 - renders a custom metadata form through `renderForm`, or falls back to `EditorForm`
 - forwards image uploads through an app-provided `imageUploader`
 - forwards saved editor state through `onChange`
@@ -83,6 +85,8 @@ provided.
 - title is derived from the first H1 block in the editor content
 - slug auto-follows the derived title until the author edits it manually
 - description, tags, and status (`published` | `unpublished`) stay package-level
+- create mode uses `topic-editor-create-draft`; edit mode uses `topic-editor-edit-draft`
+- successful submits clear the active draft and stop stale post-submit rewrites
 - submit calls `onSuccess` with `{ title, slug, description, tags, status, editorContent, serializedContent, isEditMode }`
 
 You can also import and render the default form directly:
