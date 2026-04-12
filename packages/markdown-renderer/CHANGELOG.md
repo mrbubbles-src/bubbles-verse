@@ -4,3 +4,5 @@
 
 - Initial package scaffold.
 - Port default `Markdown*` MDX block components and `defaultComponents`.
+- Add runtime `<MdxRenderer>` with package defaults, component overrides, and
+  local compilation error handling.

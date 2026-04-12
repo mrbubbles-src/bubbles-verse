@@ -2,7 +2,7 @@
 story_id: '2.2'
 story_key: '2-2-mdxrenderer-component'
 epic: 'Epic 2 — MDX Renderer & Default Components'
-status: ready-for-dev
+status: review
 created: 2026-04-12
 ---
 
@@ -163,3 +163,51 @@ Export from `src/index.ts` as part of the public API.
 ## Dev Notes
 
 _To be filled in during implementation._
+
+## Tasks / Subtasks
+
+- [x] Port the reference runtime MDX evaluation pipeline from `to-be-integrated/md-editor/markdown-editor/md-preview/md-preview-render.tsx` into `packages/markdown-renderer/src/mdx-renderer.tsx`.
+- [x] Wire `<MdxRenderer>` into the public package API with a required `content` prop and optional `components` override/extension map.
+- [x] Add only the runtime package dependencies required by the extracted MDX pipeline.
+- [x] Add package tests covering default rendering, component overrides/extensions, and local compile-error handling.
+- [x] Update package-local README and CHANGELOG entries for the new renderer surface.
+- [x] Verify package `test`, `typecheck`, `lint`, and monorepo `typecheck`.
+
+## Dev Agent Record
+
+### Debug Log
+
+- `bun run test -- mdx-renderer.test.tsx`
+- `bun install`
+- `cd packages/markdown-renderer && bun run test`
+- `cd packages/markdown-renderer && bun run typecheck`
+- `cd packages/markdown-renderer && bun run lint .`
+- `bun run typecheck`
+
+### Completion Notes
+
+- Ported the runtime MDX `evaluate(...)` pipeline from the designated `to-be-integrated` reference into a new package-level `<MdxRenderer>` client component.
+- Kept the renderer independent from `@bubbles/markdown-editor`, automatically merging package defaults with per-render component overrides and extensions.
+- Added renderer-focused Vitest coverage for default MDX rendering, custom component overrides/extensions, and graceful local error rendering on invalid MDX.
+- Updated the package README and CHANGELOG to document the new runtime renderer API.
+
+## File List
+
+- `bun.lock`
+- `_bmad-output/implementation-artifacts/2-2-mdxrenderer-component.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `packages/markdown-renderer/CHANGELOG.md`
+- `packages/markdown-renderer/README.md`
+- `packages/markdown-renderer/__tests__/mdx-renderer.test.tsx`
+- `packages/markdown-renderer/package.json`
+- `packages/markdown-renderer/src/index.ts`
+- `packages/markdown-renderer/src/mdx-renderer.tsx`
+- `packages/markdown-renderer/src/types/mdx-components.ts`
+
+## Change Log
+
+- 2026-04-12: Added the runtime `<MdxRenderer>` component, packaged the extracted MDX evaluation pipeline, and covered the new renderer surface with tests.
+
+## Status
+
+review

@@ -3,6 +3,10 @@ export {
   useMDXComponents,
 } from './default-components';
 export {
+  MdxRenderer,
+  type MdxRendererProps,
+} from './mdx-renderer';
+export {
   MarkdownAlerts,
   type MarkdownAlertsProps,
 } from './components/markdown-alerts';
@@ -31,4 +35,7 @@ export {
   type MarkdownToggleProps,
 } from './components/markdown-toggle';
 export type { ChecklistItem } from './types/checklist';
-export type { MarkdownComponents } from './types/mdx-components';
+export type {
+  MarkdownComponents,
+  MdxRendererComponents,
+} from './types/mdx-components';

@@ -51,7 +51,7 @@ development_status:
   # ─── Epic 2: MDX Renderer & Default Components ────────────────────────────
   epic-2: backlog
   2-1-default-mdx-block-components-markdown: review
-  2-2-mdxrenderer-component: ready-for-dev
+  2-2-mdxrenderer-component: review
   2-3-renderer-css-stylesheet-renderer-css: ready-for-dev
   epic-2-retrospective: optional
 
