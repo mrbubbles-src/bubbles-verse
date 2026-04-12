@@ -2,3 +2,449 @@
  * Import: import '@bubbles/markdown-editor/styles/editor'
  * Populated in Epic 4 (Story 4.6)
  */
+
+:root {
+  --editorjs-bg: var(--background);
+  --editorjs-foreground: var(--foreground);
+  --editorjs-popover: var(--popover);
+  --editorjs-muted: var(--muted);
+  --editorjs-muted-foreground: var(--muted-foreground);
+  --editorjs-border: var(--border);
+  --editorjs-accent: var(--accent);
+  --editorjs-sidebar-accent: var(--sidebar-accent);
+  --editorjs-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --editorjs-primary: var(--primary);
+  --markdown-editor-warning: var(--chart-3);
+}
+
+.markdown-editor-import-controls {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.markdown-editor-import-trigger {
+  display: flex;
+  cursor: pointer;
+  align-items: center;
+  gap: 0.375rem;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.375rem 0.75rem;
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.markdown-editor-import-trigger:hover,
+.markdown-editor-import-trigger--dragging {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, var(--card));
+  color: var(--primary);
+}
+
+.markdown-editor-import-button {
+  border-radius: var(--radius-md);
+}
+
+.markdown-editor-import-dialog {
+  margin: auto;
+  width: min(100%, 42rem);
+  max-width: 42rem;
+  border: 0;
+  background: transparent;
+}
+
+.markdown-editor-import-dialog::backdrop {
+  background: color-mix(in srgb, var(--foreground) 45%, transparent);
+  backdrop-filter: blur(0.375rem);
+}
+
+.markdown-editor-import-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  color: var(--card-foreground);
+  box-shadow: 0 1.25rem 3rem color-mix(in srgb, var(--foreground) 16%, transparent);
+}
+
+.markdown-editor-import-file-input {
+  display: block;
+  width: 100%;
+  cursor: pointer;
+  color: var(--foreground);
+  font-size: 0.75rem;
+}
+
+.markdown-editor-import-file-input::file-selector-button {
+  margin-right: 1rem;
+  border: 0;
+  border-radius: var(--radius-md);
+  padding: 0.5rem 1rem;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.markdown-editor-import-file-input::file-selector-button:hover {
+  background: color-mix(in srgb, var(--primary) 90%, var(--card));
+}
+
+.markdown-editor-import-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+  font-size: 0.75rem;
+}
+
+.markdown-editor-import-callout--error {
+  background: color-mix(in srgb, var(--destructive) 12%, transparent);
+  color: var(--destructive);
+}
+
+.markdown-editor-import-stat {
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--muted) 72%, transparent);
+  padding: 0.5rem;
+}
+
+.markdown-editor-import-stat--warning {
+  background: color-mix(in srgb, var(--markdown-editor-warning) 12%, transparent);
+  color: var(--markdown-editor-warning);
+}
+
+.markdown-editor-import-warning-list {
+  max-height: 8rem;
+  overflow-y: auto;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.markdown-editor-pane__content {
+  scrollbar-gutter: stable both-edges;
+}
+
+.markdown-editor-holder {
+  width: 100%;
+}
+
+.codex-editor [contenteditable='true']:focus,
+.ce-block__content,
+.ce-toolbar__content {
+  outline: none;
+}
+
+.ce-block,
+.cdx-block {
+  color: var(--editorjs-foreground) !important;
+}
+
+.ce-block.ce-block--selected .ce-block__content,
+.ce-block *::selection {
+  background-color: color-mix(
+    in srgb,
+    var(--editorjs-accent) 20%,
+    transparent
+  ) !important;
+}
+
+.ce-toolbar__plus,
+.ce-toolbar__settings-btn,
+.ce-popover-item__title,
+.ce-popover-item__icon,
+.tc-popover__item-icon {
+  color: var(--editorjs-foreground) !important;
+}
+
+.ce-toolbar__plus,
+.ce-toolbar__settings-btn,
+.ce-drag {
+  color: var(--editorjs-muted-foreground) !important;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease !important;
+}
+
+.ce-toolbar__plus:hover,
+.ce-toolbar__settings-btn:hover,
+.ce-drag:hover {
+  color: var(--editorjs-sidebar-accent-foreground) !important;
+  background-color: var(--editorjs-sidebar-accent) !important;
+}
+
+.ce-inline-tool,
+.ce-inline-toolbar__dropdown {
+  color: var(--editorjs-foreground) !important;
+}
+
+.ce-inline-tool:hover,
+.ce-inline-toolbar__dropdown:hover,
+.ce-conversion-tool:hover,
+.ce-popover-item:hover {
+  background-color: color-mix(
+    in srgb,
+    var(--editorjs-accent) 20%,
+    transparent
+  ) !important;
+}
+
+.ce-popover,
+.ce-conversion-toolbar,
+.ce-inline-toolbar,
+.tc-popover {
+  background-color: var(--editorjs-popover) !important;
+  border: 1px solid var(--editorjs-border) !important;
+  box-shadow: 0 0.75rem 1.5rem color-mix(in srgb, var(--foreground) 12%, transparent) !important;
+  color: var(--editorjs-foreground) !important;
+}
+
+.ce-popover__container {
+  background: var(--editorjs-popover) !important;
+  border: 1px solid var(--editorjs-border);
+  border-radius: var(--radius-sm);
+}
+
+.ce-popover-item-separator__line {
+  border-color: var(--editorjs-border) !important;
+}
+
+.ce-popover__items {
+  scrollbar-color: var(--editorjs-border) var(--editorjs-bg) !important;
+}
+
+.ce-popover__items .ce-popover-item {
+  margin: 0.5rem !important;
+  border: 1px solid var(--editorjs-sidebar-accent) !important;
+  color: var(--editorjs-muted-foreground) !important;
+}
+
+.ce-popover__items .ce-popover-item:hover {
+  background-color: var(--editorjs-sidebar-accent) !important;
+}
+
+.ce-popover__items .ce-popover-item__secondary-title {
+  color: var(--editorjs-primary) !important;
+  font-weight: 700 !important;
+}
+
+.ce-popover,
+.ce-popover__container {
+  background: var(--editorjs-bg) !important;
+  color: var(--editorjs-foreground) !important;
+  border: 1px solid var(--editorjs-border) !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+.ce-popover input,
+.ce-popover select,
+.ce-popover textarea,
+.editorjs-codeCup_input {
+  background: var(--editorjs-bg) !important;
+  color: var(--editorjs-foreground) !important;
+  border: 1px solid var(--editorjs-border) !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+.ce-popover input::placeholder,
+.ce-popover textarea::placeholder,
+.editorjs-codeCup_input[data-placeholder]:empty::before {
+  color: var(--editorjs-muted-foreground) !important;
+}
+
+.editorjs-codeCup_inputButton {
+  background: var(--editorjs-bg) !important;
+  border: 1px solid var(--editorjs-border);
+  border-radius: var(--radius-sm) !important;
+}
+
+.editorjs-codeCup_languageDropdown,
+.editorjs-codeCup_languageOption {
+  background-color: var(--editorjs-bg) !important;
+  color: var(--editorjs-foreground);
+  border-color: var(--editorjs-border) !important;
+}
+
+.editorjs-codeCup_languageOption:hover {
+  background-color: color-mix(
+    in srgb,
+    var(--editorjs-accent) 20%,
+    transparent
+  ) !important;
+}
+
+.cdx-search-field.ce-popover__search {
+  background-color: color-mix(
+    in srgb,
+    var(--editorjs-muted) 30%,
+    transparent
+  ) !important;
+  border-color: var(--editorjs-border) !important;
+}
+
+.cdx-search-field__icon,
+.ce-popover .cdx-search-field .cdx-search-field__icon,
+.ce-popover .cdx-search-field .cdx-search-field__input,
+.ce-popover__nothing-found-message,
+.codecup__lines,
+.editorjs-codeCup_LangDisplay {
+  color: var(--editorjs-muted-foreground) !important;
+}
+
+.cdx-search-field__input,
+.codecup__copyMessage,
+.tc-add-column > svg,
+.tc-add-row > svg {
+  color: var(--editorjs-foreground) !important;
+}
+
+.ce-popover .cdx-search-field,
+.ce-popover .ce-popover__container,
+.ce-block .tc-popover,
+.tc-add-column:hover,
+.tc-add-row:hover {
+  background-color: var(--editorjs-bg) !important;
+}
+
+.ce-block .tc-popover {
+  color: var(--editorjs-sidebar-accent-foreground) !important;
+}
+
+.ce-block .tc-popover .tc-popover__item {
+  margin: 0.5rem !important;
+  padding: 0.5rem !important;
+  border: 1px solid var(--editorjs-sidebar-accent) !important;
+}
+
+.ce-block .tc-popover .tc-popover__item:hover,
+.ce-block .tc-popover .tc-popover__item .tc-popover__item-icon {
+  background-color: var(--editorjs-sidebar-accent) !important;
+}
+
+.ce-inline-toolbar,
+.ce-conversion-tool__icon,
+.ce-popover-item__icon,
+.tc-popover__item-icon {
+  border-color: var(--editorjs-border) !important;
+  background-color: var(--editorjs-bg) !important;
+}
+
+.editorjs-codeCup_Wrapper,
+.editorjs-codeCup_Editor,
+.codecup,
+.codecup__copyButton,
+.codecup__copyMessage,
+.editorjs-codeCup_LangDisplay {
+  background-color: var(--code-bg) !important;
+  color: var(--editorjs-foreground) !important;
+  border-color: var(--editorjs-border) !important;
+}
+
+.editorjs-codeCup_LangDisplay {
+  margin: 0.5rem 1rem 0.5rem 0 !important;
+}
+
+.codecup__lines {
+  background-color: color-mix(in srgb, var(--code-bg) 95%, transparent) !important;
+  padding-right: 1rem !important;
+}
+
+.codecup__textarea {
+  caret-color: var(--editorjs-foreground) !important;
+}
+
+.codecup__copyButton {
+  margin: 0 1.2rem 0 0 !important;
+  border: 1px solid var(--editorjs-border) !important;
+  background-color: var(--editorjs-popover) !important;
+  color: var(--editorjs-foreground) !important;
+}
+
+.codecup__copyButton:hover {
+  transform: scale(1.2) !important;
+  transition: transform 0.2s ease-in-out !important;
+}
+
+.tc-row,
+.tc-cell {
+  background-color: transparent !important;
+}
+
+.tc-add-column > svg,
+.tc-add-row > svg {
+  background-color: var(--editorjs-bg) !important;
+}
+
+.ce-block {
+  margin-block: 1rem !important;
+  padding: 1rem !important;
+  border-radius: var(--radius-md) !important;
+  outline: 1px dashed color-mix(in srgb, var(--border) 80%, transparent) !important;
+  background: color-mix(in srgb, var(--sidebar) 72%, transparent) !important;
+  color: var(--sidebar-foreground) !important;
+}
+
+.ce-delimiter span {
+  color: var(--muted-foreground) !important;
+}
+
+.ce-block__content:has(.cdx-quote) {
+  border-left: 4px solid var(--primary) !important;
+  border-radius: var(--radius-md) !important;
+  background: var(--card) !important;
+  padding-left: 1rem !important;
+  color: var(--muted-foreground) !important;
+  font-style: italic;
+}
+
+h1.ce-header,
+h2.ce-header,
+h3.ce-header,
+h4.ce-header,
+h5.ce-header,
+h6.ce-header {
+  color: var(--foreground) !important;
+}
+
+h1.ce-header {
+  font-size: 2.25rem !important;
+  font-weight: 700 !important;
+}
+
+h2.ce-header {
+  font-size: 1.875rem !important;
+  font-weight: 600 !important;
+}
+
+h3.ce-header {
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+}
+
+h4.ce-header {
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+}
+
+h5.ce-header {
+  font-size: 1.125rem !important;
+  font-weight: 600 !important;
+}
+
+h6.ce-header {
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+}

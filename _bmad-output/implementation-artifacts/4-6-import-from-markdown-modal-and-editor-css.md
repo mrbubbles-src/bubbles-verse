@@ -2,7 +2,7 @@
 story_id: '4.6'
 story_key: '4-6-import-from-markdown-modal-and-editor-css'
 epic: 'Epic 4 — Content Authoring Editor'
-status: ready-for-dev
+status: review
 created: 2026-04-12
 ---
 
@@ -168,3 +168,56 @@ Preserve the designated reference implementation's CSS entry-point contract so a
 ## Dev Notes
 
 _To be filled in during implementation._
+
+## Tasks / Subtasks
+
+- [x] Port the portal-ref file-based markdown import modal into `@bubbles/markdown-editor`
+- [x] Port the markdown-to-EditorJS conversion helper used by the import flow
+- [x] Integrate import replacement into `MarkdownEditor` so imported blocks replace current content
+- [x] Fill `editor.css` with editor-only toolbar, block, popover, and import-modal styles using UI tokens only
+- [x] Keep `preview.css` separate for preview wrapper and highlight responsibilities
+- [x] Add and update regression tests for conversion, modal import flow, warnings, and replacement behavior
+- [x] Update package-scoped documentation and changelog
+
+## Dev Agent Record
+
+### Completion Notes
+
+- Implemented the import behavior to match `portal-ref`: dashed drop surface, import button, modal file picker, conversion preview, warnings, and destructive replacement confirmation.
+- Ported the markdown conversion helper into the package and kept the EditorJS replacement flow aligned with the reference implementation.
+- Populated `editor.css` and `preview.css` with the split responsibilities required by the story while keeping renderer-only styling in `@bubbles/markdown-renderer`.
+- Replaced hardcoded modal/editor colors with `@bubbles/ui/globals.css` custom properties and derived token mappings.
+
+### Debug Log
+
+- Added missing package dependencies required by the imported markdown conversion flow and refreshed the lockfile with `bun install`.
+- Stubbed `HTMLDialogElement.showModal()`/`close()` in Vitest setup so the import modal can be exercised in jsdom.
+- Verified package quality gates with:
+  - `bun run --cwd packages/markdown-editor typecheck`
+  - `bun run --cwd packages/markdown-editor test`
+  - `bun run --cwd packages/markdown-editor lint src tests --max-warnings=0`
+
+## File List
+
+- `bun.lock`
+- `packages/markdown-editor/package.json`
+- `packages/markdown-editor/README.md`
+- `packages/markdown-editor/CHANGELOG.md`
+- `packages/markdown-editor/src/components/import-markdown-modal.tsx`
+- `packages/markdown-editor/src/components/markdown-editor.tsx`
+- `packages/markdown-editor/src/components/preview-pane.tsx`
+- `packages/markdown-editor/src/lib/convert-markdown-to-editor-js.ts`
+- `packages/markdown-editor/src/styles/editor.css`
+- `packages/markdown-editor/src/styles/preview.css`
+- `packages/markdown-editor/tests/editor/convert-markdown-to-editor-js.test.ts`
+- `packages/markdown-editor/tests/editor/markdown-editor-form.test.tsx`
+- `packages/markdown-editor/vitest.setup.ts`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+
+## Change Log
+
+- 2026-04-13: Ported the portal-ref markdown import modal and conversion flow into `@bubbles/markdown-editor`, added editor/preview stylesheet parity, and covered the new behavior with package-level tests.
+
+## Status
+
+review

@@ -12,8 +12,13 @@ import {
   CardHeader,
   CardTitle,
 } from '@bubbles/ui/shadcn/card';
+import { cn } from '@bubbles/ui/lib/utils';
 
 import { EditorForm } from './editor-form';
+import {
+  ImportMarkdownModal,
+  type ImportMarkdownModalHandle,
+} from './import-markdown-modal';
 import { PreviewPane } from './preview-pane';
 import {
   normalizeInitialEditorData,
@@ -56,6 +61,7 @@ export function MarkdownEditor({
   const editorRef = useRef<EditorJS | null>(null);
   const holderRef = useRef<HTMLDivElement | null>(null);
   const editorScrollRef = useRef<HTMLDivElement | null>(null);
+  const importModalRef = useRef<ImportMarkdownModalHandle>(null);
   const cleanupHasRunOnceRef = useRef(false);
   const onChangeRef = useRef(onChange);
   const onReadyRef = useRef(onReady);
@@ -269,10 +275,41 @@ export function MarkdownEditor({
     return editorOutputRef.current();
   };
 
+  /**
+   * Replace the live EditorJS document with converted Markdown blocks.
+   *
+   * The import modal feeds converted `OutputData` back into the editor so the
+   * portal reference flow can replace content without reloading the component.
+   *
+   * @param data - Imported EditorJS output produced by the Markdown converter.
+   * @returns Promise that settles once the editor content has been replaced.
+   */
+  const handleMarkdownImport = async (data: OutputData): Promise<void> => {
+    if (!editorRef.current) {
+      return;
+    }
+
+    try {
+      await editorRef.current.isReady;
+      await editorRef.current.blocks.render(data);
+      setEditorContent(data);
+      previousBlockCountRef.current = data.blocks?.length ?? 0;
+    } catch {
+      /* Import failures should leave the current editor content untouched. */
+    }
+  };
+
+  const hasExistingContent = (editorContent?.blocks?.length ?? 0) > 0;
+
   return (
-    <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-      <Card className="min-h-[60dvh]">
-        <CardHeader>
+    <section className="markdown-editor-shell grid grid-cols-1 gap-4 xl:grid-cols-2">
+      <Card className="markdown-editor-pane min-h-[60dvh]">
+        <CardHeader className="markdown-editor-pane__header relative">
+          <ImportMarkdownModal
+            ref={importModalRef}
+            hasExistingContent={hasExistingContent}
+            onImport={handleMarkdownImport}
+          />
           <CardTitle>Editor</CardTitle>
           <CardDescription>
             Compose content with the shared EditorJS toolset.
@@ -280,11 +317,11 @@ export function MarkdownEditor({
         </CardHeader>
         <CardContent
           ref={editorScrollRef}
-          className="max-h-[60dvh] overflow-y-auto overscroll-contain"
+          className="markdown-editor-pane__content max-h-[60dvh] overflow-y-auto overscroll-contain"
         >
           <div
             ref={holderRef}
-            className={className}
+            className={cn('markdown-editor-holder', className)}
             data-testid="markdown-editor"
           />
         </CardContent>

@@ -60,6 +60,9 @@ class MockEditorJs {
   private currentOutput: OutputData;
   private readonly destroyMock: () => void;
   private readonly renderMock: (data: OutputData) => Promise<void>;
+  public readonly blocks: {
+    render: (data: OutputData) => Promise<void>;
+  };
 
   constructor(config: { data?: OutputData; onReady?: () => void }) {
     this.currentOutput = config.data ?? latestOutput;
@@ -67,6 +70,11 @@ class MockEditorJs {
     this.renderMock = vi.fn(async (data: OutputData) => {
       this.currentOutput = data;
     });
+    this.blocks = {
+      render: async (data: OutputData) => {
+        this.currentOutput = data;
+      },
+    };
     this.isReady = Promise.resolve().then(() => {
       config.onReady?.();
     });
@@ -199,6 +207,81 @@ describe('MarkdownEditor form surface', () => {
     expect(screen.getByTestId('mdx-renderer')).toHaveTextContent(
       '<div data-block-id="intro-body">'
     );
+  });
+
+  it('imports markdown files with the portal reference replacement flow', async () => {
+    render(<MarkdownEditor initialData={INITIAL_DATA} />);
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Markdown importieren' })
+    );
+
+    const fileInput = await screen.findByLabelText('Markdown-Datei auswählen');
+    const importFile = new File(
+      ['# Imported Title\n\nImported body'],
+      'imported-entry.md',
+      {
+        type: 'text/markdown',
+      }
+    );
+
+    fireEvent.change(fileInput, {
+      target: { files: [importFile] },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Blöcke:/)).toBeInTheDocument();
+      expect(screen.getByText('2')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Importieren' }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Bestehender Inhalt wird ersetzt!')
+      ).toBeInTheDocument();
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Trotzdem importieren' })
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('mdx-renderer')).toHaveTextContent(
+        'Imported Title'
+      );
+      expect(screen.getByTestId('mdx-renderer')).toHaveTextContent(
+        'Imported body'
+      );
+    });
+  });
+
+  it('surfaces image placeholder warnings during markdown import', async () => {
+    render(<MarkdownEditor initialData={INITIAL_DATA} />);
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Markdown importieren' })
+    );
+
+    const fileInput = await screen.findByLabelText('Markdown-Datei auswählen');
+    const importFile = new File(
+      ['![Hero](https://example.com/hero.png)'],
+      'hero.mdx',
+      {
+        type: 'text/markdown',
+      }
+    );
+
+    fireEvent.change(fileInput, {
+      target: { files: [importFile] },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Hinweise \(1\)/)).toBeInTheDocument();
+      expect(screen.getByText(/Image "Hero"/)).toBeInTheDocument();
+      expect(screen.getByText(/Bilder:/)).toBeInTheDocument();
+      expect(screen.getAllByText('1').length).toBeGreaterThanOrEqual(2);
+    });
   });
 
   it('serializes the default form payload through onSuccess', async () => {

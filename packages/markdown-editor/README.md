@@ -9,6 +9,7 @@ This package now ships:
 - the standalone `serializeToMdx()` utility
 - the standalone `generateSlug()` utility from the shared metadata flow
 - the shared `MarkdownEditor` wrapper around EditorJS plus metadata form hooks
+- the portal-ref markdown import modal and markdown-to-EditorJS conversion flow
 - a live split-pane MDX preview with block-aware bidirectional scroll sync
 - the exported default `EditorForm` fallback for app-agnostic entry metadata
 - stylesheet exports and the shared EditorJS plugin dependency surface
@@ -38,6 +39,8 @@ Shared client wrapper around the reference EditorJS setup from
 - accepts `plugins` to subset the toolbar without changing the canonical order
 - restores mode-specific drafts from localStorage on mount
 - autosaves create/edit drafts to the reference storage keys while authors type
+- imports `.md`, `.mdx`, and `.markdown` files through the portal-ref modal flow
+- previews converted block counts, image placeholders, and import warnings
 - renders a live MDX preview through `@bubbles/markdown-renderer`
 - keeps editor and preview scroll positions aligned by shared block ids
 - renders a custom metadata form through `renderForm`, or falls back to `EditorForm`
@@ -56,6 +59,12 @@ Shared client wrapper around the reference EditorJS setup from
   plugins={['paragraph', 'header', 'list', 'image']}
 />
 ```
+
+The editor header includes the same import affordances as `portal-ref`:
+
+- drag a `.md`, `.mdx`, or `.markdown` file onto the dashed drop surface
+- or use the import button to open the modal file picker
+- review converted block counts and warnings before replacing the current entry
 
 ```tsx
 <MarkdownEditor

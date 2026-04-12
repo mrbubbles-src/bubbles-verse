@@ -68,7 +68,7 @@ export function PreviewPane({
   });
 
   return (
-    <Card className="min-h-[60dvh]">
+    <Card className="markdown-editor-preview-card min-h-[60dvh]">
       <CardHeader>
         <CardTitle>Live preview</CardTitle>
         <CardDescription>
@@ -78,7 +78,7 @@ export function PreviewPane({
       </CardHeader>
       <CardContent
         ref={previewScrollRef}
-        className="max-h-[60dvh] overflow-y-auto overscroll-contain"
+        className="markdown-editor-preview-scroll max-h-[60dvh] overflow-y-auto overscroll-contain"
         data-testid="markdown-editor-preview"
       >
         <div className="markdown-editor-preview-content">

@@ -1,5 +1,5 @@
 # generated: 2026-04-12
-# last_updated: 2026-04-12
+# last_updated: 2026-04-13
 # project: bubbles-verse
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-12
-last_updated: 2026-04-12
+last_updated: 2026-04-13
 project: bubbles-verse
 project_key: NOKEY
 tracking_system: file-system
@@ -70,7 +70,7 @@ development_status:
   4-3-metadata-derivation-and-generateslug: review
   4-4-draft-autosave-and-restore: review
   4-5-live-split-pane-mdx-preview-with-scroll-sync: review
-  4-6-import-from-markdown-modal-and-editor-css: ready-for-dev
+  4-6-import-from-markdown-modal-and-editor-css: review
   epic-4-retrospective: optional
 
   # ─── Epic 5: Coding Vault Migration ───────────────────────────────────────

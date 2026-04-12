@@ -18,6 +18,8 @@ export { default as DashboardSquare01Icon } from '@hugeicons/core-free-icons/Das
 export { default as Delete02Icon } from '@hugeicons/core-free-icons/Delete02Icon';
 export { default as DoorOpenIcon } from '@hugeicons/core-free-icons/DoorOpenIcon';
 export { default as FavouriteIcon } from '@hugeicons/core-free-icons/FavouriteIcon';
+export { default as File01Icon } from '@hugeicons/core-free-icons/File01Icon';
+export { default as FileDownIcon } from '@hugeicons/core-free-icons/FileDownIcon';
 export { default as Flag01Icon } from '@hugeicons/core-free-icons/Flag01Icon';
 export { default as FlashIcon } from '@hugeicons/core-free-icons/FlashIcon';
 export { default as Folder01Icon } from '@hugeicons/core-free-icons/Folder01Icon';
@@ -42,6 +44,7 @@ export { default as SunIcon } from '@hugeicons/core-free-icons/Sun01Icon';
 export { default as Target01Icon } from '@hugeicons/core-free-icons/Target01Icon';
 export { default as Tick02Icon } from '@hugeicons/core-free-icons/Tick02Icon';
 export { default as TriangleIcon } from '@hugeicons/core-free-icons/TriangleIcon';
+export { default as Upload01Icon } from '@hugeicons/core-free-icons/Upload01Icon';
 export { default as User02Icon } from '@hugeicons/core-free-icons/User02Icon';
 export { default as UserAdd01Icon } from '@hugeicons/core-free-icons/UserAdd01Icon';
 export { default as UserGroupIcon } from '@hugeicons/core-free-icons/UserGroupIcon';

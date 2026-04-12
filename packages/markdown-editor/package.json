@@ -31,7 +31,11 @@
     "editorjs-annotation": "^1.1.0",
     "editorjs-inline-hotkey": "^1.0.5",
     "editorjs-toggle-block": "^0.3.16",
-    "react": "19.2.5"
+    "mdast": "^3.0.0",
+    "react": "19.2.5",
+    "remark-gfm": "^4.0.1",
+    "remark-parse": "^11.0.0",
+    "unified": "^11.0.5"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",

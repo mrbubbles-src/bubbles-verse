@@ -30,3 +30,6 @@
 - Add Story 4.5 live split-pane preview parity with `to-be-integrated`,
   including runtime MDX preview rendering, block-aware bidirectional
   scroll sync, preview stylesheet updates, and regression coverage.
+- Add Story 4.6 portal-ref import parity, including the file-based markdown
+  import modal, markdown-to-EditorJS conversion, shared editor styling, and
+  import regression coverage.

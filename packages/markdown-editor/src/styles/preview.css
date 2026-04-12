@@ -3,8 +3,17 @@
  * Live preview + scroll-sync highlight styles.
  */
 
+.markdown-editor-preview-scroll {
+  scrollbar-gutter: stable both-edges;
+}
+
 .markdown-editor-preview-content {
   min-height: 100%;
+  padding-bottom: 0.5rem;
+}
+
+.markdown-editor-preview-content [data-block-id] {
+  scroll-margin-block: 1rem;
 }
 
 [data-block-id].highlight-block {
