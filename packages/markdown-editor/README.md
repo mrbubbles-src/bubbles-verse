@@ -29,6 +29,8 @@ implementation:
 - only expands allowlisted inline component shortcodes
 - rejects malformed shortcode JSON props and falls back to plain text
 - normalizes `<br>` tags to `<br />` in the final MDX output
+- optionally accepts `headingAnchorIdsByBlockId` so heading wrapper elements
+  expose stable hash targets for TOC links
 
 Serializer regression coverage lives in `tests/serializer/` with shared block
 fixtures in `tests/serializer/fixtures/blocks.ts`.
@@ -43,6 +45,25 @@ const mdx = serializeToMdx({
     },
   ],
 });
+```
+
+```ts
+const mdxWithAnchors = serializeToMdx(
+  {
+    blocks: [
+      {
+        id: 'intro-heading',
+        type: 'header',
+        data: { level: 2, text: 'Intro' },
+      },
+    ],
+  },
+  {
+    headingAnchorIdsByBlockId: {
+      'intro-heading': 'intro-heading-anchor',
+    },
+  }
+);
 ```
 
 ## Tests

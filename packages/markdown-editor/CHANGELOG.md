@@ -4,6 +4,8 @@
 
 - Initial package scaffold.
 - Add the standalone `serializeToMdx()` export for core EditorJS block handling.
+- Add the optional `headingAnchorIdsByBlockId` serializer option so heading
+  wrapper elements can expose stable anchor ids for TOC hash navigation.
 - Extract the reference serializer security helpers into
   `src/serializer/security.ts` and cover brace escaping, inline shortcode
   allowlisting, malformed prop fallback, and final `<br />` sanitization with

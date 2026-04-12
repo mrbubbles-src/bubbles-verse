@@ -40,6 +40,33 @@ describe('serializeToMdx', () => {
     expect(result).toContain('## Heading');
   });
 
+  it('adds heading anchor ids to wrapped header blocks when provided', () => {
+    const result = serializeToMdx(
+      {
+        blocks: [createHeaderBlock({ id: 'header-anchor-1', text: 'Intro' })],
+      },
+      {
+        headingAnchorIdsByBlockId: {
+          'header-anchor-1': 'intro-header-1',
+        },
+      }
+    );
+
+    expect(result).toContain('<div data-block-id="header-anchor-1"');
+    expect(result).toContain('id="intro-header-1"');
+    expect(result).toContain('className="topic-anchor-target"');
+    expect(result).toContain('## Intro');
+  });
+
+  it('keeps header wrapper compatibility when no anchor map is provided', () => {
+    const result = serializeToMdx({
+      blocks: [createHeaderBlock({ id: 'header-anchor-2', text: 'Quickstart' })],
+    });
+
+    expect(result).toContain('<div data-block-id="header-anchor-2">');
+    expect(result).not.toContain('className="topic-anchor-target"');
+  });
+
   it('serializes ordered lists with nested children', () => {
     const result = serializeToMdx({
       blocks: [createListBlock({ items: orderedListItems, style: 'ordered' })],
@@ -140,6 +167,34 @@ describe('serializeToMdx', () => {
     expect(result).toContain('<div data-block-id="toggle-child-1">');
     expect(result).toContain('Nested child');
     expect(result).toContain('### Nested heading');
+  });
+
+  it('forwards heading anchor ids through recursive toggle serialization', () => {
+    const result = serializeToMdx(
+      {
+        blocks: [
+          createToggleBlock({ id: 'toggle-anchor-1' }),
+          createHeaderBlock({
+            id: 'toggle-heading-anchor-1',
+            level: 3,
+            text: 'Nested anchor heading',
+          }),
+          createParagraphBlock({
+            id: 'toggle-anchor-child-1',
+            text: 'Nested body copy',
+          }),
+        ],
+      },
+      {
+        headingAnchorIdsByBlockId: {
+          'toggle-heading-anchor-1': 'nested-anchor-heading',
+        },
+      }
+    );
+
+    expect(result).toContain('id="nested-anchor-heading"');
+    expect(result).toContain('className="topic-anchor-target"');
+    expect(result).toContain('### Nested anchor heading');
   });
 
   it('serializes tables with padded GFM headings', () => {

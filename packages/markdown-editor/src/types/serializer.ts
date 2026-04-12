@@ -169,3 +169,13 @@ export type EditorBlock =
  * Accepts native EditorJS `OutputData` or a compatible `{ blocks }` object.
  */
 export type SerializeToMdxInput = OutputData | { blocks: EditorBlock[] };
+
+/**
+ * Optional serializer behavior flags that preserve the reference API surface.
+ *
+ * Provide a `blockId -> anchorId` map when heading wrapper elements should
+ * expose deterministic hash targets for table-of-contents links.
+ */
+export type SerializeOptions = {
+  headingAnchorIdsByBlockId?: Record<string, string>;
+};

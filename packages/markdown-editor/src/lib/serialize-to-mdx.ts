@@ -1,6 +1,7 @@
 import type {
   EditorBlock,
   EditorJsListItem,
+  SerializeOptions,
   SerializeToMdxInput,
 } from '../types/serializer';
 
@@ -30,10 +31,19 @@ function processTextForMdx(text: string): string {
  *
  * @param blockId - EditorJS block id used for preview scroll targeting.
  * @param content - Serialized MDX content for the block.
+ * @param headingAnchorId - Optional hash target id taken from the caller map.
  * @returns Wrapped block markup.
  */
-function wrapWithBlockId(blockId: string, content: string): string {
-  return `<div data-block-id="${blockId}">\n\n${content}\n\n</div>`;
+function wrapWithBlockId(
+  blockId: string,
+  content: string,
+  headingAnchorId?: string,
+): string {
+  const anchorIdAttribute = headingAnchorId
+    ? ` id="${headingAnchorId}" className="topic-anchor-target"`
+    : '';
+
+  return `<div data-block-id="${blockId}"${anchorIdAttribute}>\n\n${content}\n\n</div>`;
 }
 
 /**
@@ -43,9 +53,13 @@ function wrapWithBlockId(blockId: string, content: string): string {
  * React components or EditorJS runtime code.
  *
  * @param editorData - EditorJS output data with a `blocks` array.
+ * @param options - Optional serializer behavior such as heading anchor IDs.
  * @returns Serialized MDX string for storage or preview rendering.
  */
-export function serializeToMdx(editorData: SerializeToMdxInput): string {
+export function serializeToMdx(
+  editorData: SerializeToMdxInput,
+  options?: SerializeOptions,
+): string {
   if (!editorData?.blocks || !Array.isArray(editorData.blocks)) {
     return '';
   }
@@ -150,7 +164,7 @@ ${message}
         const itemsCount = data.items ?? 0;
         const toggleBlocks = blocks.slice(index + 1, index + 1 + itemsCount);
         const inner = toggleBlocks
-          .map((nestedBlock) => serializeToMdx({ blocks: [nestedBlock] }))
+          .map((nestedBlock) => serializeToMdx({ blocks: [nestedBlock] }, options))
           .join('\n\n');
 
         content = `<MarkdownToggle text="${text}">
@@ -244,7 +258,9 @@ ${inner}
       }
     }
 
-    result.push(wrapWithBlockId(blockId, content));
+    const headingAnchorId = options?.headingAnchorIdsByBlockId?.[blockId];
+
+    result.push(wrapWithBlockId(blockId, content, headingAnchorId));
   }
 
   return sanitizeSerializedMdx(result.join('\n\n'));

@@ -2,7 +2,7 @@
 story_id: '3.4'
 story_key: '3-4-headinganchoridsbybblockid-option'
 epic: 'Epic 3 — EditorJS → MDX Serializer'
-status: ready-for-dev
+status: review
 created: 2026-04-12
 ---
 
@@ -165,3 +165,66 @@ Add tests that prove parity with the designated reference implementation for:
 ## Dev Notes
 
 _To be filled in during implementation._
+
+## Tasks / Subtasks
+
+- [x] Task 1: Extend the serializer API with the typed heading-anchor option (AC: 1, 2)
+  - [x] Add the `SerializeOptions` type with `headingAnchorIdsByBlockId`
+  - [x] Export the option type from the package public API
+  - [x] Keep the option fully typed with no `any`
+
+- [x] Task 2: Port the reference heading-anchor wrapper behavior from `lms-ref` (AC: 1, 2)
+  - [x] Apply mapped anchor ids on wrapped serialized blocks using the reference `id` + `className="topic-anchor-target"` attributes
+  - [x] Preserve existing output when the option is omitted
+  - [x] Forward the option through recursive toggle serialization
+
+- [x] Task 3: Add regression coverage and update package-local docs (AC: 1, 2)
+  - [x] Add tests for header output with the option present
+  - [x] Add tests for compatibility when the option is absent
+  - [x] Add a recursive toggle test proving nested heading anchors still resolve
+  - [x] Update the package README and CHANGELOG for the new option
+  - [x] Run package and monorepo validation commands successfully
+
+## Dev Agent Record
+
+### Implementation Plan
+
+- Inspect `to-be-integrated/` first and only fall back if the heading-anchor implementation is missing there.
+- Match the inspected `lms-ref` behavior exactly by attaching the anchor metadata to the wrapper `<div data-block-id="...">`, not by inventing a new heading markup shape.
+- Keep anchor-map generation outside the serializer and only consume the provided `blockId -> anchorId` lookup in `serializeToMdx()`.
+
+### Debug Log
+
+- 2026-04-12: Loaded BMAD config, sprint status, and Story 3.4. Confirmed the first `ready-for-dev` story was `3-4-headinganchoridsbybblockid-option`.
+- 2026-04-12: Inspected `to-be-integrated/` first and confirmed it does not contain the heading-anchor serializer implementation required by this story.
+- 2026-04-12: Loaded `lms-ref/components/utility/convert-editor-js-to-mdx.tsx` and its unit tests, then verified the reference behavior adds `id` and `className="topic-anchor-target"` to the wrapper block container.
+- 2026-04-12: Added failing regression tests for anchored header wrappers, no-option compatibility, and recursive toggle propagation before implementing the serializer patch.
+- 2026-04-12: Extended the package serializer types/API, ported the reference wrapper behavior, updated package docs, and validated package + monorepo test/lint/typecheck commands.
+
+### Completion Notes
+
+- `serializeToMdx()` now accepts an optional, fully typed `headingAnchorIdsByBlockId` map and exports that option type through `@bubbles/markdown-editor`.
+- The serializer now matches the inspected `lms-ref` behavior by adding `id="..." className="topic-anchor-target"` to the wrapped block container when a mapped anchor id is provided.
+- Existing serializer output remains unchanged when the option is omitted, and recursive toggle serialization now forwards the same options so nested heading wrappers can receive anchor ids too.
+- Validation passed with `bun run --cwd packages/markdown-editor test`, `bun run --cwd packages/markdown-editor typecheck`, `bun run test`, `bun run lint`, and `bun run typecheck`.
+- `bun run test` still emits pre-existing `it-counts` warnings about `act(...)` and jsdom canvas support, but the suite exits successfully and required no changes for this story.
+
+### File List
+
+- `packages/markdown-editor/src/lib/serialize-to-mdx.ts`
+- `packages/markdown-editor/src/types/serializer.ts`
+- `packages/markdown-editor/src/index.ts`
+- `packages/markdown-editor/tests/serializer/serialize-to-mdx.test.ts`
+- `packages/markdown-editor/README.md`
+- `packages/markdown-editor/CHANGELOG.md`
+- `_bmad-output/implementation-artifacts/3-4-headinganchoridsbybblockid-option.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+
+## Change Log
+
+- 2026-04-12: Added the optional `headingAnchorIdsByBlockId` serializer API and exported its typed option surface from `@bubbles/markdown-editor`.
+- 2026-04-12: Ported the reference heading-anchor wrapper behavior from `lms-ref`, added regression tests for anchored headings and recursive toggle propagation, and updated the package docs.
+
+## Status
+
+review
