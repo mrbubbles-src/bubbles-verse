@@ -65,7 +65,7 @@ development_status:
 
   # ─── Epic 4: Content Authoring Editor ─────────────────────────────────────
   epic-4: backlog
-  4-1-editorjs-wrapper-with-configurable-plugin-subset: ready-for-dev
+  4-1-editorjs-wrapper-with-configurable-plugin-subset: review
   4-2-renderform-render-prop-and-default-editorform: ready-for-dev
   4-3-metadata-derivation-and-generateslug: ready-for-dev
   4-4-draft-autosave-and-restore: ready-for-dev

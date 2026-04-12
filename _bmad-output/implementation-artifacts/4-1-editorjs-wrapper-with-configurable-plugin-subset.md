@@ -2,7 +2,7 @@
 story_id: '4.1'
 story_key: '4-1-editorjs-wrapper-with-configurable-plugin-subset'
 epic: 'Epic 4 — Content Authoring Editor'
-status: ready-for-dev
+status: review
 created: 2026-04-12
 ---
 
@@ -162,14 +162,71 @@ Do not replace those values with a newly authored set in the story.
 
 ## Verification Checklist
 
-- [ ] Editor wrapper behavior matches the designated reference implementation
-- [ ] Plugin subset behavior matches the designated reference implementation
-- [ ] Initialization and cleanup behavior match the designated reference implementation
-- [ ] Plugin-specific configuration matches the designated reference implementation
-- [ ] No TypeScript errors (`any` stubs from Story 1.2 replaced with real types here)
+- [x] Editor wrapper behavior matches the designated reference implementation
+- [x] Plugin subset behavior matches the designated reference implementation
+- [x] Initialization and cleanup behavior match the designated reference implementation
+- [x] Plugin-specific configuration matches the designated reference implementation
+- [x] No TypeScript errors (`any` stubs from Story 1.2 replaced with real types here)
 
 ---
 
 ## Dev Notes
 
 _To be filled in during implementation._
+
+## Tasks / Subtasks
+
+- [x] Task 1: Port the reference EditorJS wrapper into `@bubbles/markdown-editor` with the shared lifecycle guard (AC: 1)
+  - [x] Add the shared `MarkdownEditor` component and content bootstrap helpers
+  - [x] Preserve the reference initialization and cleanup behavior that avoids double initialization in React StrictMode
+  - [x] Keep the reference tool configuration and plugin-specific settings intact
+
+- [x] Task 2: Add configurable plugin subsetting without changing the reference defaults (AC: 1, 2)
+  - [x] Define the canonical `PluginKey` surface with all 15 block types
+  - [x] Default to the full reference toolset when `plugins` is omitted
+  - [x] Filter active tools from the requested subset without reordering the reference toolbar
+
+- [x] Task 3: Add package-local coverage and documentation for the wrapper surface (AC: 1, 2)
+  - [x] Add editor wrapper tests for default tools, subsets, and the shared change bridge
+  - [x] Add cleanup-guard regression coverage
+  - [x] Update the package README and CHANGELOG for the new wrapper export
+
+## Dev Agent Record
+
+### Debug Log
+
+- 2026-04-12: Loaded `bmad-dev-story` workflow, BMAD config, sprint status, Story 4.1, Story 4.2, and the `to-be-integrated/` plus `portal-ref` editor wrappers to isolate the exact Story 4.1 scope.
+- 2026-04-12: Verified the designated reference implementation exists in `to-be-integrated/md-editor/markdown-editor/editor/editor.tsx` and confirmed `portal-ref` carries the same lifecycle and tool-configuration behavior as fallback.
+- 2026-04-12: Added package-local wrapper helpers and tests first, then shifted the browser-only EditorJS/plugin imports behind lazy runtime loading so the root package export stays Node-safe for serializer consumers.
+- 2026-04-12: Validation passed with `bun run --cwd packages/markdown-editor test`, `bun run --cwd packages/markdown-editor typecheck`, `bun run --cwd packages/markdown-editor lint src tests --max-warnings=0`, `bun run typecheck`, `bun run lint`, and `bun run test`.
+
+### Completion Notes
+
+- Added the shared `MarkdownEditor` export, typed editor content/image-upload props, canonical 15-plugin key registry, and reference-aligned tool configuration for `@bubbles/markdown-editor`.
+- Preserved the reference lifecycle guard while moving EditorJS and plugin imports behind runtime loading, which keeps serializer-only package consumers safe in non-browser contexts without changing editor behavior.
+- Added regression coverage for default tool registration, plugin subset ordering, image uploader wiring, cleanup guard behavior, and content bootstrap normalization.
+- Updated the package README and CHANGELOG to document the new wrapper surface and testing entry points.
+
+## File List
+
+- _bmad-output/implementation-artifacts/4-1-editorjs-wrapper-with-configurable-plugin-subset.md
+- _bmad-output/implementation-artifacts/sprint-status.yaml
+- packages/markdown-editor/CHANGELOG.md
+- packages/markdown-editor/README.md
+- packages/markdown-editor/src/components/markdown-editor.tsx
+- packages/markdown-editor/src/index.ts
+- packages/markdown-editor/src/lib/editor-content.ts
+- packages/markdown-editor/src/lib/editor-tools.ts
+- packages/markdown-editor/src/types/editor.ts
+- packages/markdown-editor/src/types/editorjs-plugins.d.ts
+- packages/markdown-editor/tests/editor/markdown-editor.test.tsx
+- packages/markdown-editor/vitest.config.ts
+
+## Change Log
+
+- 2026-04-12: Development started.
+- 2026-04-12: Added the shared `MarkdownEditor` wrapper, plugin subset registry, runtime-safe EditorJS loading, regression coverage, and package-local documentation updates.
+
+## Status
+
+review

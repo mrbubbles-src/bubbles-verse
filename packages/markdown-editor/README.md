@@ -4,17 +4,45 @@ Shared markdown editor package for bubbles-verse apps.
 
 ## Current Scope
 
-This package now ships the standalone `serializeToMdx()` utility plus the
-stylesheet exports and EditorJS plugin dependency surface. Higher-level editor
-components land in later stories.
+This package now ships:
+
+- the standalone `serializeToMdx()` utility
+- the shared `MarkdownEditor` wrapper around EditorJS
+- stylesheet exports and the shared EditorJS plugin dependency surface
 
 ## Available Imports
 
 ```ts
-import { serializeToMdx } from '@bubbles/markdown-editor';
+import {
+  DEFAULT_PLUGIN_KEYS,
+  MarkdownEditor,
+  serializeToMdx,
+} from '@bubbles/markdown-editor';
 
 import '@bubbles/markdown-editor/styles/editor';
 import '@bubbles/markdown-editor/styles/preview';
+```
+
+## `MarkdownEditor`
+
+Shared client wrapper around the reference EditorJS setup from
+`to-be-integrated/`.
+
+- keeps the reference StrictMode cleanup guard to avoid double initialization
+- enables the full 15-tool surface by default
+- accepts `plugins` to subset the toolbar without changing the canonical order
+- forwards image uploads through an app-provided `imageUploader`
+- forwards saved editor state through `onChange`
+
+```tsx
+<MarkdownEditor />
+```
+
+```tsx
+<MarkdownEditor
+  imageUploader={uploadImage}
+  plugins={['paragraph', 'header', 'list', 'image']}
+/>
 ```
 
 ## `serializeToMdx`
