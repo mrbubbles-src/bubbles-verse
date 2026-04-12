@@ -4,6 +4,8 @@ Knowledge / CMS-style application: **Next.js 16**, **MDX**, **Editor.js**, **Dri
 
 **Status:** Active development — verify `drizzle/` and routes in source when docs and code disagree.
 
+Current baseline in this workspace is validated against **Next.js 16.2.3**.
+
 ## Quick start (monorepo)
 
 ```bash
