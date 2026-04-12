@@ -2,7 +2,7 @@
 story_id: '4.5'
 story_key: '4-5-live-split-pane-mdx-preview-with-scroll-sync'
 epic: 'Epic 4 — Content Authoring Editor'
-status: ready-for-dev
+status: review
 created: 2026-04-12
 ---
 
@@ -187,3 +187,55 @@ Mirror the reference package boundary for any preview or scroll-sync hooks and h
 ## Dev Notes
 
 _To be filled in during implementation._
+
+## Tasks / Subtasks
+
+- [x] Port the reference preview pane and internal scroll-sync hooks into the package internals
+- [x] Integrate the split-pane editor/preview layout into `<MarkdownEditor>` using the shared serializer and `<MdxRenderer>`
+- [x] Add regression coverage for live preview rendering and bidirectional block-aware scroll sync
+- [x] Update package-local preview styles, README, and CHANGELOG for the new preview surface
+
+## Dev Agent Record
+
+### Implementation Plan
+
+- Port the reference `useScrollSync` and `usePreviewScroll` hooks as internal package modules first.
+- Add a package-internal preview component that serializes the current EditorJS output and renders it through `@bubbles/markdown-renderer`.
+- Recreate the reference split-pane layout inside `MarkdownEditor` without expanding the public package API.
+- Add package tests for preview rendering and bidirectional scroll alignment before final verification.
+
+### Debug Log
+
+- 2026-04-12: Read BMAD config, sprint status, and the full story file.
+- 2026-04-12: Verified the primary reference implementation in `to-be-integrated/`; fallback `portal-ref` was not needed.
+- 2026-04-12: Ported the reference scroll-sync hooks and added an internal preview pane powered by `serializeToMdx()` plus `<MdxRenderer>`.
+- 2026-04-12: Integrated the split-pane layout into `packages/markdown-editor` and kept the preview/scroll-sync modules internal.
+- 2026-04-12: Added package tests for preview rendering and bidirectional scroll sync; verified package and monorepo test/typecheck/lint runs.
+
+### Completion Notes
+
+- Kept the reference scroll-sync algorithm intact by porting block-anchor matching, percentage fallback, and loop-prevention guards into internal hooks.
+- Added a package-internal `PreviewPane` that renders live MDX from the current EditorJS output through `@bubbles/markdown-renderer`.
+- Restored the reference split-pane experience in `MarkdownEditor`, including editor-to-preview and preview-to-editor scroll sync.
+- Added regression coverage for preview rendering and scroll synchronization, then verified both package-local and monorepo validation runs.
+
+## File List
+
+- `packages/markdown-editor/src/components/markdown-editor.tsx`
+- `packages/markdown-editor/src/components/preview-pane.tsx`
+- `packages/markdown-editor/src/hooks/use-scroll-sync.ts`
+- `packages/markdown-editor/src/hooks/use-preview-scroll.ts`
+- `packages/markdown-editor/src/styles/preview.css`
+- `packages/markdown-editor/src/types/external-modules.d.ts`
+- `packages/markdown-editor/tests/editor/markdown-editor-form.test.tsx`
+- `packages/markdown-editor/tests/editor/use-scroll-sync.test.tsx`
+- `packages/markdown-editor/README.md`
+- `packages/markdown-editor/CHANGELOG.md`
+
+## Change Log
+
+- 2026-04-12: Implemented Story 4.5 live split-pane preview parity in `@bubbles/markdown-editor`.
+
+## Status
+
+review

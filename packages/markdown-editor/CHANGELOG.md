@@ -27,3 +27,6 @@
 - Add Story 4.4 draft autosave/restore parity with `to-be-integrated`,
   including mode-specific localStorage keys, mount-time draft restoration,
   and post-submit draft clearing for the shared package form surface.
+- Add Story 4.5 live split-pane preview parity with `to-be-integrated`,
+  including runtime MDX preview rendering, block-aware bidirectional
+  scroll sync, preview stylesheet updates, and regression coverage.

@@ -5,7 +5,16 @@ import type { API, OutputData } from '@editorjs/editorjs';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@bubbles/ui/shadcn/card';
+
 import { EditorForm } from './editor-form';
+import { PreviewPane } from './preview-pane';
 import {
   normalizeInitialEditorData,
   normalizeInitialFormData,
@@ -46,12 +55,14 @@ export function MarkdownEditor({
 }: MarkdownEditorProps) {
   const editorRef = useRef<EditorJS | null>(null);
   const holderRef = useRef<HTMLDivElement | null>(null);
+  const editorScrollRef = useRef<HTMLDivElement | null>(null);
   const cleanupHasRunOnceRef = useRef(false);
   const onChangeRef = useRef(onChange);
   const onReadyRef = useRef(onReady);
   const editorOutputRef = useRef<() => Promise<OutputData | undefined>>(
     async () => undefined
   );
+  const previousBlockCountRef = useRef(0);
   const [resolvedInitialData, setResolvedInitialData] = useState(initialData);
   const [draftResolved, setDraftResolved] = useState(false);
   const [editorReady, setEditorReady] = useState(false);
@@ -103,6 +114,7 @@ export function MarkdownEditor({
 
   useEffect(() => {
     setEditorContent(normalizedInitialEditorData);
+    previousBlockCountRef.current = normalizedInitialEditorData.blocks.length;
 
     if (!editorRef.current) {
       setEditorReady(false);
@@ -167,6 +179,7 @@ export function MarkdownEditor({
         defaultBlock: resolveDefaultBlock(activePluginKeys),
         holder: holderRef.current,
         onReady: () => {
+          previousBlockCountRef.current = normalizedInitialEditorData.blocks.length;
           setEditorReady(true);
           onReadyRef.current?.(editor);
         },
@@ -176,6 +189,17 @@ export function MarkdownEditor({
 
             setEditorContent(output as OutputData);
             onChangeRef.current?.(output as OutputData);
+
+            const currentBlockCount = output.blocks?.length ?? 0;
+            if (
+              currentBlockCount > previousBlockCountRef.current &&
+              editorScrollRef.current
+            ) {
+              editorScrollRef.current.scrollTop =
+                editorScrollRef.current.scrollHeight;
+            }
+
+            previousBlockCountRef.current = currentBlockCount;
           } catch {
             /* Save failures are non-fatal during typing. */
           }
@@ -246,28 +270,54 @@ export function MarkdownEditor({
   };
 
   return (
-    <section className="flex flex-col gap-4">
-      <div ref={holderRef} className={className} data-testid="markdown-editor" />
+    <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+      <Card className="min-h-[60dvh]">
+        <CardHeader>
+          <CardTitle>Editor</CardTitle>
+          <CardDescription>
+            Compose content with the shared EditorJS toolset.
+          </CardDescription>
+        </CardHeader>
+        <CardContent
+          ref={editorScrollRef}
+          className="max-h-[60dvh] overflow-y-auto overscroll-contain"
+        >
+          <div
+            ref={holderRef}
+            className={className}
+            data-testid="markdown-editor"
+          />
+        </CardContent>
+      </Card>
+      <PreviewPane
+        editorContent={editorContent}
+        editorHolderRef={holderRef}
+        editorScrollRef={editorScrollRef}
+      />
       {readOnly || !draftResolved ? null : renderForm ? (
-        // The render prop is the public API for custom forms; invoking it here is intentional.
-        // eslint-disable-next-line react-hooks/refs
-        renderForm({
-          editorOutput,
-          editorContent,
-          editorReady,
-          initialData: normalizedInitialFormData,
-          isEditMode,
-        })
+        <div className="xl:col-span-2">
+          {/* The render prop is the public API for custom forms; invoking it here is intentional. */}
+          {/* eslint-disable-next-line react-hooks/refs */}
+          {renderForm({
+            editorOutput,
+            editorContent,
+            editorReady,
+            initialData: normalizedInitialFormData,
+            isEditMode,
+          })}
+        </div>
       ) : (
-        <EditorForm
-          key={defaultFormKey}
-          editorOutput={editorOutput}
-          editorContent={editorContent}
-          editorReady={editorReady}
-          initialData={normalizedInitialFormData}
-          isEditMode={isEditMode}
-          onSuccess={onSuccess}
-        />
+        <div className="xl:col-span-2">
+          <EditorForm
+            key={defaultFormKey}
+            editorOutput={editorOutput}
+            editorContent={editorContent}
+            editorReady={editorReady}
+            initialData={normalizedInitialFormData}
+            isEditMode={isEditMode}
+            onSuccess={onSuccess}
+          />
+        </div>
       )}
     </section>
   );

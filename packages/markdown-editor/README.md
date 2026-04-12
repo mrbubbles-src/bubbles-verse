@@ -9,6 +9,7 @@ This package now ships:
 - the standalone `serializeToMdx()` utility
 - the standalone `generateSlug()` utility from the shared metadata flow
 - the shared `MarkdownEditor` wrapper around EditorJS plus metadata form hooks
+- a live split-pane MDX preview with block-aware bidirectional scroll sync
 - the exported default `EditorForm` fallback for app-agnostic entry metadata
 - stylesheet exports and the shared EditorJS plugin dependency surface
 
@@ -37,6 +38,8 @@ Shared client wrapper around the reference EditorJS setup from
 - accepts `plugins` to subset the toolbar without changing the canonical order
 - restores mode-specific drafts from localStorage on mount
 - autosaves create/edit drafts to the reference storage keys while authors type
+- renders a live MDX preview through `@bubbles/markdown-renderer`
+- keeps editor and preview scroll positions aligned by shared block ids
 - renders a custom metadata form through `renderForm`, or falls back to `EditorForm`
 - forwards image uploads through an app-provided `imageUploader`
 - forwards saved editor state through `onChange`

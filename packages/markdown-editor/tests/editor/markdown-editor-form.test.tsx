@@ -12,6 +12,16 @@ import type {
   MarkdownEditorSubmitData,
 } from '../../src/types/editor';
 
+const mdxRendererMock = vi.fn((props: { content: string }) => (
+  <div data-testid="mdx-renderer">{props.content}</div>
+));
+
+vi.mock('@bubbles/markdown-renderer', () => {
+  return {
+    MdxRenderer: (props: { content: string }) => mdxRendererMock(props),
+  };
+});
+
 const INITIAL_OUTPUT: OutputData = {
   blocks: [
     {
@@ -170,6 +180,25 @@ describe('MarkdownEditor form surface', () => {
     expect(screen.getByLabelText('Tags')).toBeInTheDocument();
     expect(screen.getByLabelText('Status')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument();
+  });
+
+  it('renders the live split-pane preview from the current editor content', async () => {
+    render(<MarkdownEditor initialData={INITIAL_DATA} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('markdown-editor-preview')).toBeInTheDocument();
+      expect(screen.getByTestId('mdx-renderer')).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId('mdx-renderer')).toHaveTextContent(
+      '<div data-block-id="intro-heading">'
+    );
+    expect(screen.getByTestId('mdx-renderer')).toHaveTextContent(
+      'Story Driven Editor'
+    );
+    expect(screen.getByTestId('mdx-renderer')).toHaveTextContent(
+      '<div data-block-id="intro-body">'
+    );
   });
 
   it('serializes the default form payload through onSuccess', async () => {

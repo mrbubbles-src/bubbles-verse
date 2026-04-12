@@ -1,4 +1,22 @@
 /* @bubbles/markdown-editor — preview styles
  * Import: import '@bubbles/markdown-editor/styles/preview'
- * Populated in Epic 4 (Story 4.6)
+ * Live preview + scroll-sync highlight styles.
  */
+
+.markdown-editor-preview-content {
+  min-height: 100%;
+}
+
+[data-block-id].highlight-block {
+  animation: markdown-editor-block-highlight 1.5s ease-out;
+}
+
+@keyframes markdown-editor-block-highlight {
+  0% {
+    background-color: color-mix(in srgb, var(--primary) 20%, transparent);
+  }
+
+  100% {
+    background-color: transparent;
+  }
+}
