@@ -2,7 +2,7 @@
 story_id: '2.1'
 story_key: '2-1-default-mdx-block-components-markdown'
 epic: 'Epic 2 — MDX Renderer & Default Components'
-status: ready-for-dev
+status: review
 created: 2026-04-12
 ---
 
@@ -185,3 +185,67 @@ Do not add libraries purely because they seem convenient if the reference implem
 ## Dev Notes
 
 _To be filled in during implementation._
+
+## Tasks / Subtasks
+
+- [x] Port the reference `Modules*` renderer components from `to-be-integrated/lms-mdrender` into `packages/markdown-renderer` as `Markdown*` components.
+- [x] Preserve the reference MDX component registry behavior via a typed `defaultComponents` export and `useMDXComponents()`.
+- [x] Add the required package dependencies, image asset, and internal helper/types needed by the extracted components.
+- [x] Add package tests for the default registry, link behavior, and checklist rendering.
+- [x] Update package-local README and CHANGELOG entries for the new renderer surface.
+- [x] Verify `bun run typecheck` from the monorepo root and package-level `test` / `lint`.
+
+## Dev Agent Record
+
+### Debug Log
+
+- `bun install`
+- `cd packages/markdown-renderer && bun run typecheck`
+- `cd packages/markdown-renderer && bun run test`
+- `cd packages/markdown-renderer && bun run lint .`
+- `bun run typecheck`
+
+### Completion Notes
+
+- Ported the reference alert, checklist, code block, embed, image, link, and toggle components into `@bubbles/markdown-renderer`.
+- Added a typed `defaultComponents` registry with the reference HTML element styling and `Markdown*` MDX component mappings.
+- Added package-local Vitest coverage for the exported registry plus the link and checklist behaviors.
+- Kept the extraction aligned with the `to-be-integrated/lms-mdrender` behavior, adapting only monorepo import paths and the `Modules*` to `Markdown*` rename.
+
+## File List
+
+- `bun.lock`
+- `_bmad-output/implementation-artifacts/2-1-default-mdx-block-components-markdown.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `packages/markdown-renderer/CHANGELOG.md`
+- `packages/markdown-renderer/README.md`
+- `packages/markdown-renderer/package.json`
+- `packages/markdown-renderer/src/index.ts`
+- `packages/markdown-renderer/src/assets/rocket-icon.png`
+- `packages/markdown-renderer/src/components/markdown-alerts.tsx`
+- `packages/markdown-renderer/src/components/markdown-checklist.tsx`
+- `packages/markdown-renderer/src/components/markdown-code/copy-code.tsx`
+- `packages/markdown-renderer/src/components/markdown-code/markdown-code-block.tsx`
+- `packages/markdown-renderer/src/components/markdown-embed.tsx`
+- `packages/markdown-renderer/src/components/markdown-image/markdown-cld-image.tsx`
+- `packages/markdown-renderer/src/components/markdown-image/markdown-image.tsx`
+- `packages/markdown-renderer/src/components/markdown-link.tsx`
+- `packages/markdown-renderer/src/components/markdown-toggle.tsx`
+- `packages/markdown-renderer/src/default-components.tsx`
+- `packages/markdown-renderer/src/lib/utils.tsx`
+- `packages/markdown-renderer/src/types/assets.d.ts`
+- `packages/markdown-renderer/src/types/checklist.ts`
+- `packages/markdown-renderer/src/types/mdx-components.ts`
+- `packages/markdown-renderer/vitest.config.ts`
+- `packages/markdown-renderer/vitest.setup.ts`
+- `packages/markdown-renderer/__tests__/default-components.test.tsx`
+- `packages/markdown-renderer/__tests__/markdown-checklist.test.tsx`
+- `packages/markdown-renderer/__tests__/markdown-link.test.tsx`
+
+## Change Log
+
+- 2026-04-12: Ported the default `Markdown*` MDX block component set, exported the typed `defaultComponents` registry, and added package verification tests.
+
+## Status
+
+review
