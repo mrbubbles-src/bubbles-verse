@@ -21,6 +21,14 @@ import '@bubbles/markdown-editor/styles/preview';
 Converts EditorJS `OutputData` into the MDX dialect consumed by
 `@bubbles/markdown-renderer`.
 
+The serializer preserves the current security boundary from the reference
+implementation:
+
+- escapes `{` and `}` before MDX serialization
+- only expands allowlisted inline component shortcodes
+- rejects malformed shortcode JSON props and falls back to plain text
+- normalizes `<br>` tags to `<br />` in the final MDX output
+
 ```ts
 const mdx = serializeToMdx({
   blocks: [

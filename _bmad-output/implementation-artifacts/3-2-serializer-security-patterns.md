@@ -2,7 +2,7 @@
 story_id: '3.2'
 story_key: '3-2-serializer-security-patterns'
 epic: 'Epic 3 — EditorJS → MDX Serializer'
-status: ready-for-dev
+status: review
 created: 2026-04-12
 ---
 
@@ -203,3 +203,58 @@ The designated reference implementation is the source of truth for where these p
 ## Dev Notes
 
 _To be filled in during implementation._
+
+## Tasks / Subtasks
+
+- [x] Task 1: Port the reference serializer security helpers into a dedicated module (AC: 1, 2, 3, 4)
+  - [x] Add `packages/markdown-editor/src/serializer/security.ts`
+  - [x] Port `escapeMdxBraces()` from the designated reference implementation
+  - [x] Port the default MDX component allowlist and inline component parsing behavior from the designated reference implementation
+  - [x] Port the final `<br>` to `<br />` sanitization pass from the designated reference implementation
+
+- [x] Task 2: Integrate the ported security helpers into `serializeToMdx()` without changing reference behavior (AC: 1, 2, 3, 4)
+  - [x] Apply the shared escaping helper at the same serializer stages as the designated reference implementation
+  - [x] Apply inline component parsing via the dedicated security helper in paragraph handling
+  - [x] Apply the post-processing sanitization helper as the final serializer pass
+
+- [x] Task 3: Add regression coverage and update package-local docs for the security boundary (AC: 1, 2, 3, 4)
+  - [x] Add serializer tests covering brace escaping, allowlist enforcement, invalid shortcode fallback, and `<br>` sanitization
+  - [x] Update the package README with the serializer security guarantees
+  - [x] Update the package CHANGELOG with the security-helper extraction
+
+## Dev Agent Record
+
+### Debug Log
+
+- 2026-04-12: Loaded `bmad-dev-story` workflow, BMAD config, sprint status, Story 3.2, and Story 3.1 to confirm the next `ready-for-dev` story and reuse prior serializer context.
+- 2026-04-12: Verified the designated reference security behavior exists in `to-be-integrated/md-editor/markdown-editor/editor/convert-editor-js-to-mdx.tsx` with matching fallback behavior in `portal-ref`.
+- 2026-04-12: Added `packages/markdown-editor/__tests__/serializer-security.test.ts` first; initial `bun run --cwd packages/markdown-editor test` failed because `src/serializer/security.ts` did not exist yet, confirming the red phase.
+- 2026-04-12: Ported the reference brace escaping, allowlisted inline shortcode parsing, and final `<br />` sanitization into `packages/markdown-editor/src/serializer/security.ts`, then rewired `serializeToMdx()` and shared helpers to consume that module.
+- 2026-04-12: Validation passed with `bun run --cwd packages/markdown-editor test`, `bun run --cwd packages/markdown-editor typecheck`, `bun run typecheck`, and `bun run lint`.
+
+### Completion Notes
+
+- Extracted the serializer security boundary into `packages/markdown-editor/src/serializer/security.ts` so the reference helpers now live in one dedicated module instead of being embedded inside `serialize-to-mdx.ts`.
+- `serializeToMdx()` still applies the exact reference stages: brace escaping before text serialization, allowlisted inline shortcode parsing only for paragraph blocks, and a final `<br>` to `<br />` sanitization pass over the joined MDX output.
+- Added regression coverage for brace escaping, allowlist enforcement, malformed JSON shortcode fallback, and final `<br />` normalization, then documented those guarantees in the package README and CHANGELOG.
+- Validation: `bun run --cwd packages/markdown-editor test`, `bun run --cwd packages/markdown-editor typecheck`, `bun run typecheck`, and `bun run lint`.
+
+### File List
+
+- _bmad-output/implementation-artifacts/3-2-serializer-security-patterns.md
+- _bmad-output/implementation-artifacts/sprint-status.yaml
+- packages/markdown-editor/CHANGELOG.md
+- packages/markdown-editor/README.md
+- packages/markdown-editor/__tests__/serializer-security.test.ts
+- packages/markdown-editor/src/lib/serialize-to-mdx.ts
+- packages/markdown-editor/src/lib/serializer-utils.ts
+- packages/markdown-editor/src/serializer/security.ts
+
+## Change Log
+
+- 2026-04-12: Development started.
+- 2026-04-12: Extracted serializer security helpers into `src/serializer/security.ts`, added regression coverage for the security boundary, and documented the serializer guarantees.
+
+## Status
+
+review

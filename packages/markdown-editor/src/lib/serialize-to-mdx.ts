@@ -5,13 +5,15 @@ import type {
 } from '../types/serializer';
 
 import {
-  escapeMdxBraces,
   normalizeAlertMessage,
   renderListItems,
   replaceLinksWithMarkdownLinks,
 } from './serializer-utils';
-
-const ALLOWED_INLINE_COMPONENTS = new Set<string>(['FormBeispiel']);
+import {
+  escapeMdxBraces,
+  sanitizeSerializedMdx,
+  tryParseInlineComponent,
+} from '../serializer/security';
 
 /**
  * Escape user text first, then swap inline anchors for `MarkdownLink`.
@@ -21,53 +23,6 @@ const ALLOWED_INLINE_COMPONENTS = new Set<string>(['FormBeispiel']);
  */
 function processTextForMdx(text: string): string {
   return replaceLinksWithMarkdownLinks(escapeMdxBraces(text));
-}
-
-/**
- * Parse a safe inline component shortcode from paragraph content.
- *
- * @param text - Paragraph text to inspect.
- * @returns MDX component markup when the shortcode is allowed.
- */
-function tryParseInlineComponent(text: string): string | null {
-  if (!text) {
-    return null;
-  }
-
-  const trimmed = text.trim();
-  const shortcodeMatch = trimmed.match(
-    /^\[\[(?<name>[A-Za-z_][A-Za-z0-9_]*)\s*(?<json>\{[\s\S]*\})?\]\]$/,
-  );
-
-  if (shortcodeMatch?.groups?.name) {
-    const { name } = shortcodeMatch.groups;
-
-    if (!ALLOWED_INLINE_COMPONENTS.has(name)) {
-      return null;
-    }
-
-    const jsonProps = shortcodeMatch.groups.json?.trim();
-
-    if (!jsonProps) {
-      return `<${name} />`;
-    }
-
-    try {
-      const parsedProps = JSON.parse(jsonProps);
-      return `<${name} {...${JSON.stringify(parsedProps)}} />`;
-    } catch {
-      return null;
-    }
-  }
-
-  const jsxMatch = trimmed.match(/^<(?<name>[A-Za-z_][A-Za-z0-9_]*)\s*\/>$/);
-
-  if (jsxMatch?.groups?.name) {
-    const { name } = jsxMatch.groups;
-    return ALLOWED_INLINE_COMPONENTS.has(name) ? `<${name} />` : null;
-  }
-
-  return null;
 }
 
 /**
@@ -292,5 +247,5 @@ ${inner}
     result.push(wrapWithBlockId(blockId, content));
   }
 
-  return result.join('\n\n').replace(/<br\b([^>]*)>/gi, '<br />');
+  return sanitizeSerializedMdx(result.join('\n\n'));
 }

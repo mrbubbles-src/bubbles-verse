@@ -1,14 +1,7 @@
 import type { EditorJsListItem } from '../types/serializer';
+import { escapeMdxBraces } from '../serializer/security';
 
-/**
- * Escape curly braces so MDX does not interpret user text as expressions.
- *
- * @param text - Raw user-authored text.
- * @returns Text with braces converted to HTML entities.
- */
-export function escapeMdxBraces(text: string): string {
-  return text.replace(/\{/g, '&#123;').replace(/\}/g, '&#125;');
-}
+export { escapeMdxBraces } from '../serializer/security';
 
 /**
  * Replace serialized anchor tags with the shared markdown link component.
