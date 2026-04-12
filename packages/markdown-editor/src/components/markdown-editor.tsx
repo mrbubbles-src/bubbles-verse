@@ -3,9 +3,14 @@
 import type EditorJS from '@editorjs/editorjs';
 import type { API, OutputData } from '@editorjs/editorjs';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { normalizeInitialEditorData, shouldSkipInitialCleanup } from '../lib/editor-content';
+import { EditorForm } from './editor-form';
+import {
+  normalizeInitialEditorData,
+  normalizeInitialFormData,
+  shouldSkipInitialCleanup,
+} from '../lib/editor-content';
 import {
   buildEditorTools,
   loadEditorToolRegistry,
@@ -28,17 +33,44 @@ export function MarkdownEditor({
   className,
   imageUploader,
   initialData,
+  isEditMode = false,
   onChange,
   onReady,
+  onSuccess,
   placeholder = 'Schreibe deinen Inhalt hier...',
   plugins,
   readOnly = false,
+  renderForm,
 }: MarkdownEditorProps) {
   const editorRef = useRef<EditorJS | null>(null);
   const holderRef = useRef<HTMLDivElement | null>(null);
   const cleanupHasRunOnceRef = useRef(false);
   const onChangeRef = useRef(onChange);
   const onReadyRef = useRef(onReady);
+  const [editorReady, setEditorReady] = useState(false);
+  const normalizedInitialEditorData = useMemo(
+    () => normalizeInitialEditorData(initialData),
+    [initialData]
+  );
+  const normalizedInitialFormData = useMemo(
+    () => normalizeInitialFormData(initialData),
+    [initialData]
+  );
+  const defaultFormKey = useMemo(
+    () =>
+      JSON.stringify({
+        blockCount: normalizedInitialEditorData.blocks.length,
+        description: normalizedInitialFormData?.description ?? '',
+        slug: normalizedInitialFormData?.slug ?? '',
+        status: normalizedInitialFormData?.status ?? 'unpublished',
+        tags: normalizedInitialFormData?.tags ?? [],
+        title: normalizedInitialFormData?.title ?? '',
+      }),
+    [normalizedInitialEditorData.blocks.length, normalizedInitialFormData]
+  );
+  const [editorContent, setEditorContent] = useState<OutputData | null>(
+    normalizedInitialEditorData
+  );
 
   const activePluginKeys = useMemo(() => resolvePluginKeys(plugins), [plugins]);
   const activePluginSignature = useMemo(
@@ -53,6 +85,11 @@ export function MarkdownEditor({
   useEffect(() => {
     onReadyRef.current = onReady;
   }, [onReady]);
+
+  useEffect(() => {
+    setEditorContent(normalizedInitialEditorData);
+    setEditorReady(false);
+  }, [normalizedInitialEditorData]);
 
   useEffect(() => {
     let cancelled = false;
@@ -82,12 +119,14 @@ export function MarkdownEditor({
         defaultBlock: resolveDefaultBlock(activePluginKeys),
         holder: holderRef.current,
         onReady: () => {
+          setEditorReady(true);
           onReadyRef.current?.(editor);
         },
         async onChange(api: API) {
           try {
             const output = await api.saver.save();
 
+            setEditorContent(output as OutputData);
             onChangeRef.current?.(output as OutputData);
           } catch {
             /* Save failures are non-fatal during typing. */
@@ -115,12 +154,14 @@ export function MarkdownEditor({
 
       if (!editorInstance?.isReady) {
         editorRef.current = null;
+        setEditorReady(false);
         return;
       }
 
       void editorInstance.isReady
         .then(() => {
           editorInstance.destroy();
+          setEditorReady(false);
 
           if (editorRef.current === editorInstance) {
             editorRef.current = null;
@@ -138,5 +179,40 @@ export function MarkdownEditor({
     readOnly,
   ]);
 
-  return <div ref={holderRef} className={className} data-testid="markdown-editor" />;
+  const editorOutput = async (): Promise<OutputData | undefined> => {
+    if (!editorRef.current || typeof editorRef.current.save !== 'function') {
+      return editorContent ?? undefined;
+    }
+
+    try {
+      return await editorRef.current.save();
+    } catch {
+      return editorContent ?? undefined;
+    }
+  };
+
+  return (
+    <section className="flex flex-col gap-4">
+      <div ref={holderRef} className={className} data-testid="markdown-editor" />
+      {readOnly ? null : renderForm ? (
+        renderForm({
+          editorOutput,
+          editorContent,
+          editorReady,
+          initialData: normalizedInitialFormData,
+          isEditMode,
+        })
+      ) : (
+        <EditorForm
+          key={defaultFormKey}
+          editorOutput={editorOutput}
+          editorContent={editorContent}
+          editorReady={editorReady}
+          initialData={normalizedInitialFormData}
+          isEditMode={isEditMode}
+          onSuccess={onSuccess}
+        />
+      )}
+    </section>
+  );
 }

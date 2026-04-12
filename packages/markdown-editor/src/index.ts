@@ -1,3 +1,4 @@
+export { EditorForm } from './components/editor-form';
 export { MarkdownEditor } from './components/markdown-editor';
 export { serializeToMdx } from './lib/serialize-to-mdx';
 export { DEFAULT_PLUGIN_KEYS } from './lib/editor-tools';
@@ -8,6 +9,10 @@ export type {
   SerializeToMdxInput,
 } from './types/serializer';
 export type {
+  EditorFormProps,
+  EditorRenderFormProps,
+  MarkdownEditorInitialData,
+  MarkdownEditorInitialDataInput,
   MarkdownEditorChangeHandler,
   MarkdownEditorContentData,
   MarkdownEditorContentInput,
@@ -16,5 +21,8 @@ export type {
   MarkdownEditorImageUploader,
   MarkdownEditorProps,
   MarkdownEditorReadyHandler,
+  MarkdownEditorStatus,
+  MarkdownEditorSubmitData,
+  MarkdownEditorSuccessHandler,
   PluginKey,
 } from './types/editor';

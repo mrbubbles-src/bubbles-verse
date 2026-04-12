@@ -3,6 +3,8 @@ import type { OutputData } from '@editorjs/editorjs';
 import type {
   MarkdownEditorContentData,
   MarkdownEditorContentInput,
+  MarkdownEditorInitialData,
+  MarkdownEditorInitialDataInput,
 } from '../types/editor';
 
 const EDITOR_JS_VERSION = '2.31.0';
@@ -22,6 +24,71 @@ function isEditorContentData(
     'blocks' in value &&
     Array.isArray(value.blocks)
   );
+}
+
+/**
+ * Returns whether an initial editor payload already includes metadata fields.
+ *
+ * @param value - Candidate `initialData` value from the public API.
+ * @returns True when the object carries form metadata in addition to content.
+ */
+function isInitialDataEnvelope(
+  value: MarkdownEditorInitialDataInput | undefined
+): value is MarkdownEditorInitialData {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    ('title' in value ||
+      'slug' in value ||
+      'description' in value ||
+      'tags' in value ||
+      'status' in value)
+  );
+}
+
+/**
+ * Extract the content portion from the public `initialData` union.
+ *
+ * @param initialData - Raw editor bootstrap input from the component props.
+ * @returns Content payload suitable for EditorJS normalization.
+ */
+export function resolveInitialEditorContent(
+  initialData?: MarkdownEditorInitialDataInput
+): MarkdownEditorContentInput | undefined {
+  if (!initialData) {
+    return undefined;
+  }
+
+  return isInitialDataEnvelope(initialData) ? initialData.content : initialData;
+}
+
+/**
+ * Normalize the public `initialData` union into the package form shape.
+ *
+ * @param initialData - Raw editor bootstrap input from the component props.
+ * @returns Metadata envelope used by the default form and render props.
+ */
+export function normalizeInitialFormData(
+  initialData?: MarkdownEditorInitialDataInput
+): MarkdownEditorInitialData | undefined {
+  if (!initialData) {
+    return undefined;
+  }
+
+  if (!isInitialDataEnvelope(initialData)) {
+    return {
+      content: initialData,
+    };
+  }
+
+  return {
+    content: initialData.content,
+    description: initialData.description,
+    slug: initialData.slug,
+    status: initialData.status,
+    tags: Array.isArray(initialData.tags) ? initialData.tags : undefined,
+    title: initialData.title,
+  };
 }
 
 /**
@@ -74,9 +141,11 @@ export function parseEditorContent(
  * @returns Normalized EditorJS output payload.
  */
 export function normalizeInitialEditorData(
-  content?: MarkdownEditorContentInput
+  content?: MarkdownEditorInitialDataInput | MarkdownEditorContentInput
 ): OutputData {
-  const parsedContent = parseEditorContent(content);
+  const parsedContent = parseEditorContent(
+    resolveInitialEditorContent(content)
+  );
 
   if (!parsedContent) {
     return {

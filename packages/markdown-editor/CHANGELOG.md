@@ -16,3 +16,8 @@
   block fixtures and per-handler parity assertions.
 - Add package-local editor wrapper tests that cover default tools, plugin
   subsets, the shared change bridge, and cleanup guard behavior.
+- Add the Story 4.2 form surface: `renderForm`, exported `EditorForm`,
+  edit-mode-aware `initialData`, and `onSuccess` submit payloads with serialized
+  MDX output.
+- Add internal title/slug helpers plus jsdom/RTL coverage for custom form
+  props, default form fallback, and submit serialization behavior.

@@ -7,7 +7,8 @@ Shared markdown editor package for bubbles-verse apps.
 This package now ships:
 
 - the standalone `serializeToMdx()` utility
-- the shared `MarkdownEditor` wrapper around EditorJS
+- the shared `MarkdownEditor` wrapper around EditorJS plus metadata form hooks
+- the exported default `EditorForm` fallback for app-agnostic entry metadata
 - stylesheet exports and the shared EditorJS plugin dependency surface
 
 ## Available Imports
@@ -15,6 +16,7 @@ This package now ships:
 ```ts
 import {
   DEFAULT_PLUGIN_KEYS,
+  EditorForm,
   MarkdownEditor,
   serializeToMdx,
 } from '@bubbles/markdown-editor';
@@ -31,8 +33,10 @@ Shared client wrapper around the reference EditorJS setup from
 - keeps the reference StrictMode cleanup guard to avoid double initialization
 - enables the full 15-tool surface by default
 - accepts `plugins` to subset the toolbar without changing the canonical order
+- renders a custom metadata form through `renderForm`, or falls back to `EditorForm`
 - forwards image uploads through an app-provided `imageUploader`
 - forwards saved editor state through `onChange`
+- returns serialized submit payloads through `onSuccess`
 
 ```tsx
 <MarkdownEditor />
@@ -41,7 +45,54 @@ Shared client wrapper around the reference EditorJS setup from
 ```tsx
 <MarkdownEditor
   imageUploader={uploadImage}
+  onSuccess={(entry) => saveEntry(entry)}
   plugins={['paragraph', 'header', 'list', 'image']}
+/>
+```
+
+```tsx
+<MarkdownEditor
+  initialData={{
+    content: existingEntry.editorContent,
+    description: existingEntry.description,
+    slug: existingEntry.slug,
+    status: existingEntry.status,
+    tags: existingEntry.tags,
+    title: existingEntry.title,
+  }}
+  isEditMode
+  onSuccess={(entry) => saveEntry(entry)}
+  renderForm={({ editorContent, editorOutput, editorReady, initialData }) => (
+    <VaultEntryForm
+      editorContent={editorContent}
+      editorOutput={editorOutput}
+      editorReady={editorReady}
+      initialData={initialData}
+    />
+  )}
+/>
+```
+
+### Default `EditorForm`
+
+`MarkdownEditor` renders `EditorForm` automatically when `renderForm` is not
+provided.
+
+- title is derived from the first H1 block in the editor content
+- slug auto-follows the derived title until the author edits it manually
+- description, tags, and status (`published` | `unpublished`) stay package-level
+- submit calls `onSuccess` with `{ title, slug, description, tags, status, editorContent, serializedContent, isEditMode }`
+
+You can also import and render the default form directly:
+
+```tsx
+<EditorForm
+  editorContent={editorContent}
+  editorOutput={editorOutput}
+  editorReady={editorReady}
+  initialData={initialData}
+  isEditMode={isEditMode}
+  onSuccess={(entry) => saveEntry(entry)}
 />
 ```
 
@@ -100,6 +151,13 @@ Run the package suite directly:
 
 ```bash
 bun run --cwd packages/markdown-editor test
+```
+
+Type-check and lint the package directly:
+
+```bash
+bun run --cwd packages/markdown-editor typecheck
+bun run --cwd packages/markdown-editor lint src tests --max-warnings=0
 ```
 
 Or from the monorepo root:

@@ -2,7 +2,7 @@
 story_id: '4.2'
 story_key: '4-2-renderform-render-prop-and-default-editorform'
 epic: 'Epic 4 — Content Authoring Editor'
-status: ready-for-dev
+status: review
 created: 2026-04-12
 ---
 
@@ -174,3 +174,63 @@ Mirror the reference export surface for the default form and related types.
 ## Dev Notes
 
 _To be filled in during implementation._
+
+## Tasks / Subtasks
+
+- [x] Task 1: Extend the shared `MarkdownEditor` API with typed form hooks and edit-mode state (AC: 1, 3)
+  - [x] Add `renderForm`, `onSuccess`, `isEditMode`, and normalized `initialData` support to the public types
+  - [x] Keep the editor wrapper responsible for editor state only; no router or persistence logic moved into the package
+  - [x] Pass `editorOutput`, `editorContent`, `editorReady`, `isEditMode`, and normalized `initialData` into custom forms
+
+- [x] Task 2: Add the default exported `<EditorForm>` fallback with the required field set (AC: 2, 3)
+  - [x] Export `EditorForm` from `@bubbles/markdown-editor`
+  - [x] Keep the default form limited to title, slug, description, tags, and `published | unpublished` status
+  - [x] Preserve the reference title/slug behavior used by the package form layer without reintroducing LMS-only fields
+
+- [x] Task 3: Add package-local regression coverage and documentation for the new form surface (AC: 1, 2, 3)
+  - [x] Add jsdom/RTL coverage for custom render-form props, default form fallback, and the `onSuccess` submit payload
+  - [x] Update package README and CHANGELOG for the new form API
+  - [x] Verify package and monorepo test, lint, and typecheck commands pass
+
+## Dev Agent Record
+
+### Debug Log
+
+- 2026-04-12: Loaded `bmad-dev-story`, BMAD config, sprint status, Story 4.2, Story 4.1, Story 4.3, and the `to-be-integrated/` plus `portal-ref` editor/form references to confirm the exact extraction scope.
+- 2026-04-12: Initialized Next DevTools MCP, read the Next.js docs index, and verified the repo’s current Next.js documentation baseline before editing any code in this session.
+- 2026-04-12: Added jsdom/RTL test support to `@bubbles/markdown-editor`, wrote failing Story 4.2 component tests first, then implemented the form surface until the new tests passed.
+- 2026-04-12: Verified with `bun run --cwd packages/markdown-editor test`, `bun run --cwd packages/markdown-editor typecheck`, `bun run --cwd packages/markdown-editor lint src tests --max-warnings=0`, `bun run typecheck`, `bun run lint`, and `bun run test`.
+
+### Completion Notes
+
+- Extended `MarkdownEditor` with typed `renderForm`, `onSuccess`, `isEditMode`, and normalized `initialData` support while keeping the package free of navigation and persistence side effects.
+- Added the exported default `EditorForm` fallback with the scoped Story 4.2 field set: title, slug, description, tags, and `published | unpublished` status.
+- Preserved the reference title/slug derivation behavior inside the form layer using internal slug/title helpers, without exporting the utility surface ahead of Story 4.3.
+- Added jsdom/RTL regression coverage for custom form props, default form fallback, and serialized submit payloads, and updated package-local documentation to match the new API.
+
+## File List
+
+- _bmad-output/implementation-artifacts/4-2-renderform-render-prop-and-default-editorform.md
+- _bmad-output/implementation-artifacts/sprint-status.yaml
+- bun.lock
+- packages/markdown-editor/CHANGELOG.md
+- packages/markdown-editor/README.md
+- packages/markdown-editor/package.json
+- packages/markdown-editor/src/components/editor-form.tsx
+- packages/markdown-editor/src/components/markdown-editor.tsx
+- packages/markdown-editor/src/index.ts
+- packages/markdown-editor/src/lib/editor-content.ts
+- packages/markdown-editor/src/lib/slug-utils.ts
+- packages/markdown-editor/src/types/editor.ts
+- packages/markdown-editor/tests/editor/markdown-editor-form.test.tsx
+- packages/markdown-editor/vitest.config.ts
+- packages/markdown-editor/vitest.setup.ts
+
+## Change Log
+
+- 2026-04-12: Development started.
+- 2026-04-12: Added the Story 4.2 form surface: typed `renderForm`, exported `EditorForm`, normalized edit-mode `initialData`, serialized `onSuccess` payloads, package-local component tests, and updated package documentation.
+
+## Status
+
+review
