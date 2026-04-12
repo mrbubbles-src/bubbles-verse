@@ -28,16 +28,72 @@ All CSS must reference only custom properties from `@bubbles/ui/globals.css` —
 
 The `--sh-*` variable definitions that currently live in `apps/the-coding-vault/app/globals.css` will be **removed** in Epic 5 once this file provides them.
 
+This story is not a design exercise. Port the renderer styling from `to-be-integrated/` first, otherwise from `lms-ref`, and only adapt token wiring or package placement where the monorepo requires it.
+
 **Prerequisite:** Stories 2.1 and 2.2 complete.
 
 ---
 
-## Mandatory Implementation Directives
+## Mandatory Implementation Contract
 
 - Follow `AGENTS.md` for every implementation decision in this story.
-- If relevant code already exists in `portal-ref` or `lms-ref` or `to-be-integrated`, reuse that working code first and port it cleanly into the target package or app.
-- Adapt reference code only as needed for this monorepo plan, package boundaries, typing, naming, and acceptance criteria.
-- Do not rewrite or redesign working reference code unnecessarily when a clean extraction or transfer is sufficient.
+- Port the existing working implementation from the designated reference source as the default path.
+- Use `to-be-integrated/` first when the relevant implementation exists there.
+- If the relevant implementation is not present in `to-be-integrated/`, use `lms-ref`.
+- Do not rewrite, redesign, or replace a working reference implementation with a newly authored one unless this story explicitly documents an approved exception.
+- If a reference implementation and this story appear to conflict, preserve the reference behavior and escalate the conflict instead of inventing a new solution.
+
+### Primary Reference Source
+
+`to-be-integrated/`
+
+### Fallback Reference Source
+
+`lms-ref`
+
+### Reference Files / Modules
+
+- Renderer stylesheet implementation in `to-be-integrated/` if present
+- Equivalent renderer stylesheet implementation in `lms-ref`
+- Token definitions in `packages/ui/src/styles/globals.css`
+
+### Allowed Deviations
+
+- package/file placement required by this monorepo
+- import path updates
+- naming changes explicitly required by package API
+- strict typing and lint compliance
+- documented acceptance-criteria-driven adjustments only
+
+### Forbidden Deviations
+
+- library swaps not present in the reference implementation
+- architectural rewrites
+- behavior changes not explicitly required by the story
+- replacing working reference logic with newly invented logic
+- omitting reference behavior because it seems unnecessary
+
+### Reference Access Rule
+
+If the implementation required by this story cannot be inspected in the `Primary Reference Source`, do not guess and do not invent a replacement implementation.
+
+If the `Fallback Reference Source` is also unavailable, incomplete, or cannot be inspected sufficiently, stop and ask the user how to proceed before making any code changes.
+
+Missing or inaccessible reference sources are a blocker for implementation, not permission to improvise.
+
+### Deviation Approval Rule
+
+If implementation appears to require any deviation from the reference implementation or from the agreed plan, stop before making the change and ask the user for a decision.
+
+Present the deviation clearly using this structure:
+
+- What is different?
+- Why is the deviation being considered?
+- Why can the reference or current plan not be followed as-is?
+- What are the available options?
+- What are the consequences or tradeoffs of each option?
+
+Wait for explicit user approval before implementing any deviation.
 
 ## Acceptance Criteria
 
@@ -55,9 +111,15 @@ And importing renderer.css loads no editor toolbar or preview pane styles
 
 ## Implementation Guide
 
-### 1. Shiki CSS Variables Mode — Required `--sh-*` Variables
+### 1. Reference-First Extraction
 
-Shiki CSS Variables Mode requires these CSS custom properties to be defined. Map them to Catppuccin Latte (light) and Catppuccin Mocha (dark):
+Port the stylesheet from `to-be-integrated/` first. If the implementation is not available there, port the stylesheet from `lms-ref`.
+
+Do not write a new stylesheet from examples or templates. The reference implementation is the source of truth for selectors, spacing, visual states, and block-level styling behavior.
+
+### 2. Shiki CSS Variables Mode — Required `--sh-*` Variables
+
+Preserve the reference token behavior while wiring the variables to tokens that actually exist in `@bubbles/ui/globals.css`.
 
 ```css
 /* renderer.css */
@@ -97,54 +159,22 @@ Shiki CSS Variables Mode requires these CSS custom properties to be defined. Map
 
 **Note:** The `--ctp-latte-*` and `--ctp-mocha-*` custom properties are defined in `@bubbles/ui/globals.css`. These are Catppuccin palette tokens already available in all apps. Verify exact variable names by checking `packages/ui/src/styles/globals.css`.
 
-### 2. Block Styles
+### 3. Block Styles
 
-Add CSS for each rendered block type. Reference portal-ref and lms-ref for the exact styles. All colors via CSS vars:
+Copy the selectors and styling structure from the designated reference source. Preserve the rendered behavior for:
 
-```css
-/* ── Code Blocks ── */
-.markdown-renderer pre {
-  background-color: var(--code-bg);
-  border-radius: var(--radius);
-  padding: 1rem;
-  overflow-x: auto;
-}
+- typography
+- code blocks
+- alerts
+- checklists
+- images and embeds
+- toggles
+- links
+- light/dark token switching
 
-.markdown-renderer code {
-  font-family: var(--font-mono);
-  font-size: 0.875rem;
-}
+If a token from the reference source does not exist in `@bubbles/ui/globals.css`, stop and ask the user before inventing a replacement token mapping.
 
-/* ── Alerts ── */
-.markdown-renderer .alert-info {
-  border-left: 4px solid var(--info);
-  background: var(--info-bg);
-}
-.markdown-renderer .alert-success {
-  border-left: 4px solid var(--success);
-  background: var(--success-bg);
-}
-.markdown-renderer .alert-warning {
-  border-left: 4px solid var(--warning);
-  background: var(--warning-bg);
-}
-.markdown-renderer .alert-danger {
-  border-left: 4px solid var(--danger);
-  background: var(--danger-bg);
-}
-
-/* ── Toggle / Details ── */
-.markdown-renderer details summary {
-  cursor: pointer;
-  font-weight: 600;
-}
-
-/* ... additional block styles from reference implementation ... */
-```
-
-**The above is a starting template.** Populate the full styles from the reference implementation in `lms-ref` — don't invent styles from scratch.
-
-### 3. Verify Available CSS Variables
+### 4. Verify Available CSS Variables
 
 Before writing CSS, check what custom properties are available in `@bubbles/ui/globals.css`:
 
@@ -154,7 +184,7 @@ packages/ui/src/styles/globals.css
 
 Use only variables that exist there. Do not guess variable names — verify them.
 
-### 4. No Editor Styles
+### 5. No Editor Styles
 
 This file must contain **zero** styles that relate to:
 
@@ -165,7 +195,7 @@ This file must contain **zero** styles that relate to:
 
 Those belong in `editor.css` and `preview.css` (Story 4.6).
 
-### 5. The Coding Vault Migration Note
+### 6. The Coding Vault Migration Note
 
 Once this file is complete, `apps/the-coding-vault/app/globals.css` contains duplicate `--sh-*` variable definitions. Those will be removed in Story 5.1. Do NOT remove them now — the Vault needs them until Story 5.1.
 
@@ -176,6 +206,7 @@ Once this file is complete, `apps/the-coding-vault/app/globals.css` contains dup
 - **No hardcoded hex/rgb colors.** Every color value must be a CSS custom property.
 - **No editor/toolbar styles** in this file.
 - **Do not use `@bubbles/ui/globals.css` as a CSS import** inside renderer.css — reference its variables only. The app loads `globals.css`; the package just uses the variables.
+- **Do not author fresh styling from scratch.** Port the reference stylesheet and only adjust verified token wiring or package placement.
 
 ---
 
@@ -186,6 +217,7 @@ Once this file is complete, `apps/the-coding-vault/app/globals.css` contains dup
 - [ ] Code blocks use `var(--code-bg)` for background
 - [ ] Alert block styles cover all 4 types
 - [ ] Toggle/details styled
+- [ ] Selectors and styling behavior match the designated reference implementation
 - [ ] No hardcoded color values
 - [ ] No editor/toolbar CSS
 - [ ] Dark mode works by toggling `.dark` class on a parent element

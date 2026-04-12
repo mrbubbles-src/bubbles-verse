@@ -14,6 +14,44 @@ inputDocuments:
 
 This document provides the complete epic and story breakdown for the `@bubbles/markdown-editor` and `@bubbles/markdown-renderer` packages, decomposing requirements from the PRD and architecture documents into implementable stories.
 
+## Epic Execution Rule
+
+All stories in this document are extraction and porting stories.
+
+They must be implemented by porting the existing working code from the designated reference sources, not by designing new implementations from scratch.
+
+### Primary Source Mapping
+
+- Epic 1: monorepo package scaffolding using in-repo package conventions, plus exact dependency and tooling values from the designated reference sources where applicable
+- Epic 2: `to-be-integrated/` first, otherwise `lms-ref` for renderer components, renderer behavior, and renderer styles
+- Epic 3: `to-be-integrated/` first, otherwise `portal-ref` for serializer baseline plus explicitly documented `lms-ref` additions
+- Epic 4: `to-be-integrated/` first, otherwise `portal-ref` for editor, preview, forms, autosave, import modal, and related behavior
+- Epic 5: current monorepo app migration work, using the extracted package behavior as defined by the reference sources above
+
+### Reference Availability Rule
+
+If the required reference implementation cannot be inspected in the primary source, check the designated fallback source.
+
+If the fallback source is also unavailable, incomplete, or inaccessible, stop and ask the user how to proceed before making any code changes.
+
+### Deviation Approval Rule
+
+If implementation appears to require any deviation from the reference implementation or the agreed plan, stop before making the change and ask the user for a decision.
+
+Present:
+
+- what is different
+- why the deviation is being considered
+- why the reference or current plan cannot be followed as-is
+- what options are available
+- what tradeoffs each option introduces
+
+Wait for explicit user approval before implementing any deviation.
+
+### Mandatory `AGENTS.md` Rule
+
+All stories in this epic must explicitly require implementation to follow `AGENTS.md` in full.
+
 ## Requirements Inventory
 
 ### Functional Requirements
@@ -195,7 +233,7 @@ So that I can display rich content with a single import and no editor dependency
 
 **Given** a stored MDX string and `<MdxRenderer>` imported from `@bubbles/markdown-renderer`
 **When** I render `<MdxRenderer content={mdxString} />`
-**Then** the MDX is compiled at runtime using `@mdx-js/mdx` with `remark-gfm`
+**Then** the MDX is compiled and rendered using the same runtime pipeline behavior as the designated reference implementation
 **And** all default `Markdown*` components are available automatically without manual registration
 **And** a developer can override or extend individual components via the `components` prop map
 **And** compilation errors are caught and surfaced as an error state — never thrown to the React error boundary

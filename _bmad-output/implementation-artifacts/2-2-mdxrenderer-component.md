@@ -18,27 +18,81 @@ So that I can display rich content with a single import and no editor dependency
 
 ## Context
 
-`<MdxRenderer>` is the primary public component of `@bubbles/markdown-renderer`. It takes a stored MDX string, compiles it at runtime using `@mdx-js/mdx`'s `evaluate()` function, and renders the result with the default `Markdown*` components pre-wired.
+`<MdxRenderer>` is the primary public component of `@bubbles/markdown-renderer`. This story is an extraction story: port the existing renderer behavior from the designated reference source into the package and preserve its runtime rendering behavior unless the user explicitly approves a deviation.
 
-The reference implementation (`lms-ref`) uses `next-mdx-remote-client` — this package replaces that with direct `@mdx-js/mdx` usage for fewer dependencies and more control. The compilation approach is `evaluate()` (runtime, not build-time).
+Use `to-be-integrated/` first. If the relevant implementation is not present there, fall back to `lms-ref`.
 
 **Prerequisite:** Story 2.1 (default components) complete.
 
 ---
 
-## Mandatory Implementation Directives
+## Mandatory Implementation Contract
 
 - Follow `AGENTS.md` for every implementation decision in this story.
-- If relevant code already exists in `portal-ref` or `lms-ref` or `to-be-integrated`, reuse that working code first and port it cleanly into the target package or app.
-- Adapt reference code only as needed for this monorepo plan, package boundaries, typing, naming, and acceptance criteria.
-- Do not rewrite or redesign working reference code unnecessarily when a clean extraction or transfer is sufficient.
+- Port the existing working implementation from the designated reference source as the default path.
+- Use `to-be-integrated/` first when the relevant implementation exists there.
+- If the relevant implementation is not present in `to-be-integrated/`, use `lms-ref`.
+- Do not rewrite, redesign, or replace a working reference implementation with a newly authored one unless this story explicitly documents an approved exception.
+- If a reference implementation and this story appear to conflict, preserve the reference behavior and escalate the conflict instead of inventing a new solution.
+
+### Primary Reference Source
+
+`to-be-integrated/`
+
+### Fallback Reference Source
+
+`lms-ref`
+
+### Reference Files / Modules
+
+- Renderer implementation in `to-be-integrated/` if present
+- Equivalent renderer implementation in `lms-ref`
+- Package wiring in `packages/markdown-renderer`
+
+### Allowed Deviations
+
+- package/file placement required by this monorepo
+- import path updates
+- naming changes explicitly required by package API
+- strict typing and lint compliance
+- documented acceptance-criteria-driven adjustments only
+
+### Forbidden Deviations
+
+- library swaps not present in the reference implementation
+- architectural rewrites
+- behavior changes not explicitly required by the story
+- replacing working reference logic with newly invented logic
+- omitting reference behavior because it seems unnecessary
+
+### Reference Access Rule
+
+If the implementation required by this story cannot be inspected in the `Primary Reference Source`, do not guess and do not invent a replacement implementation.
+
+If the `Fallback Reference Source` is also unavailable, incomplete, or cannot be inspected sufficiently, stop and ask the user how to proceed before making any code changes.
+
+Missing or inaccessible reference sources are a blocker for implementation, not permission to improvise.
+
+### Deviation Approval Rule
+
+If implementation appears to require any deviation from the reference implementation or from the agreed plan, stop before making the change and ask the user for a decision.
+
+Present the deviation clearly using this structure:
+
+- What is different?
+- Why is the deviation being considered?
+- Why can the reference or current plan not be followed as-is?
+- What are the available options?
+- What are the consequences or tradeoffs of each option?
+
+Wait for explicit user approval before implementing any deviation.
 
 ## Acceptance Criteria
 
 ```gherkin
 Given a stored MDX string and <MdxRenderer> imported from @bubbles/markdown-renderer
 When I render <MdxRenderer content={mdxString} />
-Then the MDX is compiled at runtime using @mdx-js/mdx with remark-gfm
+Then the MDX is compiled and rendered using the same runtime pipeline behavior as the designated reference implementation
 And all default Markdown* components are available automatically without manual registration
 And a developer can override or extend individual components via the components prop map
 And compilation errors are caught and surfaced as an error state — never thrown to the React error boundary
@@ -66,79 +120,29 @@ interface MdxRendererProps {
 }
 ```
 
-### 2. Runtime MDX Compilation with `evaluate()`
+### 2. Reference-First Extraction
 
-```ts
-import * as runtime from 'react/jsx-runtime';
+Inspect the renderer implementation in `to-be-integrated/` first and port it into `packages/markdown-renderer`.
 
-import { evaluate } from '@mdx-js/mdx';
-import remarkGfm from 'remark-gfm';
+If the implementation is not available there, inspect `lms-ref` and port that behavior instead.
 
-import { defaultComponents } from './components';
+Do not choose a different MDX compilation library, rendering flow, or component boundary unless the user explicitly approves a deviation.
 
-async function compileMdx(
-  content: string,
-  components?: MdxRendererProps['components']
-) {
-  const { default: Content } = await evaluate(content, {
-    ...runtime,
-    remarkPlugins: [remarkGfm],
-  });
+### 3. Runtime MDX Pipeline
 
-  const mergedComponents = {
-    ...defaultComponents,
-    ...components, // consumer overrides take precedence
-  };
+Port the same runtime MDX pipeline used by the reference implementation.
 
-  return { Content, mergedComponents };
-}
-```
+If the reference source uses `next-mdx-remote-client`, preserve that unless the user approves a different approach.
 
-### 3. Error Handling — Never Throw
+If the reference source uses `@mdx-js/mdx`, preserve that unless the user approves a different approach.
 
-Wrap `evaluate()` in try/catch. On error, render a graceful error state — do not rethrow to the React error boundary (NFR2):
+Do not silently replace the reference pipeline with a newly designed one.
 
-```ts
-'use client'; // MdxRenderer needs client-side rendering for dynamic compilation
+### 4. Error Handling — Never Throw
 
-const [result, setResult] = useState<{ Content: ComponentType; components: Record<string, ComponentType> } | null>(null);
-const [error, setError] = useState<string | null>(null);
+Preserve the reference error-handling behavior as closely as possible while meeting the acceptance criteria: compilation errors must render a graceful error state and must never be rethrown to the React error boundary.
 
-useEffect(() => {
-  compileMdx(content, components)
-    .then(setResult)
-    .catch((err: unknown) => {
-      setError(err instanceof Error ? err.message : 'MDX compilation failed');
-    });
-}, [content, components]);
-
-if (error) {
-  return (
-    <div role="alert" className="...">
-      <p>Failed to render content.</p>
-      {process.env.NODE_ENV === 'development' && <pre>{error}</pre>}
-    </div>
-  );
-}
-```
-
-### 4. Client vs Server Component
-
-`evaluate()` from `@mdx-js/mdx` is async and works in both RSC and client components. However, for dynamic content that changes post-hydration, a client component with `useEffect` is simpler and avoids streaming complexity. Use `'use client'` directive.
-
-For static pages (Vault entry), the parent Server Component can pre-fetch and pass the MDX string; `<MdxRenderer>` handles the runtime compilation client-side.
-
-### 5. Dependencies to Add to `packages/markdown-renderer/package.json`
-
-```json
-"@mdx-js/mdx": "^3.1.0",
-"remark-gfm": "^4.0.1",
-"unified": "^11.0.5"
-```
-
-Verify exact versions from `lms-ref`. `unified` may not need to be a direct dependency if `@mdx-js/mdx` brings it transitively — check after install.
-
-### 6. File Location
+### 5. File Location
 
 `packages/markdown-renderer/src/mdx-renderer.tsx`
 
@@ -150,7 +154,7 @@ Export from `src/index.ts` as part of the public API.
 
 - **Never rethrow compilation errors** to the React error boundary — always catch and render error state.
 - **Never import from `@bubbles/markdown-editor`.** The renderer has zero editor dependency (FR26, NFR validation).
-- **Do not use `compileMDX` from `next-mdx-remote-client`.** Use `evaluate()` from `@mdx-js/mdx` directly — fewer deps, more control.
+- **Do not replace the reference MDX pipeline with a new one** unless the user explicitly approves the deviation.
 - **Do not hardcode the defaultComponents map inline** in this file — import from `./components` to keep them tree-shakeable.
 
 ---
@@ -161,7 +165,7 @@ Export from `src/index.ts` as part of the public API.
 - [ ] `components` prop correctly overrides individual components while keeping defaults
 - [ ] Compilation error renders error state, does not throw
 - [ ] No import from `@bubbles/markdown-editor` anywhere in `packages/markdown-renderer`
-- [ ] `remark-gfm` applied (tables, strikethrough, task lists render correctly)
+- [ ] Runtime MDX pipeline matches the designated reference implementation
 - [ ] `bun run typecheck` passes
 
 ---

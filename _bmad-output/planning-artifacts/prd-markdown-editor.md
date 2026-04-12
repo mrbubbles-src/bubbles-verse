@@ -42,7 +42,58 @@ The implementation is not speculative. Every hard problem — 15 EditorJS plugin
 | **Project Type** | Developer Tool — shared library package |
 | **Domain** | General (content tooling, no regulated domain) |
 | **Complexity** | Medium — proven implementation, non-trivial plugin ecosystem and React integration subtleties |
-| **Project Context** | Brownfield — extraction from portal-ref (editor) and lms-ref (renderer); not a greenfield build |
+| **Project Context** | Brownfield — extraction from `to-be-integrated/` first, with `portal-ref` (editor baseline) and `lms-ref` (renderer baseline) as fallback sources; not a greenfield build |
+
+## Reference Implementation Contract
+
+This project is a brownfield extraction, not a greenfield rewrite.
+
+The required implementation already exists in working reference sources. The default implementation path for every story is to port the existing working code into the monorepo package or app, preserving behavior and architecture unless an explicit exception is documented and approved by the user.
+
+### Reference Source Priority
+
+1. `to-be-integrated/` is the primary in-repo reference source whenever the relevant implementation exists there.
+2. `portal-ref` is the fallback source of truth for editor, preview, form, autosave, import flow, slug behavior, and the serializer baseline.
+3. `lms-ref` is the fallback source of truth for renderer behavior, renderer styling, and explicitly identified feature differences.
+
+### Conflict Resolution Rules
+
+- If `to-be-integrated/` contains the relevant implementation, it takes precedence.
+- If `portal-ref` and `lms-ref` differ, the story must explicitly state which parts come from which source.
+- If no story-specific exception is documented, do not invent a third implementation.
+
+### Allowed Deviations
+
+- package boundaries and file placement
+- import path updates
+- naming adjustments required by the monorepo
+- strict typing improvements
+- shared token or shared UI integration required by this monorepo
+- explicit acceptance-criteria-driven adaptations documented in the story
+
+### Forbidden Deviations
+
+- replacing a working reference implementation with a newly authored one
+- changing libraries or architectural approach because it seems cleaner, newer, or more idiomatic
+- redesigning data flow, rendering flow, or component boundaries without a documented requirement
+- simplifying behavior that already exists in the reference implementation
+- silently dropping edge-case behavior present in the reference implementation
+
+### Reference Availability Rule
+
+If a required reference source is unavailable, inaccessible, or incomplete, implementation must pause for user clarification.
+
+Lack of access to the reference implementation is not a reason to invent a new solution.
+
+### Deviation Approval Rule
+
+If implementation would deviate from the reference behavior or the agreed plan, implementation must stop, present the deviation with rationale and options, and wait for explicit user approval before any code changes are made.
+
+### Mandatory `AGENTS.md` Rule
+
+All implementation work must follow `AGENTS.md` in full.
+
+If `AGENTS.md` conflicts with examples, suggestions, or generic guidance in a story, `AGENTS.md` takes precedence.
 
 ---
 

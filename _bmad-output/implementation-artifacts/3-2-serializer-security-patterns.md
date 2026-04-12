@@ -18,7 +18,9 @@ So that no JSX injection, invalid shortcodes, or malformed props reach the MDX o
 
 ## Context
 
-The serializer outputs MDX that is compiled at runtime by `@mdx-js/mdx`'s `evaluate()`. Without sanitization, a malicious user could:
+This story defines the serializer security boundary that already exists in the reference implementation. Port the security behavior from `to-be-integrated/` first, otherwise from `portal-ref`, and preserve that boundary unless the user explicitly approves a deviation.
+
+Without the reference sanitization behavior, a malicious user could:
 
 - Inject JSX via brace expressions (`{process.env.SECRET}`)
 - Insert arbitrary MDX components via shortcode syntax
@@ -30,12 +32,66 @@ These security functions are part of `src/serializer/security.ts` in `@bubbles/m
 
 ---
 
-## Mandatory Implementation Directives
+## Mandatory Implementation Contract
 
 - Follow `AGENTS.md` for every implementation decision in this story.
-- If relevant code already exists in `portal-ref` or `lms-ref` or `to-be-integrated`, reuse that working code first and port it cleanly into the target package or app.
-- Adapt reference code only as needed for this monorepo plan, package boundaries, typing, naming, and acceptance criteria.
-- Do not rewrite or redesign working reference code unnecessarily when a clean extraction or transfer is sufficient.
+- Port the existing working implementation from the designated reference source as the default path.
+- Use `to-be-integrated/` first when the relevant implementation exists there.
+- If the relevant implementation is not present in `to-be-integrated/`, use `portal-ref`.
+- Do not rewrite, redesign, or replace a working reference implementation with a newly authored one unless this story explicitly documents an approved exception.
+- If a reference implementation and this story appear to conflict, preserve the reference behavior and escalate the conflict instead of inventing a new solution.
+
+### Primary Reference Source
+
+`to-be-integrated/`
+
+### Fallback Reference Source
+
+`portal-ref`
+
+### Reference Files / Modules
+
+- Serializer security implementation in `to-be-integrated/` if present
+- Equivalent serializer security implementation in `portal-ref`
+- Integration points in `packages/markdown-editor/src/serializer`
+
+### Allowed Deviations
+
+- package/file placement required by this monorepo
+- import path updates
+- naming changes explicitly required by package API
+- strict typing and lint compliance
+- documented acceptance-criteria-driven adjustments only
+
+### Forbidden Deviations
+
+- library swaps not present in the reference implementation
+- architectural rewrites
+- behavior changes not explicitly required by the story
+- replacing working reference logic with newly invented logic
+- omitting reference behavior because it seems unnecessary
+
+### Reference Access Rule
+
+If the implementation required by this story cannot be inspected in the `Primary Reference Source`, do not guess and do not invent a replacement implementation.
+
+If the `Fallback Reference Source` is also unavailable, incomplete, or cannot be inspected sufficiently, stop and ask the user how to proceed before making any code changes.
+
+Missing or inaccessible reference sources are a blocker for implementation, not permission to improvise.
+
+### Deviation Approval Rule
+
+If implementation appears to require any deviation from the reference implementation or from the agreed plan, stop before making the change and ask the user for a decision.
+
+Present the deviation clearly using this structure:
+
+- What is different?
+- Why is the deviation being considered?
+- Why can the reference or current plan not be followed as-is?
+- What are the available options?
+- What are the consequences or tradeoffs of each option?
+
+Wait for explicit user approval before implementing any deviation.
 
 ## Acceptance Criteria
 
@@ -67,7 +123,15 @@ Then all <br> occurrences are replaced with <br /> for MDX compatibility
 
 `packages/markdown-editor/src/serializer/security.ts`
 
-### 2. `escapeMdxBraces()`
+### 2. Reference-First Extraction
+
+Inspect `to-be-integrated/` first and port the exact serializer security behavior into `packages/markdown-editor/src/serializer/security.ts`.
+
+If the implementation is not available there, inspect `portal-ref` and port the behavior from there.
+
+Only if both sources are unavailable or there is a verified gap may you escalate to the user. Do not silently author a new security model.
+
+### 3. `escapeMdxBraces()`
 
 Prevent JSX expression injection from user text. Replace `{` and `}` with their HTML entity equivalents:
 
@@ -84,7 +148,7 @@ export function escapeMdxBraces(text: string): string {
 
 **Apply this to every user text field** — paragraph text, header text, quote content, alert message, list items, table cells, toggle summary, etc. No exception.
 
-### 3. `DEFAULT_ALLOWED_MDX_COMPONENTS`
+### 4. `DEFAULT_ALLOWED_MDX_COMPONENTS`
 
 The allowlist of component names that are valid as inline shortcodes in MDX output:
 
@@ -106,7 +170,7 @@ export const DEFAULT_ALLOWED_MDX_COMPONENTS = new Set<string>([
 
 This list mirrors the `defaultComponents` map from `@bubbles/markdown-renderer`. Apps add their own custom component names via `allowedComponents` prop.
 
-### 4. Allowlist Enforcement Helper
+### 5. Allowlist Enforcement Helper
 
 ```ts
 /**
@@ -118,7 +182,7 @@ export function getMergedAllowlist(extensions?: string[]): Set<string> {
 }
 ```
 
-### 5. `tryParseInlineComponent()`
+### 6. `tryParseInlineComponent()`
 
 Parses shortcode syntax and validates against the allowlist:
 
@@ -160,7 +224,7 @@ export function tryParseInlineComponent(
 }
 ```
 
-### 6. `<br>` → `<br />` Sanitization Pass
+### 7. `<br>` → `<br />` Sanitization Pass
 
 Applied as a post-processing pass at the end of `serializeToMdx()`, after all block handlers run:
 
@@ -176,7 +240,7 @@ export function sanitizeMdxOutput(mdx: string): string {
 
 Call `sanitizeMdxOutput(output)` as the final step in `serializeToMdx()`.
 
-### 7. Integration with Block Handlers
+### 8. Integration with Block Handlers
 
 The security functions must be applied in `block-handlers.ts`:
 
@@ -192,6 +256,7 @@ The security functions must be applied in `block-handlers.ts`:
 - **Never allow a component name outside the merged allowlist** to appear as a JSX element in MDX output.
 - **Never insert raw shortcode prop strings** without JSON.parse validation. Malformed → plain text.
 - **Do not allow the default allowlist to be reduced.** `getMergedAllowlist` always starts from `DEFAULT_ALLOWED_MDX_COMPONENTS` — the consumer can only add.
+- **Do not silently harden or redesign the security model beyond the reference behavior.** If a real gap exists, stop and ask the user before deviating.
 
 ---
 
@@ -201,6 +266,7 @@ The security functions must be applied in `block-handlers.ts`:
 - [ ] `DEFAULT_ALLOWED_MDX_COMPONENTS` exported from `src/index.ts`
 - [ ] `tryParseInlineComponent` returns `null` for blocked names and malformed JSON
 - [ ] `sanitizeMdxOutput` called as final step in `serializeToMdx`
+- [ ] Security behavior matches the designated reference implementation before any approved deviations
 - [ ] `bun run typecheck` passes (no `any`)
 
 ---

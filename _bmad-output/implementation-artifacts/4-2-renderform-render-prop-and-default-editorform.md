@@ -26,16 +26,72 @@ Different apps need different metadata forms — Vault entries have categories, 
 
 **Fields NOT in `<EditorForm>` (explicitly removed from lms-ref):** `level`, `difficulty`, `duration`, `order`, `versionBump`, `reasonType`, `reasonText`, `ticketId` — all LMS-specific.
 
+This behavior must be ported from `to-be-integrated/` first, otherwise from `portal-ref`, while preserving the explicitly documented LMS-specific removals.
+
 **Prerequisite:** Story 4.1 (editor wrapper) complete.
 
 ---
 
-## Mandatory Implementation Directives
+## Mandatory Implementation Contract
 
 - Follow `AGENTS.md` for every implementation decision in this story.
-- If relevant code already exists in `portal-ref` or `lms-ref` or `to-be-integrated`, reuse that working code first and port it cleanly into the target package or app.
-- Adapt reference code only as needed for this monorepo plan, package boundaries, typing, naming, and acceptance criteria.
-- Do not rewrite or redesign working reference code unnecessarily when a clean extraction or transfer is sufficient.
+- Port the existing working implementation from the designated reference source as the default path.
+- Use `to-be-integrated/` first when the relevant implementation exists there.
+- If the relevant implementation is not present in `to-be-integrated/`, use `portal-ref`.
+- Do not rewrite, redesign, or replace a working reference implementation with a newly authored one unless this story explicitly documents an approved exception.
+- If a reference implementation and this story appear to conflict, preserve the reference behavior and escalate the conflict instead of inventing a new solution.
+
+### Primary Reference Source
+
+`to-be-integrated/`
+
+### Fallback Reference Source
+
+`portal-ref`
+
+### Reference Files / Modules
+
+- Render form and default form implementation in `to-be-integrated/` if present
+- Equivalent form implementation in `portal-ref`
+- LMS-specific field removals as documented in this story
+
+### Allowed Deviations
+
+- package/file placement required by this monorepo
+- import path updates
+- naming changes explicitly required by package API
+- strict typing and lint compliance
+- documented acceptance-criteria-driven adjustments only
+
+### Forbidden Deviations
+
+- library swaps not present in the reference implementation
+- architectural rewrites
+- behavior changes not explicitly required by the story
+- replacing working reference logic with newly invented logic
+- reintroducing LMS-specific fields without user approval
+
+### Reference Access Rule
+
+If the implementation required by this story cannot be inspected in the `Primary Reference Source`, do not guess and do not invent a replacement implementation.
+
+If the `Fallback Reference Source` is also unavailable, incomplete, or cannot be inspected sufficiently, stop and ask the user how to proceed before making any code changes.
+
+Missing or inaccessible reference sources are a blocker for implementation, not permission to improvise.
+
+### Deviation Approval Rule
+
+If implementation appears to require any deviation from the reference implementation or from the agreed plan, stop before making the change and ask the user for a decision.
+
+Present the deviation clearly using this structure:
+
+- What is different?
+- Why is the deviation being considered?
+- Why can the reference or current plan not be followed as-is?
+- What are the available options?
+- What are the consequences or tradeoffs of each option?
+
+Wait for explicit user approval before implementing any deviation.
 
 ## Acceptance Criteria
 

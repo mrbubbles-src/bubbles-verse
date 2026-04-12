@@ -22,18 +22,74 @@ The preview pane renders the live `editorContent` (MDX string from Story 4.2) us
 
 Two hooks handle scroll sync: `useScrollSync` (bidirectional coordinator) and `usePreviewScroll` (preview pane scroll logic). Both are internal — not exported.
 
+This story must port the preview and scroll-sync behavior from `to-be-integrated/` first, otherwise from `portal-ref`. Do not redesign the preview pipeline or synchronization strategy unless the user explicitly approves a deviation.
+
 **NFR1:** Preview updates within a perceptible response time — no artificial debounce.
 
 **Prerequisite:** Stories 3.1, 4.1, 4.2 complete.
 
 ---
 
-## Mandatory Implementation Directives
+## Mandatory Implementation Contract
 
 - Follow `AGENTS.md` for every implementation decision in this story.
-- If relevant code already exists in `portal-ref` or `lms-ref` or `to-be-integrated`, reuse that working code first and port it cleanly into the target package or app.
-- Adapt reference code only as needed for this monorepo plan, package boundaries, typing, naming, and acceptance criteria.
-- Do not rewrite or redesign working reference code unnecessarily when a clean extraction or transfer is sufficient.
+- Port the existing working implementation from the designated reference source as the default path.
+- Use `to-be-integrated/` first when the relevant implementation exists there.
+- If the relevant implementation is not present in `to-be-integrated/`, use `portal-ref`.
+- Do not rewrite, redesign, or replace a working reference implementation with a newly authored one unless this story explicitly documents an approved exception.
+- If a reference implementation and this story appear to conflict, preserve the reference behavior and escalate the conflict instead of inventing a new solution.
+
+### Primary Reference Source
+
+`to-be-integrated/`
+
+### Fallback Reference Source
+
+`portal-ref`
+
+### Reference Files / Modules
+
+- Live preview implementation in `to-be-integrated/` if present
+- Equivalent live preview implementation in `portal-ref`
+- Scroll-sync hooks and related internal modules in the same reference source
+
+### Allowed Deviations
+
+- package/file placement required by this monorepo
+- import path updates
+- naming changes explicitly required by package API
+- strict typing and lint compliance
+- documented acceptance-criteria-driven adjustments only
+
+### Forbidden Deviations
+
+- library swaps not present in the reference implementation
+- architectural rewrites
+- behavior changes not explicitly required by the story
+- replacing working reference logic with newly invented logic
+- omitting reference behavior because it seems unnecessary
+
+### Reference Access Rule
+
+If the implementation required by this story cannot be inspected in the `Primary Reference Source`, do not guess and do not invent a replacement implementation.
+
+If the `Fallback Reference Source` is also unavailable, incomplete, or cannot be inspected sufficiently, stop and ask the user how to proceed before making any code changes.
+
+Missing or inaccessible reference sources are a blocker for implementation, not permission to improvise.
+
+### Deviation Approval Rule
+
+If implementation appears to require any deviation from the reference implementation or from the agreed plan, stop before making the change and ask the user for a decision.
+
+Present the deviation clearly using this structure:
+
+- What is different?
+- Why is the deviation being considered?
+- Why can the reference or current plan not be followed as-is?
+- What are the available options?
+- What are the consequences or tradeoffs of each option?
+
+Wait for explicit user approval before implementing any deviation.
 
 ## Acceptance Criteria
 
@@ -57,7 +113,15 @@ And every block in the preview is addressable by EditorJS block ID via data-bloc
 
 ## Implementation Guide
 
-### 1. Split-Pane Layout
+### 1. Reference-First Extraction
+
+Inspect `to-be-integrated/` first and port the exact preview and scroll-sync behavior.
+
+If the implementation is not available there, inspect `portal-ref` and port the behavior from there.
+
+Do not invent a new preview pipeline, update strategy, or scroll-mapping approach unless the user explicitly approves a deviation.
+
+### 2. Split-Pane Layout
 
 ```tsx
 // markdown-editor.tsx
@@ -71,7 +135,7 @@ And every block in the preview is addressable by EditorJS block ID via data-bloc
 </div>
 ```
 
-### 2. Scroll Sync — How It Works
+### 3. Scroll Sync — How It Works
 
 Each block in the editor pane has a DOM element that EditorJS generates. Each block in the preview pane is wrapped in `<div data-block-id="{id}">` (from the serializer).
 
@@ -136,7 +200,7 @@ export function useScrollSync(
 
 The `isSyncingRef` flag prevents scroll event loops (editor scroll triggers preview scroll, which would trigger editor scroll again).
 
-### 3. Block Position Lookup
+### 4. Block Position Lookup
 
 ```ts
 function findTopmostVisibleBlockId(paneEl: HTMLElement): string | null {
@@ -158,13 +222,13 @@ function scrollToBlockInPane(paneEl: HTMLElement, blockId: string) {
 }
 ```
 
-### 4. Preview Updates — No Debounce
+### 5. Preview Updates — No Debounce
 
 EditorJS `onChange` calls `serializeToMdx` synchronously and updates `editorContent` state immediately. React re-renders `<MdxRenderer>` with the new content. No `setTimeout` or `debounce` — NFR1 requires perceptible real-time updates.
 
-`@mdx-js/mdx`'s `evaluate()` is async — `<MdxRenderer>` handles this with `useEffect`. During recompilation, the previous render stays visible until the new one is ready.
+Preserve the preview update and re-render behavior from the reference implementation. Do not assume a specific MDX runtime pipeline beyond what the designated reference source already uses.
 
-### 5. Internal Hooks — Not Exported
+### 6. Internal Hooks — Not Exported
 
 ```ts
 // These hooks are internal implementation details.
@@ -180,6 +244,7 @@ EditorJS `onChange` calls `serializeToMdx` synchronously and updates `editorCont
 - **Do not export `useScrollSync` or `usePreviewScroll`.** Internal only.
 - **Use `isSyncingRef` to prevent scroll loops.** Without it, scroll events will infinitely trigger each other.
 - **Use `passive: true` on scroll listeners** for performance — these don't call `preventDefault`.
+- **Do not redesign preview or scroll-sync behavior away from the reference implementation** unless the user explicitly approves the deviation.
 
 ---
 
@@ -191,6 +256,7 @@ EditorJS `onChange` calls `serializeToMdx` synchronously and updates `editorCont
 - [ ] `isSyncingRef` prevents scroll event loops
 - [ ] Every preview block has `data-block-id` attribute (from serializer)
 - [ ] `useScrollSync` NOT exported from `src/index.ts`
+- [ ] Preview and scroll-sync behavior match the designated reference implementation
 
 ---
 
