@@ -139,11 +139,14 @@ The serializer preserves the current security boundary from the reference
 implementation:
 
 - escapes `{` and `}` before MDX serialization
-- only expands allowlisted inline component shortcodes
+- only expands explicitly allowlisted inline component shortcodes
 - rejects malformed shortcode JSON props and falls back to plain text
 - normalizes `<br>` tags to `<br />` in the final MDX output
 - optionally accepts `headingAnchorIdsByBlockId` so heading wrapper elements
   expose stable hash targets for TOC links
+
+Legacy demo shortcodes such as `FormBeispiel` are intentionally not part of the
+shared package contract.
 
 Serializer regression coverage lives in `tests/serializer/` with shared block
 fixtures in `tests/serializer/fixtures/blocks.ts`.

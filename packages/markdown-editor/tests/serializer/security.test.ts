@@ -26,14 +26,8 @@ describe('escapeMdxBraces', () => {
 });
 
 describe('tryParseInlineComponent', () => {
-  it('exports the default inline component allowlist from the reference', () => {
-    expect(DEFAULT_ALLOWED_MDX_COMPONENTS).toEqual(['FormBeispiel']);
-  });
-
-  it('parses valid shortcode JSON props for allowlisted components', () => {
-    expect(tryParseInlineComponent('[[FormBeispiel {"key":"value"}]]')).toBe(
-      '<FormBeispiel {...{"key":"value"}} />'
-    );
+  it('exports an empty inline component allowlist after removing legacy demos', () => {
+    expect(DEFAULT_ALLOWED_MDX_COMPONENTS).toEqual([]);
   });
 
   it('rejects blocked component names', () => {
@@ -41,19 +35,15 @@ describe('tryParseInlineComponent', () => {
   });
 
   it('rejects malformed JSON props', () => {
-    expect(tryParseInlineComponent('[[FormBeispiel {"broken":}]]')).toBeNull();
+    expect(tryParseInlineComponent('[[LegacyDemo {"broken":}]]')).toBeNull();
   });
 
-  it('parses JSX-style self-closing syntax for allowlisted components', () => {
-    expect(tryParseInlineComponent('<FormBeispiel />')).toBe(
-      '<FormBeispiel />'
-    );
+  it('rejects JSX-style self-closing syntax for non-allowlisted components', () => {
+    expect(tryParseInlineComponent('<LegacyDemo />')).toBeNull();
   });
 
-  it('parses no-props shortcode syntax', () => {
-    expect(tryParseInlineComponent('[[FormBeispiel]]')).toBe(
-      '<FormBeispiel />'
-    );
+  it('rejects no-props shortcode syntax for non-allowlisted components', () => {
+    expect(tryParseInlineComponent('[[LegacyDemo]]')).toBeNull();
   });
 });
 
@@ -66,12 +56,13 @@ describe('sanitizeSerializedMdx', () => {
 });
 
 describe('serializeToMdx security integration', () => {
-  it('renders allowlisted shortcodes as inline MDX components', () => {
+  it('keeps removed legacy shortcodes as escaped text', () => {
     const result = serializeToMdx({
       blocks: [createParagraphBlock({ text: '[[FormBeispiel]]' })],
     });
 
-    expect(result).toContain('<FormBeispiel />');
+    expect(result).toContain('[[FormBeispiel]]');
+    expect(result).not.toContain('<FormBeispiel');
   });
 
   it('falls back to escaped paragraph text when shortcode props are malformed', () => {

@@ -37,3 +37,6 @@
   flow, keeping the last successful preview mounted during recompilation and
   driving scroll re-sync from a stable compiled version to prevent editor jump
   regressions during block insertion.
+- Remove the legacy `FormBeispiel` shortcode from the shared serializer
+  allowlist and align the package tests and review notes with that explicit
+  removal.

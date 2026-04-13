@@ -36,9 +36,8 @@ Executed during review:
 
 Observed issue:
 
-- `bun run --cwd packages/markdown-editor test`
-  currently fails because the test environment does not expose a working
-  `window.localStorage.clear()` implementation for several editor tests.
+- none of the package-local verification commands above indicated a blocking
+  package test-environment failure at review update time
 
 ## General Conclusion
 
@@ -54,35 +53,32 @@ repos rather than introduced here.
 
 ## Important Note About `FormBeispiel`
 
-`FormBeispiel` is still allowlisted by the serializer, but not registered by
-the shared renderer anymore.
+`FormBeispiel` originated as a legacy/test artifact in the reference repos.
 
-That is technically a real mismatch and can crash rendering if legacy content
-still emits `<FormBeispiel />`.
-
-However, based on current product intent, this component appears to be only a
-legacy/test artifact from the reference repos and should likely be removed from
-the pipeline entirely rather than re-established as a long-term shared feature.
+The correct shared-package move is to remove it entirely rather than
+re-establish it as supported shared functionality. Once removed from the
+serializer allowlist, the previous renderer/serializer mismatch disappears and
+the shared contract becomes explicit again.
 
 ## Findings
 
-### 1. Missing `FormBeispiel` renderer registration
+### 1. Legacy `FormBeispiel` mismatch should be resolved by removal, not restoration
 
 Status:
 
 - deviation from references
-- new shared-package mismatch
+- resolved intentionally by removing legacy support from the shared contract
 
 Files:
 
 - [`packages/markdown-editor/src/serializer/security.ts`](/Users/mrbubbles/dev/bubbles-verse/packages/markdown-editor/src/serializer/security.ts)
 - [`packages/markdown-renderer/src/default-components.tsx`](/Users/mrbubbles/dev/bubbles-verse/packages/markdown-renderer/src/default-components.tsx)
 
-What happens:
+What happened:
 
-- the serializer still allows `[[FormBeispiel]]` and `<FormBeispiel />`
-- the renderer no longer provides that component
-- rendering such MDX now throws at runtime
+- the serializer used to allow `[[FormBeispiel]]` and `<FormBeispiel />`
+- the shared renderer no longer provided that component
+- that created a real shared-package mismatch
 
 Reference behavior:
 
@@ -91,16 +87,16 @@ Reference behavior:
 
 Assessment:
 
-- this is a real technical mismatch
-- if old content still exists, rendering can fail
-- if the component is intentionally obsolete, the correct fix is probably to
-  remove it from the serializer allowlist and clean legacy content paths
+- this was a real technical mismatch
+- the correct fix is removal, not restoration
+- legacy content should be cleaned or migrated rather than keeping the demo
+  component alive in the shared packages
 
 What should be addressed:
 
-- decide whether `FormBeispiel` must still exist at all
-- if yes, re-register it
-- if no, remove it from serializer allowlists and legacy content expectations
+- remove it from serializer allowlists
+- remove package-level tests that still treat it as supported
+- update any legacy content expectations or migration notes
 
 ### 2. External links are not scheme-sanitized
 
@@ -406,7 +402,7 @@ What should be addressed:
 
 Clearly new or primarily created by the shared-package extraction:
 
-- missing `FormBeispiel` registration while still allowlisting it
+- the original `FormBeispiel` serializer/renderer mismatch before removal
 - non-robust `plugins` subset / `defaultBlock` behavior
 - weaker shared `EditorForm` state reset model
 - broken `markdown-editor` test setup
@@ -432,7 +428,7 @@ technical correctness work.
 
 The most important concrete corrections are:
 
-1. reconcile or remove `FormBeispiel`
+1. complete the intentional removal of `FormBeispiel` from shared-package expectations
 2. sanitize rendered link schemes
 3. fix EditorJS cleanup/re-init behavior
 4. decide and enforce the intended image source model

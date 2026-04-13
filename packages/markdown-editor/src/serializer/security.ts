@@ -4,7 +4,7 @@
  * Use for shortcode parsing that must stay within the established security
  * boundary.
  */
-export const DEFAULT_ALLOWED_MDX_COMPONENTS = ['FormBeispiel'] as const;
+export const DEFAULT_ALLOWED_MDX_COMPONENTS = [] as const;
 
 const allowedInlineComponentNames = new Set<string>(
   DEFAULT_ALLOWED_MDX_COMPONENTS,
