@@ -62,7 +62,9 @@ describe('editor tool helpers', () => {
   });
 
   it('keeps the reference image and inline-only tools behind the same registry', async () => {
-    const { buildEditorTools } = await import('../../src/lib/editor-tools');
+    const { buildEditorTools, resolveDefaultBlock } = await import(
+      '../../src/lib/editor-tools'
+    );
 
     expect(
       Object.keys(
@@ -72,6 +74,9 @@ describe('editor tool helpers', () => {
         )
       )
     ).toEqual(['image', 'annotation', 'InlineHotkey', 'embed']);
+    expect(resolveDefaultBlock(['annotation', 'inlineHotkey', 'strikethrough'])).toBe(
+      'paragraph'
+    );
   });
 
   it('wires the app-provided image uploader into the image tool config', async () => {

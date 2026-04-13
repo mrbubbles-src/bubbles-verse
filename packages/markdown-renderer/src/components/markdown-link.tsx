@@ -29,6 +29,38 @@ type ElementWithChildrenProps = {
   children?: ReactNode;
 };
 
+const SAFE_EXTERNAL_PROTOCOLS = new Set([
+  'http:',
+  'https:',
+  'mailto:',
+  'tel:',
+]);
+
+/**
+ * Resolve whether an href is safe to render as an external link.
+ *
+ * @param href - Link target provided by markdown content.
+ * @returns Sanitized absolute-or-external href or `null` when unsafe.
+ */
+function getSafeExternalHref(href: string): string | null {
+  const trimmedHref = href.trim();
+
+  if (trimmedHref.length === 0) {
+    return null;
+  }
+
+  if (!/^[A-Za-z][A-Za-z\d+\-.]*:/.test(trimmedHref)) {
+    return null;
+  }
+
+  try {
+    const parsedUrl = new URL(trimmedHref);
+    return SAFE_EXTERNAL_PROTOCOLS.has(parsedUrl.protocol) ? trimmedHref : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Guard anchor elements so nested anchors can be removed before render.
  *
@@ -126,12 +158,18 @@ export function MarkdownLink({
     );
   }
 
+  const safeExternalHref = getSafeExternalHref(href);
+
+  if (!safeExternalHref) {
+    return <>{sanitizedChildren}</>;
+  }
+
   return (
     <Tooltip>
       <TooltipTrigger
         render={
           <a
-            href={href}
+            href={safeExternalHref}
             target="_blank"
             rel="noopener noreferrer"
             className={cn(className, 'touch-hitbox')}
@@ -142,7 +180,7 @@ export function MarkdownLink({
         }
       />
       <TooltipContent className="TooltipContent z-1001 max-w-[20rem] font-bold text-pretty md:max-w-full">
-        {`Oeffne '${href}' in einem neuen Tab`}
+        {`Oeffne '${safeExternalHref}' in einem neuen Tab`}
       </TooltipContent>
     </Tooltip>
   );

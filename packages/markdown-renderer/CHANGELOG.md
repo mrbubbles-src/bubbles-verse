@@ -8,3 +8,5 @@
   local compilation error handling.
 - Add standalone `renderer.css` with renderer-scoped Shiki token variables and
   inline-code styling.
+- Restore direct-url fallback support in `MarkdownImage`, fix blur placeholder
+  MIME handling, and restrict external markdown links to safe protocols only.

@@ -25,7 +25,9 @@ describe('MarkdownImage', () => {
       'fetch',
       vi.fn(async () => ({
         arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer,
-        type: 'image/png',
+        headers: {
+          get: () => 'image/png',
+        },
       })),
     );
 
@@ -46,5 +48,22 @@ describe('MarkdownImage', () => {
     );
     expect(screen.getByRole('link')).toHaveAttribute('target', '_blank');
     expect(screen.getByRole('img', { name: 'Diagram' })).toBeInTheDocument();
+  });
+
+  it('falls back to a plain img element when only a direct url is available', async () => {
+    render(
+      await MarkdownImage({
+        url: 'https://images.example/plain.png',
+        caption: 'Plain image',
+      }),
+    );
+
+    const image = screen.getByRole('img', { name: 'Plain image' });
+
+    expect(image).toHaveAttribute('src', 'https://images.example/plain.png');
+    expect(screen.getByRole('link')).toHaveAttribute(
+      'href',
+      'https://images.example/plain.png',
+    );
   });
 });

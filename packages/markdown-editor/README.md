@@ -148,6 +148,11 @@ implementation:
 Legacy demo shortcodes such as `FormBeispiel` are intentionally not part of the
 shared package contract.
 
+String props for embedded MDX components are serialized as MDX expressions so
+quotes in captions, embed URLs, and image metadata do not break the generated
+output. Table cells are normalized before GFM row construction so pipes and
+newlines cannot corrupt the table shape.
+
 Serializer regression coverage lives in `tests/serializer/` with shared block
 fixtures in `tests/serializer/fixtures/blocks.ts`.
 

@@ -3,6 +3,12 @@
 Shared MDX building blocks, runtime rendering, and renderer-only CSS for
 bubbles-verse apps.
 
+The package now prefers explicit safety and reference parity for:
+
+- markdown images backed by Cloudinary or direct `url` fallbacks
+- external links limited to safe protocols
+- editor preview integration that can reuse the shared default component map
+
 ## Current Scope
 
 Stories 2.1 to 2.3 port the default `Markdown*` components, the typed
@@ -38,6 +44,11 @@ export function ArticleBody({ content }: { content: string }) {
   return <MdxRenderer content={content} />;
 }
 ```
+
+`MarkdownImage` supports both Cloudinary-backed payloads (`public_id`) and
+plain external image URLs. `MarkdownLink` keeps internal/hash behavior from the
+references, but only renders external anchors for safe schemes such as
+`https:`, `mailto:`, and `tel:`.
 
 Override or extend the default MDX registry per render:
 

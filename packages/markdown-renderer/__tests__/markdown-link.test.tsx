@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { MarkdownLink } from '../src';
@@ -54,5 +54,23 @@ describe('MarkdownLink', () => {
 
     expect(container.querySelector('a')).toBeNull();
     expect(container.textContent).toContain('No target');
+  });
+
+  it('renders safe protocol links as external anchors', () => {
+    render(<MarkdownLink href="mailto:test@example.com">Mail us</MarkdownLink>);
+
+    expect(screen.getByRole('link')).toHaveAttribute(
+      'href',
+      'mailto:test@example.com',
+    );
+  });
+
+  it('neutralizes unsafe protocol links', () => {
+    const { container } = render(
+      <MarkdownLink href="javascript:alert(1)">Unsafe</MarkdownLink>,
+    );
+
+    expect(container.querySelector('a')).toBeNull();
+    expect(container.textContent).toContain('Unsafe');
   });
 });

@@ -105,7 +105,7 @@ describe('serializeToMdx', () => {
 
     expect(result).toContain('<MarkdownCodeBlock');
     expect(result).toContain('code={"const answer = 42;"}');
-    expect(result).toContain('language="ts"');
+    expect(result).toContain('language={"ts"}');
   });
 
   it('serializes codeBox blocks with plaintext fallback', () => {
@@ -115,7 +115,7 @@ describe('serializeToMdx', () => {
 
     expect(result).toContain('<div data-block-id="codebox-1">');
     expect(result).toContain('<MarkdownCodeBlock');
-    expect(result).toContain('language="plaintext"');
+    expect(result).toContain('language={"plaintext"}');
   });
 
   it('serializes quotes with caption footer lines', () => {
@@ -137,7 +137,7 @@ describe('serializeToMdx', () => {
       ],
     });
 
-    expect(result).toContain('<MarkdownAlerts type="warning">');
+    expect(result).toContain('<MarkdownAlerts type={"warning"}>');
     expect(result).toContain('Be careful');
     expect(result).toContain('<MarkdownLink href="/vault">now</MarkdownLink>');
   });
@@ -163,7 +163,7 @@ describe('serializeToMdx', () => {
       ],
     });
 
-    expect(result).toContain('<MarkdownToggle text="More details">');
+    expect(result).toContain('<MarkdownToggle text={"More details"}>');
     expect(result).toContain('<div data-block-id="toggle-child-1">');
     expect(result).toContain('Nested child');
     expect(result).toContain('### Nested heading');
@@ -228,7 +228,7 @@ describe('serializeToMdx', () => {
     });
 
     expect(result).toContain(
-      '<MarkdownEmbed embed="https://example.com/embed" caption="Embed caption" />'
+      '<MarkdownEmbed embed={"https://example.com/embed"} caption={"Embed caption"} />'
     );
   });
 
@@ -238,11 +238,54 @@ describe('serializeToMdx', () => {
     });
 
     expect(result).toContain('<MarkdownImage');
-    expect(result).toContain('url="https://example.com/image.png"');
-    expect(result).toContain('original_filename="image.png"');
-    expect(result).toContain('public_id="vault/image"');
-    expect(result).toContain('width="800"');
-    expect(result).toContain('height="600"');
+    expect(result).toContain('url={"https://example.com/image.png"}');
+    expect(result).toContain('original_filename={"image.png"}');
+    expect(result).toContain('public_id={"vault/image"}');
+    expect(result).toContain('width={800}');
+    expect(result).toContain('height={600}');
+  });
+
+  it('escapes quotes in serialized embed and image props', () => {
+    const result = serializeToMdx({
+      blocks: [
+        createEmbedBlock({
+          caption: 'Says "hello"',
+          embed: 'https://example.com/embed?note="quoted"',
+        }),
+        createImageBlock({
+          caption: 'Caption with "quotes"',
+          file: {
+            height: 600,
+            original_filename: 'quote "image".png',
+            public_id: 'vault/image',
+            url: 'https://example.com/image-"quoted".png',
+            width: 800,
+          },
+        }),
+      ],
+    });
+
+    expect(result).toContain('caption={"Says \\"hello\\""}');
+    expect(result).toContain('embed={"https://example.com/embed?note=\\"quoted\\""}');
+    expect(result).toContain('caption={"Caption with \\"quotes\\""}');
+    expect(result).toContain('original_filename={"quote \\"image\\".png"}');
+  });
+
+  it('escapes dangerous table cell characters before building GFM rows', () => {
+    const result = serializeToMdx({
+      blocks: [
+        createTableBlock({
+          content: [
+            ['Name', 'Value'],
+            ['Alpha | Beta', 'First line\nSecond line'],
+          ],
+          withHeadings: true,
+        }),
+      ],
+    });
+
+    expect(result).toContain('Alpha \\| Beta');
+    expect(result).toContain('First line<br />Second line');
   });
 
   it('returns an empty string for empty block arrays', () => {

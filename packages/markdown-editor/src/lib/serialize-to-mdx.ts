@@ -27,6 +27,46 @@ function processTextForMdx(text: string): string {
 }
 
 /**
+ * Serialize a string prop as an MDX expression so embedded quotes stay valid.
+ *
+ * @param name - Prop name written into the MDX tag.
+ * @param value - Raw string value.
+ * @returns MDX prop fragment.
+ */
+function serializeMdxStringProp(name: string, value: string): string {
+  return `${name}={${JSON.stringify(value)}}`;
+}
+
+/**
+ * Serialize a numeric prop when the value is finite.
+ *
+ * @param name - Prop name written into the MDX tag.
+ * @param value - Candidate numeric value.
+ * @returns MDX prop fragment or `null` when the value is invalid.
+ */
+function serializeMdxNumberProp(
+  name: string,
+  value: number | undefined,
+): string | null {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? `${name}={${String(value)}}`
+    : null;
+}
+
+/**
+ * Normalize a table cell so GFM row construction cannot be broken by content.
+ *
+ * @param cell - Raw table cell text.
+ * @returns Normalized cell text safe for row concatenation.
+ */
+function normalizeTableCell(cell: string): string {
+  return cell
+    .trim()
+    .replace(/\r?\n/g, '<br />')
+    .replace(/\|/g, '\\|');
+}
+
+/**
  * Wrap serialized block output with its original EditorJS block id.
  *
  * @param blockId - EditorJS block id used for preview scroll targeting.
@@ -119,7 +159,7 @@ export function serializeToMdx(
         const safeCode = JSON.stringify(data.code);
         content = `<MarkdownCodeBlock
       code={${safeCode}}
-      language="${data.language || 'plaintext'}"
+      ${serializeMdxStringProp('language', data.language || 'plaintext')}
     />`;
         break;
       }
@@ -142,7 +182,7 @@ export function serializeToMdx(
         const message = processTextForMdx(normalized);
         const type = data.type || 'info';
 
-        content = `<MarkdownAlerts type="${type}">
+        content = `<MarkdownAlerts ${serializeMdxStringProp('type', type)}>
 
 ${message}
 
@@ -160,14 +200,14 @@ ${message}
           items?: number;
           text?: string;
         };
-        const text = escapeMdxBraces(data.text?.trim() || 'Details');
+        const text = data.text?.trim() || 'Details';
         const itemsCount = data.items ?? 0;
         const toggleBlocks = blocks.slice(index + 1, index + 1 + itemsCount);
         const inner = toggleBlocks
           .map((nestedBlock) => serializeToMdx({ blocks: [nestedBlock] }, options))
           .join('\n\n');
 
-        content = `<MarkdownToggle text="${text}">
+        content = `<MarkdownToggle ${serializeMdxStringProp('text', text)}>
 
 ${inner}
 
@@ -189,9 +229,10 @@ ${inner}
 
         tableData.content.forEach((row: string[]) => {
           row.forEach((cell: string, cellIndex: number) => {
+            const normalizedCell = normalizeTableCell(cell);
             columnWidths[cellIndex] = Math.max(
               columnWidths[cellIndex] || 0,
-              cell.trim().length,
+              normalizedCell.length,
             );
           });
         });
@@ -199,7 +240,7 @@ ${inner}
         const rows = tableData.content.map((row: string[]) =>
           `| ${row
             .map((cell: string, cellIndex: number) =>
-              cell.trim().padEnd(columnWidths[cellIndex] ?? 0, ' '),
+              normalizeTableCell(cell).padEnd(columnWidths[cellIndex] ?? 0, ' '),
             )
             .join(' | ')} |`,
         );
@@ -226,7 +267,7 @@ ${inner}
           caption?: string;
           embed?: string;
         };
-        content = `<MarkdownEmbed embed="${data.embed}" caption="${data.caption}" />`;
+        content = `<MarkdownEmbed ${serializeMdxStringProp('embed', data.embed || '')} ${serializeMdxStringProp('caption', data.caption || '')} />`;
         break;
       }
 
@@ -242,13 +283,18 @@ ${inner}
           };
         };
         const file = data.file ?? {};
+        const imageProps = [
+          serializeMdxStringProp('url', file.url || ''),
+          serializeMdxStringProp('caption', data.caption || ''),
+          serializeMdxStringProp('original_filename', file.original_filename || ''),
+          serializeMdxStringProp('public_id', file.public_id || ''),
+          serializeMdxNumberProp('width', file.width),
+          serializeMdxNumberProp('height', file.height),
+        ]
+          .filter((value): value is string => value !== null)
+          .join('\n            ');
         content = `<MarkdownImage
-            url="${file.url || ''}"
-            caption="${data.caption || ''}"
-            original_filename="${file.original_filename || ''}"
-            public_id="${file.public_id || ''}"
-            width="${file.width ?? ''}"
-            height="${file.height ?? ''}"
+            ${imageProps}
           />`;
         break;
       }

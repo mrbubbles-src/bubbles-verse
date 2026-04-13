@@ -69,6 +69,20 @@ export const TOOL_NAME_BY_PLUGIN_KEY: Readonly<
   toggle: 'toggle',
 };
 
+const DEFAULT_BLOCK_PLUGIN_KEYS: readonly PluginKey[] = [
+  'paragraph',
+  'header',
+  'list',
+  'code',
+  'alert',
+  'quote',
+  'table',
+  'image',
+  'delimiter',
+  'toggle',
+  'embed',
+] as const;
+
 /**
  * Keep the reference CodeCup language list intact.
  */
@@ -128,16 +142,15 @@ export function resolvePluginKeys(
  * @returns EditorJS `defaultBlock` key.
  */
 export function resolveDefaultBlock(pluginKeys: readonly PluginKey[]): string {
-  if (pluginKeys.includes('paragraph')) {
+  const blockPluginKey = DEFAULT_BLOCK_PLUGIN_KEYS.find((pluginKey) =>
+    pluginKeys.includes(pluginKey)
+  );
+
+  if (!blockPluginKey || blockPluginKey === 'paragraph') {
     return 'paragraph';
   }
 
-  const firstPluginKey = pluginKeys.find(
-    (pluginKey): pluginKey is Exclude<PluginKey, 'paragraph'> =>
-      pluginKey !== 'paragraph'
-  );
-
-  return firstPluginKey ? TOOL_NAME_BY_PLUGIN_KEY[firstPluginKey] : 'paragraph';
+  return TOOL_NAME_BY_PLUGIN_KEY[blockPluginKey];
 }
 
 /**
