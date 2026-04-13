@@ -80,6 +80,17 @@ export function EditorForm({
   const statusLabelId = useId();
 
   useEffect(() => {
+    setDraftSavingDisabled(false);
+    setDescription(initialData?.description ?? '');
+    setTagsText((initialData?.tags ?? []).join(', '));
+    setStatus(initialData?.status ?? 'unpublished');
+    setTitle(initialData?.title ?? '');
+    setAutoTitle(initialData?.title);
+    setSlug(initialData?.slug ?? '');
+    setSlugManuallyEdited(false);
+  }, [initialData]);
+
+  useEffect(() => {
     let cancelled = false;
 
     if (!editorReady) {

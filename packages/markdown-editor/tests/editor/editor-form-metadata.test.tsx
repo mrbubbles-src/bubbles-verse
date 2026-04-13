@@ -143,4 +143,59 @@ describe('EditorForm metadata derivation', () => {
       );
     });
   });
+
+  it('resets manual slug overrides when a new initial session is loaded', async () => {
+    const { rerender } = render(
+      <EditorForm
+        editorContent={FIRST_OUTPUT}
+        editorOutput={vi.fn(async () => FIRST_OUTPUT)}
+        editorReady
+        initialData={{
+          content: FIRST_OUTPUT,
+          slug: 'story-driven-editor',
+          title: 'Story Driven Editor',
+        }}
+        isEditMode={false}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('story-driven-editor')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText('Slug'), {
+      target: { value: 'Custom Path' },
+    });
+    fireEvent.blur(screen.getByLabelText('Slug'), {
+      target: { value: 'Custom Path' },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Slug')).toHaveAttribute(
+        'value',
+        'custom-path'
+      );
+    });
+
+    rerender(
+      <EditorForm
+        editorContent={SECOND_OUTPUT}
+        editorOutput={vi.fn(async () => SECOND_OUTPUT)}
+        editorReady
+        initialData={{
+          content: SECOND_OUTPUT,
+          slug: 'second-title',
+          title: 'Second Title',
+        }}
+        isEditMode={false}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Slug')).toHaveAttribute(
+        'value',
+        'second-title'
+      );
+    });
+  });
 });

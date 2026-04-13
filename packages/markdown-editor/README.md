@@ -35,6 +35,7 @@ Shared client wrapper around the reference EditorJS setup from
 `to-be-integrated/`.
 
 - keeps the reference StrictMode cleanup guard to avoid double initialization
+- tears down and recreates EditorJS explicitly when real configuration changes require it
 - enables the full 15-tool surface by default
 - accepts `plugins` to subset the toolbar without changing the canonical order
 - restores mode-specific drafts from localStorage on mount
@@ -99,6 +100,7 @@ provided.
 - description, tags, and status (`published` | `unpublished`) stay package-level
 - create mode uses `topic-editor-create-draft`; edit mode uses `topic-editor-edit-draft`
 - successful submits clear the active draft and stop stale post-submit rewrites
+- loading a new `initialData` session resets form-local overrides instead of relying on a remount key
 - submit calls `onSuccess` with `{ title, slug, description, tags, status, editorContent, serializedContent, isEditMode }`
 
 You can also import and render the default form directly:

@@ -164,18 +164,3 @@ export function normalizeInitialEditorData(
     version: parsedContent.version ?? EDITOR_JS_VERSION,
   };
 }
-
-/**
- * Mirror the reference StrictMode cleanup guard.
- *
- * The first cleanup is skipped so React development double-mounts do not tear
- * down the still-needed EditorJS instance.
- *
- * @param cleanupHasRunOnce - Whether a cleanup already happened in this mount cycle.
- * @returns True when cleanup should be skipped.
- */
-export function shouldSkipInitialCleanup(
-  cleanupHasRunOnce: boolean
-): boolean {
-  return !cleanupHasRunOnce;
-}

@@ -40,3 +40,6 @@
 - Remove the legacy `FormBeispiel` shortcode from the shared serializer
   allowlist and align the package tests and review notes with that explicit
   removal.
+- Replace the old cleanup-skip heuristic with explicit EditorJS teardown/re-init
+  sequencing for real config changes, and reset `EditorForm` state explicitly
+  when a new `initialData` session is loaded.

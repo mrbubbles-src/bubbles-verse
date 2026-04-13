@@ -97,14 +97,6 @@ describe('editor tool helpers', () => {
     expect(imageTool.config.uploader?.uploadByFile).toBe(uploadByFile);
   });
 
-  it('mirrors the reference StrictMode cleanup guard', async () => {
-    const { shouldSkipInitialCleanup } = await import(
-      '../../src/lib/editor-content'
-    );
-
-    expect(shouldSkipInitialCleanup(false)).toBe(true);
-    expect(shouldSkipInitialCleanup(true)).toBe(false);
-  });
 });
 
 describe('editor content helpers', () => {

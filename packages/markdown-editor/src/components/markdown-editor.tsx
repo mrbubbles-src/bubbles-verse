@@ -23,7 +23,6 @@ import { PreviewPane } from './preview-pane';
 import {
   normalizeInitialEditorData,
   normalizeInitialFormData,
-  shouldSkipInitialCleanup,
 } from '../lib/editor-content';
 import { loadCreateDraft, loadEditDraft } from '../lib/draft-storage';
 import {
@@ -62,9 +61,9 @@ export function MarkdownEditor({
   const holderRef = useRef<HTMLDivElement | null>(null);
   const editorScrollRef = useRef<HTMLDivElement | null>(null);
   const importModalRef = useRef<ImportMarkdownModalHandle>(null);
-  const cleanupHasRunOnceRef = useRef(false);
   const onChangeRef = useRef(onChange);
   const onReadyRef = useRef(onReady);
+  const editorTeardownRef = useRef<Promise<void>>(Promise.resolve());
   const editorOutputRef = useRef<() => Promise<OutputData | undefined>>(
     async () => undefined
   );
@@ -80,18 +79,6 @@ export function MarkdownEditor({
     () => normalizeInitialFormData(resolvedInitialData),
     [resolvedInitialData]
   );
-  const defaultFormKey = useMemo(
-    () =>
-      JSON.stringify({
-        blockCount: normalizedInitialEditorData.blocks.length,
-        description: normalizedInitialFormData?.description ?? '',
-        slug: normalizedInitialFormData?.slug ?? '',
-        status: normalizedInitialFormData?.status ?? 'unpublished',
-        tags: normalizedInitialFormData?.tags ?? [],
-        title: normalizedInitialFormData?.title ?? '',
-      }),
-    [normalizedInitialEditorData.blocks.length, normalizedInitialFormData]
-  );
   const [editorContent, setEditorContent] = useState<OutputData | null>(
     normalizedInitialEditorData
   );
@@ -101,6 +88,30 @@ export function MarkdownEditor({
     () => activePluginKeys.join('|'),
     [activePluginKeys]
   );
+
+  /**
+   * Queue teardown of the current EditorJS instance before a re-init.
+   *
+   * @param editorInstance - Live EditorJS instance scheduled for destruction.
+   */
+  const destroyEditorInstance = (editorInstance: EditorJS | null): void => {
+    if (!editorInstance) {
+      setEditorReady(false);
+      return;
+    }
+
+    if (editorRef.current === editorInstance) {
+      editorRef.current = null;
+    }
+
+    setEditorReady(false);
+
+    editorTeardownRef.current = Promise.resolve(editorInstance.isReady)
+      .then(() => {
+        editorInstance.destroy();
+      })
+      .catch(() => {});
+  };
 
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -170,6 +181,12 @@ export function MarkdownEditor({
     }
 
     const initializeEditor = async () => {
+      await editorTeardownRef.current;
+
+      if (cancelled) {
+        return;
+      }
+
       const [EditorJs, toolRegistry] = await Promise.all([
         loadEditorJs(),
         loadEditorToolRegistry(activePluginKeys),
@@ -222,37 +239,13 @@ export function MarkdownEditor({
 
     return () => {
       cancelled = true;
-
-      if (shouldSkipInitialCleanup(cleanupHasRunOnceRef.current)) {
-        cleanupHasRunOnceRef.current = true;
-        return;
-      }
-
-      const editorInstance = editorRef.current;
-
-      if (!editorInstance?.isReady) {
-        editorRef.current = null;
-        setEditorReady(false);
-        return;
-      }
-
-      void editorInstance.isReady
-        .then(() => {
-          editorInstance.destroy();
-          setEditorReady(false);
-
-          if (editorRef.current === editorInstance) {
-            editorRef.current = null;
-          }
-        })
-        .catch(() => {});
+      destroyEditorInstance(editorRef.current);
     };
   }, [
     activePluginKeys,
     activePluginSignature,
     autofocus,
     imageUploader,
-    normalizedInitialEditorData,
     placeholder,
     readOnly,
   ]);
@@ -346,7 +339,6 @@ export function MarkdownEditor({
       ) : (
         <div className="xl:col-span-2">
           <EditorForm
-            key={defaultFormKey}
             editorOutput={editorOutput}
             editorContent={editorContent}
             editorReady={editorReady}
