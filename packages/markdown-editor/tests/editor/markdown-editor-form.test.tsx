@@ -1,4 +1,5 @@
 import type { OutputData } from '@editorjs/editorjs';
+import type { ComponentPropsWithoutRef } from 'react';
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useState } from 'react';
@@ -12,13 +13,12 @@ import type {
   MarkdownEditorSubmitData,
 } from '../../src/types/editor';
 
-const mdxRendererMock = vi.fn((props: { content: string }) => (
-  <div data-testid="mdx-renderer">{props.content}</div>
-));
-
 vi.mock('@bubbles/markdown-renderer', () => {
   return {
-    MdxRenderer: (props: { content: string }) => mdxRendererMock(props),
+    defaultComponents: {
+      h1: (props: ComponentPropsWithoutRef<'h1'>) => <h1 {...props} />,
+      p: (props: ComponentPropsWithoutRef<'p'>) => <p {...props} />,
+    },
   };
 });
 
@@ -195,18 +195,12 @@ describe('MarkdownEditor form surface', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('markdown-editor-preview')).toBeInTheDocument();
-      expect(screen.getByTestId('mdx-renderer')).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { name: 'Story Driven Editor' })
+      ).toBeInTheDocument();
     });
 
-    expect(screen.getByTestId('mdx-renderer')).toHaveTextContent(
-      '<div data-block-id="intro-heading">'
-    );
-    expect(screen.getByTestId('mdx-renderer')).toHaveTextContent(
-      'Story Driven Editor'
-    );
-    expect(screen.getByTestId('mdx-renderer')).toHaveTextContent(
-      '<div data-block-id="intro-body">'
-    );
+    expect(screen.getByText('Body copy')).toBeInTheDocument();
   });
 
   it('imports markdown files with the portal reference replacement flow', async () => {
@@ -247,13 +241,12 @@ describe('MarkdownEditor form surface', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId('mdx-renderer')).toHaveTextContent(
-        'Imported Title'
-      );
-      expect(screen.getByTestId('mdx-renderer')).toHaveTextContent(
-        'Imported body'
-      );
+      expect(
+        screen.getByRole('heading', { name: 'Imported Title' })
+      ).toBeInTheDocument();
     });
+
+    expect(screen.getByText('Imported body')).toBeInTheDocument();
   });
 
   it('surfaces image placeholder warnings during markdown import', async () => {
@@ -397,7 +390,7 @@ describe('MarkdownEditor form surface', () => {
       expect(screen.getByLabelText('Tags')).toHaveValue('edit, draft');
     });
 
-    expect(screen.getByText('Edit Draft Title')).toBeInTheDocument();
+    expect(screen.getAllByText('Edit Draft Title').length).toBeGreaterThanOrEqual(1);
   });
 
   it('saves edit-mode drafts to the edit localStorage key', async () => {

@@ -2,7 +2,9 @@
 
 import type { OutputData } from '@editorjs/editorjs';
 import type { RefObject } from 'react';
+import type { ComponentType } from 'react';
 
+import { evaluate } from '@mdx-js/mdx';
 import {
   Card,
   CardContent,
@@ -10,8 +12,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@bubbles/ui/shadcn/card';
-import { MdxRenderer } from '@bubbles/markdown-renderer';
-import { useMemo, useRef } from 'react';
+import { defaultComponents } from '@bubbles/markdown-renderer';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import * as runtime from 'react/jsx-runtime';
+import remarkGfm from 'remark-gfm';
 
 import { useScrollSync } from '../hooks/use-scroll-sync';
 import { serializeToMdx } from '../lib/serialize-to-mdx';
@@ -55,15 +59,56 @@ export function PreviewPane({
     () => serializeToMdx(effectiveContent),
     [effectiveContent]
   );
+  const [Compiled, setCompiled] = useState<ComponentType | null>(null);
+  const [compileError, setCompileError] = useState<Error | null>(null);
+  const [compiledVersion, setCompiledVersion] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function compilePreview(): Promise<void> {
+      try {
+        const evaluated = await evaluate(mdxContent, {
+          ...runtime,
+          remarkPlugins: [remarkGfm],
+          useMDXComponents: () => defaultComponents,
+        });
+
+        if (cancelled) {
+          return;
+        }
+
+        setCompileError(null);
+        setCompiled(() => evaluated.default as ComponentType);
+        setCompiledVersion((version) => version + 1);
+      } catch (value) {
+        if (cancelled) {
+          return;
+        }
+
+        setCompileError(
+          value instanceof Error
+            ? value
+            : new Error('Unknown markdown preview compilation error.')
+        );
+      }
+    }
+
+    void compilePreview();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mdxContent]);
 
   useScrollSync({
     editorScrollRef,
     previewScrollRef,
     editorHolderRef,
     blockIds,
-    enabled: blockIds.length > 0,
+    enabled: blockIds.length > 0 && compiledVersion > 0,
     direction: 'bidirectional',
-    contentVersion: mdxContent,
+    contentVersion: compiledVersion,
     anchorRatio: 0.35,
   });
 
@@ -82,7 +127,19 @@ export function PreviewPane({
         data-testid="markdown-editor-preview"
       >
         <div className="markdown-editor-preview-content">
-          <MdxRenderer content={mdxContent} />
+          {Compiled ? (
+            <Compiled />
+          ) : compileError ? (
+            <section data-state="error" role="status">
+              <p>{`Failed to render markdown preview: ${compileError.message}`}</p>
+            </section>
+          ) : (
+            <div
+              aria-hidden="true"
+              className="mx-auto my-4 h-48 w-full max-w-3xl animate-pulse rounded-md bg-muted"
+              data-testid="markdown-editor-preview-loading"
+            />
+          )}
         </div>
       </CardContent>
     </Card>

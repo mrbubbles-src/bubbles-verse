@@ -243,6 +243,7 @@
         "@editorjs/list": "^2.0.9",
         "@editorjs/quote": "^2.7.6",
         "@editorjs/table": "^2.4.5",
+        "@mdx-js/mdx": "^3.1.1",
         "@sotaproject/strikethrough": "^1.0.1",
         "editorjs-alert": "^1.1.4",
         "editorjs-annotation": "^1.1.0",

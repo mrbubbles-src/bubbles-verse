@@ -41,7 +41,7 @@ Shared client wrapper around the reference EditorJS setup from
 - autosaves create/edit drafts to the reference storage keys while authors type
 - imports `.md`, `.mdx`, and `.markdown` files through the portal-ref modal flow
 - previews converted block counts, image placeholders, and import warnings
-- renders a live MDX preview through `@bubbles/markdown-renderer`
+- renders a live MDX preview through a reference-style local compile step
 - keeps editor and preview scroll positions aligned by shared block ids
 - renders a custom metadata form through `renderForm`, or falls back to `EditorForm`
 - forwards image uploads through an app-provided `imageUploader`
@@ -128,6 +128,12 @@ const slug = generateSlug('Grüß&nbsp;Gott');
 
 Converts EditorJS `OutputData` into the MDX dialect consumed by
 `@bubbles/markdown-renderer`.
+
+For editor UX parity with the working references, the split-pane preview keeps
+its last successful compiled output mounted while the next MDX update compiles.
+Scroll re-sync runs from a stable compiled version instead of the raw MDX
+string, which avoids transient preview collapse and editor scroll jumps during
+block insertion.
 
 The serializer preserves the current security boundary from the reference
 implementation:

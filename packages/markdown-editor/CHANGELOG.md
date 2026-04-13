@@ -33,3 +33,7 @@
 - Add Story 4.6 portal-ref import parity, including the file-based markdown
   import modal, markdown-to-EditorJS conversion, shared editor styling, and
   import regression coverage.
+- Rework the split-pane preview to follow the reference-style local MDX compile
+  flow, keeping the last successful preview mounted during recompilation and
+  driving scroll re-sync from a stable compiled version to prevent editor jump
+  regressions during block insertion.
