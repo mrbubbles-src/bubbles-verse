@@ -67,6 +67,7 @@ Dependency rule: apps may depend on packages; packages must not import app code.
 | Scope                             | Start here                                             |
 | --------------------------------- | ------------------------------------------------------ |
 | Monorepo overview and setup       | [`documentation/README.md`](documentation/README.md)   |
+| Markdown package remediation plan | [`documentation/markdown-packages-remediation-plan-2026-04-13.md`](documentation/markdown-packages-remediation-plan-2026-04-13.md) |
 | Generated repo knowledge snapshot | [`docs/index.md`](docs/index.md)                       |
 | Coding and documentation rules    | [`AGENTS.md`](AGENTS.md)                               |
 | Story implementation artifacts    | `_bmad-output/implementation-artifacts/*.md`           |

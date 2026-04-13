@@ -10,6 +10,7 @@ App-specific details stay inside each workspace. For `it-counts`, start with [`.
 2. [architecture.md](architecture.md) - workspace graph, boundaries, shared packages
 3. [tooling.md](tooling.md) - Bun, Turbo, ESLint, Prettier, TypeScript, test entrypoints
 4. [troubleshooting.md](troubleshooting.md) - stale cache, env drift, hostnames, workspace wiring
+5. [markdown-packages-remediation-plan-2026-04-13.md](markdown-packages-remediation-plan-2026-04-13.md) - agreed implementation plan for the shared markdown package fixes
 
 ## Per workspace
 

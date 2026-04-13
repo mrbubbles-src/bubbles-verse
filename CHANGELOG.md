@@ -11,6 +11,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Updated active BMAD implementation stories to require `AGENTS.md` compliance and to prefer clean reuse of working code from `portal-ref` and `lms-ref` when relevant.
 - Added a root `bun run test` Turbo entrypoint and aligned serializer test docs
   around the new monorepo test flow.
+- Added a repo-level remediation plan for the shared markdown packages, covering
+  the editor preview regression, `FormBeispiel` removal, and follow-up renderer
+  hardening work.
 
 ## [0.0.2] - 2026-04-09
 
