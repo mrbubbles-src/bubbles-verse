@@ -43,3 +43,6 @@
 - Replace the old cleanup-skip heuristic with explicit EditorJS teardown/re-init
   sequencing for real config changes, and reset `EditorForm` state explicitly
   when a new `initialData` session is loaded.
+- Stop replaying the initial document into a freshly mounted EditorJS instance,
+  avoiding browser-side DOM removal errors during reference app mounts while
+  still re-rendering when `initialData` changes later.

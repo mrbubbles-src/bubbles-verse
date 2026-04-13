@@ -64,6 +64,7 @@ export function MarkdownEditor({
   const onChangeRef = useRef(onChange);
   const onReadyRef = useRef(onReady);
   const editorTeardownRef = useRef<Promise<void>>(Promise.resolve());
+  const appliedInitialDataRef = useRef<OutputData | null>(null);
   const editorOutputRef = useRef<() => Promise<OutputData | undefined>>(
     async () => undefined
   );
@@ -104,6 +105,7 @@ export function MarkdownEditor({
       editorRef.current = null;
     }
 
+    appliedInitialDataRef.current = null;
     setEditorReady(false);
 
     editorTeardownRef.current = Promise.resolve(editorInstance.isReady)
@@ -145,6 +147,10 @@ export function MarkdownEditor({
       return;
     }
 
+    if (appliedInitialDataRef.current === normalizedInitialEditorData) {
+      return;
+    }
+
     let cancelled = false;
 
     void editorInstance.isReady
@@ -159,6 +165,7 @@ export function MarkdownEditor({
           return;
         }
 
+        appliedInitialDataRef.current = normalizedInitialEditorData;
         setEditorContent(normalizedInitialEditorData);
         setEditorReady(true);
       })
@@ -195,6 +202,8 @@ export function MarkdownEditor({
       if (cancelled || !holderRef.current || editorRef.current) {
         return;
       }
+
+      appliedInitialDataRef.current = normalizedInitialEditorData;
 
       const editor = new EditorJs({
         autofocus,

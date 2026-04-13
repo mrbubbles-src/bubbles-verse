@@ -34,8 +34,11 @@ import '@bubbles/markdown-editor/styles/preview';
 Shared client wrapper around the reference EditorJS setup from
 `to-be-integrated/`.
 
-- keeps the reference StrictMode cleanup guard to avoid double initialization
+- keeps EditorJS mounts stable across React dev lifecycles with explicit
+  teardown/re-init sequencing
 - tears down and recreates EditorJS explicitly when real configuration changes require it
+- avoids replaying the same initial document back into a freshly mounted
+  EditorJS instance, which prevents DOM teardown races in live app mounts
 - enables the full 15-tool surface by default
 - accepts `plugins` to subset the toolbar without changing the canonical order
 - restores mode-specific drafts from localStorage on mount
