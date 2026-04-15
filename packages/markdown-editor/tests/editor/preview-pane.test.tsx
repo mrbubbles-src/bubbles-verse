@@ -15,7 +15,7 @@ vi.mock('@mdx-js/mdx', () => {
 
 vi.mock('@bubbles/markdown-renderer', () => {
   return {
-    defaultComponents: {},
+    previewComponents: {},
   };
 });
 

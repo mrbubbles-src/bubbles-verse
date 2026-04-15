@@ -28,6 +28,7 @@ import {
   MarkdownImage,
   MarkdownLink,
   MarkdownToggle,
+  previewComponents,
 } from '@bubbles/markdown-renderer';
 import '@bubbles/markdown-renderer/styles/renderer';
 ```
@@ -49,6 +50,10 @@ export function ArticleBody({ content }: { content: string }) {
 plain external image URLs. `MarkdownLink` keeps internal/hash behavior from the
 references, but only renders external anchors for safe schemes such as
 `https:`, `mailto:`, and `tel:`.
+
+For client-only MDX compilation flows such as the shared editor live preview,
+use `previewComponents`. It mirrors the default registry but swaps the async
+server-side `MarkdownImage` path for a synchronous preview-safe image component.
 
 Override or extend the default MDX registry per render:
 

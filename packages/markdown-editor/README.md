@@ -46,6 +46,8 @@ Shared client wrapper around the reference EditorJS setup from
 - imports `.md`, `.mdx`, and `.markdown` files through the portal-ref modal flow
 - previews converted block counts, image placeholders, and import warnings
 - renders a live MDX preview through a reference-style local compile step
+- uses a client-safe preview component registry so markdown image blocks work
+  inside the client-rendered editor preview
 - keeps editor and preview scroll positions aligned by shared block ids
 - renders a custom metadata form through `renderForm`, or falls back to `EditorForm`
 - forwards image uploads through an app-provided `imageUploader`

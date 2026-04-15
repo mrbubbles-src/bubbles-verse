@@ -46,3 +46,6 @@
 - Stop replaying the initial document into a freshly mounted EditorJS instance,
   avoiding browser-side DOM removal errors during reference app mounts while
   still re-rendering when `initialData` changes later.
+- Switch the live preview to a client-safe MDX component registry so inserted
+  markdown images no longer trip async server-component errors inside the
+  editor pane.

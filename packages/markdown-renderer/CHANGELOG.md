@@ -10,3 +10,5 @@
   inline-code styling.
 - Restore direct-url fallback support in `MarkdownImage`, fix blur placeholder
   MIME handling, and restrict external markdown links to safe protocols only.
+- Add `previewComponents` so client-side MDX preview flows can render markdown
+  images without hitting async server-component restrictions.

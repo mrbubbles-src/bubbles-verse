@@ -10,6 +10,7 @@ import {
   MarkdownImage,
   type MarkdownImageProps,
 } from './components/markdown-image/markdown-image';
+import { MarkdownPreviewImage } from './components/markdown-image/markdown-preview-image';
 import { MarkdownLink, type MarkdownLinkProps } from './components/markdown-link';
 import { MarkdownToggle } from './components/markdown-toggle';
 
@@ -107,6 +108,19 @@ export const defaultComponents = {
   ),
   MarkdownLink,
   MarkdownToggle,
+};
+
+/**
+ * Export a client-safe MDX component registry for live editor previews.
+ *
+ * This mirrors `defaultComponents`, but replaces async server-only image
+ * rendering with a synchronous client-safe image component.
+ */
+export const previewComponents = {
+  ...defaultComponents,
+  MarkdownImage: (props: MarkdownImageProps) => (
+    <MarkdownPreviewImage {...props} />
+  ),
 };
 
 /**

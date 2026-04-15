@@ -12,7 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@bubbles/ui/shadcn/card';
-import { defaultComponents } from '@bubbles/markdown-renderer';
+import { previewComponents } from '@bubbles/markdown-renderer';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as runtime from 'react/jsx-runtime';
 import remarkGfm from 'remark-gfm';
@@ -71,7 +71,7 @@ export function PreviewPane({
         const evaluated = await evaluate(mdxContent, {
           ...runtime,
           remarkPlugins: [remarkGfm],
-          useMDXComponents: () => defaultComponents,
+          useMDXComponents: () => previewComponents,
         });
 
         if (cancelled) {

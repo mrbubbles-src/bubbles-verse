@@ -1,5 +1,6 @@
 export {
   defaultComponents,
+  previewComponents,
   useMDXComponents,
 } from './default-components';
 export {
@@ -26,6 +27,7 @@ export {
   MarkdownImage,
   type MarkdownImageProps,
 } from './components/markdown-image/markdown-image';
+export { MarkdownPreviewImage } from './components/markdown-image/markdown-preview-image';
 export {
   MarkdownLink,
   type MarkdownLinkProps,

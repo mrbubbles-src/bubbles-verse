@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { defaultComponents, useMDXComponents } from '../src';
+import { defaultComponents, previewComponents, useMDXComponents } from '../src';
 
 describe('defaultComponents', () => {
   it('exports the full reference markdown component set', () => {
@@ -16,5 +16,13 @@ describe('defaultComponents', () => {
 
   it('returns the exported registry from useMDXComponents', () => {
     expect(useMDXComponents()).toBe(defaultComponents);
+  });
+
+  it('exports a preview registry for client-side MDX rendering', () => {
+    expect(previewComponents.MarkdownImage).toBeDefined();
+    expect(previewComponents.MarkdownImage).not.toBe(
+      defaultComponents.MarkdownImage,
+    );
+    expect(previewComponents.MarkdownLink).toBe(defaultComponents.MarkdownLink);
   });
 });

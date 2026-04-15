@@ -15,7 +15,7 @@ import type {
 
 vi.mock('@bubbles/markdown-renderer', () => {
   return {
-    defaultComponents: {
+    previewComponents: {
       h1: (props: ComponentPropsWithoutRef<'h1'>) => <h1 {...props} />,
       p: (props: ComponentPropsWithoutRef<'p'>) => <p {...props} />,
     },
@@ -56,15 +56,18 @@ const INITIAL_DATA: MarkdownEditorInitialData = {
 const latestOutput: OutputData = INITIAL_OUTPUT;
 
 class MockEditorJs {
+  static instances: MockEditorJs[] = [];
+
   public isReady: Promise<void>;
   private currentOutput: OutputData;
   private readonly destroyMock: () => void;
-  private readonly renderMock: (data: OutputData) => Promise<void>;
+  public readonly renderMock: (data: OutputData) => Promise<void>;
   public readonly blocks: {
     render: (data: OutputData) => Promise<void>;
   };
 
   constructor(config: { data?: OutputData; onReady?: () => void }) {
+    MockEditorJs.instances.push(this);
     this.currentOutput = config.data ?? latestOutput;
     this.destroyMock = vi.fn();
     this.renderMock = vi.fn(async (data: OutputData) => {
@@ -144,10 +147,12 @@ function RenderFormProbe({
 
 describe('MarkdownEditor form surface', () => {
   beforeEach(() => {
+    MockEditorJs.instances = [];
     window.localStorage.clear();
   });
 
   afterEach(() => {
+    MockEditorJs.instances = [];
     window.localStorage.clear();
   });
 
@@ -201,6 +206,51 @@ describe('MarkdownEditor form surface', () => {
     });
 
     expect(screen.getByText('Body copy')).toBeInTheDocument();
+  });
+
+  it('does not re-render the initial content into a freshly created EditorJS instance', async () => {
+    render(<MarkdownEditor initialData={INITIAL_DATA} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('markdown-editor-preview')).toBeInTheDocument();
+    });
+
+    expect(MockEditorJs.instances).toHaveLength(1);
+    expect(MockEditorJs.instances[0]?.renderMock).not.toHaveBeenCalled();
+  });
+
+  it('re-renders the live editor instance when initialData changes after mount', async () => {
+    const nextInitialData: MarkdownEditorInitialData = {
+      ...INITIAL_DATA,
+      content: {
+        ...INITIAL_OUTPUT,
+        blocks: [
+          INITIAL_OUTPUT.blocks[0]!,
+          {
+            id: 'next-body',
+            type: 'paragraph',
+            data: {
+              text: 'Fresh body copy',
+            },
+          },
+        ],
+      },
+    };
+    const { rerender } = render(<MarkdownEditor initialData={INITIAL_DATA} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('markdown-editor-preview')).toBeInTheDocument();
+    });
+
+    const instance = MockEditorJs.instances[0];
+    expect(instance).toBeDefined();
+    expect(instance?.renderMock).not.toHaveBeenCalled();
+
+    rerender(<MarkdownEditor initialData={nextInitialData} />);
+
+    await waitFor(() => {
+      expect(instance?.renderMock).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('imports markdown files with the portal reference replacement flow', async () => {
