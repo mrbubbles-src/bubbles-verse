@@ -1,5 +1,6 @@
 export { EditorForm } from './components/editor-form';
 export { MarkdownEditor } from './components/markdown-editor';
+export { createEditorImageUploader } from './lib/create-image-uploader';
 export {
   generateSlug,
   joinSlugSegments,

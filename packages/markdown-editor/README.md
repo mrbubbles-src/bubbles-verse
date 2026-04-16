@@ -12,7 +12,7 @@ This package now ships:
 - the portal-ref markdown import modal and markdown-to-EditorJS conversion flow
 - a live split-pane MDX preview with block-aware bidirectional scroll sync
 - the exported default `EditorForm` fallback for app-agnostic entry metadata
-- a package-owned Cloudinary upload route factory for Next route handlers
+- thin shared helpers for EditorJS image uploads and signed Cloudinary uploads
 - stylesheet exports and the shared EditorJS plugin dependency surface
 
 ## Available Imports
@@ -22,6 +22,7 @@ import {
   DEFAULT_PLUGIN_KEYS,
   EditorForm,
   MarkdownEditor,
+  createEditorImageUploader,
   generateSlug,
   joinSlugSegments,
   normalizeSlugPath,
@@ -31,6 +32,13 @@ import {
 
 import '@bubbles/markdown-editor/styles/editor';
 import '@bubbles/markdown-editor/styles/preview';
+
+import {
+  createEditorImageUploadResponse,
+  isUploadFile,
+  resolveCloudinaryErrorResponse,
+  uploadEditorImageToCloudinary,
+} from '@bubbles/markdown-editor/cloudinary-upload';
 
 import { createCloudinaryUploadRoute } from '@bubbles/markdown-editor/cloudinary-upload-route';
 ```
@@ -125,6 +133,24 @@ provided.
 - the package TypeScript config also checks `tests/`, so local editor warnings in
   test files should match `tsc --noEmit`
 
+Use the package form when your app only needs shared entry metadata:
+
+- `title`
+- `description`
+- `slug`
+- `status`
+- `tags`
+
+Use `renderForm` when your app needs extra domain-specific fields such as:
+
+- category trees
+- product- or project-specific metadata
+- review or workflow states
+- anything beyond the shared metadata contract
+
+`renderForm` only replaces the **Metadatenformular**. It does not replace the
+shared EditorJS shell, import flow, preview, serializer, or renderer contract.
+
 You can also import and render the default form directly:
 
 ```tsx
@@ -153,12 +179,43 @@ const pathSlug = joinSlugSegments(['2026', '04', 'Grüß Gott']);
 // "2026/04/gruess-gott"
 ```
 
-## `createCloudinaryUploadRoute`
+Typical app-side strategy patterns:
 
-Use the package route factory when a Next app wants the shared Cloudinary
-upload path without rebuilding the server-side plumbing in every app.
+```ts
+const blogSlug = ({ context, title }: MarkdownEditorSlugStrategyInput) => [
+  String(context?.year ?? ''),
+  String(context?.month ?? ''),
+  title,
+];
+```
 
-The route expects the repo-standard env vars:
+```ts
+const vaultSlug = ({ context, title }: MarkdownEditorSlugStrategyInput) => [
+  String(context?.mainCategory ?? ''),
+  String(context?.subCategory ?? ''),
+  title,
+];
+```
+
+```ts
+const portfolioSlug = ({ title }: MarkdownEditorSlugStrategyInput) => [
+  'projects',
+  title,
+];
+```
+
+These strategies stay app-owned. The package only normalizes segments and joins
+the final path safely.
+
+## Bild-Uploads
+
+Für neue Integrationen ist der Ziel-Schnitt:
+
+- eine app-lokale Next-Route pro App
+- ein kleiner Shared-Client-Uploader aus dem Package
+- ein kleiner Shared-Cloudinary-Helper aus dem Package
+
+Die Shared-Helper erwarten die Repo-Standard-Env-Variablen:
 
 ```env
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
@@ -166,30 +223,79 @@ NEXT_PUBLIC_CLOUDINARY_API_KEY
 CLOUDINARY_API_SECRET
 ```
 
-Minimal route example:
+### Client-Uploader
 
 ```ts
-import { createCloudinaryUploadRoute } from '@bubbles/markdown-editor/cloudinary-upload-route';
+const uploadImage = createEditorImageUploader({
+  endpoint: '/api/image-upload',
+  imageFolder: 'vault/editor',
+});
+```
+
+Der Client-Helper normalisiert Blob-basierte EditorJS-Uploads vor dem `fetch`
+zu echten `File`-Objekten mit stabilem Dateinamen. Das hält den Multipart-Body
+näher am Referenzpfad und vermeidet Unterschiede zwischen Datei-, Clipboard-
+und Drag-and-drop-Uploads.
+
+Der Server-Helper nutzt den offiziell signierten Cloudinary Upload-API-Request
+direkt per `fetch`, statt sich auf den SDK-Streampfad zu verlassen. Das ist im
+Monorepo wichtig, weil dieselbe Datei unter Bun über den SDK-Streampfad als
+unsigned fehlklassifiziert werden konnte, während der signierte REST-Upload
+stabil funktioniert.
+
+Die vollständigen technischen Findings dazu stehen in
+[documentation/image-upload-findings.md](./documentation/image-upload-findings.md).
+
+### App-lokale Route
+
+Minimaler Route-Handler mit app-seitiger Folder-Validierung:
+
+```ts
+import { NextResponse } from 'next/server';
+import {
+  createEditorImageUploadResponse,
+  isUploadFile,
+  resolveCloudinaryErrorResponse,
+  uploadEditorImageToCloudinary,
+} from '@bubbles/markdown-editor/cloudinary-upload';
 
 export const runtime = 'nodejs';
 
-export const POST = createCloudinaryUploadRoute({
-  folder: 'vault-uploads',
-});
-```
+export async function POST(request: Request) {
+  try {
+    const formData = await request.formData();
+    const file = formData.get('image');
+    const folder = formData.get('imageFolder');
 
-Optional auth or policy gates stay app-owned:
-
-```ts
-export const POST = createCloudinaryUploadRoute({
-  folder: 'vault-uploads',
-  authorize(request) {
-    if (!request.headers.get('x-admin')) {
-      return Response.json({ message: 'Forbidden', success: 0 }, { status: 403 });
+    if (!isUploadFile(file)) {
+      return NextResponse.json(
+        { message: 'No file uploaded.', success: 0 },
+        { status: 400 }
+      );
     }
-  },
-});
+
+    if (typeof folder !== 'string' || !folder.trim()) {
+      return NextResponse.json(
+        { message: 'Missing imageFolder field.', success: 0 },
+        { status: 400 }
+      );
+    }
+
+    const uploadResult = await uploadEditorImageToCloudinary(file, {
+      folder,
+    });
+
+    return NextResponse.json(createEditorImageUploadResponse(uploadResult));
+  } catch (error) {
+    const { message, status } = resolveCloudinaryErrorResponse(error);
+    return NextResponse.json({ message, success: 0 }, { status });
+  }
+}
 ```
+
+`createCloudinaryUploadRoute` stays available as a convenience wrapper when an
+app wants the same behavior with even less route code, but die bevorzugte
+Richtung ist die app-lokale dünne Route plus Shared-Helper.
 
 ## `serializeToMdx`
 

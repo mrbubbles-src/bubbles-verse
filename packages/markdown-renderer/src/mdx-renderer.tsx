@@ -8,7 +8,7 @@ import * as runtime from 'react/jsx-runtime';
 import { evaluate } from '@mdx-js/mdx';
 import remarkGfm from 'remark-gfm';
 
-import { defaultComponents } from './default-components';
+import { previewComponents } from './default-components';
 import type { MdxRendererComponents } from './types/mdx-components';
 
 type EvaluatedMdxComponent = ComponentType<Record<string, never>>;
@@ -54,8 +54,8 @@ export function MdxRenderer({ content, components }: MdxRendererProps) {
     async function compileContent() {
       try {
         const mergedComponents = components
-          ? { ...defaultComponents, ...components }
-          : defaultComponents;
+          ? { ...previewComponents, ...components }
+          : previewComponents;
         const evaluated = await evaluate(content, {
           ...runtime,
           remarkPlugins: [remarkGfm],

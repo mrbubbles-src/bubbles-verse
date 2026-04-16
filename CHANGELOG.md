@@ -24,6 +24,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Updated the markdown-packages manifest to record completed Phase-1 work and
   refocus the remaining roadmap on real app integration, slug standardization,
   and later repo-alignment follow-up.
+- Updated the markdown-packages manifest again after Phase 2, recording the
+  first real markdown-package integration pass, package-default metadata form
+  usage, and the first Cloudinary route verification.
+
+### Removed
+
+- Removed the disposable `apps/markdown-reference` validation app after the
+  shared markdown packages had been verified and documented.
 
 ## [0.0.2] - 2026-04-09
 

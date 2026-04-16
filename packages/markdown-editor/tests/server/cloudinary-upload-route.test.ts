@@ -1,25 +1,32 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+const {
+  createEditorImageUploadResponseMock,
+  isUploadFileMock,
+  resolveCloudinaryErrorResponseMock,
+  uploadEditorImageToCloudinaryMock,
+} = vi.hoisted(() => ({
+  createEditorImageUploadResponseMock: vi.fn(),
+  isUploadFileMock: vi.fn(),
+  resolveCloudinaryErrorResponseMock: vi.fn(),
+  uploadEditorImageToCloudinaryMock: vi.fn(),
+}));
+
+vi.mock('../../src/server/cloudinary-upload', () => ({
+  createEditorImageUploadResponse: createEditorImageUploadResponseMock,
+  isUploadFile: isUploadFileMock,
+  resolveCloudinaryConfig: vi.fn(),
+  resolveCloudinaryErrorResponse: resolveCloudinaryErrorResponseMock,
+  uploadEditorImageToCloudinary: uploadEditorImageToCloudinaryMock,
+}));
+
 import { createCloudinaryUploadRoute } from '../../src/server/cloudinary-upload-route';
 
-const { configMock, uploadStreamMock } = vi.hoisted(() => ({
-  configMock: vi.fn(),
-  uploadStreamMock: vi.fn(),
-}));
-
-vi.mock('cloudinary', () => ({
-  v2: {
-    config: configMock,
-    uploader: {
-      upload_stream: uploadStreamMock,
-    },
-  },
-}));
-
 afterEach(() => {
-  configMock.mockReset();
-  uploadStreamMock.mockReset();
-  vi.unstubAllEnvs();
+  createEditorImageUploadResponseMock.mockReset();
+  isUploadFileMock.mockReset();
+  resolveCloudinaryErrorResponseMock.mockReset();
+  uploadEditorImageToCloudinaryMock.mockReset();
 });
 
 /**
@@ -36,61 +43,37 @@ function createUploadRequest(formData: FormData): Request {
 
 describe('createCloudinaryUploadRoute', () => {
   it('uploads the image and returns the EditorJS image-tool response shape', async () => {
-    vi.stubEnv('NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME', 'demo-cloud');
-    vi.stubEnv('NEXT_PUBLIC_CLOUDINARY_API_KEY', 'demo-key');
-    vi.stubEnv('CLOUDINARY_API_SECRET', 'demo-secret');
+    const file = new File(['image-bytes'], 'diagram.png', { type: 'image/png' });
 
-    uploadStreamMock.mockImplementation(
-      (
-        options: {
-          filename_override?: string;
-          folder: string;
-        },
-        callback: (
-          error: Error | null,
-          result?: {
-            height: number;
-            original_filename: string;
-            public_id: string;
-            secure_url: string;
-            width: number;
-          }
-        ) => void
-      ) => {
-        expect(options).toEqual({
-          filename_override: 'diagram',
-          folder: 'vault-uploads',
-        });
-
-        return {
-          end() {
-            callback(null, {
-              height: 720,
-              original_filename: 'diagram',
-              public_id: 'vault/diagram',
-              secure_url: 'https://cdn.example.com/diagram.png',
-              width: 1280,
-            });
-          },
-        };
-      }
-    );
+    isUploadFileMock.mockReturnValue(true);
+    uploadEditorImageToCloudinaryMock.mockResolvedValue({
+      height: 720,
+      original_filename: 'diagram',
+      public_id: 'vault/diagram',
+      secure_url: 'https://cdn.example.com/diagram.png',
+      width: 1280,
+    });
+    createEditorImageUploadResponseMock.mockReturnValue({
+      file: {
+        height: 720,
+        original_filename: 'diagram',
+        public_id: 'vault/diagram',
+        url: 'https://cdn.example.com/diagram.png',
+        width: 1280,
+      },
+      success: 1,
+    });
 
     const route = createCloudinaryUploadRoute({
       folder: 'vault-uploads',
     });
     const formData = new FormData();
-    formData.set(
-      'image',
-      new File(['image-bytes'], 'diagram.png', { type: 'image/png' })
-    );
+    formData.set('image', file);
 
     const response = await route(createUploadRequest(formData));
 
-    expect(configMock).toHaveBeenCalledWith({
-      api_key: 'demo-key',
-      api_secret: 'demo-secret',
-      cloud_name: 'demo-cloud',
+    expect(uploadEditorImageToCloudinaryMock).toHaveBeenCalledWith(file, {
+      folder: 'vault-uploads',
     });
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
@@ -125,13 +108,11 @@ describe('createCloudinaryUploadRoute', () => {
       message: 'Forbidden',
       success: 0,
     });
-    expect(uploadStreamMock).not.toHaveBeenCalled();
+    expect(uploadEditorImageToCloudinaryMock).not.toHaveBeenCalled();
   });
 
   it('returns a 400 response when no image file was provided', async () => {
-    vi.stubEnv('NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME', 'demo-cloud');
-    vi.stubEnv('NEXT_PUBLIC_CLOUDINARY_API_KEY', 'demo-key');
-    vi.stubEnv('CLOUDINARY_API_SECRET', 'demo-secret');
+    isUploadFileMock.mockReturnValue(false);
 
     const route = createCloudinaryUploadRoute({
       folder: 'vault-uploads',
@@ -142,6 +123,36 @@ describe('createCloudinaryUploadRoute', () => {
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
       message: 'No file uploaded.',
+      success: 0,
+    });
+  });
+
+  it('maps upload helper errors through the shared error formatter', async () => {
+    const file = new File(['image-bytes'], 'diagram.png', { type: 'image/png' });
+
+    isUploadFileMock.mockReturnValue(true);
+    uploadEditorImageToCloudinaryMock.mockRejectedValue({
+      error: {
+        http_code: 401,
+        message: 'Unauthorized',
+      },
+    });
+    resolveCloudinaryErrorResponseMock.mockReturnValue({
+      message: 'Unauthorized',
+      status: 401,
+    });
+
+    const route = createCloudinaryUploadRoute({
+      folder: 'vault-uploads',
+    });
+    const formData = new FormData();
+    formData.set('image', file);
+
+    const response = await route(createUploadRequest(formData));
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({
+      message: 'Unauthorized',
       success: 0,
     });
   });

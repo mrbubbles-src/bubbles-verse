@@ -9,7 +9,9 @@ Status:
 - langlebige Referenz für spätere Chats, Reviews und Implementierungen
 - Stand dieses Dokuments:
   - Phase 1 ist umgesetzt
-  - nächste Arbeit ist Folgearbeit ab Phase 2
+  - Phase 2 ist umgesetzt
+  - nächste Arbeit ist gezielte Folgearbeit nach der ersten echten
+    App-Integration
 
 Diese Datei ist absichtlich kein loses Brainstorming. Sie ist der aktuell
 verbindliche Plan für die Markdown-Packages. Wer später daran arbeitet, soll
@@ -223,6 +225,21 @@ Die folgenden Punkte sind nicht mehr offen, sondern bereits erledigt:
 - Shiki ist auf den Repo-Standard umgestellt:
   - `catppuccin-latte`
   - `catppuccin-mocha`
+- Eine echte Next.js-Validierungs-App hat die package-seitige Upload- und
+  Metadatenintegration erfolgreich gegen reale Save-/Render-/Upload-Flows
+  verifiziert.
+- Die Package-Default-Metadatenform wurde bereits erfolgreich in einer echten
+  App-Integration genutzt statt nur in isolierten Paket-Tests.
+- Standard-Slugs und app-seitige Pfad-Slugs wurden bereits erfolgreich über
+  `slugStrategy` in einer echten App validiert.
+- Standard-Metadaten plus `editorContent` und `serializedContent` wurden bereits
+  erfolgreich gemeinsam persistiert und wieder gerendert.
+- Die Package-README dokumentiert jetzt konkrete Slug-Muster für:
+  - Blog
+  - Vault
+  - Portfolio
+- Die Package-README grenzt jetzt klar ab, wann die Package-Form reicht und
+  wann `renderForm` für eigene Metadaten nötig ist.
 - Die TypeScript-Projektkonfiguration der Markdown-Packages prüft auch die
   Testdateien, sodass IDE-/TS-Fehler in Tests nicht mehr an einer falschen
   oder unvollständigen Paketkonfiguration hängen.
@@ -555,19 +572,10 @@ ist kaputt, aber es ist noch nicht am gewünschten Zielbild.
 
 ### Hoch priorisiert
 
-- Die neue Cloudinary-Route-Factory einmal in einer echten App-Integration
-  sauber anschließen und gegen reale Upload-Flows verifizieren.
-- Den Package-Slug-Baukasten von "funktioniert" auf "klar dokumentierter,
-  bewusst geschnittener Standard" nachziehen.
-  Das betrifft vor allem:
-  - klare Helper-Grenzen
-  - klare Beispiele pro App-Typ
-  - saubere Erwartung an `slugStrategy`
-- Die Default-Metadatenform fachlich finalisieren:
-  - gemeinsame Standardfelder festziehen
-  - sauber dokumentieren, wann die Package-Form reicht
-  - sauber dokumentieren, wann `renderForm` für app-spezifische Metadaten
-    verwendet werden soll
+- Die nächste echte Consumer-App als Validierungsfläche nutzen und nur
+  reproduzierbare echte Lücken aus ihr zurück in die Packages ziehen.
+- Einen echten UI-Upload-Flow zusätzlich browserseitig gegen den Editor selbst
+  absichern, sobald der lokale Browser-MCP-/Playwright-Pfad wieder stabil ist.
 
 ### Mittlere Priorität
 
@@ -578,6 +586,9 @@ ist kaputt, aber es ist noch nicht am gewünschten Zielbild.
   - Blog
   - Coding Vault
   - Portfolio
+- Die nächste echte Consumer-App bewusst auswählen und dort den
+  Package-Standard erneut gegen einen realen Save-/Render-/Upload-Flow
+  verifizieren
 
 ### Aktuell ausdrücklich nicht offen
 
@@ -587,6 +598,9 @@ bereits umgesetzt sind:
 - RHF-Rückbau der Default-Form
 - package-seitige Cloudinary-Route-Factory
 - Catppuccin-Umstellung für Shiki
+- erste echte App-Integration zur Validierung der Package-Schnittstellen
+- Dokumentation des Slug-Baukastens als app-seitiger Strategie-Hook
+- fachliche Einordnung der Package-Default-Form gegenüber `renderForm`
 
 ### Laufende Regel für Folgearbeit
 
@@ -645,8 +659,9 @@ Folgendes mitnehmen:
 - Die Packages sollen bewusst wiederverwendbar und konfigurierbar sein.
 - Vieles ist bereits funktionierend und darf nicht grundlos wieder aufgerissen
   werden.
-- Offene Arbeit liegt vor allem bei Form-Standardisierung, Upload-Architektur,
-  Slug-Baukasten, echter App-Integration und weiterem Repo-Alignment.
+- Offene Arbeit liegt jetzt vor allem bei weiterer realer Verifikation,
+  `mdast`-/AST-Aufräumen, Repo-Alignment und der nächsten Consumer-App nach der
+  Reference-Validierung.
 - Jede relevante Entscheidung muss gegen `AGENTS.md`, Referenzen,
   Repo-Standards und offizielle Doku geprüft werden.
 - Geplante Umbauten funktionierender Bereiche werden nicht einfach gemacht,

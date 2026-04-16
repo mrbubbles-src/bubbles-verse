@@ -54,6 +54,11 @@ references, but only renders external anchors for safe schemes such as
 `catppuccin-latte` in light mode and `catppuccin-mocha` in dark mode so the
 syntax palette matches the rest of the repo.
 
+`MdxRenderer` is a client component. It therefore compiles with the
+client-safe `previewComponents` registry by default, so saved MDX strings can
+render markdown images without tripping async server-component errors in client
+runtime paths such as previews or interactive app shells.
+
 For client-only MDX compilation flows such as the shared editor live preview,
 use `previewComponents`. It mirrors the default registry but swaps the async
 server-side `MarkdownImage` path for a synchronous preview-safe image component.

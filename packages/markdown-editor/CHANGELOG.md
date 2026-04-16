@@ -58,3 +58,20 @@
   warnings surface correctly inside the workspace.
 - Add path-aware slug helpers plus a package-owned Cloudinary upload route
   factory for Next route handlers so apps can reuse the shared upload plumbing.
+- Add a lower-level `uploadCloudinaryImage` helper so apps can keep their
+  Next route thin and pass the target Cloudinary folder per editor instance.
+- Add a shared `createEditorImageUploader()` helper and a lower-level
+  `cloudinary-upload` server module so apps can keep one thin upload route per
+  app while passing `imageFolder` per editor instance.
+- Normalize Blob-based image uploads into explicit `File` objects before the
+  shared client helper posts them, keeping EditorJS clipboard/drag uploads
+  aligned with the same multipart contract as file-picker uploads.
+- Replace the shared Cloudinary SDK stream upload with the signed Upload API
+  `fetch` path so Bun-based app runs no longer misclassify some valid image
+  files as unsigned uploads.
+- Add package-local documentation that records the image-upload debugging
+  findings, the Bun/Cloudinary SDK pitfall, and the final shared route/helper
+  architecture.
+- Expand the package README with concrete slug-strategy patterns plus explicit
+  guidance for when the shared `EditorForm` is sufficient and when apps should
+  switch to `renderForm`.

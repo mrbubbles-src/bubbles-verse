@@ -4,6 +4,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { MdxRenderer } from '../src';
+import { defaultComponents, previewComponents } from '../src/default-components';
 
 vi.mock('next/image', () => ({
   default: ({
@@ -26,6 +27,20 @@ describe('MdxRenderer', () => {
 
     expect(await screen.findByRole('heading', { name: 'Hello world' })).toBeInTheDocument();
     expect(await screen.findByText('Heads up')).toBeInTheDocument();
+  });
+
+  it('uses the client-safe preview image component by default', async () => {
+    render(
+      <MdxRenderer
+        content={'<MarkdownImage url="https://cdn.example.com/image.png" caption="Preview image" />'}
+      />,
+    );
+
+    expect(await screen.findByAltText('Preview image')).toHaveAttribute(
+      'src',
+      'https://cdn.example.com/image.png',
+    );
+    expect(previewComponents.MarkdownImage).not.toBe(defaultComponents.MarkdownImage);
   });
 
   it('lets consumers override and extend MDX components', async () => {
