@@ -88,7 +88,7 @@ export function BubblesSidebarLayout({
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarHeader>
-        <SidebarSeparator />
+        {/* <SidebarSeparator /> */}
         <SidebarContent className={classNames?.sidebarContent}>
           <BubblesSidebarNav sections={sidebarData.sections} />
         </SidebarContent>

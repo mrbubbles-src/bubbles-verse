@@ -106,13 +106,23 @@ export function BubblesAppHeader({
           {actions ? (
             <div
               className={cn(
-                'flex justify-center md:col-start-2 md:row-start-1 md:shrink-0 md:items-center md:justify-self-end',
+                'hidden md:col-start-2 md:row-start-1 md:flex md:shrink-0 md:items-center md:justify-self-end',
                 classNames?.actions
               )}>
               {actions}
             </div>
           ) : null}
         </div>
+
+        {actions ? (
+          <div
+            className={cn(
+              'flex justify-center md:hidden',
+              classNames?.actions
+            )}>
+            {actions}
+          </div>
+        ) : null}
       </div>
     </header>
   );

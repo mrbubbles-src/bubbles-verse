@@ -58,7 +58,7 @@ describe('BubblesAppHeader', () => {
     );
 
     expect(screen.getByRole('button', { name: 'Theme' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Timer' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Timer' })).toHaveLength(2);
   });
 
   it('merges header class name hooks onto the expected wrappers', () => {

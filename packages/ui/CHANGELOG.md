@@ -40,3 +40,4 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Collapsed sidebar navigation now hides top-level labels completely instead of letting truncated text peek through icon mode.
 - Shared header utility separators can now be nudged cleanly into visual alignment with neighboring controls.
 - `BubblesSidebarLayout` now supports a dedicated `mobileHeaderActions` slot so mobile top-row utilities can sit beside breadcrumbs while lower mobile actions stay centered.
+- Inset shells now clip their sticky header/content to the same rounded corners top and bottom, so the shared package keeps consistent corner radii across apps.
