@@ -14,6 +14,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Added a repo-level remediation plan for the shared markdown packages, covering
   the editor preview regression, `FormBeispiel` removal, and follow-up renderer
   hardening work.
+- Added a repo-root working manifest for the shared markdown packages so future
+  implementation decisions keep the agreed reference-parity and
+  package-reusability constraints intact.
+- Tightened the repo-root markdown packages manifest with explicit
+  feature-complete areas, remaining follow-up work, and a rule to verify
+  markdown-package changes against references, repo standards, and official
+  documentation.
 
 ## [0.0.2] - 2026-04-09
 

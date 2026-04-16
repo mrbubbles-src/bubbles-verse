@@ -15,6 +15,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Avoid comments that merely restate the function name or implementation.
 - Always assume your knowledge is outdated, verify it with all your available tooling.
 - Use the `init` command first once in a new NextDevTools session to initialize the MCP.
+- When writing german text, always use umlauts instead of "ae", "oe", "ue".
 
 ## UI/UX
 
