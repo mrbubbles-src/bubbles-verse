@@ -50,24 +50,24 @@ export function Footer({
 
   return (
     <footer className={cn('border-t border-border/40', className)}>
-      <div className="mx-auto flex max-w-md flex-col items-center gap-2 px-4 py-4 text-[11px] text-muted-foreground/50">
+      <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-3 px-4 py-6 text-center text-sm text-muted-foreground/70">
         {image && (
           <Image
             src={image.src}
             alt={image.alt}
-            width={image.width ?? 200}
-            height={image.height ?? 80}
-            className="h-auto w-auto max-w-[12rem] opacity-50"
+            width={image.width ?? 240}
+            height={image.height ?? 96}
+            className="h-auto w-auto max-w-[14rem] opacity-60 md:max-w-[16rem]"
           />
         )}
 
-        <p className="text-center">
+        <p>
           &copy; {currentYear}{' '}
           <Link
             href={authorHref}
             target="_blank"
             rel="noreferrer"
-            className="touch-hitbox text-primary hover:text-primary/70">
+            className="touch-hitbox font-medium text-primary hover:text-primary/70">
             {author}
           </Link>
           {links.length > 0 && (
@@ -80,7 +80,7 @@ export function Footer({
                     href={link.href}
                     target={link.external !== false ? '_blank' : undefined}
                     rel={link.external !== false ? 'noreferrer' : undefined}
-                    className="touch-hitbox text-primary hover:text-primary/70">
+                    className="touch-hitbox font-medium text-primary hover:text-primary/70">
                     {link.label}
                   </Link>
                 </span>
@@ -90,19 +90,19 @@ export function Footer({
         </p>
 
         {!hideCatppuccinCredit && (
-          <p className="text-center">
+          <p>
             Color theme based on{' '}
             <Link
               href="https://github.com/catppuccin/catppuccin"
               target="_blank"
               rel="noreferrer"
-              className="touch-hitbox text-primary hover:text-primary/70">
+              className="touch-hitbox font-medium text-primary hover:text-primary/70">
               Catppuccin
             </Link>
           </p>
         )}
 
-        {children}
+        {children ? <div className="text-center">{children}</div> : null}
       </div>
     </footer>
   );

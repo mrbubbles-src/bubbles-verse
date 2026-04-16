@@ -1,0 +1,136 @@
+import type { IconSvgElement } from '@hugeicons/react';
+
+/**
+ * Controls how a sidebar item matches the current pathname.
+ */
+export type BubblesSidebarMatch = 'exact' | 'prefix';
+
+/**
+ * Defines one logo asset used by the shared sidebar brand block.
+ */
+export type BubblesSidebarBrandAsset = {
+  src: string;
+  alt: string;
+};
+
+/**
+ * Describes the shared sidebar brand link and both logo states.
+ */
+export type BubblesSidebarBrand = {
+  href: string;
+  compactLogo: BubblesSidebarBrandAsset;
+  fullLogo: BubblesSidebarBrandAsset;
+};
+
+/**
+ * Represents one recursive sidebar navigation entry.
+ */
+export type BubblesSidebarItem = {
+  id: string;
+  title: string;
+  href?: string;
+  icon?: IconSvgElement;
+  match?: BubblesSidebarMatch;
+  children?: BubblesSidebarItem[];
+};
+
+/**
+ * Groups sidebar items under one shared section label.
+ */
+export type BubblesSidebarSection = {
+  id: string;
+  title: string;
+  items: BubblesSidebarItem[];
+};
+
+/**
+ * Defines the top-level shared sidebar data contract.
+ */
+export type BubblesSidebarData = {
+  brand: BubblesSidebarBrand;
+  sections: BubblesSidebarSection[];
+};
+
+/**
+ * Describes one breadcrumb segment in the shared header.
+ */
+export type BubblesBreadcrumb = {
+  label: string;
+  href?: string;
+};
+
+/**
+ * Defines the optional authenticated user footer menu.
+ */
+export type BubblesSidebarUser = {
+  name: string;
+  email: string;
+  avatarSrc?: string;
+  dashboardHref: string;
+  settingsHref: string;
+  logoutHref: string;
+};
+
+/**
+ * Checks whether a pathname matches one sidebar href using the configured rule.
+ *
+ * Prefix matching treats `/foo` as active for `/foo` and `/foo/bar`, but not
+ * for unrelated siblings such as `/foobar`.
+ */
+export function matchesBubblesSidebarPath(
+  pathname: string,
+  href: string,
+  match: BubblesSidebarMatch = 'exact'
+): boolean {
+  if (match === 'exact') {
+    return pathname === href;
+  }
+
+  if (href === '/') {
+    return pathname === '/';
+  }
+
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+/**
+ * Returns `true` when any descendant of an item matches the current pathname.
+ */
+export function bubblesSidebarHasActiveDescendant(
+  pathname: string,
+  item: BubblesSidebarItem
+): boolean {
+  return (
+    item.children?.some((child) =>
+      isBubblesSidebarItemActive(pathname, child)
+    ) ?? false
+  );
+}
+
+/**
+ * Returns `true` when an item itself or one of its descendants is active.
+ */
+export function isBubblesSidebarItemActive(
+  pathname: string,
+  item: BubblesSidebarItem
+): boolean {
+  const matchesSelf = item.href
+    ? matchesBubblesSidebarPath(pathname, item.href, item.match)
+    : false;
+
+  return matchesSelf || bubblesSidebarHasActiveDescendant(pathname, item);
+}
+
+/**
+ * Returns `true` when a collapsible item should open for the current pathname.
+ */
+export function isBubblesSidebarItemExpanded(
+  pathname: string,
+  item: BubblesSidebarItem
+): boolean {
+  if (!item.children?.length) {
+    return false;
+  }
+
+  return isBubblesSidebarItemActive(pathname, item);
+}

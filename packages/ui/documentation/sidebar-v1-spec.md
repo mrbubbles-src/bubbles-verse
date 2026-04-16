@@ -2,7 +2,7 @@
 
 ## Status
 
-Planned. This document defines the agreed v1 target before implementation starts.
+Implemented. This document now records the v1 contract that shipped in the monorepo.
 
 ## Goal
 
@@ -64,6 +64,9 @@ Responsibilities:
 - render the shared header row
 - render optional breadcrumbs
 - render optional authenticated user footer menu
+- keep the top header sticky by default so the trigger stays available while scrolling
+- support optional supporting copy below the breadcrumb row
+- support optional right-aligned header actions for app-owned controls
 - render `children` in the main inset content area
 
 ### Proposed props
@@ -73,6 +76,9 @@ type BubblesSidebarLayoutProps = {
   sidebarData: BubblesSidebarData;
   breadcrumbs?: BubblesBreadcrumb[];
   user?: BubblesSidebarUser;
+  description?: React.ReactNode;
+  descriptionAction?: React.ReactNode;
+  headerActions?: React.ReactNode;
   children: React.ReactNode;
 };
 ```
@@ -138,6 +144,7 @@ type BubblesBreadcrumb = {
 
 ### Header behavior
 
+- Header is sticky by default
 - Header always has the same height and spacing rhythm
 - If `breadcrumbs` exist:
   - render trigger
@@ -147,8 +154,13 @@ type BubblesBreadcrumb = {
   - render trigger
   - keep the same header height
   - do not render breadcrumbs
-
-v1 does not include page title, description, timer, help dialog, or theme toggle in the shared layout header. Those remain app concerns unless explicitly promoted later.
+- If `description` exists:
+  - render it beneath the breadcrumb row
+- If `descriptionAction` exists:
+  - render it next to the supporting copy
+- If `headerActions` exist:
+  - render them in the right-aligned action area
+- App-owned controls such as theme toggles and timers may plug into the shared header through `headerActions`.
 
 ### Branding behavior
 
@@ -254,9 +266,9 @@ Current files likely to be replaced or simplified during the integration spike:
 
 - `apps/teacherbuddy/components/app-shell.tsx`
 - `apps/teacherbuddy/components/navigation/sidebar-nav.tsx`
-- parts of `apps/teacherbuddy/components/header.tsx`
+- former page-local header wiring now collapsed into the shared sticky header slots
 
-The shared layout should absorb the sidebar shell and breadcrumb/header baseline, while TeacherBuddy keeps app-specific header tools such as the timer, page metadata, and theme toggle until a later decision promotes them to shared UI.
+The shared layout now absorbs the sticky header frame and breadcrumb baseline, while TeacherBuddy injects app-specific controls such as the timer and theme toggle through the shared header action slots.
 
 ## Testing strategy
 
@@ -295,7 +307,6 @@ When the feature is implemented, update at least:
 ## Open follow-up topics after v1
 
 - Should the shared header eventually support page titles and descriptions?
-- Should theme toggle or other app actions get a slot-based extension point?
 - Should non-link action items be supported in the nav tree?
 - Should more sidebar templates be added alongside the `sidebar-08`-style layout?
 - Should logo handling support static imports in addition to plain `src` strings?

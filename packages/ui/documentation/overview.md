@@ -42,13 +42,17 @@ bun run lint && bun run typecheck
 
 Consumer apps should still pass their own `bun run lint` / `bun run typecheck` — export surface changes can break importers.
 
-## Planned shared shells
+## Shared shells
 
 - Sidebar layout work should stay in `components/*`, not in `shadcn/*`, when it composes existing primitives into one opinionated app shell.
-- The agreed v1 target for the shared sidebar lives in [sidebar-v1-spec.md](sidebar-v1-spec.md).
+- `BubblesSidebarLayout` is the shared inset shell for apps that want the repo-standard sidebar behavior.
+- The shared shell header is sticky by default so the trigger and navigation context stay visible while scrolling.
+- The header supports optional supporting copy and optional right-aligned action content in addition to breadcrumbs.
+- `BubblesBreadcrumbs` and `lib/bubbles-sidebar` expose the shared breadcrumb and data contract pieces without requiring the full shell.
+- The v1 contract and rationale live in [sidebar-v1-spec.md](sidebar-v1-spec.md).
 
 ## Anti-patterns
 
-- Importing **`next/image`** or **`Link`** with app-specific `href` shapes inside generic UI — wrap in the app instead.
+- Importing **`next/image`** or **`Link`** with app-specific `href` shapes inside generic UI unless the component is intentionally a Next.js-only shared app shell such as `BubblesSidebarLayout`.
 - Embedding **environment-specific URLs** or **feature flags** — pass them as props from the app.
 - Copy-pasting a component into an app “just once” — if a second app needs it, promote it here with a sensible export.

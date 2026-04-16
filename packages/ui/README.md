@@ -85,4 +85,23 @@ Those variables stay inert until a consuming app applies the classes from `@bubb
 
 More detail: [documentation/overview.md](documentation/overview.md) · [CHANGELOG.md](CHANGELOG.md)
 
-Planned higher-level sidebar work: [documentation/sidebar-v1-spec.md](documentation/sidebar-v1-spec.md)
+Shared sidebar layout docs: [documentation/sidebar-v1-spec.md](documentation/sidebar-v1-spec.md)
+
+Header API direction note: [documentation/sidebar-header-direction.md](documentation/sidebar-header-direction.md)
+
+Shared shell entrypoints:
+
+- `@bubbles/ui/components/bubbles-sidebar-layout`
+- `@bubbles/ui/components/bubbles-breadcrumbs`
+- `@bubbles/ui/lib/bubbles-sidebar`
+
+`BubblesSidebarLayout` now owns the repo-default sticky header with persistent
+trigger access, breadcrumb rendering, optional supporting copy, and optional
+right-aligned header actions. Supporting copy and its page-info affordance stay
+grouped together so app headers do not wrap into awkward detached rows. The
+left meta block now sits directly beside the sidebar trigger, while utility
+actions can be visually separated with standard `Separator` composition. In
+icon-collapse mode, top-level sidebar navigation now renders as true icon-only
+navigation without label bleed-through. Consumers can also pass
+`mobileHeaderActions` when a mobile-only top-row action cluster should sit
+beside the breadcrumb/meta block.
