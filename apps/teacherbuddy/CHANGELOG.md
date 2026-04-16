@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restored `typecheck` stability by tightening test nullability assertions, adding the missing `class-variance-authority` dependency, and annotating the shared render test helper return type.
 - Kept TeacherBuddy on its existing Geist layout fonts and restored `next-themes` as an explicit app dependency after the shared font package work.
 - Replaced direct `crypto.randomUUID()` usage across the app with a runtime-safe UUID helper to prevent the current startup crash in unsupported environments.
+- Restored the PageInfo help sheet on desktop after fixing the shared `@bubbles/ui` right-side sheet positioning classes.
+- Brought the shared header subtitle behavior closer to the standalone TeacherBuddy app so route descriptions remain readable on tighter widths.
 
 ### Documentation
 

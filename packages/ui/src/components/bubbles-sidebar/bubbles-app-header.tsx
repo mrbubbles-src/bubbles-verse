@@ -77,7 +77,7 @@ export function BubblesAppHeader({
                   {subtitle ? (
                     <div
                       className={cn(
-                        'min-w-0 truncate text-sm text-muted-foreground md:text-[15px]',
+                        'text-wrap-pretty line-clamp-2 min-w-0 text-sm text-muted-foreground md:line-clamp-1 md:text-[15px]',
                         classNames?.subtitle
                       )}>
                       {subtitle}

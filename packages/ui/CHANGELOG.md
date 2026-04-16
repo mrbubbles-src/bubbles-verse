@@ -41,3 +41,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Shared header utility separators can now be nudged cleanly into visual alignment with neighboring controls.
 - `BubblesSidebarLayout` now supports a dedicated `mobileHeaderActions` slot so mobile top-row utilities can sit beside breadcrumbs while lower mobile actions stay centered.
 - Inset shells now clip their sticky header/content to the same rounded corners top and bottom, so the shared package keeps consistent corner radii across apps.
+
+### Fixed
+
+- Fixed shared right-side `SheetContent` classes so desktop sheets render and animate correctly again instead of only the mobile bottom-sheet path working reliably.
+- Relaxed the shared sidebar header subtitle clamp so longer app descriptions stay readable instead of collapsing into a single aggressively truncated line.
