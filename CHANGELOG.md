@@ -6,6 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-04-17
+
 ### Changed
 
 - Updated active BMAD implementation stories to require `AGENTS.md` compliance and to prefer clean reuse of working code from `portal-ref` and `lms-ref` when relevant.
@@ -30,10 +32,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Removed
 
+## [1.0.0] - 2026-04-09
 
-## [0.0.2] - 2026-04-09
+### Added
+
+- Added `it-counts`, `@bubbles/theme`, and `@bubbles/footer` to the root architecture, onboarding, tooling, and generated repo-overview docs.
+- Initial package scaffold for `@bubbles/eslint-config`, `@bubbles/typescript-config`, `@bubbles/ui`, `@bubbles/theme`, and `@bubbles/footer`.
+- Initial package scaffold for `@bubbles/markdown-editor`, `@bubbles/markdown-renderer`, and `the-coding-vault`.
 
 ### Changed
 
 - Refreshed the root monorepo documentation to reflect the current 4-app / 5-package workspace graph.
-- Added `it-counts`, `@bubbles/theme`, and `@bubbles/footer` to the root architecture, onboarding, tooling, and generated repo-overview docs.

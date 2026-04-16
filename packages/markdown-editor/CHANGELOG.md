@@ -1,6 +1,12 @@
 # Changelog — @bubbles/markdown-editor
 
-## 0.0.0 — 2026-04-12
+All notable changes to `@bubbles/markdown-editor` are documented here.
+
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+## [Unreleased]
+
+## [1.0.0] - 2026-04-17
 
 - Initial package scaffold.
 - Add the standalone `serializeToMdx()` export for core EditorJS block handling.
