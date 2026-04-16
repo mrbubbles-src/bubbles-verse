@@ -30,7 +30,7 @@
 ## Navigation
 
 - **Sidebar**: `lib/sidebar.ts` defines the shared sidebar sections and breadcrumb mapping for TeacherBuddy. The rendered UI comes from `BubblesSidebarLayout`.
-- **Header**: Every page shows the shared sticky sidebar header with breadcrumbs, route description, **PageInfoDialog**, theme toggle, and **QuizTimerCard**. Page title and description come from `lib/page-info.tsx` via `getPageInfoByPath(pathname)`. See `components/app-shell.tsx`.
+- **Header**: Every page injects a shared sticky `BubblesAppHeader` into `BubblesSidebarLayout`. TeacherBuddy supplies breadcrumbs, route subtitle, **PageInfoDialog**, theme toggle, and **QuizTimerCard** from `components/app-shell.tsx`. Page title and description come from `lib/page-info.tsx` via `getPageInfoByPath(pathname)`.
 
 ## Route Components
 

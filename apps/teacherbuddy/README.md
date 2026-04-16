@@ -109,7 +109,7 @@ teacherbuddy/
 - **App Store**: `context/app-store.tsx` holds global state with `useReducer`, hydrated from `localStorage` on mount.
 - **Hydration**: Components check `state.ui.isHydrated` and show skeletons until data is loaded.
 - **Server components**: Dashboard cards are server-rendered; feature pages are client-driven.
-- **Shared app shell**: `components/app-shell.tsx` now composes `@bubbles/ui/components/bubbles-sidebar-layout` and supplies TeacherBuddy-specific breadcrumbs, description copy, help trigger, and header actions.
+- **Shared app shell**: `components/app-shell.tsx` now composes `@bubbles/ui/components/bubbles-sidebar-layout` with an injected `@bubbles/ui/components/bubbles-app-header`, so TeacherBuddy keeps route-specific breadcrumbs, subtitle copy, help trigger, timer controls, and theme toggles app-local.
 - **Collapsed navigation**: When the shared sidebar is collapsed, TeacherBuddy now renders a clean icon-only rail instead of partially visible labels.
 - **Shared footer**: Root layout now renders `@bubbles/footer` with TeacherBuddy-specific legal links and source attribution.
 - **Type guards**: `lib/type-guards.ts` validates persisted data from `localStorage`.

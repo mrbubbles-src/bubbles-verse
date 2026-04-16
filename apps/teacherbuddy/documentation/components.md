@@ -4,13 +4,13 @@ Reference for React components. All feature components are client components unl
 
 ## Layout
 
-| Component       | File                                    | Description                                                                                                                                                                                                                          |
-| --------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `AppShell`      | `components/app-shell.tsx`              | Root layout: shared `BubblesSidebarLayout` with custom logo pair, explicit breadcrumbs, route description, **PageInfoDialog**, **QuizTimerCard**, and global **ThemeToggle** wired into the sticky shared header. Optional `footer`. |
-| `PrivacyNotice` | `components/privacy-notice.tsx`         | One-time privacy notice bar (bottom center); explains local-only data, no tracking. Dismissal stored in localStorage; rendered in root layout.                                                                                       |
-| `Toaster`       | `components/ui/sonner.tsx`              | Toast notifications (sonner). Rendered in root layout with `closeButton`, `position="bottom-center"`. Theme-aware icons.                                                                                                             |
-| `SidebarNav`    | `components/navigation/sidebar-nav.tsx` | Primary navigation links; highlights current route by pathname.                                                                                                                                                                      |
-| `AppSidebar`    | `components/app-sidebar.tsx`            | Alternative sidebar component (see app-shell for active layout).                                                                                                                                                                     |
+| Component       | File                                    | Description                                                                                                                                                                                                                                                                             |
+| --------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AppShell`      | `components/app-shell.tsx`              | Root layout: shared `BubblesSidebarLayout` plus injected `BubblesAppHeader`. TeacherBuddy wires in explicit breadcrumbs, route subtitle, **PageInfoDialog**, **QuizTimerCard**, and **ThemeToggle** without hard-coding those extras into the shared layout package. Optional `footer`. |
+| `PrivacyNotice` | `components/privacy-notice.tsx`         | One-time privacy notice bar (bottom center); explains local-only data, no tracking. Dismissal stored in localStorage; rendered in root layout.                                                                                                                                          |
+| `Toaster`       | `components/ui/sonner.tsx`              | Toast notifications (sonner). Rendered in root layout with `closeButton`, `position="bottom-center"`. Theme-aware icons.                                                                                                                                                                |
+| `SidebarNav`    | `components/navigation/sidebar-nav.tsx` | Primary navigation links; highlights current route by pathname.                                                                                                                                                                                                                         |
+| `AppSidebar`    | `components/app-sidebar.tsx`            | Alternative sidebar component (see app-shell for active layout).                                                                                                                                                                                                                        |
 
 ## Dashboard
 
@@ -68,9 +68,9 @@ Reference for React components. All feature components are client components unl
 
 ## Utility
 
-| Component        | File                                      | Description                                                                                                                                                                                                |
-| ---------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PageInfoDialog` | `components/utility/page-info-dialog.tsx` | Help button in the shared header description row that opens a modal with per-page tutorial: purpose, steps, outcome. Uses `lib/page-info` (`PageInfo`, `PAGE_INFOS`), Dialog, Select, Tabs, `useIsMobile`. |
+| Component        | File                                      | Description                                                                                                                                                                                                                |
+| ---------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PageInfoDialog` | `components/utility/page-info-dialog.tsx` | Help button injected into the shared `BubblesAppHeader` subtitle row; opens a modal with per-page tutorial: purpose, steps, outcome. Uses `lib/page-info` (`PageInfo`, `PAGE_INFOS`), Dialog, Select, Tabs, `useIsMobile`. |
 
 Copy-to-clipboard is provided by the `useCopyToClipboard` hook; it is used inline in components (e.g. `BreakoutGroupsCard`) rather than as a standalone `CopyButton` component.
 

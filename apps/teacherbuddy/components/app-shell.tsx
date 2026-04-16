@@ -9,6 +9,7 @@ import {
 import { usePathname } from 'next/navigation';
 
 import { ThemeToggle } from '@bubbles/theme';
+import { BubblesAppHeader } from '@bubbles/ui/components/bubbles-app-header';
 import { BubblesSidebarLayout } from '@bubbles/ui/components/bubbles-sidebar-layout';
 import { Separator } from '@bubbles/ui/shadcn/separator';
 
@@ -17,8 +18,8 @@ import PageInfoDialog from './utility/page-info-dialog';
 
 /**
  * Global app shell that renders the sidebar, header, and page content.
- * Composes the shared sidebar layout with TeacherBuddy-specific page meta,
- * description, and header actions.
+ * Composes the shared sidebar layout with a TeacherBuddy-specific injected
+ * header so page metadata, help actions, and timer controls stay app-local.
  * Provide `defaultSidebarOpen` from server cookie state so refreshes preserve sidebar preference.
  */
 export default function AppShell({
@@ -41,34 +42,35 @@ export default function AppShell({
   return (
     <BubblesSidebarLayout
       sidebarData={teacherBuddySidebarData}
-      breadcrumbs={breadcrumbs}
       defaultOpen={defaultSidebarOpen}
-      description={meta.description}
-      descriptionAction={
-        <PageInfoDialog currentPath={pathname} pages={PAGE_INFOS} />
-      }
-      mobileHeaderActions={
-        <>
-          <Separator
-            orientation="vertical"
-            className="data-vertical:h-8 data-vertical:self-auto"
-          />
-          <ThemeToggle />
-        </>
-      }
-      headerActions={
-        <div className="flex w-full justify-center md:w-auto md:items-center md:gap-5">
-          <div className="flex w-full justify-center md:w-auto md:justify-start">
-            <QuizTimerCard />
-          </div>
-          <Separator
-            orientation="vertical"
-            className="hidden md:block data-vertical:h-8 data-vertical:self-auto"
-          />
-          <div className="hidden md:block">
-            <ThemeToggle />
-          </div>
-        </div>
+      header={
+        <BubblesAppHeader
+          breadcrumbs={breadcrumbs}
+          subtitle={meta.description}
+          subtitleAction={
+            <PageInfoDialog currentPath={pathname} pages={PAGE_INFOS} />
+          }
+          mobileTopActions={
+            <>
+              <Separator orientation="vertical" className="data-vertical:h-8" />
+              <ThemeToggle />
+            </>
+          }
+          actions={
+            <div className="flex w-full justify-center md:w-auto md:items-center md:gap-5">
+              <div className="flex w-full justify-center md:w-auto md:justify-start">
+                <QuizTimerCard />
+              </div>
+              <div className="hidden md:flex md:items-center md:gap-5">
+                <Separator
+                  orientation="vertical"
+                  className="data-vertical:h-8"
+                />
+                <ThemeToggle />
+              </div>
+            </div>
+          }
+        />
       }>
       <main className="container mx-auto h-dvh flex-1 px-4 py-6 md:px-6 lg:px-8">
         {children}

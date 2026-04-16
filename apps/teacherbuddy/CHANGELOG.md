@@ -123,6 +123,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Matched the right header separator to the shared left-side separator styling so both dividers render consistently.
 - Reworked the mobile header actions so theme controls stay in the top row while the timer cluster sits centered below.
 - Moved the mobile theme-toggle cluster into the same top row as the breadcrumbs while keeping the timer centered underneath.
+- Migrated TeacherBuddy onto the new injected `BubblesAppHeader` API so the shared sidebar layout stays shell-focused while TeacherBuddy keeps its timer/help/theme header behavior app-specific.
 
 ## [1.1.1] - 2026-02-05
 
