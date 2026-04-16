@@ -84,3 +84,5 @@ track the trigger exactly.
 Those variables stay inert until a consuming app applies the classes from `@bubbles/ui/fonts` on `<html>`.
 
 More detail: [documentation/overview.md](documentation/overview.md) · [CHANGELOG.md](CHANGELOG.md)
+
+Planned higher-level sidebar work: [documentation/sidebar-v1-spec.md](documentation/sidebar-v1-spec.md)

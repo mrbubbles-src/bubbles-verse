@@ -42,6 +42,11 @@ bun run lint && bun run typecheck
 
 Consumer apps should still pass their own `bun run lint` / `bun run typecheck` — export surface changes can break importers.
 
+## Planned shared shells
+
+- Sidebar layout work should stay in `components/*`, not in `shadcn/*`, when it composes existing primitives into one opinionated app shell.
+- The agreed v1 target for the shared sidebar lives in [sidebar-v1-spec.md](sidebar-v1-spec.md).
+
 ## Anti-patterns
 
 - Importing **`next/image`** or **`Link`** with app-specific `href` shapes inside generic UI — wrap in the app instead.
