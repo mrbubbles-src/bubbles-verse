@@ -2,7 +2,7 @@
 story_id: '2.1'
 story_key: '2-1-default-mdx-block-components-markdown'
 epic: 'Epic 2 — MDX Renderer & Default Components'
-status: review
+status: done
 created: 2026-04-12
 ---
 

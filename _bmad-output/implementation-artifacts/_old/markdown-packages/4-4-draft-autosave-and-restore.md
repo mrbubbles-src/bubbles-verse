@@ -2,7 +2,7 @@
 story_id: '4.4'
 story_key: '4-4-draft-autosave-and-restore'
 epic: 'Epic 4 — Content Authoring Editor'
-status: review
+status: done
 created: 2026-04-12
 ---
 

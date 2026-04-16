@@ -2,7 +2,7 @@
 story_id: '2.3'
 story_key: '2-3-renderer-css-stylesheet-renderer-css'
 epic: 'Epic 2 — MDX Renderer & Default Components'
-status: review
+status: done
 created: 2026-04-12
 ---
 
@@ -214,9 +214,9 @@ _To be filled in during implementation._
 
 ## File List
 
-- _bmad-output/implementation-artifacts/2-3-renderer-css-stylesheet-renderer-css.md
-- _bmad-output/implementation-artifacts/sprint-status.yaml
-- packages/markdown-renderer/__tests__/renderer-styles.test.ts
+- \_bmad-output/implementation-artifacts/2-3-renderer-css-stylesheet-renderer-css.md
+- \_bmad-output/implementation-artifacts/sprint-status.yaml
+- packages/markdown-renderer/**tests**/renderer-styles.test.ts
 - packages/markdown-renderer/CHANGELOG.md
 - packages/markdown-renderer/README.md
 - packages/markdown-renderer/src/styles/renderer.css

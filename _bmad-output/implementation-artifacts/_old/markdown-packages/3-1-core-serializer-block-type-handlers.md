@@ -2,7 +2,7 @@
 story_id: '3.1'
 story_key: '3-1-core-serializer-block-type-handlers'
 epic: 'Epic 3 — EditorJS → MDX Serializer'
-status: review
+status: done
 created: 2026-04-12
 ---
 

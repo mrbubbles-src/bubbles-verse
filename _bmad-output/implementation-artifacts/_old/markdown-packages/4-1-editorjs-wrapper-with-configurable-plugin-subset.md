@@ -2,7 +2,7 @@
 story_id: '4.1'
 story_key: '4-1-editorjs-wrapper-with-configurable-plugin-subset'
 epic: 'Epic 4 — Content Authoring Editor'
-status: review
+status: done
 created: 2026-04-12
 ---
 
@@ -209,8 +209,8 @@ _To be filled in during implementation._
 
 ## File List
 
-- _bmad-output/implementation-artifacts/4-1-editorjs-wrapper-with-configurable-plugin-subset.md
-- _bmad-output/implementation-artifacts/sprint-status.yaml
+- \_bmad-output/implementation-artifacts/4-1-editorjs-wrapper-with-configurable-plugin-subset.md
+- \_bmad-output/implementation-artifacts/sprint-status.yaml
 - packages/markdown-editor/CHANGELOG.md
 - packages/markdown-editor/README.md
 - packages/markdown-editor/src/components/markdown-editor.tsx

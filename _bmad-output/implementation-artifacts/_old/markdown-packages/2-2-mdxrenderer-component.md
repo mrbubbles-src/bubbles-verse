@@ -2,7 +2,7 @@
 story_id: '2.2'
 story_key: '2-2-mdxrenderer-component'
 epic: 'Epic 2 — MDX Renderer & Default Components'
-status: review
+status: done
 created: 2026-04-12
 ---
 

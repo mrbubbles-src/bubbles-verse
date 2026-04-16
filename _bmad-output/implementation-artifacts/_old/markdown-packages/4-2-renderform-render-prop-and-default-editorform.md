@@ -2,7 +2,7 @@
 story_id: '4.2'
 story_key: '4-2-renderform-render-prop-and-default-editorform'
 epic: 'Epic 4 — Content Authoring Editor'
-status: review
+status: done
 created: 2026-04-12
 ---
 
@@ -210,8 +210,8 @@ _To be filled in during implementation._
 
 ## File List
 
-- _bmad-output/implementation-artifacts/4-2-renderform-render-prop-and-default-editorform.md
-- _bmad-output/implementation-artifacts/sprint-status.yaml
+- \_bmad-output/implementation-artifacts/4-2-renderform-render-prop-and-default-editorform.md
+- \_bmad-output/implementation-artifacts/sprint-status.yaml
 - bun.lock
 - packages/markdown-editor/CHANGELOG.md
 - packages/markdown-editor/README.md

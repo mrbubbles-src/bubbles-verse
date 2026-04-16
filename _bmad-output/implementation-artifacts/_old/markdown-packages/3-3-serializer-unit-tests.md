@@ -2,7 +2,7 @@
 story_id: '3.3'
 story_key: '3-3-serializer-unit-tests'
 epic: 'Epic 3 — EditorJS → MDX Serializer'
-status: review
+status: done
 created: 2026-04-12
 ---
 

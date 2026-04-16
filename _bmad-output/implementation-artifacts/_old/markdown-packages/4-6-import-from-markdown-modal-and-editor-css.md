@@ -2,7 +2,7 @@
 story_id: '4.6'
 story_key: '4-6-import-from-markdown-modal-and-editor-css'
 epic: 'Epic 4 — Content Authoring Editor'
-status: review
+status: done
 created: 2026-04-12
 ---
 

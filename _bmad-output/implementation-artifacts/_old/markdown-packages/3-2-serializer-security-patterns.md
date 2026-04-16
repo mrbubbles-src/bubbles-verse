@@ -2,7 +2,7 @@
 story_id: '3.2'
 story_key: '3-2-serializer-security-patterns'
 epic: 'Epic 3 — EditorJS → MDX Serializer'
-status: review
+status: done
 created: 2026-04-12
 ---
 
@@ -241,11 +241,11 @@ _To be filled in during implementation._
 
 ### File List
 
-- _bmad-output/implementation-artifacts/3-2-serializer-security-patterns.md
-- _bmad-output/implementation-artifacts/sprint-status.yaml
+- \_bmad-output/implementation-artifacts/3-2-serializer-security-patterns.md
+- \_bmad-output/implementation-artifacts/sprint-status.yaml
 - packages/markdown-editor/CHANGELOG.md
 - packages/markdown-editor/README.md
-- packages/markdown-editor/__tests__/serializer-security.test.ts
+- packages/markdown-editor/**tests**/serializer-security.test.ts
 - packages/markdown-editor/src/lib/serialize-to-mdx.ts
 - packages/markdown-editor/src/lib/serializer-utils.ts
 - packages/markdown-editor/src/serializer/security.ts

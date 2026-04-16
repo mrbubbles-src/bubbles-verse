@@ -2,7 +2,7 @@
 story_id: '3.4'
 story_key: '3-4-headinganchoridsbybblockid-option'
 epic: 'Epic 3 — EditorJS → MDX Serializer'
-status: review
+status: done
 created: 2026-04-12
 ---
 

@@ -2,7 +2,7 @@
 story_id: '4.5'
 story_key: '4-5-live-split-pane-mdx-preview-with-scroll-sync'
 epic: 'Epic 4 — Content Authoring Editor'
-status: review
+status: done
 created: 2026-04-12
 ---
 

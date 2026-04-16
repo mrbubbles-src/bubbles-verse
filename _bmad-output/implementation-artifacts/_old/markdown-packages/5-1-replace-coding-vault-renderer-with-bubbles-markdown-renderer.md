@@ -2,7 +2,7 @@
 story_id: '5.1'
 story_key: '5-1-replace-coding-vault-renderer-with-bubbles-markdown-renderer'
 epic: 'Epic 5 — Coding Vault Migration'
-status: review
+status: done
 created: 2026-04-12
 ---
 

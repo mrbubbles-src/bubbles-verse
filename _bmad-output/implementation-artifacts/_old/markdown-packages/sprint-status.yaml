@@ -50,30 +50,30 @@ development_status:
 
   # ─── Epic 2: MDX Renderer & Default Components ────────────────────────────
   epic-2: backlog
-  2-1-default-mdx-block-components-markdown: review
-  2-2-mdxrenderer-component: review
-  2-3-renderer-css-stylesheet-renderer-css: review
+  2-1-default-mdx-block-components-markdown: done
+  2-2-mdxrenderer-component: done
+  2-3-renderer-css-stylesheet-renderer-css: done
   epic-2-retrospective: optional
 
   # ─── Epic 3: EditorJS → MDX Serializer ────────────────────────────────────
   epic-3: backlog
-  3-1-core-serializer-block-type-handlers: review
-  3-2-serializer-security-patterns: review
-  3-3-serializer-unit-tests: review
-  3-4-headinganchoridsbybblockid-option: review
+  3-1-core-serializer-block-type-handlers: done
+  3-2-serializer-security-patterns: done
+  3-3-serializer-unit-tests: done
+  3-4-headinganchoridsbybblockid-option: done
   epic-3-retrospective: optional
 
   # ─── Epic 4: Content Authoring Editor ─────────────────────────────────────
   epic-4: backlog
-  4-1-editorjs-wrapper-with-configurable-plugin-subset: review
-  4-2-renderform-render-prop-and-default-editorform: review
-  4-3-metadata-derivation-and-generateslug: review
-  4-4-draft-autosave-and-restore: review
-  4-5-live-split-pane-mdx-preview-with-scroll-sync: review
-  4-6-import-from-markdown-modal-and-editor-css: review
+  4-1-editorjs-wrapper-with-configurable-plugin-subset: done
+  4-2-renderform-render-prop-and-default-editorform: done
+  4-3-metadata-derivation-and-generateslug: done
+  4-4-draft-autosave-and-restore: done
+  4-5-live-split-pane-mdx-preview-with-scroll-sync: done
+  4-6-import-from-markdown-modal-and-editor-css: done
   epic-4-retrospective: optional
 
   # ─── Epic 5: Coding Vault Migration ───────────────────────────────────────
   epic-5: backlog
-  5-1-replace-coding-vault-renderer-with-bubbles-markdown-renderer: review
+  5-1-replace-coding-vault-renderer-with-bubbles-markdown-renderer: done
   epic-5-retrospective: optional
