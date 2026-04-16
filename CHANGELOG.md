@@ -30,8 +30,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Removed
 
-- Removed the disposable `apps/markdown-reference` validation app after the
-  shared markdown packages had been verified and documented.
 
 ## [0.0.2] - 2026-04-09
 
