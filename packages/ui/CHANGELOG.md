@@ -23,6 +23,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `globals.css` typography defaults now read shared heading, body, and code font variables.
 - `SelectContent` defaults back to popper-style content-fit positioning; opt
   into trigger alignment with `alignItemWithTrigger={true}`.
+- Sidebar-specific shared components now live under
+  `src/components/bubbles-sidebar/` instead of being scattered directly in the
+  top-level components folder.
+- `BubblesSidebarLayout` is now a cleaner shell-only API: consumer apps inject
+  their own top bar through `header` instead of passing TeacherBuddy-shaped
+  header props directly into the layout.
+- Added shared `BubblesAppHeader` plus exported `BubblesAppHeaderProps`,
+  `BubblesAppHeaderClassNames`, and `BubblesSidebarLayoutClassNames` so apps
+  can compose header-specific extras and targeted style overrides without
+  editing the package.
 - `BubblesSidebarLayout` now provides a sticky shared header with optional description and action slots, larger sidebar typography, and more generous brand sizing.
 - The shared sidebar header now keeps page-help actions beside supporting copy, separates utility actions more clearly, and avoids awkward desktop wrapping.
 - The shared header now anchors breadcrumb content directly beside the sidebar trigger and supports clearer utility grouping with vertical separators.

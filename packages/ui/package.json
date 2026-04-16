@@ -50,6 +50,9 @@
     "./fonts": "./src/fonts.ts",
     "./lib/*": "./src/lib/*.ts",
     "./components/*": "./src/components/*.tsx",
+    "./components/bubbles-app-header": "./src/components/bubbles-sidebar/bubbles-app-header.tsx",
+    "./components/bubbles-breadcrumbs": "./src/components/bubbles-sidebar/bubbles-breadcrumbs.tsx",
+    "./components/bubbles-sidebar-layout": "./src/components/bubbles-sidebar/bubbles-sidebar-layout.tsx",
     "./shadcn/*": "./src/components/shadcn/*.tsx",
     "./hooks/*": "./src/hooks/*.ts"
   },

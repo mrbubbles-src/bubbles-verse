@@ -1,11 +1,11 @@
 import type { ComponentProps } from 'react';
 
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { BubblesSidebarData } from '../src/lib/bubbles-sidebar';
-import { BubblesSidebarLayout } from '../src/components/bubbles-sidebar-layout';
+import { BubblesSidebarLayout } from '../src/components/bubbles-sidebar/bubbles-sidebar-layout';
 
 const usePathnameMock = vi.fn();
 
@@ -91,7 +91,7 @@ describe('BubblesSidebarLayout', () => {
     usePathnameMock.mockReturnValue('/');
   });
 
-  it('renders the shared header without breadcrumbs', () => {
+  it('renders the layout shell without an injected header', () => {
     render(
       <BubblesSidebarLayout sidebarData={sidebarData}>
         <div>Body content</div>
@@ -100,60 +100,21 @@ describe('BubblesSidebarLayout', () => {
 
     expect(
       document.querySelector('[data-sidebar="trigger"]')
-    ).toBeInTheDocument();
-    expect(screen.queryByLabelText('breadcrumb')).not.toBeInTheDocument();
+    ).not.toBeInTheDocument();
     expect(screen.getByText('Body content')).toBeInTheDocument();
   });
 
-  it('renders breadcrumbs when they are provided', () => {
+  it('renders an injected header node above the content', () => {
     render(
       <BubblesSidebarLayout
         sidebarData={sidebarData}
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/' },
-          { label: 'Students' },
-        ]}>
+        header={<header>Header</header>}>
         <div>Body content</div>
       </BubblesSidebarLayout>
     );
 
-    const breadcrumb = screen.getByLabelText('breadcrumb');
-
-    expect(breadcrumb).toBeInTheDocument();
-    expect(
-      within(breadcrumb).getByRole('link', { name: 'Dashboard' })
-    ).toBeInTheDocument();
-    expect(screen.getByText('Students')).toHaveClass('text-primary');
-  });
-
-  it('renders description and custom header actions in the sticky header', () => {
-    render(
-      <BubblesSidebarLayout
-        sidebarData={sidebarData}
-        breadcrumbs={[{ label: 'Dashboard' }]}
-        description="Choose a workflow to get started."
-        descriptionAction={<button type="button">Open page info</button>}
-        headerActions={
-          <>
-            <button type="button">Theme</button>
-            <button type="button">Timer</button>
-          </>
-        }>
-        <div>Body content</div>
-      </BubblesSidebarLayout>
-    );
-
-    const header = document.querySelector('header');
-
-    expect(header).toHaveClass('sticky');
-    expect(
-      screen.getByText('Choose a workflow to get started.')
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: 'Open page info' })
-    ).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Theme' })).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Timer' })).toBeVisible();
+    expect(screen.getByText('Header')).toBeInTheDocument();
+    expect(screen.getByText('Body content')).toBeInTheDocument();
   });
 
   it('auto-expands recursive groups for an active descendant', () => {
@@ -215,5 +176,33 @@ describe('BubblesSidebarLayout', () => {
     expect(await screen.findByText('Accounteinstellungen')).toBeInTheDocument();
     expect(screen.getByText('Logout')).toBeInTheDocument();
     expect(screen.getAllByText('Dashboard').length).toBeGreaterThan(1);
+  });
+
+  it('merges layout class name hooks onto the expected shell wrappers', () => {
+    render(
+      <BubblesSidebarLayout
+        sidebarData={sidebarData}
+        classNames={{
+          root: 'layout-root',
+          sidebar: 'layout-sidebar',
+          sidebarHeader: 'layout-sidebar-header',
+          sidebarContent: 'layout-sidebar-content',
+          sidebarInset: 'layout-sidebar-inset',
+          content: 'layout-content',
+        }}>
+        <div>Body content</div>
+      </BubblesSidebarLayout>
+    );
+
+    expect(document.querySelector('.layout-root')).toBeInTheDocument();
+    expect(document.querySelector('.layout-sidebar')).toBeInTheDocument();
+    expect(
+      document.querySelector('.layout-sidebar-header')
+    ).toBeInTheDocument();
+    expect(
+      document.querySelector('.layout-sidebar-content')
+    ).toBeInTheDocument();
+    expect(document.querySelector('.layout-sidebar-inset')).toBeInTheDocument();
+    expect(document.querySelector('.layout-content')).toBeInTheDocument();
   });
 });

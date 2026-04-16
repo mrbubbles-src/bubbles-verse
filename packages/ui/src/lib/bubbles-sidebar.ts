@@ -1,4 +1,5 @@
 import type { IconSvgElement } from '@hugeicons/react';
+import type { ReactNode } from 'react';
 
 /**
  * Controls how a sidebar item matches the current pathname.
@@ -69,6 +70,48 @@ export type BubblesSidebarUser = {
   dashboardHref: string;
   settingsHref: string;
   logoutHref: string;
+};
+
+/**
+ * Defines override class hooks for the shared sidebar layout shell.
+ */
+export type BubblesSidebarLayoutClassNames = {
+  root?: string;
+  sidebar?: string;
+  sidebarHeader?: string;
+  sidebarContent?: string;
+  sidebarFooter?: string;
+  sidebarInset?: string;
+  content?: string;
+};
+
+/**
+ * Defines override class hooks for the shared injected app header.
+ */
+export type BubblesAppHeaderClassNames = {
+  root?: string;
+  inner?: string;
+  leading?: string;
+  triggerGroup?: string;
+  meta?: string;
+  breadcrumbs?: string;
+  subtitleRow?: string;
+  subtitle?: string;
+  subtitleAction?: string;
+  mobileTopActions?: string;
+  actions?: string;
+};
+
+/**
+ * Defines the public props contract for the injected shared app header.
+ */
+export type BubblesAppHeaderProps = {
+  breadcrumbs?: BubblesBreadcrumb[];
+  subtitle?: ReactNode;
+  subtitleAction?: ReactNode;
+  mobileTopActions?: ReactNode;
+  actions?: ReactNode;
+  classNames?: BubblesAppHeaderClassNames;
 };
 
 /**

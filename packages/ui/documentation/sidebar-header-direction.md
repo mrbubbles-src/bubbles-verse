@@ -2,8 +2,8 @@
 
 ## Status
 
-Planning note. This document records the intended direction for the shared
-header API after the first TeacherBuddy rollout.
+Implemented. This note now records the direction that shipped after the first
+TeacherBuddy rollout.
 
 ## Why this note exists
 
@@ -64,15 +64,7 @@ TeacherBuddy toolbar shape.
 
 ## Recommended API direction
 
-The current slots already move in the right direction:
-
-- `description`
-- `descriptionAction`
-- `headerActions`
-- `mobileHeaderActions`
-
-That is acceptable for now, but the long-term direction should be a slightly
-cleaner split between:
+The shipped split is now:
 
 - default shared header structure
 - app-owned injected content
@@ -80,10 +72,11 @@ cleaner split between:
 
 ### Preferred behavioral model
 
-- `BubblesSidebarLayout` owns the shell and header rhythm
-- apps pass in optional header extras
-- if an app passes nothing, the header should still look complete and balanced
-- mobile-only extras should be injectable without changing package internals
+- `BubblesSidebarLayout` owns the shell
+- apps inject a header node when they need one
+- `BubblesAppHeader` provides the shared sticky trigger/breadcrumb rhythm
+- apps pass optional extras into `BubblesAppHeader`
+- mobile-only extras stay injectable without changing package internals
 
 ## Styling override direction
 
@@ -99,11 +92,22 @@ type BubblesSidebarLayoutClassNames = {
   sidebarHeader?: string;
   sidebarContent?: string;
   sidebarFooter?: string;
-  header?: string;
-  headerInner?: string;
-  headerMeta?: string;
-  headerActions?: string;
+  sidebarInset?: string;
   content?: string;
+};
+
+type BubblesAppHeaderClassNames = {
+  root?: string;
+  inner?: string;
+  leading?: string;
+  triggerGroup?: string;
+  meta?: string;
+  breadcrumbs?: string;
+  subtitleRow?: string;
+  subtitle?: string;
+  subtitleAction?: string;
+  mobileTopActions?: string;
+  actions?: string;
 };
 ```
 
@@ -118,7 +122,7 @@ The exact shape can change, but the idea should stay the same:
 
 ### App with only the default top bar
 
-Should be able to render:
+Should be able to inject a small `BubblesAppHeader` that renders:
 
 - trigger
 - breadcrumbs
@@ -130,8 +134,8 @@ with no additional configuration beyond the sidebar data and breadcrumb data.
 
 Should be able to inject:
 
-- description text
-- page-info action
+- subtitle text
+- subtitle action
 - timer controls
 - mobile top-row utility actions
 
@@ -153,14 +157,13 @@ again without touching package internals.
 
 The sidebar itself is in a good reusable state.
 
-The header is usable, but currently still somewhat TeacherBuddy-informed. That
-is not a problem while TeacherBuddy is the only consumer. Before a second app
-adopts the layout, the header API should be reviewed against that app's needs
-instead of assuming TeacherBuddy is the universal pattern.
+The sidebar is now in a good reusable state and the header split is much
+cleaner. Future apps can reuse the same shell while injecting only the
+specific top-bar affordances they need.
 
 ## Short version
 
 - sidebar behavior: safe to standardize globally
-- header base: safe to standardize globally
+- header base: safe to standardize globally through `BubblesAppHeader`
 - header extras: inject per app
 - fine visual tuning: prefer `className` override hooks over package edits

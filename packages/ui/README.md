@@ -91,17 +91,22 @@ Header API direction note: [documentation/sidebar-header-direction.md](documenta
 
 Shared shell entrypoints:
 
+- `@bubbles/ui/components/bubbles-app-header`
 - `@bubbles/ui/components/bubbles-sidebar-layout`
 - `@bubbles/ui/components/bubbles-breadcrumbs`
 - `@bubbles/ui/lib/bubbles-sidebar`
 
-`BubblesSidebarLayout` now owns the repo-default sticky header with persistent
-trigger access, breadcrumb rendering, optional supporting copy, and optional
-right-aligned header actions. Supporting copy and its page-info affordance stay
-grouped together so app headers do not wrap into awkward detached rows. The
-left meta block now sits directly beside the sidebar trigger, while utility
-actions can be visually separated with standard `Separator` composition. In
-icon-collapse mode, top-level sidebar navigation now renders as true icon-only
-navigation without label bleed-through. Consumers can also pass
-`mobileHeaderActions` when a mobile-only top-row action cluster should sit
-beside the breadcrumb/meta block.
+`BubblesSidebarLayout` now stays focused on the shell itself:
+
+- sidebar provider + inset layout
+- centered logo behavior in expanded/collapsed states
+- recursive navigation
+- optional authenticated footer menu
+- icon-collapse mode without top-level text bleed
+
+App-specific top bars now belong in `BubblesAppHeader`, which apps inject into
+the layout through the `header` prop. That keeps package-level sidebar
+behavior opinionated while route metadata, timers, help affordances, theme
+controls, and similar extras stay app-owned. Both shared components expose
+focused `classNames` hook points so small per-app alignment tweaks no longer
+require package edits.

@@ -1,8 +1,8 @@
 'use client';
 
 import type {
-  BubblesBreadcrumb,
   BubblesSidebarData,
+  BubblesSidebarLayoutClassNames,
   BubblesSidebarUser,
 } from '@bubbles/ui/lib/bubbles-sidebar';
 import type { ReactNode } from 'react';
@@ -10,9 +10,7 @@ import type { ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { BubblesSidebarHeader } from '@bubbles/ui/components/bubbles-sidebar-header';
-import { BubblesSidebarNav } from '@bubbles/ui/components/bubbles-sidebar-nav';
-import { BubblesSidebarUserMenu } from '@bubbles/ui/components/bubbles-sidebar-user-menu';
+import { cn } from '@bubbles/ui/lib/utils';
 import {
   Sidebar,
   SidebarContent,
@@ -27,36 +25,38 @@ import {
   SidebarSeparator,
 } from '@bubbles/ui/shadcn/sidebar';
 
+import { BubblesSidebarNav } from './bubbles-sidebar-nav';
+import { BubblesSidebarUserMenu } from './bubbles-sidebar-user-menu';
+
 type BubblesSidebarLayoutProps = {
   sidebarData: BubblesSidebarData;
-  breadcrumbs?: BubblesBreadcrumb[];
   user?: BubblesSidebarUser;
   defaultOpen?: boolean;
-  description?: ReactNode;
-  descriptionAction?: ReactNode;
-  mobileHeaderActions?: ReactNode;
-  headerActions?: ReactNode;
+  header?: ReactNode;
   children: ReactNode;
+  classNames?: BubblesSidebarLayoutClassNames;
 };
 
 /**
- * Renders the shared inset app shell built on top of the shadcn sidebar primitives.
+ * Renders the shared inset app shell built on top of the shadcn sidebar
+ * primitives and accepts an injected header so each app can compose its own
+ * top bar without changing the shared sidebar package.
  */
 export function BubblesSidebarLayout({
   sidebarData,
-  breadcrumbs = [],
   user,
   defaultOpen = true,
-  description,
-  descriptionAction,
-  mobileHeaderActions,
-  headerActions,
+  header,
   children,
+  classNames,
 }: BubblesSidebarLayoutProps) {
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
-      <Sidebar variant="inset" collapsible="icon">
-        <SidebarHeader>
+    <SidebarProvider defaultOpen={defaultOpen} className={classNames?.root}>
+      <Sidebar
+        variant="inset"
+        collapsible="icon"
+        className={classNames?.sidebar}>
+        <SidebarHeader className={classNames?.sidebarHeader}>
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
@@ -89,28 +89,25 @@ export function BubblesSidebarLayout({
           </SidebarMenu>
         </SidebarHeader>
         <SidebarSeparator />
-        <SidebarContent>
+        <SidebarContent className={classNames?.sidebarContent}>
           <BubblesSidebarNav sections={sidebarData.sections} />
         </SidebarContent>
         {user ? (
           <>
             <SidebarSeparator />
-            <SidebarFooter>
+            <SidebarFooter className={classNames?.sidebarFooter}>
               <BubblesSidebarUserMenu user={user} />
             </SidebarFooter>
           </>
         ) : null}
         <SidebarRail />
       </Sidebar>
-      <SidebarInset>
-        <BubblesSidebarHeader
-          breadcrumbs={breadcrumbs}
-          description={description}
-          descriptionAction={descriptionAction}
-          mobileActions={mobileHeaderActions}
-          actions={headerActions}
-        />
-        {children}
+      <SidebarInset className={classNames?.sidebarInset}>
+        {header}
+        <div
+          className={cn('flex min-h-0 flex-1 flex-col', classNames?.content)}>
+          {children}
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );

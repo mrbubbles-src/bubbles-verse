@@ -6,6 +6,7 @@ import * as React from 'react';
 
 import Link from 'next/link';
 
+import { cn } from '@bubbles/ui/lib/utils';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -17,19 +18,23 @@ import {
 
 type BubblesBreadcrumbsProps = {
   breadcrumbs: BubblesBreadcrumb[];
+  className?: string;
 };
 
 /**
  * Renders shared breadcrumb data with the local shadcn breadcrumb primitives.
  */
-export function BubblesBreadcrumbs({ breadcrumbs }: BubblesBreadcrumbsProps) {
+export function BubblesBreadcrumbs({
+  breadcrumbs,
+  className,
+}: BubblesBreadcrumbsProps) {
   if (!breadcrumbs.length) {
     return null;
   }
 
   return (
     <Breadcrumb>
-      <BreadcrumbList className="text-sm md:text-[15px]">
+      <BreadcrumbList className={cn('text-sm md:text-[15px]', className)}>
         {breadcrumbs.map((breadcrumb, index) => {
           const isLast = index === breadcrumbs.length - 1;
 
