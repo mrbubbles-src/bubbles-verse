@@ -21,6 +21,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   feature-complete areas, remaining follow-up work, and a rule to verify
   markdown-package changes against references, repo standards, and official
   documentation.
+- Updated the markdown-packages manifest to record completed Phase-1 work and
+  refocus the remaining roadmap on real app integration, slug standardization,
+  and later repo-alignment follow-up.
 
 ## [0.0.2] - 2026-04-09
 

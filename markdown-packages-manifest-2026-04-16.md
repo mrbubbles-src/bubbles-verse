@@ -7,6 +7,9 @@ Status:
   - `packages/markdown-editor`
   - `packages/markdown-renderer`
 - langlebige Referenz für spätere Chats, Reviews und Implementierungen
+- Stand dieses Dokuments:
+  - Phase 1 ist umgesetzt
+  - nächste Arbeit ist Folgearbeit ab Phase 2
 
 Diese Datei ist absichtlich kein loses Brainstorming. Sie ist der aktuell
 verbindliche Plan für die Markdown-Packages. Wer später daran arbeitet, soll
@@ -203,6 +206,31 @@ Konkret bedeutet das:
 - `mdx-components.tsx` darf und soll pro App existieren
 - das Package soll trotzdem einen generischen Default-Komponentensatz liefern
 - funktionierende `markdown-*`-Komponenten sollen nicht neu erfunden werden
+
+### Seit diesem Manifest bereits umgesetzt
+
+Die folgenden Punkte sind nicht mehr offen, sondern bereits erledigt:
+
+- Die Package-Default-Metadatenform läuft wieder auf `react-hook-form`.
+- Die Form nutzt den aktuellen shadcn-`Field`-Pfad statt auf dem alten
+  `Form`-Wrapper-Modell zu bleiben.
+- Die Slug-Strategie ist als Package-Hook vorhanden:
+  - `slugStrategy`
+  - `slugStrategyContext`
+- Der Slug-Pfad unterstützt Segment-/Pfadlogik statt nur flache Titel-Slugs.
+- Die Shared-Cloudinary-Upload-Basis existiert als package-seitige
+  Route-Factory für Next.js-Route-Handler.
+- Shiki ist auf den Repo-Standard umgestellt:
+  - `catppuccin-latte`
+  - `catppuccin-mocha`
+- Die TypeScript-Projektkonfiguration der Markdown-Packages prüft auch die
+  Testdateien, sodass IDE-/TS-Fehler in Tests nicht mehr an einer falschen
+  oder unvollständigen Paketkonfiguration hängen.
+- Die jüngsten React-/ESLint-Warnpfade rund um
+  - `setState in effect`
+  - `refs during render`
+  - `exhaustive-deps`
+  sind in den betroffenen Markdown-Package-Dateien bereinigt.
 
 ### Wichtige Klarstellung zu den Nutzerbeobachtungen
 
@@ -523,19 +551,42 @@ Aktueller Soll-Zustand:
 Die folgenden Punkte gelten aktuell als echte Folgearbeit. Nicht alles hiervon
 ist kaputt, aber es ist noch nicht am gewünschten Zielbild.
 
+### Nächste Schritte ab jetzt
+
 ### Hoch priorisiert
 
-- Package-Default-Metadatenform zurück auf `react-hook-form` umstellen
-- Shared-Cloudinary-Helper / Route-Factory definieren, damit nicht jede App
-  dieselbe Upload-Basis neu schreiben muss
-- Shiki von `one-dark-pro` auf Catppuccin `latte` / `mocha` umstellen
+- Die neue Cloudinary-Route-Factory einmal in einer echten App-Integration
+  sauber anschließen und gegen reale Upload-Flows verifizieren.
+- Den Package-Slug-Baukasten von "funktioniert" auf "klar dokumentierter,
+  bewusst geschnittener Standard" nachziehen.
+  Das betrifft vor allem:
+  - klare Helper-Grenzen
+  - klare Beispiele pro App-Typ
+  - saubere Erwartung an `slugStrategy`
+- Die Default-Metadatenform fachlich finalisieren:
+  - gemeinsame Standardfelder festziehen
+  - sauber dokumentieren, wann die Package-Form reicht
+  - sauber dokumentieren, wann `renderForm` für app-spezifische Metadaten
+    verwendet werden soll
 
 ### Mittlere Priorität
 
-- Slug-Basisarchitektur als klaren Package-Baukasten festziehen
 - `mdast`-/AST-Typing sauber entscheiden und aufräumen
 - Repo-Standards bei Icons und Primitives in den Markdown-Packages konsequent
-  nachziehen, falls dort noch alte Referenzreste abweichen
+  prüfen und nur dort angleichen, wo echte Abweichungen bestehen
+- Die Package-Dokumentation um konkrete Integrationsbeispiele ergänzen:
+  - Blog
+  - Coding Vault
+  - Portfolio
+
+### Aktuell ausdrücklich nicht offen
+
+Die folgenden Punkte gelten derzeit nicht mehr als Phase-2-Ziele, weil sie
+bereits umgesetzt sind:
+
+- RHF-Rückbau der Default-Form
+- package-seitige Cloudinary-Route-Factory
+- Catppuccin-Umstellung für Shiki
 
 ### Laufende Regel für Folgearbeit
 
@@ -595,7 +646,7 @@ Folgendes mitnehmen:
 - Vieles ist bereits funktionierend und darf nicht grundlos wieder aufgerissen
   werden.
 - Offene Arbeit liegt vor allem bei Form-Standardisierung, Upload-Architektur,
-  Slug-Baukasten und Theme-/Repo-Alignment.
+  Slug-Baukasten, echter App-Integration und weiterem Repo-Alignment.
 - Jede relevante Entscheidung muss gegen `AGENTS.md`, Referenzen,
   Repo-Standards und offizielle Doku geprüft werden.
 - Geplante Umbauten funktionierender Bereiche werden nicht einfach gemacht,
