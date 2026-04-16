@@ -1,6 +1,11 @@
 export { EditorForm } from './components/editor-form';
 export { MarkdownEditor } from './components/markdown-editor';
-export { generateSlug } from './lib/slug-utils';
+export {
+  generateSlug,
+  joinSlugSegments,
+  normalizeSlugPath,
+  slugifySegment,
+} from './lib/slug-utils';
 export { serializeToMdx } from './lib/serialize-to-mdx';
 export { DEFAULT_PLUGIN_KEYS } from './lib/editor-tools';
 export type {
@@ -22,6 +27,10 @@ export type {
   MarkdownEditorImageUploader,
   MarkdownEditorProps,
   MarkdownEditorReadyHandler,
+  MarkdownEditorSlugStrategy,
+  MarkdownEditorSlugStrategyContext,
+  MarkdownEditorSlugStrategyInput,
+  MarkdownEditorSlugStrategyResult,
   MarkdownEditorStatus,
   MarkdownEditorSubmitData,
   MarkdownEditorSuccessHandler,

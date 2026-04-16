@@ -195,6 +195,23 @@ describe('MarkdownEditor form surface', () => {
     expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument();
   });
 
+  it('passes slug strategy props through to the default EditorForm', async () => {
+    render(
+      <MarkdownEditor
+        initialData={INITIAL_DATA}
+        slugStrategy={({ context, title }) => [
+          String(context?.section ?? ''),
+          title,
+        ]}
+        slugStrategyContext={{ section: 'vault' }}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('vault/story-driven-editor')).toBeInTheDocument();
+    });
+  });
+
   it('renders the live split-pane preview from the current editor content', async () => {
     render(<MarkdownEditor initialData={INITIAL_DATA} />);
 

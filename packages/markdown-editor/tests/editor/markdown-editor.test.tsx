@@ -1,21 +1,33 @@
 import { describe, expect, it, vi } from 'vitest';
 
 describe('editor tool helpers', () => {
+  class StubTool {
+    constructor(..._args: unknown[]) {}
+
+    render() {
+      return document.createElement('div');
+    }
+
+    save() {
+      return {};
+    }
+  }
+
   const toolRegistry = {
-    Alert: class AlertTool {},
-    Annotation: class AnnotationTool {},
-    Delimiter: class DelimiterTool {},
-    EditorJsInlineHotkey: class InlineHotkeyTool {},
-    EditorjsList: class ListTool {},
-    Embed: class EmbedTool {},
-    Header: class HeaderTool {},
-    ImageTool: class ImageTool {},
-    InlineCode: class InlineCodeTool {},
-    Quote: class QuoteTool {},
-    Strikethrough: class StrikethroughTool {},
-    Table: class TableTool {},
-    ToggleBlock: class ToggleTool {},
-    editorjsCodecup: class CodeTool {},
+    Alert: StubTool,
+    Annotation: StubTool,
+    Delimiter: StubTool,
+    EditorJsInlineHotkey: StubTool,
+    EditorjsList: StubTool,
+    Embed: StubTool,
+    Header: StubTool,
+    ImageTool: StubTool,
+    InlineCode: StubTool,
+    Quote: StubTool,
+    Strikethrough: StubTool,
+    Table: StubTool,
+    ToggleBlock: StubTool,
+    editorjsCodecup: StubTool,
   } as const;
 
   it('registers the full 15-tool surface by default', async () => {

@@ -73,6 +73,58 @@ export type MarkdownEditorInitialData = {
 };
 
 /**
+ * Primitive values allowed inside the package-level slug strategy context.
+ *
+ * Apps can pass lightweight metadata that influences slug generation without
+ * forcing the shared editor to understand app-specific domain models.
+ */
+export type MarkdownEditorSlugStrategyContextValue =
+  | boolean
+  | number
+  | string
+  | null
+  | undefined;
+
+/**
+ * App-defined context bag forwarded into the default slug strategy hook.
+ */
+export type MarkdownEditorSlugStrategyContext = Record<
+  string,
+  MarkdownEditorSlugStrategyContextValue
+>;
+
+/**
+ * Input shape provided to the default metadata-form slug strategy.
+ *
+ * The package owns the default title/slug flow, while apps can inject a
+ * strategy that derives path-like slugs from the same editor metadata.
+ */
+export type MarkdownEditorSlugStrategyInput = {
+  title: string;
+  editorContent: OutputData | null;
+  initialData?: MarkdownEditorInitialData;
+  isEditMode: boolean;
+  context?: MarkdownEditorSlugStrategyContext;
+};
+
+/**
+ * Slug strategy return shape used by the default metadata form.
+ *
+ * Strategies may return a final path string or a list of path segments that
+ * the package will normalize and join.
+ */
+export type MarkdownEditorSlugStrategyResult =
+  | string
+  | readonly (string | null | undefined)[];
+
+/**
+ * App-provided slug strategy hook for the default metadata form.
+ */
+export type MarkdownEditorSlugStrategy = (
+  input: MarkdownEditorSlugStrategyInput
+) => MarkdownEditorSlugStrategyResult;
+
+/**
  * Input accepted by `MarkdownEditor` for create/edit bootstrapping.
  *
  * Existing callers may continue passing raw EditorJS content, while edit-mode
@@ -121,6 +173,8 @@ export type EditorRenderFormProps = {
  */
 export type EditorFormProps = EditorRenderFormProps & {
   onSuccess?: (data: MarkdownEditorSubmitData) => void;
+  slugStrategy?: MarkdownEditorSlugStrategy;
+  slugStrategyContext?: MarkdownEditorSlugStrategyContext;
 };
 
 /**
@@ -198,4 +252,6 @@ export type MarkdownEditorProps = {
   plugins?: readonly PluginKey[];
   readOnly?: boolean;
   renderForm?: (props: EditorRenderFormProps) => ReactNode;
+  slugStrategy?: MarkdownEditorSlugStrategy;
+  slugStrategyContext?: MarkdownEditorSlugStrategyContext;
 };

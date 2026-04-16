@@ -8,6 +8,7 @@ The package now prefers explicit safety and reference parity for:
 - markdown images backed by Cloudinary or direct `url` fallbacks
 - external links limited to safe protocols
 - editor preview integration that can reuse the shared default component map
+- code blocks highlighted with the repo-standard Catppuccin light/dark themes
 
 ## Current Scope
 
@@ -49,7 +50,9 @@ export function ArticleBody({ content }: { content: string }) {
 `MarkdownImage` supports both Cloudinary-backed payloads (`public_id`) and
 plain external image URLs. `MarkdownLink` keeps internal/hash behavior from the
 references, but only renders external anchors for safe schemes such as
-`https:`, `mailto:`, and `tel:`.
+`https:`, `mailto:`, and `tel:`. `MarkdownCodeBlock` renders through Shiki with
+`catppuccin-latte` in light mode and `catppuccin-mocha` in dark mode so the
+syntax palette matches the rest of the repo.
 
 For client-only MDX compilation flows such as the shared editor live preview,
 use `previewComponents`. It mirrors the default registry but swaps the async

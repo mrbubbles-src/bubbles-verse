@@ -16,7 +16,7 @@ export type MarkdownCodeBlockProps = {
  * action.
  *
  * @param props - Raw code plus optional language hint.
- * @returns Highlighted code block preserving the reference Shiki theme.
+ * @returns Highlighted code block aligned with the repo Catppuccin themes.
  */
 export function MarkdownCodeBlock({
   code,
@@ -30,7 +30,10 @@ export function MarkdownCodeBlock({
     (async () => {
       const output = await codeToHtml(code, {
         lang: language,
-        theme: 'one-dark-pro',
+        themes: {
+          dark: 'catppuccin-mocha',
+          light: 'catppuccin-latte',
+        },
       });
 
       if (!cancelled) {

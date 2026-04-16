@@ -24,14 +24,33 @@ import {
   SelectValue,
 } from '@bubbles/ui/shadcn/select';
 import { Textarea } from '@bubbles/ui/shadcn/textarea';
-import type { FormEvent } from 'react';
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 
 import { useDraftAutosave } from '../hooks/use-draft-autosave';
 import { clearCreateDraft, clearEditDraft } from '../lib/draft-storage';
 import { serializeToMdx } from '../lib/serialize-to-mdx';
-import { generateSlug, getHeaderLevelOneTitle } from '../lib/slug-utils';
-import type { EditorFormProps, MarkdownEditorStatus } from '../types/editor';
+import {
+  generateSlug,
+  getHeaderLevelOneTitle,
+  joinSlugSegments,
+  normalizeSlugPath,
+} from '../lib/slug-utils';
+import type {
+  EditorFormProps,
+  MarkdownEditorInitialData,
+  MarkdownEditorSlugStrategyInput,
+  MarkdownEditorSlugStrategyResult,
+  MarkdownEditorStatus,
+} from '../types/editor';
+
+type EditorFormValues = {
+  description: string;
+  slug: string;
+  status: MarkdownEditorStatus;
+  tagsText: string;
+  title: string;
+};
 
 /**
  * Convert a comma-separated tags field into the package payload shape.
@@ -47,14 +66,84 @@ function parseTags(value: string): string[] {
 }
 
 /**
+ * Build the default RHF state from normalized package metadata.
+ *
+ * @param initialData - Initial metadata envelope passed into the shared editor.
+ * @returns Stable default values for the package-level metadata form.
+ */
+function buildDefaultValues(
+  initialData?: MarkdownEditorInitialData
+): EditorFormValues {
+  return {
+    description: initialData?.description ?? '',
+    slug: initialData?.slug ?? '',
+    status: initialData?.status ?? 'unpublished',
+    tagsText: (initialData?.tags ?? []).join(', '),
+    title: initialData?.title ?? '',
+  };
+}
+
+/**
+ * Normalize a slug strategy result into the final path string.
+ *
+ * @param result - Raw strategy result from the app-provided hook.
+ * @returns Normalized slug path compatible with package persistence.
+ */
+function normalizeSlugStrategyResult(
+  result: MarkdownEditorSlugStrategyResult
+): string {
+  if (typeof result === 'string') {
+    return normalizeSlugPath(result);
+  }
+
+  return joinSlugSegments([...result]);
+}
+
+/**
+ * Resolve the default-form slug from either the package fallback or an
+ * app-provided slug strategy.
+ *
+ * @param props - Title plus the current package context for slug derivation.
+ * @returns Normalized slug or an empty string when no title is available.
+ */
+function resolveDerivedSlug({
+  context,
+  editorContent,
+  initialData,
+  isEditMode,
+  slugStrategy,
+  title,
+}: MarkdownEditorSlugStrategyInput & {
+  slugStrategy?: EditorFormProps['slugStrategy'];
+}): string {
+  if (!title) {
+    return '';
+  }
+
+  if (!slugStrategy) {
+    return generateSlug(title);
+  }
+
+  return normalizeSlugStrategyResult(
+    slugStrategy({
+      context,
+      editorContent,
+      initialData,
+      isEditMode,
+      title,
+    })
+  );
+}
+
+/**
  * Default metadata form rendered by `MarkdownEditor` when no `renderForm`
  * override is provided.
  *
- * The form mirrors the reference package surface: title is derived from the
- * first H1 block, slug auto-follows until manually edited, and submit returns
- * serialized MDX through `onSuccess`.
+ * The form keeps the reference title/slug flow intact while using
+ * `react-hook-form` for field state and the current shadcn `Field` building
+ * blocks for presentation.
  *
- * @param props - Current editor state plus optional submit callback.
+ * @param props - Current editor state, submit callback, and optional slug strategy.
  * @returns Metadata form for the shared markdown editor surface.
  */
 export function EditorForm({
@@ -64,31 +153,49 @@ export function EditorForm({
   initialData,
   isEditMode,
   onSuccess,
+  slugStrategy,
+  slugStrategyContext,
 }: EditorFormProps) {
-  const [draftSavingDisabled, setDraftSavingDisabled] = useState(false);
-  const [description, setDescription] = useState(initialData?.description ?? '');
-  const [tagsText, setTagsText] = useState((initialData?.tags ?? []).join(', '));
-  const [status, setStatus] = useState<MarkdownEditorStatus>(
-    initialData?.status ?? 'unpublished'
-  );
-  const [title, setTitle] = useState(initialData?.title ?? '');
-  const [autoTitle, setAutoTitle] = useState<string | undefined>(
-    initialData?.title
-  );
-  const [slug, setSlug] = useState(initialData?.slug ?? '');
-  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
+  const defaultValues = useMemo(() => buildDefaultValues(initialData), [initialData]);
+  const slugManuallyEditedRef = useRef(false);
+  const [draftSavingDisabledSessionId, setDraftSavingDisabledSessionId] =
+    useState<string | null>(null);
   const statusLabelId = useId();
+  const form = useForm<EditorFormValues>({
+    defaultValues,
+  });
+  const {
+    control,
+    formState: { isSubmitting },
+    getValues,
+    handleSubmit,
+    register,
+    reset,
+    setValue,
+  } = form;
+  const description = useWatch({ control, name: 'description' }) ?? '';
+  const slug = useWatch({ control, name: 'slug' }) ?? '';
+  const status = useWatch({ control, name: 'status' }) ?? 'unpublished';
+  const tagsText = useWatch({ control, name: 'tagsText' }) ?? '';
+  const title = useWatch({ control, name: 'title' }) ?? '';
+  const descriptionField = register('description');
+  const tagsField = register('tagsText');
+  const formSessionId = useMemo(
+    () => `${isEditMode ? 'edit' : 'create'}:${JSON.stringify(defaultValues)}`,
+    [defaultValues, isEditMode]
+  );
+  const draftSavingDisabled = draftSavingDisabledSessionId === formSessionId;
+  const derivedTitle = useMemo(
+    () => getHeaderLevelOneTitle(editorContent),
+    [editorContent]
+  );
+  const titleDisplay =
+    derivedTitle ?? (title || 'The first H1 block becomes the entry title.');
 
   useEffect(() => {
-    setDraftSavingDisabled(false);
-    setDescription(initialData?.description ?? '');
-    setTagsText((initialData?.tags ?? []).join(', '));
-    setStatus(initialData?.status ?? 'unpublished');
-    setTitle(initialData?.title ?? '');
-    setAutoTitle(initialData?.title);
-    setSlug(initialData?.slug ?? '');
-    setSlugManuallyEdited(false);
-  }, [initialData]);
+    slugManuallyEditedRef.current = false;
+    reset(defaultValues);
+  }, [defaultValues, reset]);
 
   useEffect(() => {
     let cancelled = false;
@@ -106,26 +213,46 @@ export function EditorForm({
         return;
       }
 
-      const derivedTitle = getHeaderLevelOneTitle(content);
+      const nextDerivedTitle = getHeaderLevelOneTitle(content);
 
-      if (derivedTitle) {
-        setAutoTitle(derivedTitle);
-        setTitle(derivedTitle);
-        setSlug((currentSlug) => {
-          if (!slugManuallyEdited || currentSlug.length === 0) {
-            return generateSlug(derivedTitle);
-          }
-
-          return currentSlug;
+      if (nextDerivedTitle) {
+        setValue('title', nextDerivedTitle, {
+          shouldDirty: false,
+          shouldTouch: false,
         });
+
+        const currentSlug = getValues('slug');
+        if (!slugManuallyEditedRef.current || currentSlug.length === 0) {
+          setValue(
+            'slug',
+            resolveDerivedSlug({
+              context: slugStrategyContext,
+              editorContent: content,
+              initialData,
+              isEditMode,
+              slugStrategy,
+              title: nextDerivedTitle,
+            }),
+            {
+              shouldDirty: false,
+              shouldTouch: false,
+            }
+          );
+        }
+
         return;
       }
 
-      setAutoTitle(undefined);
-      setTitle('');
+      setValue('title', '', {
+        shouldDirty: false,
+        shouldTouch: false,
+      });
 
-      if (!slugManuallyEdited) {
-        setSlug('');
+      if (!slugManuallyEditedRef.current) {
+        setValue('slug', '', {
+          shouldDirty: false,
+          shouldTouch: false,
+        });
       }
     };
 
@@ -134,9 +261,20 @@ export function EditorForm({
     return () => {
       cancelled = true;
     };
-  }, [editorContent, editorOutput, editorReady, slugManuallyEdited]);
+  }, [
+    editorContent,
+    editorOutput,
+    editorReady,
+    getValues,
+    initialData,
+    isEditMode,
+    setValue,
+    slugStrategy,
+    slugStrategyContext,
+  ]);
 
   useDraftAutosave({
+    disabled: draftSavingDisabled,
     editorContent,
     formValues: {
       description,
@@ -147,12 +285,9 @@ export function EditorForm({
     },
     initialData,
     isEditMode,
-    disabled: draftSavingDisabled,
   });
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
+  const onSubmit = handleSubmit(async (values) => {
     if (!editorReady) {
       return;
     }
@@ -163,26 +298,29 @@ export function EditorForm({
       return;
     }
 
-    const normalizedTitle = getHeaderLevelOneTitle(output) ?? title;
-    const normalizedSlug = generateSlug(slug);
-    setSlug(normalizedSlug);
+    const normalizedTitle = getHeaderLevelOneTitle(output) ?? values.title;
+    const normalizedSlug = normalizeSlugPath(values.slug);
+    setValue('slug', normalizedSlug, {
+      shouldDirty: false,
+      shouldTouch: false,
+    });
 
     if (!onSuccess) {
       return;
     }
 
-    setDraftSavingDisabled(true);
+    setDraftSavingDisabledSessionId(formSessionId);
 
     try {
       await Promise.resolve(
         onSuccess({
-          description: description.trim(),
+          description: values.description.trim(),
           editorContent: output,
           isEditMode,
           serializedContent: serializeToMdx(output),
           slug: normalizedSlug,
-          status,
-          tags: parseTags(tagsText),
+          status: values.status,
+          tags: parseTags(values.tagsText),
           title: normalizedTitle,
         })
       );
@@ -194,10 +332,10 @@ export function EditorForm({
 
       clearCreateDraft();
     } catch (error) {
-      setDraftSavingDisabled(false);
+      setDraftSavingDisabledSessionId(null);
       throw error;
     }
-  };
+  });
 
   return (
     <Card size="sm">
@@ -209,38 +347,51 @@ export function EditorForm({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+        <form className="flex flex-col gap-4" onSubmit={onSubmit}>
           <FieldGroup>
             <Field>
               <FieldLabel>Title</FieldLabel>
               <div className="rounded-md border border-input bg-input/20 px-2 py-2 text-sm">
-                {autoTitle ||
-                  title ||
-                  'The first H1 block becomes the entry title.'}
+                {titleDisplay}
               </div>
               <FieldDescription>
                 Derived from the first level-1 heading in the editor content.
               </FieldDescription>
             </Field>
 
-            <Field>
-              <FieldLabel htmlFor="markdown-editor-slug">Slug</FieldLabel>
-              <Input
-                id="markdown-editor-slug"
-                placeholder="story-driven-editor"
-                value={slug}
-                onBlur={(event) => {
-                  setSlug(generateSlug(event.target.value));
-                }}
-                onChange={(event) => {
-                  setSlugManuallyEdited(true);
-                  setSlug(event.target.value);
-                }}
-              />
-              <FieldDescription>
-                Auto-generated from the title until you edit it manually.
-              </FieldDescription>
-            </Field>
+            <Controller
+              control={control}
+              name="slug"
+              render={({ field }) => (
+                <Field>
+                  <FieldLabel htmlFor="markdown-editor-slug">Slug</FieldLabel>
+                  <Input
+                    {...field}
+                    id="markdown-editor-slug"
+                    placeholder="story-driven-editor"
+                    value={field.value ?? ''}
+                    onBlur={(event) => {
+                      const normalizedSlug = normalizeSlugPath(event.target.value);
+
+                      event.target.value = normalizedSlug;
+
+                      if (normalizedSlug !== field.value) {
+                        field.onChange(normalizedSlug);
+                      }
+
+                      field.onBlur();
+                    }}
+                    onChange={(event) => {
+                      slugManuallyEditedRef.current = true;
+                      field.onChange(event.target.value);
+                    }}
+                  />
+                  <FieldDescription>
+                    Auto-generated from the title until du es manuell änderst.
+                  </FieldDescription>
+                </Field>
+              )}
+            />
 
             <Field>
               <FieldLabel htmlFor="markdown-editor-description">
@@ -249,10 +400,7 @@ export function EditorForm({
               <Textarea
                 id="markdown-editor-description"
                 rows={4}
-                value={description}
-                onChange={(event) => {
-                  setDescription(event.target.value);
-                }}
+                {...descriptionField}
               />
               <FieldDescription>
                 Optional summary used by the consuming app for cards, SEO, or
@@ -265,10 +413,7 @@ export function EditorForm({
               <Input
                 id="markdown-editor-tags"
                 placeholder="nextjs, mdx, editorjs"
-                value={tagsText}
-                onChange={(event) => {
-                  setTagsText(event.target.value);
-                }}
+                {...tagsField}
               />
               <FieldDescription>
                 Enter comma-separated tags. The package emits them as a string
@@ -278,25 +423,31 @@ export function EditorForm({
 
             <Field>
               <FieldLabel id={statusLabelId}>Status</FieldLabel>
-              <Select
-                value={status}
-                onValueChange={(value) => {
-                  setStatus(value as MarkdownEditorStatus);
-                }}
-              >
-                <SelectTrigger
-                  aria-labelledby={statusLabelId}
-                  id="markdown-editor-status"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value="unpublished">Unpublished</SelectItem>
-                    <SelectItem value="published">Published</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <Controller
+                control={control}
+                name="status"
+                render={({ field }) => (
+                  <Select
+                    value={field.value}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                    }}
+                  >
+                    <SelectTrigger
+                      aria-labelledby={statusLabelId}
+                      id="markdown-editor-status"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem value="unpublished">Unpublished</SelectItem>
+                        <SelectItem value="published">Published</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               <FieldDescription>
                 Keep the workflow intentionally small: published or unpublished
                 only.
@@ -305,7 +456,7 @@ export function EditorForm({
           </FieldGroup>
 
           <div className="flex justify-end">
-            <Button disabled={!editorReady} type="submit">
+            <Button disabled={!editorReady || isSubmitting} type="submit">
               Save
             </Button>
           </div>

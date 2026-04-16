@@ -7,11 +7,12 @@ Shared markdown editor package for bubbles-verse apps.
 This package now ships:
 
 - the standalone `serializeToMdx()` utility
-- the standalone `generateSlug()` utility from the shared metadata flow
+- shared slug helpers for segment and path normalization
 - the shared `MarkdownEditor` wrapper around EditorJS plus metadata form hooks
 - the portal-ref markdown import modal and markdown-to-EditorJS conversion flow
 - a live split-pane MDX preview with block-aware bidirectional scroll sync
 - the exported default `EditorForm` fallback for app-agnostic entry metadata
+- a package-owned Cloudinary upload route factory for Next route handlers
 - stylesheet exports and the shared EditorJS plugin dependency surface
 
 ## Available Imports
@@ -22,11 +23,16 @@ import {
   EditorForm,
   MarkdownEditor,
   generateSlug,
+  joinSlugSegments,
+  normalizeSlugPath,
   serializeToMdx,
+  slugifySegment,
 } from '@bubbles/markdown-editor';
 
 import '@bubbles/markdown-editor/styles/editor';
 import '@bubbles/markdown-editor/styles/preview';
+
+import { createCloudinaryUploadRoute } from '@bubbles/markdown-editor/cloudinary-upload-route';
 ```
 
 ## `MarkdownEditor`
@@ -53,6 +59,7 @@ Shared client wrapper around the reference EditorJS setup from
 - forwards image uploads through an app-provided `imageUploader`
 - forwards saved editor state through `onChange`
 - returns serialized submit payloads through `onSuccess`
+- lets the default form derive path-like slugs through `slugStrategy`
 
 ```tsx
 <MarkdownEditor />
@@ -63,6 +70,8 @@ Shared client wrapper around the reference EditorJS setup from
   imageUploader={uploadImage}
   onSuccess={(entry) => saveEntry(entry)}
   plugins={['paragraph', 'header', 'list', 'image']}
+  slugStrategy={({ context, title }) => [context?.section, title]}
+  slugStrategyContext={{ section: 'vault' }}
 />
 ```
 
@@ -100,13 +109,21 @@ The editor header includes the same import affordances as `portal-ref`:
 `MarkdownEditor` renders `EditorForm` automatically when `renderForm` is not
 provided.
 
+- field state is managed through `react-hook-form`
+- the default package form is composed with shadcn/ui `Field` primitives
 - title is derived from the first H1 block in the editor content
 - slug auto-follows the derived title until the author edits it manually
+- slugs are normalized as paths, so app strategies can safely return
+  `section/title`-style values
 - description, tags, and status (`published` | `unpublished`) stay package-level
 - create mode uses `topic-editor-create-draft`; edit mode uses `topic-editor-edit-draft`
 - successful submits clear the active draft and stop stale post-submit rewrites
 - loading a new `initialData` session resets form-local overrides instead of relying on a remount key
+- apps can shape the default-form slug through `slugStrategy` and optional
+  `slugStrategyContext`
 - submit calls `onSuccess` with `{ title, slug, description, tags, status, editorContent, serializedContent, isEditMode }`
+- the package TypeScript config also checks `tests/`, so local editor warnings in
+  test files should match `tsc --noEmit`
 
 You can also import and render the default form directly:
 
@@ -121,14 +138,57 @@ You can also import and render the default form directly:
 />
 ```
 
-## `generateSlug`
+## Slug helpers
 
-Use the exported helper when an app needs the exact same slug normalization as
+Use the exported helpers when an app needs the exact same slug normalization as
 the package form.
 
 ```ts
 const slug = generateSlug('Grüß&nbsp;Gott');
 // "gruess-gott"
+```
+
+```ts
+const pathSlug = joinSlugSegments(['2026', '04', 'Grüß Gott']);
+// "2026/04/gruess-gott"
+```
+
+## `createCloudinaryUploadRoute`
+
+Use the package route factory when a Next app wants the shared Cloudinary
+upload path without rebuilding the server-side plumbing in every app.
+
+The route expects the repo-standard env vars:
+
+```env
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+NEXT_PUBLIC_CLOUDINARY_API_KEY
+CLOUDINARY_API_SECRET
+```
+
+Minimal route example:
+
+```ts
+import { createCloudinaryUploadRoute } from '@bubbles/markdown-editor/cloudinary-upload-route';
+
+export const runtime = 'nodejs';
+
+export const POST = createCloudinaryUploadRoute({
+  folder: 'vault-uploads',
+});
+```
+
+Optional auth or policy gates stay app-owned:
+
+```ts
+export const POST = createCloudinaryUploadRoute({
+  folder: 'vault-uploads',
+  authorize(request) {
+    if (!request.headers.get('x-admin')) {
+      return Response.json({ message: 'Forbidden', success: 0 }, { status: 403 });
+    }
+  },
+});
 ```
 
 ## `serializeToMdx`

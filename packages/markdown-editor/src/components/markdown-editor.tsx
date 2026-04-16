@@ -56,6 +56,8 @@ export function MarkdownEditor({
   plugins,
   readOnly = false,
   renderForm,
+  slugStrategy,
+  slugStrategyContext,
 }: MarkdownEditorProps) {
   const editorRef = useRef<EditorJS | null>(null);
   const holderRef = useRef<HTMLDivElement | null>(null);
@@ -65,6 +67,7 @@ export function MarkdownEditor({
   const onReadyRef = useRef(onReady);
   const editorTeardownRef = useRef<Promise<void>>(Promise.resolve());
   const appliedInitialDataRef = useRef<OutputData | null>(null);
+  const initialEditorDataRef = useRef<OutputData | null>(null);
   const editorOutputRef = useRef<() => Promise<OutputData | undefined>>(
     async () => undefined
   );
@@ -134,6 +137,7 @@ export function MarkdownEditor({
   useEffect(() => {
     setEditorContent(normalizedInitialEditorData);
     previousBlockCountRef.current = normalizedInitialEditorData.blocks.length;
+    initialEditorDataRef.current = normalizedInitialEditorData;
 
     if (!editorRef.current) {
       setEditorReady(false);
@@ -203,15 +207,20 @@ export function MarkdownEditor({
         return;
       }
 
-      appliedInitialDataRef.current = normalizedInitialEditorData;
+      const initialEditorData = initialEditorDataRef.current ?? {
+        blocks: [],
+        time: Date.now(),
+        version: '2.31.0',
+      };
+      appliedInitialDataRef.current = initialEditorData;
 
       const editor = new EditorJs({
         autofocus,
-        data: normalizedInitialEditorData,
+        data: initialEditorData,
         defaultBlock: resolveDefaultBlock(activePluginKeys),
         holder: holderRef.current,
         onReady: () => {
-          previousBlockCountRef.current = normalizedInitialEditorData.blocks.length;
+          previousBlockCountRef.current = initialEditorData.blocks.length;
           setEditorReady(true);
           onReadyRef.current?.(editor);
         },
@@ -354,6 +363,8 @@ export function MarkdownEditor({
             initialData={normalizedInitialFormData}
             isEditMode={isEditMode}
             onSuccess={onSuccess}
+            slugStrategy={slugStrategy}
+            slugStrategyContext={slugStrategyContext}
           />
         </div>
       )}

@@ -12,3 +12,5 @@
   MIME handling, and restrict external markdown links to safe protocols only.
 - Add `previewComponents` so client-side MDX preview flows can render markdown
   images without hitting async server-component restrictions.
+- Align `MarkdownCodeBlock` with the repo Catppuccin Shiki themes by using
+  `catppuccin-latte` for light mode and `catppuccin-mocha` for dark mode.

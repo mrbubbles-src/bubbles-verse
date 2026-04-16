@@ -2,11 +2,12 @@
   "extends": "@bubbles/typescript-config/react-library.json",
   "compilerOptions": {
     "baseUrl": ".",
+    "types": ["vitest/globals", "@testing-library/jest-dom"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "jsx": "react-jsx",
     "noEmit": true
   },
-  "include": ["src"],
+  "include": ["src", "tests"],
   "exclude": ["node_modules", "dist"]
 }

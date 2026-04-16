@@ -20,7 +20,7 @@ export function sanitizeTitleText(value: string): string {
  * @param value - Human-readable title or manual slug input.
  * @returns URL-safe slug with stable umlaut and separator handling.
  */
-export function generateSlug(value: string): string {
+export function slugifySegment(value: string): string {
   const sanitized = sanitizeTitleText(value);
   const mapped = sanitized
     .replace(/ß/g, 'ss')
@@ -40,13 +40,53 @@ export function generateSlug(value: string): string {
 }
 
 /**
+ * Normalize a slash-separated slug path into clean slugified segments.
+ *
+ * @param value - Raw path-like slug input that may contain whitespace or slashes.
+ * @returns Normalized slug path without empty segments.
+ */
+export function normalizeSlugPath(value: string): string {
+  return value
+    .split('/')
+    .map((segment) => slugifySegment(segment))
+    .filter((segment) => segment.length > 0)
+    .join('/');
+}
+
+/**
+ * Join multiple slug segments into a normalized path.
+ *
+ * @param segments - Candidate path segments from an app-level slug strategy.
+ * @returns Joined and normalized slug path.
+ */
+export function joinSlugSegments(
+  segments: readonly (string | null | undefined)[]
+): string {
+  return normalizeSlugPath(
+    segments
+      .filter((segment): segment is string => typeof segment === 'string')
+      .join('/')
+  );
+}
+
+/**
+ * Convert free-form text into the reference single-segment slug format.
+ *
+ * @param value - Human-readable title or manual slug input.
+ * @returns URL-safe slug with stable umlaut and separator handling.
+ */
+export function generateSlug(value: string): string {
+  return slugifySegment(value);
+}
+
+/**
  * Backwards-compatible alias for the reference slug generator.
  *
  * @param value - Human-readable title or manual slug input.
  * @returns URL-safe slug with stable umlaut and separator handling.
  */
 export function slugify(value: string): string {
-  return generateSlug(value);
+  return slugifySegment(value);
 }
 
 /**

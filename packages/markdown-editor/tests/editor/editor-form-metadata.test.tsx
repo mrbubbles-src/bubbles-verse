@@ -137,10 +137,7 @@ describe('EditorForm metadata derivation', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Second Title')).toBeInTheDocument();
-      expect(screen.getByLabelText('Slug')).toHaveAttribute(
-        'value',
-        'custom-path'
-      );
+      expect(screen.getByLabelText('Slug')).toHaveValue('custom-path');
     });
   });
 
@@ -192,9 +189,53 @@ describe('EditorForm metadata derivation', () => {
     );
 
     await waitFor(() => {
+      expect(screen.getByLabelText('Slug')).toHaveValue('second-title');
+    });
+  });
+
+  it('supports path-shaped slugs through the default slug strategy hook', async () => {
+    render(
+      <EditorForm
+        editorContent={FIRST_OUTPUT}
+        editorOutput={vi.fn(async () => FIRST_OUTPUT)}
+        editorReady
+        isEditMode={false}
+        slugStrategy={({ context, title }) => [
+          String(context?.year ?? ''),
+          String(context?.month ?? ''),
+          title,
+        ]}
+        slugStrategyContext={{
+          month: '04',
+          year: '2026',
+        }}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('2026/04/story-driven-editor')).toBeInTheDocument();
+    });
+  });
+
+  it('normalizes manual slug edits as a path instead of collapsing slashes', async () => {
+    renderEditorForm(FIRST_OUTPUT);
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('story-driven-editor')).toBeInTheDocument();
+    });
+
+    const slugInput = screen.getByLabelText('Slug');
+    fireEvent.change(slugInput, {
+      target: { value: 'Blog / 2026 / Grüß Gott' },
+    });
+    fireEvent.blur(slugInput, {
+      target: { value: 'Blog / 2026 / Grüß Gott' },
+    });
+
+    await waitFor(() => {
       expect(screen.getByLabelText('Slug')).toHaveAttribute(
         'value',
-        'second-title'
+        'blog/2026/gruess-gott'
       );
     });
   });

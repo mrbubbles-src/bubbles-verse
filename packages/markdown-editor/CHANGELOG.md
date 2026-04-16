@@ -49,3 +49,12 @@
 - Switch the live preview to a client-safe MDX component registry so inserted
   markdown images no longer trip async server-component errors inside the
   editor pane.
+- Move the default metadata form onto `react-hook-form`, add optional
+  path-aware `slugStrategy` support, and keep the shared metadata surface
+  package-level.
+- Align the default metadata form with shadcn/ui's current `Field`
+  composition model, remove the local effect-driven title state, and include
+  the package test directories in TypeScript project checking so editor/test
+  warnings surface correctly inside the workspace.
+- Add path-aware slug helpers plus a package-owned Cloudinary upload route
+  factory for Next route handlers so apps can reuse the shared upload plumbing.

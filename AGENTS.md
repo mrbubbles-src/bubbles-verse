@@ -11,9 +11,12 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Be extremely concise. Sacrifice grammar for the sake of concision.
 - Avoid overly clever or abstract solutions unless clearly justified.
 - Write code for humans: it must be easy to read, understand, and maintain, while remaining efficient.
+- If you would be signifiicantly change a file without talking to the user first, always ask for confirmation first before proceeding.
+- Subagents should be used when appropriate to prevent context snowballing, even if the user does not explicitly request it. Usecases for subagents are for example code analysis, checking documentation, reviewing code etc.
+- Always run formatting, linting and typechecking before finishing a task.
 - Add concise JSDoc comments that explain what the function or component is for, how to use it, what it expects, and what it returns — even if the implementation seems obvious.
 - Avoid comments that merely restate the function name or implementation.
-- Always assume your knowledge is outdated, verify it with all your available tooling.
+- Always assume your knowledge is outdated, verify it with all your available tooling, such as the codebase, documentation via MCP Servers, Skills, Plugins, etc.
 - Use the `init` command first once in a new NextDevTools session to initialize the MCP.
 - When writing german text, always use umlauts instead of "ae", "oe", "ue".
 
