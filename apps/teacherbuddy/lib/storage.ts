@@ -5,7 +5,8 @@ import type {
   Quiz,
   QuizIndexEntry,
   Student,
-} from "@/lib/models"
+} from '@/lib/models';
+
 import {
   isBreakoutGroups,
   isClassroom,
@@ -14,174 +15,175 @@ import {
   isQuiz,
   isQuizIndexEntry,
   isStudent,
-} from "@/lib/type-guards"
+} from '@/lib/type-guards';
+import { createUuid } from '@/lib/uuid';
 
-const CLASSES_KEY = "teacherbuddy:classes"
-const ACTIVE_CLASS_KEY = "teacherbuddy:active-class"
-const STUDENTS_KEY = "teacherbuddy:students"
-const QUIZ_INDEX_KEY = "teacherbuddy:quiz-index"
-const PROJECT_LISTS_KEY = "teacherbuddy:project-lists"
-const BREAKOUT_GROUPS_KEY = "teacherbuddy:breakout-groups"
-const TIMER_KEY = "teacherbuddy:timer"
-const TIMER_FAVORITES_KEY = "teacherbuddy:timer-favorites"
-const PRIVACY_NOTICE_ACK_KEY = "teacherbuddy:privacy-notice-acknowledged"
+const CLASSES_KEY = 'teacherbuddy:classes';
+const ACTIVE_CLASS_KEY = 'teacherbuddy:active-class';
+const STUDENTS_KEY = 'teacherbuddy:students';
+const QUIZ_INDEX_KEY = 'teacherbuddy:quiz-index';
+const PROJECT_LISTS_KEY = 'teacherbuddy:project-lists';
+const BREAKOUT_GROUPS_KEY = 'teacherbuddy:breakout-groups';
+const TIMER_KEY = 'teacherbuddy:timer';
+const TIMER_FAVORITES_KEY = 'teacherbuddy:timer-favorites';
+const PRIVACY_NOTICE_ACK_KEY = 'teacherbuddy:privacy-notice-acknowledged';
 
-const DEFAULT_CLASS_NAME = "Class 1"
+const DEFAULT_CLASS_NAME = 'Class 1';
 
-const quizKey = (id: string) => `teacherbuddy:quiz:${id}`
+const quizKey = (id: string) => `teacherbuddy:quiz:${id}`;
 
 export type PersistedTimerState = {
-  configuredTotalSeconds: number
-  remainingSeconds: number
-  isRunning: boolean
-  savedAt: number
-}
+  configuredTotalSeconds: number;
+  remainingSeconds: number;
+  isRunning: boolean;
+  savedAt: number;
+};
 
 export type LoadedPersistedState = {
-  classes: Classroom[]
-  activeClassId: string | null
-  students: Student[]
-  quizIndex: QuizIndexEntry[]
-  projectLists: ProjectList[]
-  breakoutGroupsByClass: Record<string, BreakoutGroups>
-  quizzes: Record<string, Quiz>
-}
+  classes: Classroom[];
+  activeClassId: string | null;
+  students: Student[];
+  quizIndex: QuizIndexEntry[];
+  projectLists: ProjectList[];
+  breakoutGroupsByClass: Record<string, BreakoutGroups>;
+  quizzes: Record<string, Quiz>;
+};
 
-type JsonPrimitive = string | number | boolean | null
-type JsonValue = JsonPrimitive | JsonObject | JsonValue[]
-type JsonObject = { [key: string]: JsonValue }
+type JsonPrimitive = string | number | boolean | null;
+type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
+type JsonObject = { [key: string]: JsonValue };
 
 function safeParse<T>(raw: string | null, fallback: T): T {
-  if (!raw) return fallback
+  if (!raw) return fallback;
   try {
-    return JSON.parse(raw) as T
+    return JSON.parse(raw) as T;
   } catch (error) {
-    console.error("Failed to parse localStorage payload", error)
-    return fallback
+    console.error('Failed to parse localStorage payload', error);
+    return fallback;
   }
 }
 
 function isJsonObject(value: JsonValue): value is JsonObject {
-  return !!value && typeof value === "object" && !Array.isArray(value)
+  return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
 function isLegacyStudentObject(value: JsonValue): boolean {
-  if (!isJsonObject(value)) return false
-  const status = value.status
+  if (!isJsonObject(value)) return false;
+  const status = value.status;
   return (
-    typeof value.id === "string" &&
-    typeof value.name === "string" &&
-    (status === "active" || status === "excluded") &&
-    typeof value.createdAt === "number" &&
-    typeof value.classId !== "string"
-  )
+    typeof value.id === 'string' &&
+    typeof value.name === 'string' &&
+    (status === 'active' || status === 'excluded') &&
+    typeof value.createdAt === 'number' &&
+    typeof value.classId !== 'string'
+  );
 }
 
 function isLegacyProjectListObject(value: JsonValue): boolean {
-  if (!isJsonObject(value)) return false
+  if (!isJsonObject(value)) return false;
   return (
-    typeof value.id === "string" &&
-    typeof value.name === "string" &&
-    typeof value.projectType === "string" &&
+    typeof value.id === 'string' &&
+    typeof value.name === 'string' &&
+    typeof value.projectType === 'string' &&
     Array.isArray(value.studentIds) &&
     Array.isArray(value.groups) &&
-    typeof value.classId !== "string"
-  )
+    typeof value.classId !== 'string'
+  );
 }
 
 function isLegacyBreakoutObject(value: JsonValue | null): boolean {
-  if (!value || !isJsonObject(value)) return false
+  if (!value || !isJsonObject(value)) return false;
   return (
-    typeof value.groupSize === "number" &&
+    typeof value.groupSize === 'number' &&
     Array.isArray(value.groupIds) &&
-    typeof value.createdAt === "number" &&
-    typeof value.classId !== "string"
-  )
+    typeof value.createdAt === 'number' &&
+    typeof value.classId !== 'string'
+  );
 }
 
 function createDefaultClass(): Classroom {
   return {
-    id: crypto.randomUUID(),
+    id: createUuid(),
     name: DEFAULT_CLASS_NAME,
     createdAt: Date.now(),
-  }
+  };
 }
 
 function parseStudents(
   raw: JsonValue[],
   fallbackClassId: string | null
 ): Student[] {
-  const students: Student[] = []
+  const students: Student[] = [];
 
   for (const entry of raw) {
-    if (typeof entry === "string") {
-      if (!fallbackClassId) continue
+    if (typeof entry === 'string') {
+      if (!fallbackClassId) continue;
       students.push({
-        id: crypto.randomUUID(),
+        id: createUuid(),
         name: entry,
-        status: "active",
+        status: 'active',
         createdAt: Date.now(),
         classId: fallbackClassId,
-      })
-      continue
+      });
+      continue;
     }
 
     if (isStudent(entry)) {
-      students.push(entry)
-      continue
+      students.push(entry);
+      continue;
     }
 
     if (!fallbackClassId || !isLegacyStudentObject(entry)) {
-      continue
+      continue;
     }
-    const legacy = entry as JsonObject
+    const legacy = entry as JsonObject;
 
     students.push({
       id: legacy.id as string,
       name: legacy.name as string,
-      status: legacy.status as Student["status"],
+      status: legacy.status as Student['status'],
       createdAt: legacy.createdAt as number,
       classId: fallbackClassId,
-    })
+    });
   }
 
-  return students
+  return students;
 }
 
 function parseProjectLists(
   raw: JsonValue[],
   fallbackClassId: string | null
 ): ProjectList[] {
-  const projectLists: ProjectList[] = []
+  const projectLists: ProjectList[] = [];
 
   for (const entry of raw) {
     if (isProjectList(entry)) {
-      const record = entry as ProjectList & { description?: string }
+      const record = entry as ProjectList & { description?: string };
       projectLists.push({
         ...record,
-        description: record.description ?? "",
+        description: record.description ?? '',
         createdAt:
-          typeof record.createdAt === "number" ? record.createdAt : Date.now(),
-      })
-      continue
+          typeof record.createdAt === 'number' ? record.createdAt : Date.now(),
+      });
+      continue;
     }
 
     if (!fallbackClassId || !isLegacyProjectListObject(entry)) {
-      continue
+      continue;
     }
-    const legacy = entry as JsonObject
+    const legacy = entry as JsonObject;
 
     const groups = (legacy.groups as JsonValue[])
       .filter((group) => Array.isArray(group))
       .map((group) =>
         (group as JsonValue[])
-          .filter((id) => typeof id === "string")
+          .filter((id) => typeof id === 'string')
           .map((id) => id as string)
-      )
+      );
 
     const studentIds = (legacy.studentIds as JsonValue[])
-      .filter((id) => typeof id === "string")
-      .map((id) => id as string)
+      .filter((id) => typeof id === 'string')
+      .map((id) => id as string);
 
     projectLists.push({
       id: legacy.id as string,
@@ -189,29 +191,33 @@ function parseProjectLists(
       name: legacy.name as string,
       projectType: legacy.projectType as string,
       description:
-        typeof legacy.description === "string" ? (legacy.description as string) : "",
+        typeof legacy.description === 'string'
+          ? (legacy.description as string)
+          : '',
       studentIds,
       groups,
       createdAt:
-        typeof legacy.createdAt === "number" ? (legacy.createdAt as number) : Date.now(),
-    })
+        typeof legacy.createdAt === 'number'
+          ? (legacy.createdAt as number)
+          : Date.now(),
+    });
   }
 
-  return projectLists
+  return projectLists;
 }
 
 function parseBreakoutGroupsByClass(
   raw: JsonValue | null,
   fallbackClassId: string | null
 ): Record<string, BreakoutGroups> {
-  if (!raw) return {}
+  if (!raw) return {};
 
   if (isBreakoutGroups(raw)) {
-    return { [raw.classId]: raw }
+    return { [raw.classId]: raw };
   }
 
   if (isLegacyBreakoutObject(raw) && fallbackClassId) {
-    const legacy = raw as JsonObject
+    const legacy = raw as JsonObject;
     return {
       [fallbackClassId]: {
         classId: fallbackClassId,
@@ -220,43 +226,43 @@ function parseBreakoutGroupsByClass(
           .filter((group) => Array.isArray(group))
           .map((group) =>
             (group as JsonValue[])
-              .filter((id) => typeof id === "string")
+              .filter((id) => typeof id === 'string')
               .map((id) => id as string)
           ),
         createdAt: legacy.createdAt as number,
       },
-    }
+    };
   }
 
-  if (!isJsonObject(raw)) return {}
+  if (!isJsonObject(raw)) return {};
 
-  const groupsByClass: Record<string, BreakoutGroups> = {}
+  const groupsByClass: Record<string, BreakoutGroups> = {};
   for (const [classId, value] of Object.entries(raw)) {
-    if (!classId || !isBreakoutGroups(value)) continue
-    groupsByClass[classId] = value
+    if (!classId || !isBreakoutGroups(value)) continue;
+    groupsByClass[classId] = value;
   }
 
-  return groupsByClass
+  return groupsByClass;
 }
 
 function ensureClassesForStudents(
   classes: Classroom[],
   students: Student[]
 ): Classroom[] {
-  const knownIds = new Set(classes.map((entry) => entry.id))
-  const nextClasses = [...classes]
+  const knownIds = new Set(classes.map((entry) => entry.id));
+  const nextClasses = [...classes];
 
   for (const student of students) {
-    if (knownIds.has(student.classId)) continue
-    knownIds.add(student.classId)
+    if (knownIds.has(student.classId)) continue;
+    knownIds.add(student.classId);
     nextClasses.push({
       id: student.classId,
       name: `Class ${nextClasses.length + 1}`,
       createdAt: Date.now(),
-    })
+    });
   }
 
-  return nextClasses
+  return nextClasses;
 }
 
 /**
@@ -264,10 +270,10 @@ function ensureClassesForStudents(
  * Filters invalid entries and returns an empty array on failure.
  */
 export function loadClasses(): Classroom[] {
-  if (typeof window === "undefined") return []
-  const parsed = safeParse<JsonValue[]>(localStorage.getItem(CLASSES_KEY), [])
-  if (!Array.isArray(parsed)) return []
-  return parsed.filter((entry) => isClassroom(entry))
+  if (typeof window === 'undefined') return [];
+  const parsed = safeParse<JsonValue[]>(localStorage.getItem(CLASSES_KEY), []);
+  if (!Array.isArray(parsed)) return [];
+  return parsed.filter((entry) => isClassroom(entry));
 }
 
 /**
@@ -275,8 +281,8 @@ export function loadClasses(): Classroom[] {
  * Accepts normalized class objects from app state.
  */
 export function saveClasses(classes: Classroom[]) {
-  if (typeof window === "undefined") return
-  localStorage.setItem(CLASSES_KEY, JSON.stringify(classes))
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(CLASSES_KEY, JSON.stringify(classes));
 }
 
 /**
@@ -284,12 +290,12 @@ export function saveClasses(classes: Classroom[]) {
  * Returns null when missing or invalid.
  */
 export function loadActiveClassId(): string | null {
-  if (typeof window === "undefined") return null
+  if (typeof window === 'undefined') return null;
   const parsed = safeParse<JsonValue | null>(
     localStorage.getItem(ACTIVE_CLASS_KEY),
     null
-  )
-  return typeof parsed === "string" ? parsed : null
+  );
+  return typeof parsed === 'string' ? parsed : null;
 }
 
 /**
@@ -297,12 +303,12 @@ export function loadActiveClassId(): string | null {
  * Clears the key when null.
  */
 export function saveActiveClassId(activeClassId: string | null) {
-  if (typeof window === "undefined") return
+  if (typeof window === 'undefined') return;
   if (!activeClassId) {
-    localStorage.removeItem(ACTIVE_CLASS_KEY)
-    return
+    localStorage.removeItem(ACTIVE_CLASS_KEY);
+    return;
   }
-  localStorage.setItem(ACTIVE_CLASS_KEY, JSON.stringify(activeClassId))
+  localStorage.setItem(ACTIVE_CLASS_KEY, JSON.stringify(activeClassId));
 }
 
 /**
@@ -310,10 +316,10 @@ export function saveActiveClassId(activeClassId: string | null) {
  * Returns an empty array when unavailable, invalid, or running on the server.
  */
 export function loadStudents(defaultClassId: string | null = null): Student[] {
-  if (typeof window === "undefined") return []
-  const parsed = safeParse<JsonValue[]>(localStorage.getItem(STUDENTS_KEY), [])
-  if (!Array.isArray(parsed)) return []
-  return parseStudents(parsed, defaultClassId)
+  if (typeof window === 'undefined') return [];
+  const parsed = safeParse<JsonValue[]>(localStorage.getItem(STUDENTS_KEY), []);
+  if (!Array.isArray(parsed)) return [];
+  return parseStudents(parsed, defaultClassId);
 }
 
 /**
@@ -321,8 +327,8 @@ export function loadStudents(defaultClassId: string | null = null): Student[] {
  * Accepts normalized student records from app state.
  */
 export function saveStudents(students: Student[]) {
-  if (typeof window === "undefined") return
-  localStorage.setItem(STUDENTS_KEY, JSON.stringify(students))
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STUDENTS_KEY, JSON.stringify(students));
 }
 
 /**
@@ -330,21 +336,29 @@ export function saveStudents(students: Student[]) {
  * Filters out invalid entries and returns an empty array on failure.
  */
 export function loadQuizIndex(): QuizIndexEntry[] {
-  if (typeof window === "undefined") return []
-  const parsed = safeParse<JsonValue[]>(localStorage.getItem(QUIZ_INDEX_KEY), [])
-  if (!Array.isArray(parsed)) return []
-  return parsed.filter((entry) => isQuizIndexEntry(entry))
+  if (typeof window === 'undefined') return [];
+  const parsed = safeParse<JsonValue[]>(
+    localStorage.getItem(QUIZ_INDEX_KEY),
+    []
+  );
+  if (!Array.isArray(parsed)) return [];
+  return parsed.filter((entry) => isQuizIndexEntry(entry));
 }
 
 /**
  * Loads saved project lists from local storage with backward-compatible defaults.
  * Ensures each list contains description and createdAt values.
  */
-export function loadProjectLists(defaultClassId: string | null = null): ProjectList[] {
-  if (typeof window === "undefined") return []
-  const parsed = safeParse<JsonValue[]>(localStorage.getItem(PROJECT_LISTS_KEY), [])
-  if (!Array.isArray(parsed)) return []
-  return parseProjectLists(parsed, defaultClassId)
+export function loadProjectLists(
+  defaultClassId: string | null = null
+): ProjectList[] {
+  if (typeof window === 'undefined') return [];
+  const parsed = safeParse<JsonValue[]>(
+    localStorage.getItem(PROJECT_LISTS_KEY),
+    []
+  );
+  if (!Array.isArray(parsed)) return [];
+  return parseProjectLists(parsed, defaultClassId);
 }
 
 /**
@@ -352,8 +366,8 @@ export function loadProjectLists(defaultClassId: string | null = null): ProjectL
  * Overwrites any existing project list payload.
  */
 export function saveProjectLists(lists: ProjectList[]) {
-  if (typeof window === "undefined") return
-  localStorage.setItem(PROJECT_LISTS_KEY, JSON.stringify(lists))
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(PROJECT_LISTS_KEY, JSON.stringify(lists));
 }
 
 /**
@@ -363,12 +377,12 @@ export function saveProjectLists(lists: ProjectList[]) {
 export function loadBreakoutGroupsByClass(
   defaultClassId: string | null = null
 ): Record<string, BreakoutGroups> {
-  if (typeof window === "undefined") return {}
+  if (typeof window === 'undefined') return {};
   const parsed = safeParse<JsonValue | null>(
     localStorage.getItem(BREAKOUT_GROUPS_KEY),
     null
-  )
-  return parseBreakoutGroupsByClass(parsed, defaultClassId)
+  );
+  return parseBreakoutGroupsByClass(parsed, defaultClassId);
 }
 
 /**
@@ -378,12 +392,12 @@ export function loadBreakoutGroupsByClass(
 export function saveBreakoutGroupsByClass(
   groupsByClass: Record<string, BreakoutGroups>
 ) {
-  if (typeof window === "undefined") return
+  if (typeof window === 'undefined') return;
   if (!Object.keys(groupsByClass).length) {
-    localStorage.removeItem(BREAKOUT_GROUPS_KEY)
-    return
+    localStorage.removeItem(BREAKOUT_GROUPS_KEY);
+    return;
   }
-  localStorage.setItem(BREAKOUT_GROUPS_KEY, JSON.stringify(groupsByClass))
+  localStorage.setItem(BREAKOUT_GROUPS_KEY, JSON.stringify(groupsByClass));
 }
 
 /**
@@ -391,8 +405,8 @@ export function saveBreakoutGroupsByClass(
  * Accepts already-sorted quiz index entries.
  */
 export function saveQuizIndex(index: QuizIndexEntry[]) {
-  if (typeof window === "undefined") return
-  localStorage.setItem(QUIZ_INDEX_KEY, JSON.stringify(index))
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(QUIZ_INDEX_KEY, JSON.stringify(index));
 }
 
 /**
@@ -400,10 +414,13 @@ export function saveQuizIndex(index: QuizIndexEntry[]) {
  * Returns `null` when the quiz does not exist or fails validation.
  */
 export function loadQuiz(id: string): Quiz | null {
-  if (typeof window === "undefined") return null
-  const parsed = safeParse<JsonValue | null>(localStorage.getItem(quizKey(id)), null)
-  if (!isQuiz(parsed)) return null
-  return parsed
+  if (typeof window === 'undefined') return null;
+  const parsed = safeParse<JsonValue | null>(
+    localStorage.getItem(quizKey(id)),
+    null
+  );
+  if (!isQuiz(parsed)) return null;
+  return parsed;
 }
 
 /**
@@ -411,8 +428,8 @@ export function loadQuiz(id: string): Quiz | null {
  * Expects a complete quiz object including questions and timestamps.
  */
 export function saveQuiz(quiz: Quiz) {
-  if (typeof window === "undefined") return
-  localStorage.setItem(quizKey(quiz.id), JSON.stringify(quiz))
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(quizKey(quiz.id), JSON.stringify(quiz));
 }
 
 /**
@@ -420,8 +437,8 @@ export function saveQuiz(quiz: Quiz) {
  * No-op on the server or when the key is missing.
  */
 export function removeQuiz(id: string) {
-  if (typeof window === "undefined") return
-  localStorage.removeItem(quizKey(id))
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(quizKey(id));
 }
 
 /**
@@ -430,61 +447,62 @@ export function removeQuiz(id: string) {
  */
 export function loadPersistedState(): LoadedPersistedState {
   const rawStudents = safeParse<JsonValue[]>(
-    typeof window === "undefined" ? null : localStorage.getItem(STUDENTS_KEY),
+    typeof window === 'undefined' ? null : localStorage.getItem(STUDENTS_KEY),
     []
-  )
+  );
   const rawProjectLists = safeParse<JsonValue[]>(
-    typeof window === "undefined"
+    typeof window === 'undefined'
       ? null
       : localStorage.getItem(PROJECT_LISTS_KEY),
     []
-  )
+  );
   const rawBreakout = safeParse<JsonValue | null>(
-    typeof window === "undefined"
+    typeof window === 'undefined'
       ? null
       : localStorage.getItem(BREAKOUT_GROUPS_KEY),
     null
-  )
+  );
 
-  let classes = loadClasses()
+  let classes = loadClasses();
   if (!classes.length) {
-    classes = [createDefaultClass()]
+    classes = [createDefaultClass()];
   }
 
-  const fallbackClassId = classes[0]?.id ?? null
-  const students = parseStudents(rawStudents, fallbackClassId)
-  classes = ensureClassesForStudents(classes, students)
+  const fallbackClassId = classes[0]?.id ?? null;
+  const students = parseStudents(rawStudents, fallbackClassId);
+  classes = ensureClassesForStudents(classes, students);
 
-  const projectLists = parseProjectLists(rawProjectLists, fallbackClassId).filter((list) =>
-    classes.some((entry) => entry.id === list.classId)
-  )
+  const projectLists = parseProjectLists(
+    rawProjectLists,
+    fallbackClassId
+  ).filter((list) => classes.some((entry) => entry.id === list.classId));
 
   const breakoutGroupsByClass = parseBreakoutGroupsByClass(
     rawBreakout,
     fallbackClassId
-  )
+  );
 
-  const cleanedBreakoutGroupsByClass: Record<string, BreakoutGroups> = {}
+  const cleanedBreakoutGroupsByClass: Record<string, BreakoutGroups> = {};
   for (const [classId, groups] of Object.entries(breakoutGroupsByClass)) {
-    if (!classes.some((entry) => entry.id === classId)) continue
-    cleanedBreakoutGroupsByClass[classId] = groups
+    if (!classes.some((entry) => entry.id === classId)) continue;
+    cleanedBreakoutGroupsByClass[classId] = groups;
   }
 
-  const rawActiveClassId = loadActiveClassId()
+  const rawActiveClassId = loadActiveClassId();
   const activeClassId =
     rawActiveClassId && classes.some((entry) => entry.id === rawActiveClassId)
       ? rawActiveClassId
-      : (classes[0]?.id ?? null)
+      : (classes[0]?.id ?? null);
 
-  const quizIndex = loadQuizIndex()
-  const quizzes: Record<string, Quiz> = {}
-  const cleanedIndex: QuizIndexEntry[] = []
+  const quizIndex = loadQuizIndex();
+  const quizzes: Record<string, Quiz> = {};
+  const cleanedIndex: QuizIndexEntry[] = [];
 
   for (const entry of quizIndex) {
-    const quiz = loadQuiz(entry.id)
+    const quiz = loadQuiz(entry.id);
     if (quiz) {
-      quizzes[entry.id] = quiz
-      cleanedIndex.push(entry)
+      quizzes[entry.id] = quiz;
+      cleanedIndex.push(entry);
     }
   }
 
@@ -496,7 +514,7 @@ export function loadPersistedState(): LoadedPersistedState {
     projectLists,
     breakoutGroupsByClass: cleanedBreakoutGroupsByClass,
     quizzes,
-  }
+  };
 }
 
 /**
@@ -507,16 +525,16 @@ export function persistAllQuizzes(
   quizIndex: QuizIndexEntry[],
   quizzes: Record<string, Quiz>
 ) {
-  const ids = new Set(quizIndex.map((entry) => entry.id))
+  const ids = new Set(quizIndex.map((entry) => entry.id));
   for (const entry of quizIndex) {
-    const quiz = quizzes[entry.id]
+    const quiz = quizzes[entry.id];
     if (quiz) {
-      saveQuiz(quiz)
+      saveQuiz(quiz);
     }
   }
   for (const id of Object.keys(quizzes)) {
     if (!ids.has(id)) {
-      removeQuiz(id)
+      removeQuiz(id);
     }
   }
 }
@@ -526,11 +544,14 @@ export function persistAllQuizzes(
  * Returns `null` for invalid data or completed timers.
  */
 export function loadTimer(): PersistedTimerState | null {
-  if (typeof window === "undefined") return null
-  const parsed = safeParse<JsonValue | null>(localStorage.getItem(TIMER_KEY), null)
-  if (!isPersistedTimerState(parsed)) return null
-  if (parsed.remainingSeconds <= 0) return null
-  return parsed
+  if (typeof window === 'undefined') return null;
+  const parsed = safeParse<JsonValue | null>(
+    localStorage.getItem(TIMER_KEY),
+    null
+  );
+  if (!isPersistedTimerState(parsed)) return null;
+  if (parsed.remainingSeconds <= 0) return null;
+  return parsed;
 }
 
 /**
@@ -538,8 +559,8 @@ export function loadTimer(): PersistedTimerState | null {
  * Call while timer is configured or actively running.
  */
 export function saveTimer(state: PersistedTimerState) {
-  if (typeof window === "undefined") return
-  localStorage.setItem(TIMER_KEY, JSON.stringify(state))
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(TIMER_KEY, JSON.stringify(state));
 }
 
 /**
@@ -547,8 +568,8 @@ export function saveTimer(state: PersistedTimerState) {
  * Used when timer resets or completes.
  */
 export function clearTimer() {
-  if (typeof window === "undefined") return
-  localStorage.removeItem(TIMER_KEY)
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(TIMER_KEY);
 }
 
 /**
@@ -556,16 +577,16 @@ export function clearTimer() {
  * Used to avoid showing the notice again until local storage is cleared.
  */
 export function isPrivacyNoticeAcknowledged(): boolean {
-  if (typeof window === "undefined") return false
-  return localStorage.getItem(PRIVACY_NOTICE_ACK_KEY) === "1"
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem(PRIVACY_NOTICE_ACK_KEY) === '1';
 }
 
 /**
  * Marks the privacy notice as acknowledged so it is not shown again.
  */
 export function setPrivacyNoticeAcknowledged(): void {
-  if (typeof window === "undefined") return
-  localStorage.setItem(PRIVACY_NOTICE_ACK_KEY, "1")
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(PRIVACY_NOTICE_ACK_KEY, '1');
 }
 
 /**
@@ -574,19 +595,19 @@ export function setPrivacyNoticeAcknowledged(): void {
  * Allows 0–3 favorites.
  */
 export function loadTimerFavorites(): number[] {
-  if (typeof window === "undefined") return [60, 300, 900]
+  if (typeof window === 'undefined') return [60, 300, 900];
   const parsed = safeParse<JsonValue | null>(
     localStorage.getItem(TIMER_FAVORITES_KEY),
     null
-  )
+  );
   if (
     !Array.isArray(parsed) ||
     parsed.length > 3 ||
-    !parsed.every((v) => typeof v === "number" && v > 0)
+    !parsed.every((v) => typeof v === 'number' && v > 0)
   ) {
-    return [60, 300, 900]
+    return [60, 300, 900];
   }
-  return parsed as number[]
+  return parsed as number[];
 }
 
 /**
@@ -594,6 +615,6 @@ export function loadTimerFavorites(): number[] {
  * Accepts 0–3 positive numbers.
  */
 export function saveTimerFavorites(favorites: number[]): void {
-  if (typeof window === "undefined") return
-  localStorage.setItem(TIMER_FAVORITES_KEY, JSON.stringify(favorites))
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(TIMER_FAVORITES_KEY, JSON.stringify(favorites));
 }

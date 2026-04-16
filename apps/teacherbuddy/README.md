@@ -40,15 +40,15 @@ Open [http://localhost:3000](http://localhost:3000) and use the dashboard to nav
 
 ### Features
 
-| Route             | Description                                          |
-| ----------------- | ---------------------------------------------------- |
-| `/`               | Dashboard with links to all features                 |
-| `/students`       | Manage classes and class-scoped student rosters      |
-| `/generator`      | Draw random students with no-repeat logic per class  |
-| `/quizzes`        | Build and edit quiz question sets                    |
-| `/play`           | Run live quiz sessions scoped to selected class      |
-| `/breakout-rooms` | Generate random student groups per class             |
-| `/projects`       | Create and manage project lists per class            |
+| Route             | Description                                         |
+| ----------------- | --------------------------------------------------- |
+| `/`               | Dashboard with links to all features                |
+| `/students`       | Manage classes and class-scoped student rosters     |
+| `/generator`      | Draw random students with no-repeat logic per class |
+| `/quizzes`        | Build and edit quiz question sets                   |
+| `/play`           | Run live quiz sessions scoped to selected class     |
+| `/breakout-rooms` | Generate random student groups per class            |
+| `/projects`       | Create and manage project lists per class           |
 
 ### Usage Examples
 
@@ -60,7 +60,7 @@ Open [http://localhost:3000](http://localhost:3000) and use the dashboard to nav
 - **Timer**: Use the **timer in the header** (on every page): set time, start countdown; alerts at 10min, 5min, 1min, and 0 (with optional sound).
 - **Breakout groups**: In `/breakout-rooms`, set group size and generate; copy groups or full list to clipboard.
 - **Project lists**: In `/projects`, create lists, assign students, and organize into groups.
-- **In-app help**: Click the **?** (help) button next to the page title in the header to open a short tutorial for the current page (purpose, steps, outcome). Content is defined in `lib/page-info.tsx`.
+- **In-app help**: Click the **?** beside the header description to open a short tutorial for the current page (purpose, steps, outcome). Content is defined in `lib/page-info.tsx`.
 
 ---
 
@@ -79,7 +79,7 @@ teacherbuddy/
 ├── components/             # React components
 │   ├── ui/                 # Shared UI primitives (Button, Card, Sidebar, etc.)
 │   ├── loading/            # Hydration skeleton components
-│   ├── navigation/        # Sidebar navigation
+│   ├── navigation/        # Sidebar-specific app wrappers and legacy nav pieces
 │   ├── dashboard/         # Dashboard cards (server component)
 │   ├── students/          # Student management
 │   ├── classes/           # Class selector
@@ -88,9 +88,7 @@ teacherbuddy/
 │   ├── breakout/          # Breakout groups
 │   ├── projects/           # Project lists
 │   ├── utility/           # Theme toggle, etc.
-│   ├── app-shell.tsx      # Layout shell (sidebar + header + main)
-│   ├── header.tsx         # Page title, timer, theme toggle
-│   └── footer.tsx         # Credits
+│   └── app-shell.tsx      # Layout shell (shared sidebar/header + main)
 ├── context/                # React context
 │   ├── app-store.tsx      # Global state and reducer
 │   └── theme-provider.tsx  # next-themes
@@ -111,6 +109,9 @@ teacherbuddy/
 - **App Store**: `context/app-store.tsx` holds global state with `useReducer`, hydrated from `localStorage` on mount.
 - **Hydration**: Components check `state.ui.isHydrated` and show skeletons until data is loaded.
 - **Server components**: Dashboard cards are server-rendered; feature pages are client-driven.
+- **Shared app shell**: `components/app-shell.tsx` now composes `@bubbles/ui/components/bubbles-sidebar-layout` and supplies TeacherBuddy-specific breadcrumbs, description copy, help trigger, and header actions.
+- **Collapsed navigation**: When the shared sidebar is collapsed, TeacherBuddy now renders a clean icon-only rail instead of partially visible labels.
+- **Shared footer**: Root layout now renders `@bubbles/footer` with TeacherBuddy-specific legal links and source attribution.
 - **Type guards**: `lib/type-guards.ts` validates persisted data from `localStorage`.
 
 **Developer documentation:** [documentation/README.md](documentation/README.md) (index of all guides).
@@ -189,17 +190,17 @@ Run these before submitting changes.
 
 ## Tech Stack
 
-| Category        | Technology                    |
-| --------------- | ----------------------------- |
-| Framework       | Next.js 16 (App Router)       |
-| UI              | React 19                      |
-| Styling         | Tailwind CSS v4, shadcn       |
-| Components      | Base UI, Lucide icons         |
-| State           | React Context + useReducer    |
-| Persistence     | localStorage                  |
-| Testing         | Vitest, React Testing Library |
-| Language        | TypeScript                    |
-| Package manager | Bun                           |
+| Category        | Technology                                       |
+| --------------- | ------------------------------------------------ |
+| Framework       | Next.js 16 (App Router)                          |
+| UI              | React 19                                         |
+| Styling         | Tailwind CSS v4, shadcn                          |
+| Components      | Base UI, Hugeicons, shared `@bubbles/*` packages |
+| State           | React Context + useReducer                       |
+| Persistence     | localStorage                                     |
+| Testing         | Vitest, React Testing Library                    |
+| Language        | TypeScript                                       |
+| Package manager | Bun                                              |
 
 ---
 

@@ -122,47 +122,41 @@ export default function DashboardCards() {
   return (
     <div className="flex flex-col gap-10">
       {/* Command Center Hero (from design-1) */}
-      <section className="relative overflow-hidden rounded-2xl border border-border/40 bg-card p-6 shadow-lg md:p-8 lg:p-10">
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage:
-              'radial-gradient(circle at 25% 25%, var(--primary) 1px, transparent 1px), radial-gradient(circle at 75% 75%, var(--primary) 1px, transparent 1px)',
-            backgroundSize: '32px 32px',
-          }}
-        />
-        <div className="relative flex flex-col items-center gap-4 text-center md:flex-row md:text-left lg:gap-8">
-          <div className="w-full max-w-[200px] shrink-0 md:max-w-[240px] lg:max-w-[280px]">
-            <Image
-              src={Logo}
-              alt="TeacherBuddy — free classroom management tools for teachers"
-              width={895}
-              height={372}
-              sizes="(max-width: 768px) 200px, (max-width: 1024px) 240px, 280px"
-              priority
-              placeholder="blur"
-              blurDataURL={Logo.blurDataURL}
-            />
-          </div>
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-center gap-2 md:justify-start">
-              <HugeiconsIcon
-                icon={SparklesIcon}
-                strokeWidth={2}
-                className="size-4 text-primary"
+      <section className="py-2">
+        <div className="mx-auto w-full max-w-5xl px-2 md:px-4 lg:px-6">
+          <div className="mx-auto grid w-full max-w-4xl items-center gap-5 text-center md:grid-cols-[minmax(220px,280px)_minmax(0,1fr)] md:gap-8 md:text-left">
+            <div className="mx-auto w-full max-w-[200px] shrink-0 md:mx-0 md:max-w-[240px] lg:max-w-[280px]">
+              <Image
+                src={Logo}
+                alt="TeacherBuddy — free classroom management tools for teachers"
+                width={895}
+                height={372}
+                sizes="(max-width: 768px) 200px, (max-width: 1024px) 240px, 280px"
+                priority
+                placeholder="blur"
+                blurDataURL={Logo.blurDataURL}
               />
-              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-                Command Center
-              </span>
             </div>
-            <h2 className="text-xl font-bold tracking-tight text-foreground md:text-2xl lg:text-3xl">
-              Everything you need,{' '}
-              <span className="text-primary">one dashboard.</span>
-            </h2>
-            <p className="max-w-lg text-sm text-muted-foreground md:text-base/relaxed">
-              Manage students, run quizzes, and organize class activities —
-              choose a workflow below to get started.
-            </p>
+            <div className="mx-auto flex max-w-[34rem] flex-col gap-3 md:mx-0">
+              <div className="flex items-center justify-center gap-2 md:justify-start">
+                <HugeiconsIcon
+                  icon={SparklesIcon}
+                  strokeWidth={2}
+                  className="size-4 text-primary"
+                />
+                <span className="text-xs font-semibold tracking-[0.2em] text-primary uppercase">
+                  Command Center
+                </span>
+              </div>
+              <h2 className="text-xl font-bold tracking-tight text-foreground md:text-2xl lg:text-3xl">
+                Everything you need,{' '}
+                <span className="text-primary">one dashboard.</span>
+              </h2>
+              <p className="max-w-lg text-sm text-muted-foreground md:text-base/relaxed">
+                Manage students, run quizzes, and organize class activities —
+                choose a workflow below to get started.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -196,7 +190,7 @@ export default function DashboardCards() {
                 {/* Connecting line */}
                 {!isLast && (
                   <div
-                    className="w-0.5 flex-1 min-h-4"
+                    className="min-h-4 w-0.5 flex-1"
                     style={{
                       background: `linear-gradient(to bottom, ${phase.color}, ${nextPhaseColor})`,
                       opacity: 0.3,
@@ -226,10 +220,10 @@ export default function DashboardCards() {
                       <Link
                         key={feature.title}
                         href={feature.href}
-                        className="touch-hitbox group relative flex flex-col gap-3 overflow-hidden rounded-xl border border-border/50 bg-card p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:border-border active:scale-[0.98]">
+                        className="group touch-hitbox relative flex flex-col gap-3 overflow-hidden rounded-xl border border-border/50 bg-card p-5 shadow-sm transition-all duration-200 hover:border-border hover:shadow-md active:scale-[0.98]">
                         {/* Subtle left accent */}
                         <div
-                          className="absolute left-0 top-0 h-full w-1 rounded-l-xl"
+                          className="absolute top-0 left-0 h-full w-1 rounded-l-xl"
                           style={{
                             backgroundColor: phase.color,
                             opacity: 0.6,

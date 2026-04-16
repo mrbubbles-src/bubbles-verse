@@ -172,7 +172,7 @@ export default function QuizTimerCard() {
     (e: React.ChangeEvent<HTMLInputElement>) => {
       setVolume(Number(e.target.value) / 100);
     },
-    [],
+    []
   );
 
   /** Apply a preset by setting all three time fields at once. */
@@ -183,7 +183,7 @@ export default function QuizTimerCard() {
       setMinutes(m);
       setSeconds(s);
     },
-    [setHours, setMinutes, setSeconds],
+    [setHours, setMinutes, setSeconds]
   );
 
   /** Add or subtract seconds from the current configured time. */
@@ -195,7 +195,7 @@ export default function QuizTimerCard() {
       setMinutes(m);
       setSeconds(s);
     },
-    [configuredTotal, setHours, setMinutes, setSeconds],
+    [configuredTotal, setHours, setMinutes, setSeconds]
   );
 
   /** Toggle a value into/out of favorites. Max 3; oldest bumped when full. */
@@ -222,23 +222,23 @@ export default function QuizTimerCard() {
     (e: React.FocusEvent<HTMLInputElement>) => {
       e.target.select();
     },
-    [],
+    []
   );
 
   /** Find the matching preset value string for the Select, or empty for custom. */
   const activePresetValue =
     PRESETS.find(
-      (p) => p.totalSeconds === configuredTotal,
+      (p) => p.totalSeconds === configuredTotal
     )?.totalSeconds.toString() ?? '';
 
   return (
-    <div className="flex min-w-0 flex-wrap items-center justify-center gap-2 md:flex-nowrap md:justify-start md:gap-3 lg:gap-4">
+    <div className="flex min-w-0 flex-wrap items-center justify-center gap-2.5 md:flex-nowrap md:justify-start md:gap-3">
       <Popover>
-        <PopoverTrigger className="flex min-w-0 max-w-full items-center justify-between gap-2 rounded-lg border border-border/60 bg-background/70 px-3 py-2 text-sm font-semibold tabular-nums shadow-xs md:max-w-none md:gap-3 md:px-4 md:text-base lg:text-lg xl:text-xl 2xl:text-2xl">
+        <PopoverTrigger className="flex max-w-full min-w-0 items-center justify-between gap-2 rounded-lg border border-border/60 bg-background/70 px-3 py-2 text-sm font-semibold tabular-nums shadow-xs md:max-w-none md:gap-3 md:px-4 md:text-base lg:text-lg xl:text-xl 2xl:text-2xl">
           <span
             className={cn(
               'text-foreground',
-              isAlerting && 'text-destructive animate-ping',
+              isAlerting && 'animate-ping text-destructive'
             )}>
             {formattedTime}
           </span>
@@ -252,14 +252,14 @@ export default function QuizTimerCard() {
           align="center"
           className="w-[min(92vw,22rem)] p-4 md:w-88">
           {/* Editable time fields */}
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+          <p className="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
             Set time
           </p>
           <div className="mt-2 flex items-center justify-center gap-1">
             <div className="flex flex-col items-center gap-1">
               <label
                 htmlFor={`${timerId}-h`}
-                className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                className="text-[10px] font-semibold tracking-wider text-muted-foreground/70 uppercase">
                 Hr
               </label>
               <input
@@ -272,7 +272,7 @@ export default function QuizTimerCard() {
                   setHours(v || '0');
                 }}
                 onFocus={handleInputFocus}
-                className="h-11 w-12 rounded-lg border border-border/60 bg-background/80 text-center text-lg font-semibold tabular-nums text-foreground shadow-inner outline-none transition-colors focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
+                className="h-11 w-12 rounded-lg border border-border/60 bg-background/80 text-center text-lg font-semibold text-foreground tabular-nums shadow-inner transition-colors outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
               />
             </div>
             <span className="mt-4 text-lg font-bold text-muted-foreground/50">
@@ -281,7 +281,7 @@ export default function QuizTimerCard() {
             <div className="flex flex-col items-center gap-1">
               <label
                 htmlFor={`${timerId}-m`}
-                className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                className="text-[10px] font-semibold tracking-wider text-muted-foreground/70 uppercase">
                 Min
               </label>
               <input
@@ -295,7 +295,7 @@ export default function QuizTimerCard() {
                   setMinutes(String(Math.min(num, 59)));
                 }}
                 onFocus={handleInputFocus}
-                className="h-11 w-12 rounded-lg border border-border/60 bg-background/80 text-center text-lg font-semibold tabular-nums text-foreground shadow-inner outline-none transition-colors focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
+                className="h-11 w-12 rounded-lg border border-border/60 bg-background/80 text-center text-lg font-semibold text-foreground tabular-nums shadow-inner transition-colors outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
               />
             </div>
             <span className="mt-4 text-lg font-bold text-muted-foreground/50">
@@ -304,7 +304,7 @@ export default function QuizTimerCard() {
             <div className="flex flex-col items-center gap-1">
               <label
                 htmlFor={`${timerId}-s`}
-                className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                className="text-[10px] font-semibold tracking-wider text-muted-foreground/70 uppercase">
                 Sec
               </label>
               <input
@@ -318,7 +318,7 @@ export default function QuizTimerCard() {
                   setSeconds(String(Math.min(num, 59)));
                 }}
                 onFocus={handleInputFocus}
-                className="h-11 w-12 rounded-lg border border-border/60 bg-background/80 text-center text-lg font-semibold tabular-nums text-foreground shadow-inner outline-none transition-colors focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
+                className="h-11 w-12 rounded-lg border border-border/60 bg-background/80 text-center text-lg font-semibold text-foreground tabular-nums shadow-inner transition-colors outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30"
               />
             </div>
           </div>
@@ -329,7 +329,7 @@ export default function QuizTimerCard() {
               type="button"
               size="icon"
               variant="outline"
-              className="size-8 shrink-0 rounded-md touch-hitbox"
+              className="touch-hitbox size-8 shrink-0 rounded-md"
               onClick={() => adjustTime(-60)}
               disabled={configuredTotal < 60}
               aria-label="Subtract 1 minute">
@@ -343,7 +343,7 @@ export default function QuizTimerCard() {
               type="button"
               onClick={() => adjustTime(-15)}
               disabled={configuredTotal < 15}
-              className="flex h-8 items-center justify-center rounded-md bg-muted/40 px-2 text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground active:scale-95 disabled:opacity-40 touch-hitbox"
+              className="touch-hitbox flex h-8 items-center justify-center rounded-md bg-muted/40 px-2 text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground active:scale-95 disabled:opacity-40"
               aria-label="Subtract 15 seconds">
               <span className="text-xs font-bold">−15s</span>
             </button>
@@ -351,7 +351,7 @@ export default function QuizTimerCard() {
               type="button"
               onClick={() => adjustTime(15)}
               disabled={configuredTotal >= 359999}
-              className="flex h-8 items-center justify-center rounded-md bg-muted/40 px-2 text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground active:scale-95 disabled:opacity-40 touch-hitbox"
+              className="touch-hitbox flex h-8 items-center justify-center rounded-md bg-muted/40 px-2 text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground active:scale-95 disabled:opacity-40"
               aria-label="Add 15 seconds">
               <span className="text-xs font-bold">+15s</span>
             </button>
@@ -359,7 +359,7 @@ export default function QuizTimerCard() {
               type="button"
               size="icon"
               variant="outline"
-              className="size-8 shrink-0 rounded-md touch-hitbox"
+              className="touch-hitbox size-8 shrink-0 rounded-md"
               onClick={() => adjustTime(60)}
               disabled={configuredTotal >= 359999}
               aria-label="Add 1 minute">
@@ -373,7 +373,7 @@ export default function QuizTimerCard() {
 
           {/* Presets: Select + Favorites */}
           <div className="mt-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+            <p className="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
               Presets
             </p>
             <div className="mt-2 flex items-center gap-2">
@@ -384,10 +384,10 @@ export default function QuizTimerCard() {
                   type="button"
                   onClick={() => applyPreset(fav)}
                   className={cn(
-                    'group relative h-9 flex-1 rounded-md text-sm font-semibold transition-all active:scale-[0.97] touch-hitbox',
+                    'group touch-hitbox relative h-9 flex-1 rounded-md text-sm font-semibold transition-all active:scale-[0.97]',
                     configuredTotal === fav
                       ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'bg-muted/50 text-muted-foreground hover:bg-accent/10 hover:text-foreground',
+                      : 'bg-muted/50 text-muted-foreground hover:bg-accent/10 hover:text-foreground'
                   )}>
                   {formatPresetLabel(fav)}
                 </button>
@@ -433,11 +433,11 @@ export default function QuizTimerCard() {
                 }}
                 disabled={configuredTotal <= 0}
                 className={cn(
-                  'flex size-8 shrink-0 items-center justify-center rounded-md transition-colors touch-hitbox',
+                  'touch-hitbox flex size-8 shrink-0 items-center justify-center rounded-md transition-colors',
                   favorites.includes(configuredTotal)
                     ? 'bg-primary/10 text-primary'
                     : 'bg-muted/40 text-muted-foreground hover:bg-accent/10 hover:text-foreground',
-                  'disabled:opacity-40',
+                  'disabled:opacity-40'
                 )}
                 title={
                   favorites.includes(configuredTotal)
@@ -450,7 +450,7 @@ export default function QuizTimerCard() {
                   strokeWidth={2}
                   className={cn(
                     'size-3.5',
-                    favorites.includes(configuredTotal) && 'fill-primary',
+                    favorites.includes(configuredTotal) && 'fill-primary'
                   )}
                 />
               </button>
@@ -465,7 +465,7 @@ export default function QuizTimerCard() {
                 strokeWidth={2}
                 className="size-3.5 text-muted-foreground"
               />
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+              <p className="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
                 Volume
               </p>
             </div>
@@ -484,48 +484,50 @@ export default function QuizTimerCard() {
                 className="timer-volume-slider touch-hitbox h-2 flex-1 cursor-pointer appearance-none rounded-full bg-muted"
                 aria-label="Timer volume"
               />
-              <span className="w-8 text-right text-sm tabular-nums text-muted-foreground">
+              <span className="w-8 text-right text-sm text-muted-foreground tabular-nums">
                 {Math.round(volume * 100)}%
               </span>
             </div>
           </div>
         </PopoverContent>
       </Popover>
-      <Button
-        size="icon-lg"
-        variant="ghost"
-        onClick={start}
-        disabled={!hasTimeConfigured || isRunning}
-        aria-label="Start timer">
-        <HugeiconsIcon
-          icon={PlayIcon}
-          strokeWidth={2}
-          className="size-5 text-ctp-latte-green dark:text-ctp-mocha-green"
-        />
-      </Button>
-      <Button
-        size="icon-lg"
-        variant="ghost"
-        onClick={pause}
-        disabled={!isRunning}
-        aria-label="Pause timer">
-        <HugeiconsIcon
-          icon={PauseIcon}
-          strokeWidth={2}
-          className="size-5 text-ctp-latte-peach dark:text-ctp-mocha-peach"
-        />
-      </Button>
-      <Button
-        size="icon-lg"
-        variant="ghost"
-        onClick={reset}
-        aria-label="Reset timer">
-        <HugeiconsIcon
-          icon={Rotate01Icon}
-          strokeWidth={2}
-          className="size-5 text-ctp-latte-red dark:text-ctp-mocha-red"
-        />
-      </Button>
+      <div className="flex items-center gap-1.5 md:gap-2">
+        <Button
+          size="icon-lg"
+          variant="ghost"
+          onClick={start}
+          disabled={!hasTimeConfigured || isRunning}
+          aria-label="Start timer">
+          <HugeiconsIcon
+            icon={PlayIcon}
+            strokeWidth={2}
+            className="size-5 text-ctp-latte-green dark:text-ctp-mocha-green"
+          />
+        </Button>
+        <Button
+          size="icon-lg"
+          variant="ghost"
+          onClick={pause}
+          disabled={!isRunning}
+          aria-label="Pause timer">
+          <HugeiconsIcon
+            icon={PauseIcon}
+            strokeWidth={2}
+            className="size-5 text-ctp-latte-peach dark:text-ctp-mocha-peach"
+          />
+        </Button>
+        <Button
+          size="icon-lg"
+          variant="ghost"
+          onClick={reset}
+          aria-label="Reset timer">
+          <HugeiconsIcon
+            icon={Rotate01Icon}
+            strokeWidth={2}
+            className="size-5 text-ctp-latte-red dark:text-ctp-mocha-red"
+          />
+        </Button>
+      </div>
     </div>
   );
 }

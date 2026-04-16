@@ -1,7 +1,6 @@
-"use client"
+'use client';
 
-import * as React from "react"
-
+import type { ImportedClassRecord } from '@/lib/classes';
 import type {
   BreakoutGroups,
   Classroom,
@@ -10,7 +9,9 @@ import type {
   Quiz,
   QuizIndexEntry,
   Student,
-} from "@/lib/models"
+} from '@/lib/models';
+
+import { normalizeClassName } from '@/lib/classes';
 import {
   loadPersistedState,
   persistAllQuizzes,
@@ -20,50 +21,52 @@ import {
   saveProjectLists,
   saveQuizIndex,
   saveStudents,
-} from "@/lib/storage"
-import { normalizeClassName, type ImportedClassRecord } from "@/lib/classes"
-import { normalizeStudentName, studentNameKey } from "@/lib/students"
+} from '@/lib/storage';
+import { normalizeStudentName, studentNameKey } from '@/lib/students';
+import { createUuid } from '@/lib/uuid';
+
+import * as React from 'react';
 
 export type PersistedState = {
-  classes: Classroom[]
-  activeClassId: string | null
-  students: Student[]
-  quizIndex: QuizIndexEntry[]
-  quizzes: Record<string, Quiz>
-  projectLists: ProjectList[]
-  breakoutGroupsByClass: Record<string, BreakoutGroups>
-}
+  classes: Classroom[];
+  activeClassId: string | null;
+  students: Student[];
+  quizIndex: QuizIndexEntry[];
+  quizzes: Record<string, Quiz>;
+  projectLists: ProjectList[];
+  breakoutGroupsByClass: Record<string, BreakoutGroups>;
+};
 
 export type GeneratorState = {
-  usedStudentIds: string[]
-  currentStudentId: string | null
-}
+  usedStudentIds: string[];
+  currentStudentId: string | null;
+};
 
 export type QuizPlayState = {
-  selectedQuizId: string | null
-  usedQuestionIds: string[]
-  usedStudentIds: string[]
-  currentQuestionId: string | null
-  currentStudentId: string | null
-  answerRevealed: boolean
-}
+  selectedQuizId: string | null;
+  usedQuestionIds: string[];
+  usedStudentIds: string[];
+  currentQuestionId: string | null;
+  currentStudentId: string | null;
+  answerRevealed: boolean;
+};
 
 export type UIState = {
   quizEditor: {
-    activeQuizId: string | null
-    editingQuestionId: string | null
-  }
-  isHydrated: boolean
-}
+    activeQuizId: string | null;
+    editingQuestionId: string | null;
+  };
+  isHydrated: boolean;
+};
 
 export type AppState = {
-  persisted: PersistedState
+  persisted: PersistedState;
   domain: {
-    generator: GeneratorState
-    quizPlay: QuizPlayState
-  }
-  ui: UIState
-}
+    generator: GeneratorState;
+    quizPlay: QuizPlayState;
+  };
+  ui: UIState;
+};
 
 const initialState: AppState = {
   persisted: {
@@ -96,84 +99,87 @@ const initialState: AppState = {
     },
     isHydrated: false,
   },
-}
+};
 
 type AppAction =
-  | { type: "HYDRATE_PERSISTED"; payload: PersistedState }
-  | { type: "ADD_CLASS"; payload: { id: string; name: string } }
-  | { type: "SELECT_ACTIVE_CLASS"; payload: { id: string | null } }
-  | { type: "DELETE_CLASS"; payload: { id: string } }
-  | { type: "CLEAR_CLASSES" }
-  | { type: "IMPORT_CLASS_RECORDS"; payload: { classes: ImportedClassRecord[] } }
-  | { type: "ADD_STUDENT"; payload: { id: string; name: string } }
-  | { type: "TOGGLE_STUDENT_EXCLUDED"; payload: { id: string } }
-  | { type: "DELETE_STUDENT"; payload: { id: string } }
-  | { type: "CLEAR_STUDENTS" }
+  | { type: 'HYDRATE_PERSISTED'; payload: PersistedState }
+  | { type: 'ADD_CLASS'; payload: { id: string; name: string } }
+  | { type: 'SELECT_ACTIVE_CLASS'; payload: { id: string | null } }
+  | { type: 'DELETE_CLASS'; payload: { id: string } }
+  | { type: 'CLEAR_CLASSES' }
   | {
-      type: "UPDATE_STUDENT"
-      payload: { id: string; name: string; classId: string | null }
+      type: 'IMPORT_CLASS_RECORDS';
+      payload: { classes: ImportedClassRecord[] };
+    }
+  | { type: 'ADD_STUDENT'; payload: { id: string; name: string } }
+  | { type: 'TOGGLE_STUDENT_EXCLUDED'; payload: { id: string } }
+  | { type: 'DELETE_STUDENT'; payload: { id: string } }
+  | { type: 'CLEAR_STUDENTS' }
+  | {
+      type: 'UPDATE_STUDENT';
+      payload: { id: string; name: string; classId: string | null };
     }
   | {
-      type: "CREATE_PROJECT_LIST"
+      type: 'CREATE_PROJECT_LIST';
       payload: {
-        id: string
-        name: string
-        projectType: string
-        description: string
-        studentIds: string[]
-        groups: string[][]
-      }
+        id: string;
+        name: string;
+        projectType: string;
+        description: string;
+        studentIds: string[];
+        groups: string[][];
+      };
     }
   | {
-      type: "UPDATE_PROJECT_LIST"
+      type: 'UPDATE_PROJECT_LIST';
       payload: {
-        id: string
-        name: string
-        projectType: string
-        description: string
-        studentIds: string[]
-        groups: string[][]
-      }
+        id: string;
+        name: string;
+        projectType: string;
+        description: string;
+        studentIds: string[];
+        groups: string[][];
+      };
     }
-  | { type: "DELETE_PROJECT_LIST"; payload: { id: string } }
-  | { type: "SET_BREAKOUT_GROUPS"; payload: BreakoutGroups }
-  | { type: "CLEAR_BREAKOUT_GROUPS" }
-  | { type: "RESET_GENERATOR" }
-  | { type: "DRAW_STUDENT" }
+  | { type: 'DELETE_PROJECT_LIST'; payload: { id: string } }
+  | { type: 'SET_BREAKOUT_GROUPS'; payload: BreakoutGroups }
+  | { type: 'CLEAR_BREAKOUT_GROUPS' }
+  | { type: 'RESET_GENERATOR' }
+  | { type: 'DRAW_STUDENT' }
   | {
-      type: "CREATE_QUIZ"
+      type: 'CREATE_QUIZ';
       payload: {
-        id: string
-        title: string
-        description?: string
-        questions: Question[]
-      }
+        id: string;
+        title: string;
+        description?: string;
+        questions: Question[];
+      };
     }
   | {
-      type: "UPDATE_QUIZ"
+      type: 'UPDATE_QUIZ';
       payload: {
-        id: string
-        title: string
-        description?: string
-        questions: Question[]
-      }
+        id: string;
+        title: string;
+        description?: string;
+        questions: Question[];
+      };
     }
-  | { type: "DELETE_QUIZ"; payload: { id: string } }
-  | { type: "SELECT_QUIZ_FOR_EDITOR"; payload: { id: string | null } }
-  | { type: "SET_EDITING_QUESTION"; payload: { id: string | null } }
-  | { type: "SELECT_QUIZ_FOR_PLAY"; payload: { id: string | null } }
-  | { type: "DRAW_QUIZ_PAIR" }
-  | { type: "REVEAL_ANSWER" }
-  | { type: "RESET_QUIZ_PLAY" }
+  | { type: 'DELETE_QUIZ'; payload: { id: string } }
+  | { type: 'SELECT_QUIZ_FOR_EDITOR'; payload: { id: string | null } }
+  | { type: 'SET_EDITING_QUESTION'; payload: { id: string | null } }
+  | { type: 'SELECT_QUIZ_FOR_PLAY'; payload: { id: string | null } }
+  | { type: 'DRAW_QUIZ_PAIR' }
+  | { type: 'REVEAL_ANSWER' }
+  | { type: 'RESET_QUIZ_PLAY' };
 
 /**
  * Returns students that belong to the provided class.
  * Used to scope roster-driven tools to the active class.
  */
 const getStudentsForClass = (students: Student[], classId: string | null) => {
-  if (!classId) return []
-  return students.filter((student) => student.classId === classId)
-}
+  if (!classId) return [];
+  return students.filter((student) => student.classId === classId);
+};
 
 /**
  * Resolves a valid active class ID from available classes.
@@ -183,40 +189,42 @@ const resolveActiveClassId = (
   classes: Classroom[],
   activeClassId: string | null
 ): string | null => {
-  if (!classes.length) return null
+  if (!classes.length) return null;
   if (activeClassId && classes.some((entry) => entry.id === activeClassId)) {
-    return activeClassId
+    return activeClassId;
   }
-  return classes[0]!.id
-}
+  return classes[0]!.id;
+};
 
 const getStudentIdSet = (students: Student[]) =>
-  new Set(students.map((student) => student.id))
+  new Set(students.map((student) => student.id));
 
 /**
  * Returns a random item from a non-empty list.
  * Expects at least one entry and throws if called with an empty array.
  */
 const pickRandomItem = <T,>(items: [T, ...T[]]): T =>
-  items[Math.floor(Math.random() * items.length)]!
+  items[Math.floor(Math.random() * items.length)]!;
 
 const pruneGeneratorState = (
   generator: GeneratorState,
   students: Student[],
   activeClassId: string | null
 ) => {
-  const classStudents = getStudentsForClass(students, activeClassId)
-  const studentIds = getStudentIdSet(classStudents)
-  const usedStudentIds = generator.usedStudentIds.filter((id) => studentIds.has(id))
+  const classStudents = getStudentsForClass(students, activeClassId);
+  const studentIds = getStudentIdSet(classStudents);
+  const usedStudentIds = generator.usedStudentIds.filter((id) =>
+    studentIds.has(id)
+  );
   const currentStudentId =
     generator.currentStudentId && studentIds.has(generator.currentStudentId)
       ? generator.currentStudentId
-      : null
+      : null;
   return {
     usedStudentIds,
     currentStudentId,
-  }
-}
+  };
+};
 
 const pruneQuizPlayState = (
   quizPlay: QuizPlayState,
@@ -224,9 +232,11 @@ const pruneQuizPlayState = (
   quizzes: Record<string, Quiz>,
   activeClassId: string | null
 ) => {
-  const classStudents = getStudentsForClass(students, activeClassId)
-  const studentIds = getStudentIdSet(classStudents)
-  const selectedQuiz = quizPlay.selectedQuizId ? quizzes[quizPlay.selectedQuizId] : null
+  const classStudents = getStudentsForClass(students, activeClassId);
+  const studentIds = getStudentIdSet(classStudents);
+  const selectedQuiz = quizPlay.selectedQuizId
+    ? quizzes[quizPlay.selectedQuizId]
+    : null;
 
   if (!selectedQuiz) {
     return {
@@ -236,21 +246,27 @@ const pruneQuizPlayState = (
       currentQuestionId: null,
       currentStudentId: null,
       answerRevealed: false,
-    }
+    };
   }
 
-  const questionIds = new Set(selectedQuiz.questions.map((question) => question.id))
-  const usedQuestionIds = quizPlay.usedQuestionIds.filter((id) => questionIds.has(id))
-  const usedStudentIds = quizPlay.usedStudentIds.filter((id) => studentIds.has(id))
+  const questionIds = new Set(
+    selectedQuiz.questions.map((question) => question.id)
+  );
+  const usedQuestionIds = quizPlay.usedQuestionIds.filter((id) =>
+    questionIds.has(id)
+  );
+  const usedStudentIds = quizPlay.usedStudentIds.filter((id) =>
+    studentIds.has(id)
+  );
   const currentQuestionId =
     quizPlay.currentQuestionId && questionIds.has(quizPlay.currentQuestionId)
       ? quizPlay.currentQuestionId
-      : null
+      : null;
   const currentStudentId =
     quizPlay.currentStudentId && studentIds.has(quizPlay.currentStudentId)
       ? quizPlay.currentStudentId
-      : null
-  const answerRevealed = currentQuestionId ? quizPlay.answerRevealed : false
+      : null;
+  const answerRevealed = currentQuestionId ? quizPlay.answerRevealed : false;
 
   return {
     selectedQuizId: selectedQuiz.id,
@@ -259,21 +275,26 @@ const pruneQuizPlayState = (
     currentQuestionId,
     currentStudentId,
     answerRevealed,
-  }
-}
+  };
+};
 
 const pruneDomainState = (
-  domain: AppState["domain"],
+  domain: AppState['domain'],
   students: Student[],
   quizzes: Record<string, Quiz>,
   activeClassId: string | null
 ) => ({
   generator: pruneGeneratorState(domain.generator, students, activeClassId),
-  quizPlay: pruneQuizPlayState(domain.quizPlay, students, quizzes, activeClassId),
-})
+  quizPlay: pruneQuizPlayState(
+    domain.quizPlay,
+    students,
+    quizzes,
+    activeClassId
+  ),
+});
 
 const getSortedQuizIndex = (index: QuizIndexEntry[]) =>
-  [...index].sort((a, b) => b.createdAt - a.createdAt)
+  [...index].sort((a, b) => b.createdAt - a.createdAt);
 
 /**
  * Trims optional description input and drops empty values.
@@ -282,21 +303,21 @@ const getSortedQuizIndex = (index: QuizIndexEntry[]) =>
  * @returns Normalized non-empty description or `undefined`.
  */
 const normalizeOptionalDescription = (description?: string) => {
-  const normalized = description?.trim()
-  return normalized ? normalized : undefined
-}
+  const normalized = description?.trim();
+  return normalized ? normalized : undefined;
+};
 
-const toggleStudentStatus = (status: Student["status"]): Student["status"] =>
-  status === "active" ? "excluded" : "active"
+const toggleStudentStatus = (status: Student['status']): Student['status'] =>
+  status === 'active' ? 'excluded' : 'active';
 
 function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
-    case "HYDRATE_PERSISTED": {
-      const persisted = action.payload
+    case 'HYDRATE_PERSISTED': {
+      const persisted = action.payload;
       const activeClassId = resolveActiveClassId(
         persisted.classes,
         persisted.activeClassId
-      )
+      );
       return {
         ...state,
         persisted: {
@@ -313,16 +334,18 @@ function appReducer(state: AppState, action: AppAction): AppState {
           ...state.ui,
           isHydrated: true,
         },
-      }
+      };
     }
-    case "ADD_CLASS": {
-      const normalized = normalizeClassName(action.payload.name)
-      if (!normalized) return state
+    case 'ADD_CLASS': {
+      const normalized = normalizeClassName(action.payload.name);
+      if (!normalized) return state;
 
       const exists = state.persisted.classes.some(
-        (entry) => normalizeClassName(entry.name).toLocaleLowerCase() === normalized.toLocaleLowerCase()
-      )
-      if (exists) return state
+        (entry) =>
+          normalizeClassName(entry.name).toLocaleLowerCase() ===
+          normalized.toLocaleLowerCase()
+      );
+      if (exists) return state;
 
       const classes = [
         ...state.persisted.classes,
@@ -331,8 +354,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
           name: normalized,
           createdAt: Date.now(),
         },
-      ]
-      const activeClassId = state.persisted.activeClassId ?? action.payload.id
+      ];
+      const activeClassId = state.persisted.activeClassId ?? action.payload.id;
 
       return {
         ...state,
@@ -341,13 +364,13 @@ function appReducer(state: AppState, action: AppAction): AppState {
           classes,
           activeClassId,
         },
-      }
+      };
     }
-    case "SELECT_ACTIVE_CLASS": {
+    case 'SELECT_ACTIVE_CLASS': {
       const activeClassId = resolveActiveClassId(
         state.persisted.classes,
         action.payload.id
-      )
+      );
       return {
         ...state,
         persisted: {
@@ -360,28 +383,30 @@ function appReducer(state: AppState, action: AppAction): AppState {
           state.persisted.quizzes,
           activeClassId
         ),
-      }
+      };
     }
-    case "DELETE_CLASS": {
+    case 'DELETE_CLASS': {
       const classes = state.persisted.classes.filter(
         (entry) => entry.id !== action.payload.id
-      )
+      );
       const activeClassId = resolveActiveClassId(
         classes,
         state.persisted.activeClassId === action.payload.id
           ? null
           : state.persisted.activeClassId
-      )
+      );
 
       const students = state.persisted.students.filter(
         (student) => student.classId !== action.payload.id
-      )
+      );
       const projectLists = state.persisted.projectLists.filter(
         (list) => list.classId !== action.payload.id
-      )
+      );
 
-      const breakoutGroupsByClass = { ...state.persisted.breakoutGroupsByClass }
-      delete breakoutGroupsByClass[action.payload.id]
+      const breakoutGroupsByClass = {
+        ...state.persisted.breakoutGroupsByClass,
+      };
+      delete breakoutGroupsByClass[action.payload.id];
 
       return {
         ...state,
@@ -393,10 +418,15 @@ function appReducer(state: AppState, action: AppAction): AppState {
           projectLists,
           breakoutGroupsByClass,
         },
-        domain: pruneDomainState(state.domain, students, state.persisted.quizzes, activeClassId),
-      }
+        domain: pruneDomainState(
+          state.domain,
+          students,
+          state.persisted.quizzes,
+          activeClassId
+        ),
+      };
     }
-    case "CLEAR_CLASSES": {
+    case 'CLEAR_CLASSES': {
       return {
         ...state,
         persisted: {
@@ -407,35 +437,43 @@ function appReducer(state: AppState, action: AppAction): AppState {
           projectLists: [],
           breakoutGroupsByClass: {},
         },
-        domain: pruneDomainState(state.domain, [], state.persisted.quizzes, null),
-      }
+        domain: pruneDomainState(
+          state.domain,
+          [],
+          state.persisted.quizzes,
+          null
+        ),
+      };
     }
-    case "IMPORT_CLASS_RECORDS": {
-      let classes = [...state.persisted.classes]
-      let students = [...state.persisted.students]
+    case 'IMPORT_CLASS_RECORDS': {
+      let classes = [...state.persisted.classes];
+      let students = [...state.persisted.students];
 
       const classNameToId = new Map(
-        classes.map((entry) => [normalizeClassName(entry.name).toLocaleLowerCase(), entry.id])
-      )
+        classes.map((entry) => [
+          normalizeClassName(entry.name).toLocaleLowerCase(),
+          entry.id,
+        ])
+      );
 
-      const classIdSet = new Set(classes.map((entry) => entry.id))
-      const studentIdSet = new Set(students.map((student) => student.id))
+      const classIdSet = new Set(classes.map((entry) => entry.id));
+      const studentIdSet = new Set(students.map((student) => student.id));
 
       for (const classRecord of action.payload.classes) {
-        const normalizedClassName = normalizeClassName(classRecord.className)
-        if (!normalizedClassName) continue
+        const normalizedClassName = normalizeClassName(classRecord.className);
+        if (!normalizedClassName) continue;
 
-        const classKey = normalizedClassName.toLocaleLowerCase()
-        let classId = classNameToId.get(classKey) ?? null
+        const classKey = normalizedClassName.toLocaleLowerCase();
+        let classId = classNameToId.get(classKey) ?? null;
 
         if (!classId) {
           const hintedId =
             classRecord.idHint && !classIdSet.has(classRecord.idHint)
               ? classRecord.idHint
-              : null
-          classId = hintedId ?? crypto.randomUUID()
-          classIdSet.add(classId)
-          classNameToId.set(classKey, classId)
+              : null;
+          classId = hintedId ?? createUuid();
+          classIdSet.add(classId);
+          classNameToId.set(classKey, classId);
           classes = [
             ...classes,
             {
@@ -443,46 +481,48 @@ function appReducer(state: AppState, action: AppAction): AppState {
               name: normalizedClassName,
               createdAt: Date.now(),
             },
-          ]
+          ];
         }
 
-        const dedupeByName = new Set<string>()
-        const importedStudents: Student[] = []
+        const dedupeByName = new Set<string>();
+        const importedStudents: Student[] = [];
 
         for (const studentRecord of classRecord.students) {
-          const normalizedStudentName = normalizeStudentName(studentRecord.name)
-          if (!normalizedStudentName) continue
+          const normalizedStudentName = normalizeStudentName(
+            studentRecord.name
+          );
+          if (!normalizedStudentName) continue;
 
-          const studentKey = studentNameKey(normalizedStudentName)
-          if (dedupeByName.has(studentKey)) continue
-          dedupeByName.add(studentKey)
+          const studentKey = studentNameKey(normalizedStudentName);
+          if (dedupeByName.has(studentKey)) continue;
+          dedupeByName.add(studentKey);
 
           const hintedStudentId =
             studentRecord.idHint && !studentIdSet.has(studentRecord.idHint)
               ? studentRecord.idHint
-              : null
-          const studentId = hintedStudentId ?? crypto.randomUUID()
-          studentIdSet.add(studentId)
+              : null;
+          const studentId = hintedStudentId ?? createUuid();
+          studentIdSet.add(studentId);
 
           importedStudents.push({
             id: studentId,
             name: normalizedStudentName,
-            status: "active",
+            status: 'active',
             classId,
             createdAt: Date.now(),
-          })
+          });
         }
 
         students = [
           ...students.filter((student) => student.classId !== classId),
           ...importedStudents,
-        ]
+        ];
       }
 
       const activeClassId = resolveActiveClassId(
         classes,
         state.persisted.activeClassId
-      )
+      );
 
       return {
         ...state,
@@ -492,32 +532,37 @@ function appReducer(state: AppState, action: AppAction): AppState {
           students,
           activeClassId,
         },
-        domain: pruneDomainState(state.domain, students, state.persisted.quizzes, activeClassId),
-      }
+        domain: pruneDomainState(
+          state.domain,
+          students,
+          state.persisted.quizzes,
+          activeClassId
+        ),
+      };
     }
-    case "ADD_STUDENT": {
-      const activeClassId = state.persisted.activeClassId
-      if (!activeClassId) return state
+    case 'ADD_STUDENT': {
+      const activeClassId = state.persisted.activeClassId;
+      if (!activeClassId) return state;
 
-      const normalized = normalizeStudentName(action.payload.name)
-      if (!normalized) return state
+      const normalized = normalizeStudentName(action.payload.name);
+      if (!normalized) return state;
 
-      const nextKey = studentNameKey(normalized)
+      const nextKey = studentNameKey(normalized);
       const alreadyExists = state.persisted.students.some(
         (student) =>
           student.classId === activeClassId &&
           studentNameKey(student.name) === nextKey
-      )
-      if (alreadyExists) return state
+      );
+      if (alreadyExists) return state;
 
       const nextStudent: Student = {
         id: action.payload.id,
         name: normalized,
-        status: "active",
+        status: 'active',
         classId: activeClassId,
         createdAt: Date.now(),
-      }
-      const students = [...state.persisted.students, nextStudent]
+      };
+      const students = [...state.persisted.students, nextStudent];
       return {
         ...state,
         persisted: {
@@ -530,9 +575,9 @@ function appReducer(state: AppState, action: AppAction): AppState {
           state.persisted.quizzes,
           activeClassId
         ),
-      }
+      };
     }
-    case "TOGGLE_STUDENT_EXCLUDED": {
+    case 'TOGGLE_STUDENT_EXCLUDED': {
       const students = state.persisted.students.map((student) =>
         student.id === action.payload.id
           ? {
@@ -540,7 +585,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
               status: toggleStudentStatus(student.status),
             }
           : student
-      )
+      );
       return {
         ...state,
         persisted: {
@@ -553,12 +598,12 @@ function appReducer(state: AppState, action: AppAction): AppState {
           state.persisted.quizzes,
           state.persisted.activeClassId
         ),
-      }
+      };
     }
-    case "DELETE_STUDENT": {
+    case 'DELETE_STUDENT': {
       const students = state.persisted.students.filter(
         (student) => student.id !== action.payload.id
-      )
+      );
       return {
         ...state,
         persisted: {
@@ -571,37 +616,39 @@ function appReducer(state: AppState, action: AppAction): AppState {
           state.persisted.quizzes,
           state.persisted.activeClassId
         ),
-      }
+      };
     }
-    case "UPDATE_STUDENT": {
+    case 'UPDATE_STUDENT': {
       const existingStudent = state.persisted.students.find(
         (student) => student.id === action.payload.id
-      )
-      if (!existingStudent) return state
+      );
+      if (!existingStudent) return state;
 
-      const normalizedName = normalizeStudentName(action.payload.name)
-      if (!normalizedName) return state
+      const normalizedName = normalizeStudentName(action.payload.name);
+      if (!normalizedName) return state;
 
       const nextClassId =
         action.payload.classId &&
-        state.persisted.classes.some((entry) => entry.id === action.payload.classId)
+        state.persisted.classes.some(
+          (entry) => entry.id === action.payload.classId
+        )
           ? action.payload.classId
-          : existingStudent.classId
+          : existingStudent.classId;
 
-      const nextKey = studentNameKey(normalizedName)
+      const nextKey = studentNameKey(normalizedName);
       const hasDuplicate = state.persisted.students.some(
         (student) =>
           student.id !== action.payload.id &&
           student.classId === nextClassId &&
           studentNameKey(student.name) === nextKey
-      )
-      if (hasDuplicate) return state
+      );
+      if (hasDuplicate) return state;
 
       const students = state.persisted.students.map((student) =>
         student.id === action.payload.id
           ? { ...student, name: normalizedName, classId: nextClassId }
           : student
-      )
+      );
 
       return {
         ...state,
@@ -615,22 +662,24 @@ function appReducer(state: AppState, action: AppAction): AppState {
           state.persisted.quizzes,
           state.persisted.activeClassId
         ),
-      }
+      };
     }
-    case "CLEAR_STUDENTS": {
-      const activeClassId = state.persisted.activeClassId
-      if (!activeClassId) return state
+    case 'CLEAR_STUDENTS': {
+      const activeClassId = state.persisted.activeClassId;
+      if (!activeClassId) return state;
 
       const students = state.persisted.students.filter(
         (student) => student.classId !== activeClassId
-      )
+      );
 
       const projectLists = state.persisted.projectLists.filter(
         (list) => list.classId !== activeClassId
-      )
+      );
 
-      const breakoutGroupsByClass = { ...state.persisted.breakoutGroupsByClass }
-      delete breakoutGroupsByClass[activeClassId]
+      const breakoutGroupsByClass = {
+        ...state.persisted.breakoutGroupsByClass,
+      };
+      delete breakoutGroupsByClass[activeClassId];
 
       return {
         ...state,
@@ -646,16 +695,16 @@ function appReducer(state: AppState, action: AppAction): AppState {
           state.persisted.quizzes,
           activeClassId
         ),
-      }
+      };
     }
-    case "CREATE_PROJECT_LIST": {
-      const classId = state.persisted.activeClassId
-      if (!classId) return state
-      const name = action.payload.name.trim()
-      const projectType = action.payload.projectType.trim()
-      if (!name || !projectType) return state
-      const studentIds = action.payload.studentIds
-      if (!studentIds.length) return state
+    case 'CREATE_PROJECT_LIST': {
+      const classId = state.persisted.activeClassId;
+      if (!classId) return state;
+      const name = action.payload.name.trim();
+      const projectType = action.payload.projectType.trim();
+      if (!name || !projectType) return state;
+      const studentIds = action.payload.studentIds;
+      if (!studentIds.length) return state;
       const projectList: ProjectList = {
         id: action.payload.id,
         classId,
@@ -665,25 +714,25 @@ function appReducer(state: AppState, action: AppAction): AppState {
         studentIds,
         groups: action.payload.groups,
         createdAt: Date.now(),
-      }
+      };
       return {
         ...state,
         persisted: {
           ...state.persisted,
           projectLists: [projectList, ...state.persisted.projectLists],
         },
-      }
+      };
     }
-    case "UPDATE_PROJECT_LIST": {
+    case 'UPDATE_PROJECT_LIST': {
       const existing = state.persisted.projectLists.find(
         (list) => list.id === action.payload.id
-      )
-      if (!existing) return state
-      const name = action.payload.name.trim()
-      const projectType = action.payload.projectType.trim()
-      if (!name || !projectType) return state
-      const studentIds = action.payload.studentIds
-      if (!studentIds.length) return state
+      );
+      if (!existing) return state;
+      const name = action.payload.name.trim();
+      const projectType = action.payload.projectType.trim();
+      if (!name || !projectType) return state;
+      const studentIds = action.payload.studentIds;
+      if (!studentIds.length) return state;
       const projectLists = state.persisted.projectLists.map((list) =>
         list.id === action.payload.id
           ? {
@@ -696,16 +745,16 @@ function appReducer(state: AppState, action: AppAction): AppState {
               groups: action.payload.groups,
             }
           : list
-      )
+      );
       return {
         ...state,
         persisted: {
           ...state.persisted,
           projectLists,
         },
-      }
+      };
     }
-    case "SET_BREAKOUT_GROUPS": {
+    case 'SET_BREAKOUT_GROUPS': {
       return {
         ...state,
         persisted: {
@@ -715,34 +764,36 @@ function appReducer(state: AppState, action: AppAction): AppState {
             [action.payload.classId]: action.payload,
           },
         },
-      }
+      };
     }
-    case "DELETE_PROJECT_LIST": {
+    case 'DELETE_PROJECT_LIST': {
       const projectLists = state.persisted.projectLists.filter(
         (list) => list.id !== action.payload.id
-      )
+      );
       return {
         ...state,
         persisted: {
           ...state.persisted,
           projectLists,
         },
-      }
+      };
     }
-    case "CLEAR_BREAKOUT_GROUPS": {
-      const activeClassId = state.persisted.activeClassId
-      if (!activeClassId) return state
-      const breakoutGroupsByClass = { ...state.persisted.breakoutGroupsByClass }
-      delete breakoutGroupsByClass[activeClassId]
+    case 'CLEAR_BREAKOUT_GROUPS': {
+      const activeClassId = state.persisted.activeClassId;
+      if (!activeClassId) return state;
+      const breakoutGroupsByClass = {
+        ...state.persisted.breakoutGroupsByClass,
+      };
+      delete breakoutGroupsByClass[activeClassId];
       return {
         ...state,
         persisted: {
           ...state.persisted,
           breakoutGroupsByClass,
         },
-      }
+      };
     }
-    case "RESET_GENERATOR": {
+    case 'RESET_GENERATOR': {
       return {
         ...state,
         domain: {
@@ -752,21 +803,26 @@ function appReducer(state: AppState, action: AppAction): AppState {
             currentStudentId: null,
           },
         },
-      }
+      };
     }
-    case "DRAW_STUDENT": {
-      const activeClassId = state.persisted.activeClassId
+    case 'DRAW_STUDENT': {
+      const activeClassId = state.persisted.activeClassId;
       const availableStudentIds = getStudentsForClass(
         state.persisted.students,
         activeClassId
       )
-        .filter((student) => student.status === "active")
-        .filter((student) => !state.domain.generator.usedStudentIds.includes(student.id))
-        .map((student) => student.id)
+        .filter((student) => student.status === 'active')
+        .filter(
+          (student) =>
+            !state.domain.generator.usedStudentIds.includes(student.id)
+        )
+        .map((student) => student.id);
 
-      if (!availableStudentIds.length) return state
+      if (!availableStudentIds.length) return state;
 
-      const nextStudentId = pickRandomItem(availableStudentIds as [string, ...string[]])
+      const nextStudentId = pickRandomItem(
+        availableStudentIds as [string, ...string[]]
+      );
 
       return {
         ...state,
@@ -774,16 +830,21 @@ function appReducer(state: AppState, action: AppAction): AppState {
           ...state.domain,
           generator: {
             currentStudentId: nextStudentId,
-            usedStudentIds: [...state.domain.generator.usedStudentIds, nextStudentId],
+            usedStudentIds: [
+              ...state.domain.generator.usedStudentIds,
+              nextStudentId,
+            ],
           },
         },
-      }
+      };
     }
-    case "CREATE_QUIZ": {
-      const title = action.payload.title.trim()
-      if (!title) return state
-      const description = normalizeOptionalDescription(action.payload.description)
-      const timestamp = Date.now()
+    case 'CREATE_QUIZ': {
+      const title = action.payload.title.trim();
+      if (!title) return state;
+      const description = normalizeOptionalDescription(
+        action.payload.description
+      );
+      const timestamp = Date.now();
       const quiz: Quiz = {
         id: action.payload.id,
         title,
@@ -791,17 +852,20 @@ function appReducer(state: AppState, action: AppAction): AppState {
         questions: action.payload.questions,
         createdAt: timestamp,
         updatedAt: timestamp,
-      }
+      };
       const quizIndexEntry: QuizIndexEntry = {
         id: quiz.id,
         title: quiz.title,
         createdAt: quiz.createdAt,
-      }
-      const quizIndex = getSortedQuizIndex([...state.persisted.quizIndex, quizIndexEntry])
+      };
+      const quizIndex = getSortedQuizIndex([
+        ...state.persisted.quizIndex,
+        quizIndexEntry,
+      ]);
       const quizzes = {
         ...state.persisted.quizzes,
         [quiz.id]: quiz,
-      }
+      };
       return {
         ...state,
         persisted: {
@@ -823,34 +887,36 @@ function appReducer(state: AppState, action: AppAction): AppState {
             editingQuestionId: null,
           },
         },
-      }
+      };
     }
-    case "UPDATE_QUIZ": {
-      const existing = state.persisted.quizzes[action.payload.id]
-      if (!existing) return state
-      const title = action.payload.title.trim()
-      if (!title) return state
-      const description = normalizeOptionalDescription(action.payload.description)
+    case 'UPDATE_QUIZ': {
+      const existing = state.persisted.quizzes[action.payload.id];
+      if (!existing) return state;
+      const title = action.payload.title.trim();
+      if (!title) return state;
+      const description = normalizeOptionalDescription(
+        action.payload.description
+      );
       const updated: Quiz = {
         ...existing,
         title,
         questions: action.payload.questions,
         updatedAt: Date.now(),
-      }
+      };
       if (description) {
-        updated.description = description
+        updated.description = description;
       } else {
-        delete updated.description
+        delete updated.description;
       }
       const quizzes = {
         ...state.persisted.quizzes,
         [updated.id]: updated,
-      }
+      };
       const quizIndex = getSortedQuizIndex(
         state.persisted.quizIndex.map((entry) =>
           entry.id === updated.id ? { ...entry, title: updated.title } : entry
         )
-      )
+      );
       return {
         ...state,
         persisted: {
@@ -864,19 +930,19 @@ function appReducer(state: AppState, action: AppAction): AppState {
           quizzes,
           state.persisted.activeClassId
         ),
-      }
+      };
     }
-    case "DELETE_QUIZ": {
+    case 'DELETE_QUIZ': {
       const quizIndex = state.persisted.quizIndex.filter(
         (entry) => entry.id !== action.payload.id
-      )
-      const quizzes = { ...state.persisted.quizzes }
-      delete quizzes[action.payload.id]
+      );
+      const quizzes = { ...state.persisted.quizzes };
+      delete quizzes[action.payload.id];
 
       const nextActiveId =
         state.ui.quizEditor.activeQuizId === action.payload.id
           ? null
-          : state.ui.quizEditor.activeQuizId
+          : state.ui.quizEditor.activeQuizId;
 
       return {
         ...state,
@@ -899,13 +965,13 @@ function appReducer(state: AppState, action: AppAction): AppState {
             editingQuestionId: null,
           },
         },
-      }
+      };
     }
-    case "SELECT_QUIZ_FOR_EDITOR": {
+    case 'SELECT_QUIZ_FOR_EDITOR': {
       const nextId =
         action.payload.id && state.persisted.quizzes[action.payload.id]
           ? action.payload.id
-          : null
+          : null;
       return {
         ...state,
         ui: {
@@ -916,9 +982,9 @@ function appReducer(state: AppState, action: AppAction): AppState {
             editingQuestionId: null,
           },
         },
-      }
+      };
     }
-    case "SET_EDITING_QUESTION": {
+    case 'SET_EDITING_QUESTION': {
       return {
         ...state,
         ui: {
@@ -928,13 +994,13 @@ function appReducer(state: AppState, action: AppAction): AppState {
             editingQuestionId: action.payload.id,
           },
         },
-      }
+      };
     }
-    case "SELECT_QUIZ_FOR_PLAY": {
+    case 'SELECT_QUIZ_FOR_PLAY': {
       const nextId =
         action.payload.id && state.persisted.quizzes[action.payload.id]
           ? action.payload.id
-          : null
+          : null;
       return {
         ...state,
         domain: {
@@ -948,30 +1014,41 @@ function appReducer(state: AppState, action: AppAction): AppState {
             answerRevealed: false,
           },
         },
-      }
+      };
     }
-    case "DRAW_QUIZ_PAIR": {
-      const quizId = state.domain.quizPlay.selectedQuizId
-      if (!quizId) return state
-      const quiz = state.persisted.quizzes[quizId]
-      if (!quiz) return state
+    case 'DRAW_QUIZ_PAIR': {
+      const quizId = state.domain.quizPlay.selectedQuizId;
+      if (!quizId) return state;
+      const quiz = state.persisted.quizzes[quizId];
+      if (!quiz) return state;
 
       const availableQuestionIds = quiz.questions
-        .filter((question) => !state.domain.quizPlay.usedQuestionIds.includes(question.id))
-        .map((question) => question.id)
+        .filter(
+          (question) =>
+            !state.domain.quizPlay.usedQuestionIds.includes(question.id)
+        )
+        .map((question) => question.id);
 
       const availableStudentIds = getStudentsForClass(
         state.persisted.students,
         state.persisted.activeClassId
       )
-        .filter((student) => student.status === "active")
-        .filter((student) => !state.domain.quizPlay.usedStudentIds.includes(student.id))
-        .map((student) => student.id)
+        .filter((student) => student.status === 'active')
+        .filter(
+          (student) =>
+            !state.domain.quizPlay.usedStudentIds.includes(student.id)
+        )
+        .map((student) => student.id);
 
-      if (!availableQuestionIds.length || !availableStudentIds.length) return state
+      if (!availableQuestionIds.length || !availableStudentIds.length)
+        return state;
 
-      const nextQuestionId = pickRandomItem(availableQuestionIds as [string, ...string[]])
-      const nextStudentId = pickRandomItem(availableStudentIds as [string, ...string[]])
+      const nextQuestionId = pickRandomItem(
+        availableQuestionIds as [string, ...string[]]
+      );
+      const nextStudentId = pickRandomItem(
+        availableStudentIds as [string, ...string[]]
+      );
 
       return {
         ...state,
@@ -981,15 +1058,21 @@ function appReducer(state: AppState, action: AppAction): AppState {
             ...state.domain.quizPlay,
             currentQuestionId: nextQuestionId,
             currentStudentId: nextStudentId,
-            usedQuestionIds: [...state.domain.quizPlay.usedQuestionIds, nextQuestionId],
-            usedStudentIds: [...state.domain.quizPlay.usedStudentIds, nextStudentId],
+            usedQuestionIds: [
+              ...state.domain.quizPlay.usedQuestionIds,
+              nextQuestionId,
+            ],
+            usedStudentIds: [
+              ...state.domain.quizPlay.usedStudentIds,
+              nextStudentId,
+            ],
             answerRevealed: false,
           },
         },
-      }
+      };
     }
-    case "REVEAL_ANSWER": {
-      if (!state.domain.quizPlay.currentQuestionId) return state
+    case 'REVEAL_ANSWER': {
+      if (!state.domain.quizPlay.currentQuestionId) return state;
       return {
         ...state,
         domain: {
@@ -999,9 +1082,9 @@ function appReducer(state: AppState, action: AppAction): AppState {
             answerRevealed: true,
           },
         },
-      }
+      };
     }
-    case "RESET_QUIZ_PLAY": {
+    case 'RESET_QUIZ_PLAY': {
       return {
         ...state,
         domain: {
@@ -1015,33 +1098,33 @@ function appReducer(state: AppState, action: AppAction): AppState {
             answerRevealed: false,
           },
         },
-      }
+      };
     }
     default:
-      return state
+      return state;
   }
 }
 
 const AppStoreContext = React.createContext<{
-  state: AppState
+  state: AppState;
   actions: {
-    addClass: (name: string) => void
-    selectActiveClass: (id: string | null) => void
-    deleteClass: (id: string) => void
-    clearClasses: () => void
-    importClassRecords: (classes: ImportedClassRecord[]) => void
-    addStudent: (name: string) => void
-    toggleStudentExcluded: (id: string) => void
-    deleteStudent: (id: string) => void
-    clearStudents: () => void
-    updateStudent: (id: string, name: string, classId: string | null) => void
+    addClass: (name: string) => void;
+    selectActiveClass: (id: string | null) => void;
+    deleteClass: (id: string) => void;
+    clearClasses: () => void;
+    importClassRecords: (classes: ImportedClassRecord[]) => void;
+    addStudent: (name: string) => void;
+    toggleStudentExcluded: (id: string) => void;
+    deleteStudent: (id: string) => void;
+    clearStudents: () => void;
+    updateStudent: (id: string, name: string, classId: string | null) => void;
     createProjectList: (
       name: string,
       projectType: string,
       description: string,
       studentIds: string[],
       groups: string[][]
-    ) => void
+    ) => void;
     updateProjectList: (
       id: string,
       name: string,
@@ -1049,80 +1132,82 @@ const AppStoreContext = React.createContext<{
       description: string,
       studentIds: string[],
       groups: string[][]
-    ) => void
-    deleteProjectList: (id: string) => void
-    setBreakoutGroups: (groups: BreakoutGroups) => void
-    clearBreakoutGroups: () => void
-    resetGenerator: () => void
-    drawStudent: () => void
+    ) => void;
+    deleteProjectList: (id: string) => void;
+    setBreakoutGroups: (groups: BreakoutGroups) => void;
+    clearBreakoutGroups: () => void;
+    resetGenerator: () => void;
+    drawStudent: () => void;
     createQuiz: (
       title: string,
       questions: Question[],
       description?: string
-    ) => void
+    ) => void;
     updateQuiz: (
       id: string,
       title: string,
       questions: Question[],
       description?: string
-    ) => void
-    deleteQuiz: (id: string) => void
-    selectQuizForEditor: (id: string | null) => void
-    setEditingQuestion: (id: string | null) => void
-    selectQuizForPlay: (id: string | null) => void
-    drawQuizPair: () => void
-    revealAnswer: () => void
-    resetQuizPlay: () => void
-  }
-} | null>(null)
+    ) => void;
+    deleteQuiz: (id: string) => void;
+    selectQuizForEditor: (id: string | null) => void;
+    setEditingQuestion: (id: string | null) => void;
+    selectQuizForPlay: (id: string | null) => void;
+    drawQuizPair: () => void;
+    revealAnswer: () => void;
+    resetQuizPlay: () => void;
+  };
+} | null>(null);
 
 /**
  * Provides global TeacherBuddy state and actions to all child components.
  * Mount once near the app root so hooks can access persisted and class-scoped state.
  */
 export function AppStoreProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = React.useReducer(appReducer, initialState)
+  const [state, dispatch] = React.useReducer(appReducer, initialState);
 
   React.useEffect(() => {
-    const persisted = loadPersistedState()
-    dispatch({ type: "HYDRATE_PERSISTED", payload: persisted })
-  }, [])
+    const persisted = loadPersistedState();
+    dispatch({ type: 'HYDRATE_PERSISTED', payload: persisted });
+  }, []);
 
   React.useEffect(() => {
-    if (!state.ui.isHydrated) return
-    saveClasses(state.persisted.classes)
-    saveActiveClassId(state.persisted.activeClassId)
-    saveStudents(state.persisted.students)
-    saveQuizIndex(state.persisted.quizIndex)
-    persistAllQuizzes(state.persisted.quizIndex, state.persisted.quizzes)
-    saveProjectLists(state.persisted.projectLists)
-    saveBreakoutGroupsByClass(state.persisted.breakoutGroupsByClass)
-  }, [state.persisted, state.ui.isHydrated])
+    if (!state.ui.isHydrated) return;
+    saveClasses(state.persisted.classes);
+    saveActiveClassId(state.persisted.activeClassId);
+    saveStudents(state.persisted.students);
+    saveQuizIndex(state.persisted.quizIndex);
+    persistAllQuizzes(state.persisted.quizIndex, state.persisted.quizzes);
+    saveProjectLists(state.persisted.projectLists);
+    saveBreakoutGroupsByClass(state.persisted.breakoutGroupsByClass);
+  }, [state.persisted, state.ui.isHydrated]);
 
   const actions = React.useMemo(
     () => ({
       addClass: (name: string) =>
         dispatch({
-          type: "ADD_CLASS",
-          payload: { id: crypto.randomUUID(), name },
+          type: 'ADD_CLASS',
+          payload: { id: createUuid(), name },
         }),
       selectActiveClass: (id: string | null) =>
-        dispatch({ type: "SELECT_ACTIVE_CLASS", payload: { id } }),
-      deleteClass: (id: string) => dispatch({ type: "DELETE_CLASS", payload: { id } }),
-      clearClasses: () => dispatch({ type: "CLEAR_CLASSES" }),
+        dispatch({ type: 'SELECT_ACTIVE_CLASS', payload: { id } }),
+      deleteClass: (id: string) =>
+        dispatch({ type: 'DELETE_CLASS', payload: { id } }),
+      clearClasses: () => dispatch({ type: 'CLEAR_CLASSES' }),
       importClassRecords: (classes: ImportedClassRecord[]) =>
-        dispatch({ type: "IMPORT_CLASS_RECORDS", payload: { classes } }),
+        dispatch({ type: 'IMPORT_CLASS_RECORDS', payload: { classes } }),
       addStudent: (name: string) =>
         dispatch({
-          type: "ADD_STUDENT",
-          payload: { id: crypto.randomUUID(), name },
+          type: 'ADD_STUDENT',
+          payload: { id: createUuid(), name },
         }),
       toggleStudentExcluded: (id: string) =>
-        dispatch({ type: "TOGGLE_STUDENT_EXCLUDED", payload: { id } }),
-      deleteStudent: (id: string) => dispatch({ type: "DELETE_STUDENT", payload: { id } }),
-      clearStudents: () => dispatch({ type: "CLEAR_STUDENTS" }),
+        dispatch({ type: 'TOGGLE_STUDENT_EXCLUDED', payload: { id } }),
+      deleteStudent: (id: string) =>
+        dispatch({ type: 'DELETE_STUDENT', payload: { id } }),
+      clearStudents: () => dispatch({ type: 'CLEAR_STUDENTS' }),
       updateStudent: (id: string, name: string, classId: string | null) =>
-        dispatch({ type: "UPDATE_STUDENT", payload: { id, name, classId } }),
+        dispatch({ type: 'UPDATE_STUDENT', payload: { id, name, classId } }),
       createProjectList: (
         name: string,
         projectType: string,
@@ -1131,9 +1216,9 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
         groups: string[][]
       ) =>
         dispatch({
-          type: "CREATE_PROJECT_LIST",
+          type: 'CREATE_PROJECT_LIST',
           payload: {
-            id: crypto.randomUUID(),
+            id: createUuid(),
             name,
             projectType,
             description,
@@ -1150,7 +1235,7 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
         groups: string[][]
       ) =>
         dispatch({
-          type: "UPDATE_PROJECT_LIST",
+          type: 'UPDATE_PROJECT_LIST',
           payload: {
             id,
             name,
@@ -1161,20 +1246,20 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
           },
         }),
       deleteProjectList: (id: string) =>
-        dispatch({ type: "DELETE_PROJECT_LIST", payload: { id } }),
+        dispatch({ type: 'DELETE_PROJECT_LIST', payload: { id } }),
       setBreakoutGroups: (groups: BreakoutGroups) =>
-        dispatch({ type: "SET_BREAKOUT_GROUPS", payload: groups }),
-      clearBreakoutGroups: () => dispatch({ type: "CLEAR_BREAKOUT_GROUPS" }),
-      resetGenerator: () => dispatch({ type: "RESET_GENERATOR" }),
-      drawStudent: () => dispatch({ type: "DRAW_STUDENT" }),
+        dispatch({ type: 'SET_BREAKOUT_GROUPS', payload: groups }),
+      clearBreakoutGroups: () => dispatch({ type: 'CLEAR_BREAKOUT_GROUPS' }),
+      resetGenerator: () => dispatch({ type: 'RESET_GENERATOR' }),
+      drawStudent: () => dispatch({ type: 'DRAW_STUDENT' }),
       createQuiz: (
         title: string,
         questions: Question[],
         description?: string
       ) =>
         dispatch({
-          type: "CREATE_QUIZ",
-          payload: { id: crypto.randomUUID(), title, questions, description },
+          type: 'CREATE_QUIZ',
+          payload: { id: createUuid(), title, questions, description },
         }),
       updateQuiz: (
         id: string,
@@ -1183,24 +1268,29 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
         description?: string
       ) =>
         dispatch({
-          type: "UPDATE_QUIZ",
+          type: 'UPDATE_QUIZ',
           payload: { id, title, questions, description },
         }),
-      deleteQuiz: (id: string) => dispatch({ type: "DELETE_QUIZ", payload: { id } }),
+      deleteQuiz: (id: string) =>
+        dispatch({ type: 'DELETE_QUIZ', payload: { id } }),
       selectQuizForEditor: (id: string | null) =>
-        dispatch({ type: "SELECT_QUIZ_FOR_EDITOR", payload: { id } }),
+        dispatch({ type: 'SELECT_QUIZ_FOR_EDITOR', payload: { id } }),
       setEditingQuestion: (id: string | null) =>
-        dispatch({ type: "SET_EDITING_QUESTION", payload: { id } }),
+        dispatch({ type: 'SET_EDITING_QUESTION', payload: { id } }),
       selectQuizForPlay: (id: string | null) =>
-        dispatch({ type: "SELECT_QUIZ_FOR_PLAY", payload: { id } }),
-      drawQuizPair: () => dispatch({ type: "DRAW_QUIZ_PAIR" }),
-      revealAnswer: () => dispatch({ type: "REVEAL_ANSWER" }),
-      resetQuizPlay: () => dispatch({ type: "RESET_QUIZ_PLAY" }),
+        dispatch({ type: 'SELECT_QUIZ_FOR_PLAY', payload: { id } }),
+      drawQuizPair: () => dispatch({ type: 'DRAW_QUIZ_PAIR' }),
+      revealAnswer: () => dispatch({ type: 'REVEAL_ANSWER' }),
+      resetQuizPlay: () => dispatch({ type: 'RESET_QUIZ_PLAY' }),
     }),
     []
-  )
+  );
 
-  return <AppStoreContext.Provider value={{ state, actions }}>{children}</AppStoreContext.Provider>
+  return (
+    <AppStoreContext.Provider value={{ state, actions }}>
+      {children}
+    </AppStoreContext.Provider>
+  );
 }
 
 /**
@@ -1208,9 +1298,9 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
  * Must be used within `AppStoreProvider`.
  */
 export function useAppStore() {
-  const context = React.useContext(AppStoreContext)
+  const context = React.useContext(AppStoreContext);
   if (!context) {
-    throw new Error("useAppStore must be used within AppStoreProvider")
+    throw new Error('useAppStore must be used within AppStoreProvider');
   }
-  return context
+  return context;
 }

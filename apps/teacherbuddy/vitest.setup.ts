@@ -1,31 +1,35 @@
-import "@testing-library/jest-dom/vitest"
-import { cleanup } from "@testing-library/react"
-import { afterEach, vi } from "vitest"
+import '@testing-library/jest-dom/vitest';
+
+import { cleanup } from '@testing-library/react';
+import { afterEach, vi } from 'vitest';
 
 afterEach(() => {
-  cleanup()
-})
+  cleanup();
+});
 
 // Mock localStorage
 const localStorageMock = (() => {
-  let store: Record<string, string> = {}
+  let store: Record<string, string> = {};
   return {
     getItem: vi.fn((key: string) => store[key] ?? null),
     setItem: vi.fn((key: string, value: string) => {
-      store[key] = value
+      store[key] = value;
     }),
     removeItem: vi.fn((key: string) => {
-      delete store[key]
+      delete store[key];
     }),
     clear: vi.fn(() => {
-      store = {}
+      store = {};
     }),
-  }
-})()
+  };
+})();
 
-Object.defineProperty(window, "localStorage", { value: localStorageMock })
+Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
 // Mock crypto.randomUUID
-Object.defineProperty(window, "crypto", {
-  value: { randomUUID: () => `test-uuid-${Math.random().toString(36).slice(2)}` },
-})
+Object.defineProperty(globalThis, 'crypto', {
+  configurable: true,
+  value: {
+    randomUUID: () => `test-uuid-${Math.random().toString(36).slice(2)}`,
+  },
+});

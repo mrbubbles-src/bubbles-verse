@@ -29,8 +29,8 @@
 
 ## Navigation
 
-- **Sidebar**: `components/navigation/sidebar-nav.tsx` – links to all feature routes; current route highlighted by pathname. Sidebar is collapsible (icon-only mode) via `SidebarProvider` in `AppShell`.
-- **Header**: Every page shows a header with title, description, **PageInfoDialog** (help button next to title), sidebar trigger, theme toggle, and **QuizTimerCard**. Page title and description come from `lib/page-info.tsx` via `getPageInfoByPath(pathname)`. See `components/header.tsx`.
+- **Sidebar**: `lib/sidebar.ts` defines the shared sidebar sections and breadcrumb mapping for TeacherBuddy. The rendered UI comes from `BubblesSidebarLayout`.
+- **Header**: Every page shows the shared sticky sidebar header with breadcrumbs, route description, **PageInfoDialog**, theme toggle, and **QuizTimerCard**. Page title and description come from `lib/page-info.tsx` via `getPageInfoByPath(pathname)`. See `components/app-shell.tsx`.
 
 ## Route Components
 

@@ -5,14 +5,14 @@ import { cookies } from 'next/headers';
 
 import '@bubbles/ui/globals.css';
 
+import { Footer } from '@bubbles/footer';
 import { ThemeProvider } from '@bubbles/theme';
 import { Toaster } from '@bubbles/ui/shadcn/sonner';
 
 import AppShell from '@/components/app-shell';
-import Footer from '@/components/footer';
 import PrivacyNotice from '@/components/privacy-notice';
 import { AppStoreProvider } from '@/context/app-store';
-import packageJson from '@/package.json';
+import Logo from '@/public/images/teacherbuddy-logo.png';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -64,7 +64,6 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const appVersion = packageJson.version;
   const cookieStore = await cookies();
   const sidebarCookieValue =
     cookieStore.get('teacherbuddy_sidebar_state')?.value ??
@@ -103,9 +102,37 @@ export default async function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="dark">
           <AppStoreProvider>
             <AppShell
-              appVersion={appVersion}
               defaultSidebarOpen={defaultSidebarOpen}
-              footer={<Footer />}>
+              footer={
+                <Footer
+                  image={{
+                    src: Logo,
+                    alt: 'TeacherBuddy logo — classroom tools for teachers',
+                    width: 895,
+                    height: 372,
+                  }}
+                  links={[
+                    {
+                      label: 'Privacy Policy',
+                      href: 'https://mrbubbles-src.dev/de/impressum',
+                    },
+                    {
+                      label: 'Legal Notice',
+                      href: 'https://mrbubbles-src.dev/de/datenschutz',
+                    },
+                  ]}>
+                  <p className="text-center">
+                    Source code:{' '}
+                    <a
+                      href="https://github.com/mrbubbles-src/teacherbuddy"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="touch-hitbox text-primary hover:text-primary/70">
+                      TeacherBuddy
+                    </a>
+                  </p>
+                </Footer>
+              }>
               {children}
             </AppShell>
             <PrivacyNotice />

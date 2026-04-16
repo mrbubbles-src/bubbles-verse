@@ -7,10 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-04-17
+
+### Added
+
+- Added a shared `BubblesSidebarLayout` integration path by wiring TeacherBuddy to the new reusable sidebar shell from `@bubbles/ui`.
+- Added an app-local UUID helper plus tests so TeacherBuddy no longer depends on `crypto.randomUUID()` existing in every runtime.
+
 ### Fixed
 
 - Restored `typecheck` stability by tightening test nullability assertions, adding the missing `class-variance-authority` dependency, and annotating the shared render test helper return type.
 - Kept TeacherBuddy on its existing Geist layout fonts and restored `next-themes` as an explicit app dependency after the shared font package work.
+- Replaced direct `crypto.randomUUID()` usage across the app with a runtime-safe UUID helper to prevent the current startup crash in unsupported environments.
 
 ### Documentation
 
@@ -99,6 +107,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - App shell and header now use page info for route metadata and pass an `info` prop to Header for PageInfoDialog.
 - Project documentation: components (PageInfoDialog, Dialog, Tabs), structure (lib/page-info), routes, testing, getting-started (page-info step), hooks (useIsMobile), README (in-app help).
+
+## [Unreleased]
+
+### Changed
+
+- Migrated TeacherBuddy onto the shared sticky `BubblesSidebarLayout` header so breadcrumbs, timer, theme toggle, and page help live in one persistent top bar.
+- Re-grouped sidebar navigation into more purposeful sections and increased shared sidebar readability.
+- Switched the app footer over to the shared `@bubbles/footer` package.
+- Refined the shared header adoption with a larger sidebar logo, tighter page-info placement beside the description text, and cleaner spacing between timer and theme controls.
+- Moved the dashboard page meta block fully beside the sidebar trigger, added a vertical separator between timer utilities and theme toggle, and simplified the hero area by removing the extra card chrome.
+- Centered the sidebar logo and dashboard hero content, aligned header controls/separators vertically, and tightened the timer control cluster in the top bar.
+- Shortened and re-centered the top-bar utility separator, made collapsed sidebar navigation truly icon-only, and tightened the dashboard hero into a more centered inner content frame.
+- Fine-tuned the timer/theme separator position so it visually lines up with the surrounding header controls.
+- Matched the right header separator to the shared left-side separator styling so both dividers render consistently.
+- Reworked the mobile header actions so theme controls stay in the top row while the timer cluster sits centered below.
+- Moved the mobile theme-toggle cluster into the same top row as the breadcrumbs while keeping the timer centered underneath.
 
 ## [1.1.1] - 2026-02-05
 

@@ -2,8 +2,17 @@
 
 import type { Question, Quiz } from '@/lib/models';
 
+import { createUuid } from '@/lib/uuid';
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import {
+  Add01Icon,
+  Delete02Icon,
+  HugeiconsIcon,
+  PencilEdit01Icon,
+} from '@bubbles/ui/lib/hugeicons';
+import { toast } from '@bubbles/ui/lib/sonner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,13 +42,6 @@ import {
 } from '@bubbles/ui/shadcn/field';
 import { Input } from '@bubbles/ui/shadcn/input';
 import { Textarea } from '@bubbles/ui/shadcn/textarea';
-import {
-  Add01Icon,
-  Delete02Icon,
-  HugeiconsIcon,
-  PencilEdit01Icon,
-} from '@bubbles/ui/lib/hugeicons';
-import { toast } from '@bubbles/ui/lib/sonner';
 
 import QuizSelector from '@/components/quizzes/quiz-selector';
 import { useAppStore } from '@/context/app-store';
@@ -243,16 +245,16 @@ export default function QuizEditorForm({ quiz, quizId }: QuizEditorFormProps) {
   const [importError, setImportError] = useState<string | null>(null);
   const [importNotice, setImportNotice] = useState<string | null>(null);
   const [builderCardHeight, setBuilderCardHeight] = useState<number | null>(
-    null,
+    null
   );
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(
-    null,
+    null
   );
 
   const editingQuestion = useMemo(
     () =>
       questions.find((question) => question.id === editingQuestionId) ?? null,
-    [questions, editingQuestionId],
+    [questions, editingQuestionId]
   );
 
   /**
@@ -331,14 +333,14 @@ export default function QuizEditorForm({ quiz, quizId }: QuizEditorFormProps) {
         prev.map((question) =>
           question.id === editingQuestionId
             ? { ...question, prompt: trimmedPrompt, answer: trimmedAnswer }
-            : question,
-        ),
+            : question
+        )
       );
     } else {
       setQuestions((prev) => [
         ...prev,
         {
-          id: crypto.randomUUID(),
+          id: createUuid(),
           prompt: trimmedPrompt,
           answer: trimmedAnswer,
         },
@@ -374,7 +376,7 @@ export default function QuizEditorForm({ quiz, quizId }: QuizEditorFormProps) {
    */
   const handleRemoveQuestion = (questionId: string) => {
     setQuestions((prev) =>
-      prev.filter((question) => question.id !== questionId),
+      prev.filter((question) => question.id !== questionId)
     );
     if (editingQuestionId === questionId) {
       setEditingQuestionId(null);
@@ -442,7 +444,7 @@ export default function QuizEditorForm({ quiz, quizId }: QuizEditorFormProps) {
       if (result.drafts.length > 1) {
         for (const draft of result.drafts) {
           const nextQuestions: Question[] = draft.questions.map((question) => ({
-            id: crypto.randomUUID(),
+            id: createUuid(),
             prompt: question.prompt,
             answer: question.answer,
           }));
@@ -465,10 +467,10 @@ export default function QuizEditorForm({ quiz, quizId }: QuizEditorFormProps) {
       }
       const importedQuestions: Question[] = singleDraft.questions.map(
         (question) => ({
-          id: crypto.randomUUID(),
+          id: createUuid(),
           prompt: question.prompt,
           answer: question.answer,
-        }),
+        })
       );
 
       setTitle(singleDraft.title);
@@ -496,10 +498,10 @@ export default function QuizEditorForm({ quiz, quizId }: QuizEditorFormProps) {
 
   return (
     <>
-      <div ref={builderCardRef} className="min-w-0 w-full">
-        <Card className="relative h-full min-w-0 w-full overflow-hidden rounded-xl border-border/50 py-6 shadow-md lg:gap-6 xl:gap-8 xl:py-8">
+      <div ref={builderCardRef} className="w-full min-w-0">
+        <Card className="relative h-full w-full min-w-0 overflow-hidden rounded-xl border-border/50 py-6 shadow-md lg:gap-6 xl:gap-8 xl:py-8">
           <div
-            className="absolute left-0 top-0 h-full w-1 rounded-l-xl"
+            className="absolute top-0 left-0 h-full w-1 rounded-l-xl"
             style={{ backgroundColor: 'var(--chart-3)', opacity: 0.6 }}
           />
           <CardHeader className="px-6 xl:px-8">
@@ -555,13 +557,13 @@ export default function QuizEditorForm({ quiz, quizId }: QuizEditorFormProps) {
             <div className="flex flex-col gap-2 sm:flex-row">
               <Button
                 onClick={handleSaveQuiz}
-                className="h-9 font-semibold text-base sm:min-w-32">
+                className="h-9 text-base font-semibold sm:min-w-32">
                 Save Quiz
               </Button>
               <Button
                 variant="secondary"
                 onClick={handleNewQuiz}
-                className="h-9 font-semibold text-base sm:min-w-32">
+                className="h-9 text-base font-semibold sm:min-w-32">
                 New Quiz
               </Button>
             </div>
@@ -631,7 +633,7 @@ export default function QuizEditorForm({ quiz, quizId }: QuizEditorFormProps) {
             <div className="flex flex-col gap-2 sm:flex-row">
               <Button
                 onClick={handleAddOrUpdateQuestion}
-                className="h-9 font-semibold text-base sm:min-w-32">
+                className="h-9 text-base font-semibold sm:min-w-32">
                 <HugeiconsIcon
                   icon={Add01Icon}
                   strokeWidth={2}
@@ -643,7 +645,7 @@ export default function QuizEditorForm({ quiz, quizId }: QuizEditorFormProps) {
                 <Button
                   variant="secondary"
                   onClick={handleCancelEdit}
-                  className="h-9 font-semibold text-base sm:min-w-32">
+                  className="h-9 text-base font-semibold sm:min-w-32">
                   Cancel Edit
                 </Button>
               ) : null}
@@ -695,14 +697,14 @@ export default function QuizEditorForm({ quiz, quizId }: QuizEditorFormProps) {
       </div>
 
       <Card
-        className="relative flex min-h-0 min-w-0 w-full flex-col overflow-hidden rounded-xl border-border/50 py-6 shadow-md lg:gap-6 xl:gap-8 xl:py-8"
+        className="relative flex min-h-0 w-full min-w-0 flex-col overflow-hidden rounded-xl border-border/50 py-6 shadow-md lg:gap-6 xl:gap-8 xl:py-8"
         style={
           builderCardHeight
             ? { maxHeight: `${builderCardHeight}px` }
             : undefined
         }>
         <div
-          className="absolute left-0 top-0 h-full w-1 rounded-l-xl"
+          className="absolute top-0 left-0 h-full w-1 rounded-l-xl"
           style={{ backgroundColor: 'var(--chart-3)', opacity: 0.6 }}
         />
         <CardHeader className="px-6 xl:px-8">
@@ -724,10 +726,10 @@ export default function QuizEditorForm({ quiz, quizId }: QuizEditorFormProps) {
                     key={question.id}
                     className="rounded-lg border border-border/60 bg-background/40 p-3">
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-base/relaxed font-medium text-foreground line-clamp-2 flex-1">
+                      <p className="line-clamp-2 flex-1 text-base/relaxed font-medium text-foreground">
                         {question.prompt}
                       </p>
-                      <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex shrink-0 items-center gap-1">
                         <Button
                           variant="ghost"
                           size="icon-sm"
@@ -754,7 +756,7 @@ export default function QuizEditorForm({ quiz, quizId }: QuizEditorFormProps) {
                         </Button>
                       </div>
                     </div>
-                    <p className="mt-1 text-sm/relaxed text-muted-foreground line-clamp-2">
+                    <p className="mt-1 line-clamp-2 text-sm/relaxed text-muted-foreground">
                       {question.answer}
                     </p>
                   </div>

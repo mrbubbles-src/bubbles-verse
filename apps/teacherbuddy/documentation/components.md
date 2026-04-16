@@ -4,15 +4,13 @@ Reference for React components. All feature components are client components unl
 
 ## Layout
 
-| Component    | File                                    | Description                                                                                                               |
-| ------------ | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `AppShell`   | `components/app-shell.tsx`              | Root layout: sidebar (collapsible) with **custom logo** (Next.js `Image` from `public/images/teacherbuddy-icon-transparent.png`, blur placeholder, responsive sizes), route titles, main content. Uses `getPageInfoByPath(pathname)` for meta; passes `meta` and `info` (currentPath, `PAGE_INFOS`) to `Header`. Optional `footer`. |
-| `Header`     | `components/header.tsx`                 | Page title, description, **PageInfoDialog** (help button next to title), sidebar trigger, theme toggle, and **QuizTimerCard** (timer on all pages). Receives `meta` and `info` from AppShell. |
-| `Footer`         | `components/footer.tsx`                 | Credits, source link, Catppuccin attribution. Rendered via `AppShell` footer prop.                                          |
-| `PrivacyNotice` | `components/privacy-notice.tsx`         | One-time privacy notice bar (bottom center); explains local-only data, no tracking. Dismissal stored in localStorage; rendered in root layout. |
-| `Toaster`       | `components/ui/sonner.tsx`             | Toast notifications (sonner). Rendered in root layout with `closeButton`, `position="bottom-center"`. Theme-aware icons.     |
-| `SidebarNav`     | `components/navigation/sidebar-nav.tsx` | Primary navigation links; highlights current route by pathname.                                                             |
-| `AppSidebar`     | `components/app-sidebar.tsx`            | Alternative sidebar component (see app-shell for active layout).                                                            |
+| Component       | File                                    | Description                                                                                                                                                                                                                          |
+| --------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `AppShell`      | `components/app-shell.tsx`              | Root layout: shared `BubblesSidebarLayout` with custom logo pair, explicit breadcrumbs, route description, **PageInfoDialog**, **QuizTimerCard**, and global **ThemeToggle** wired into the sticky shared header. Optional `footer`. |
+| `PrivacyNotice` | `components/privacy-notice.tsx`         | One-time privacy notice bar (bottom center); explains local-only data, no tracking. Dismissal stored in localStorage; rendered in root layout.                                                                                       |
+| `Toaster`       | `components/ui/sonner.tsx`              | Toast notifications (sonner). Rendered in root layout with `closeButton`, `position="bottom-center"`. Theme-aware icons.                                                                                                             |
+| `SidebarNav`    | `components/navigation/sidebar-nav.tsx` | Primary navigation links; highlights current route by pathname.                                                                                                                                                                      |
+| `AppSidebar`    | `components/app-sidebar.tsx`            | Alternative sidebar component (see app-shell for active layout).                                                                                                                                                                     |
 
 ## Dashboard
 
@@ -22,16 +20,16 @@ Reference for React components. All feature components are client components unl
 
 ## Students
 
-| Component              | File                                    | Description                                                |
-| ---------------------- | --------------------------------------- | ---------------------------------------------------------- |
+| Component              | File                                    | Description                                                                                    |
+| ---------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | `StudentForm`          | `components/students/student-form.tsx`  | Manage classes, import full class files (`.txt`/`.json`), add/import students to active class. |
-| `StudentTable`         | `components/students/student-table.tsx` | Mobile-style roster cards on all breakpoints: edit, exclude, delete students. |
-| `StudentNameGenerator` | `components/student-name-generator.tsx` | Standalone name generator utility (root of `components/`). |
+| `StudentTable`         | `components/students/student-table.tsx` | Mobile-style roster cards on all breakpoints: edit, exclude, delete students.                  |
+| `StudentNameGenerator` | `components/student-name-generator.tsx` | Standalone name generator utility (root of `components/`).                                     |
 
 ## Classes
 
-| Component       | File                                  | Description                                                        |
-| --------------- | ------------------------------------- | ------------------------------------------------------------------ |
+| Component       | File                                    | Description                                                                          |
+| --------------- | --------------------------------------- | ------------------------------------------------------------------------------------ |
 | `ClassSelector` | `components/classes/class-selector.tsx` | Shared class dropdown used across students, generator, play, breakout, and projects. |
 
 ## Generator
@@ -42,11 +40,11 @@ Reference for React components. All feature components are client components unl
 
 ## Quizzes
 
-| Component        | File                                      | Description                             |
-| ---------------- | ----------------------------------------- | --------------------------------------- |
-| `QuizEditor`     | `components/quizzes/quiz-editor.tsx`      | Wrapper for create/edit quiz workflows. |
+| Component        | File                                      | Description                                                                                                                                                                                                                    |
+| ---------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `QuizEditor`     | `components/quizzes/quiz-editor.tsx`      | Wrapper for create/edit quiz workflows.                                                                                                                                                                                        |
 | `QuizEditorForm` | `components/quizzes/quiz-editor-form.tsx` | Unified quiz details, optional description, question editing, and JSON file import (single or bulk quiz payloads). Questions render as card rows across all breakpoints with overflow scrolling capped to builder card height. |
-| `QuizSelector`   | `components/quizzes/quiz-selector.tsx`    | Shared quiz picker (dropdown).          |
+| `QuizSelector`   | `components/quizzes/quiz-selector.tsx`    | Shared quiz picker (dropdown).                                                                                                                                                                                                 |
 
 ## Play
 
@@ -70,10 +68,9 @@ Reference for React components. All feature components are client components unl
 
 ## Utility
 
-| Component        | File                                        | Description                                                                                                                                                       |
-| ---------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ThemeToggle`    | `components/utility/theme-toggle.tsx`       | Dark/light/system theme switcher (uses `next-themes` and `lib/view-transition.ts` for transitions).                                                               |
-| `PageInfoDialog` | `components/utility/page-info-dialog.tsx`  | Help button (next to page title in Header) that opens a modal with per-page tutorial: purpose, steps, outcome. Uses `lib/page-info` (`PageInfo`, `PAGE_INFOS`), Dialog, Select, Tabs, `useIsMobile`. |
+| Component        | File                                      | Description                                                                                                                                                                                                |
+| ---------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PageInfoDialog` | `components/utility/page-info-dialog.tsx` | Help button in the shared header description row that opens a modal with per-page tutorial: purpose, steps, outcome. Uses `lib/page-info` (`PageInfo`, `PAGE_INFOS`), Dialog, Select, Tabs, `useIsMobile`. |
 
 Copy-to-clipboard is provided by the `useCopyToClipboard` hook; it is used inline in components (e.g. `BreakoutGroupsCard`) rather than as a standalone `CopyButton` component.
 
@@ -94,21 +91,21 @@ Feature pages pass a `skeleton` prop to the main component (e.g. `<StudentForm s
 
 Base components in `components/ui/` use Tailwind and (where noted) Base UI / shadcn:
 
-| Component                                        | Notes                                                            |
-| ------------------------------------------------ | ---------------------------------------------------------------- |
-| `Button`                                         | CVA variants; use `button-variants.ts` for server-safe variants. |
-| `Card`, `CardHeader`, etc.                       | Layout primitives.                                               |
-| `Input`, `Textarea`                              | Form inputs.                                                     |
+| Component                                        | Notes                                                                                                                                                   |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Button`                                         | CVA variants; use `button-variants.ts` for server-safe variants.                                                                                        |
+| `Card`, `CardHeader`, etc.                       | Layout primitives.                                                                                                                                      |
+| `Input`, `Textarea`                              | Form inputs.                                                                                                                                            |
 | `Select`, `Label`, `Field`                       | Form field wrappers. `SelectContent` defaults to popper-style content-fit behavior; pass `alignItemWithTrigger={true}` for trigger-aligned positioning. |
-| `Dialog`, `DialogContent`, `DialogTrigger`, etc. | Modal dialogs (used by PageInfoDialog, etc.).                    |
-| `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` | Tabbed content.                                                  |
-| `AlertDialog`                                    | Confirmation dialogs.                                            |
-| `Badge`                                          | Use `badge-variants.ts` for server-safe variants.                |
-| `Checkbox`, `Combobox`, `Popover`, `Sheet`       | Headless-style UI.                                               |
-| `DropdownMenu`, `Separator`, `Skeleton`, `Table` | Layout and feedback.                                             |
-| `Sidebar`, `SidebarTrigger`, etc.                | Sidebar layout (used by AppShell).                               |
-| `Toaster` (sonner)                               | Toast notifications; used in root layout.                        |
-| `Tooltip`                                        | Accessibility-friendly tooltips.                                 |
+| `Dialog`, `DialogContent`, `DialogTrigger`, etc. | Modal dialogs (used by PageInfoDialog, etc.).                                                                                                           |
+| `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` | Tabbed content.                                                                                                                                         |
+| `AlertDialog`                                    | Confirmation dialogs.                                                                                                                                   |
+| `Badge`                                          | Use `badge-variants.ts` for server-safe variants.                                                                                                       |
+| `Checkbox`, `Combobox`, `Popover`, `Sheet`       | Headless-style UI.                                                                                                                                      |
+| `DropdownMenu`, `Separator`, `Skeleton`, `Table` | Layout and feedback.                                                                                                                                    |
+| `Sidebar`, `SidebarTrigger`, etc.                | Sidebar layout (used by AppShell).                                                                                                                      |
+| `Toaster` (sonner)                               | Toast notifications; used in root layout.                                                                                                               |
+| `Tooltip`                                        | Accessibility-friendly tooltips.                                                                                                                        |
 
 ### Server-Safe Variants
 

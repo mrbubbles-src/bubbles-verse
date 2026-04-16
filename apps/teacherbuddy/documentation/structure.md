@@ -47,11 +47,9 @@ teacherbuddy/
 │   ├── generator/          # Generator components
 │   ├── breakout/           # BreakoutGroupsCard
 │   ├── projects/           # ProjectListBuilder, ProjectListView
-│   ├── utility/            # ThemeToggle, PageInfoDialog
+│   ├── utility/            # PageInfoDialog and utility UI
 │   │   └── __tests__/      # PageInfoDialog tests
 │   ├── app-shell.tsx       # Root layout shell
-│   ├── header.tsx          # Page header (timer in header)
-│   ├── footer.tsx          # Credits footer
 │   ├── privacy-notice.tsx  # One-time privacy notice (root layout)
 │   └── student-name-generator.tsx
 ├── context/                # React context providers
@@ -74,6 +72,7 @@ teacherbuddy/
 │   ├── og-image.tsx        # Shared next/og image renderer
 │   ├── page-meta.ts        # Route title/description source of truth
 │   ├── page-info.tsx       # Page metadata and in-app help (PAGE_INFOS, getPageInfoByPath)
+│   ├── sidebar.ts          # TeacherBuddy sidebar sections and breadcrumb mapping
 │   ├── view-transition.ts  # Theme transition helper
 │   └── __tests__/          # Utility tests
 ├── __tests__/              # Global test utilities
@@ -103,23 +102,22 @@ Tests are colocated with source code in `__tests__/` directories:
 - **Entry:** root layout imports **`@bubbles/ui/globals.css`** — shared Tailwind v4 + design tokens with other monorepo apps. `components.json` points `css` at `packages/ui/src/styles/globals.css` for the shadcn CLI.
 - **`app/globals.css`** may still exist locally for legacy or experiments; production styling should align with the package import above.
 - Theme (light/dark) uses **`next-themes`** (`ThemeProvider` in root layout).
-- `components/utility/theme-toggle.tsx` uses `lib/view-transition.ts` for smooth theme transitions.
+- Theme switching now comes from `@bubbles/theme`; the app consumes the shared toggle in `components/app-shell.tsx`.
 
 ## Key Files
 
-| File                       | Purpose                                                                                                         |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `app/layout.tsx`           | Root layout: metadata (template, OG, Twitter), ld+json WebApplication schema, fonts (Geist), ThemeProvider, AppStoreProvider, AppShell, Footer, PrivacyNotice, Toaster (sonner) |
-| `context/app-store.tsx`    | Central state: reducer, useAppStore, hydration, persistence effects                                             |
-| `lib/storage.ts`           | localStorage read/write and validation                                                                          |
-| `lib/type-guards.ts`       | Runtime type checking for persisted data                                                                        |
-| `lib/models.ts`            | Shared TypeScript types (Student, Quiz, ProjectList, etc.)                                                      |
-| `lib/metadata.ts`          | Shared SEO metadata builders and metadataBase resolution (`buildPageMetadata`, `resolveMetadataBase`)           |
-| `lib/og-image.tsx`         | Shared Open Graph image renderer used by `app/api/og/route.ts`                                                  |
-| `lib/page-meta.ts`         | Route metadata source (`ROUTE_PAGE_META`, `ROUTE_PAGE_META_BY_PATH`) reused by SEO and UI help                  |
-| `lib/page-info.tsx`        | Page metadata and help (PageInfo, PAGE_INFOS, getPageInfoByPath); drives Header meta and PageInfoDialog        |
-| `components/app-shell.tsx` | Layout: SidebarProvider, sidebar with custom logo (Image from public/images), nav, Header (meta + info), main  |
-| `components/header.tsx`    | Page meta, PageInfoDialog, SidebarTrigger, ThemeToggle, QuizTimerCard                                           |
-| `next.config.ts`           | Next config; React Compiler enabled unless `NEXT_DISABLE_REACT_COMPILER=1`                                      |
-| `vitest.config.ts`         | Vitest + jsdom, path alias `@`, coverage for lib/hooks/context                                                  |
-| `vitest.setup.ts`          | jest-dom, cleanup, localStorage/crypto mocks                                                                    |
+| File                       | Purpose                                                                                                                                                                                |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/layout.tsx`           | Root layout: metadata (template, OG, Twitter), ld+json WebApplication schema, fonts (Geist), ThemeProvider, AppStoreProvider, AppShell, shared Footer, PrivacyNotice, Toaster (sonner) |
+| `context/app-store.tsx`    | Central state: reducer, useAppStore, hydration, persistence effects                                                                                                                    |
+| `lib/storage.ts`           | localStorage read/write and validation                                                                                                                                                 |
+| `lib/type-guards.ts`       | Runtime type checking for persisted data                                                                                                                                               |
+| `lib/models.ts`            | Shared TypeScript types (Student, Quiz, ProjectList, etc.)                                                                                                                             |
+| `lib/metadata.ts`          | Shared SEO metadata builders and metadataBase resolution (`buildPageMetadata`, `resolveMetadataBase`)                                                                                  |
+| `lib/og-image.tsx`         | Shared Open Graph image renderer used by `app/api/og/route.ts`                                                                                                                         |
+| `lib/page-meta.ts`         | Route metadata source (`ROUTE_PAGE_META`, `ROUTE_PAGE_META_BY_PATH`) reused by SEO and UI help                                                                                         |
+| `lib/page-info.tsx`        | Page metadata and help (PageInfo, PAGE_INFOS, getPageInfoByPath); drives shared header breadcrumbs/description and PageInfoDialog                                                      |
+| `components/app-shell.tsx` | Bridges TeacherBuddy route metadata into the shared sticky sidebar header and main content shell                                                                                       |
+| `next.config.ts`           | Next config; React Compiler enabled unless `NEXT_DISABLE_REACT_COMPILER=1`                                                                                                             |
+| `vitest.config.ts`         | Vitest + jsdom, path alias `@`, coverage for lib/hooks/context                                                                                                                         |
+| `vitest.setup.ts`          | jest-dom, cleanup, localStorage/crypto mocks                                                                                                                                           |
