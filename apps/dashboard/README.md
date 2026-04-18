@@ -55,4 +55,16 @@ bun run build
 
 ## Environment
 
-No app-specific environment variables are required yet.
+```env
+NEXT_PUBLIC_APP_URL=http://dashboard.mrbubbles.test:3004
+NEXT_PUBLIC_AUTH_COOKIE_DOMAIN=.mrbubbles.test
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+DATABASE_URL=...
+GITHUB_OWNER_ALLOWLIST=mrbubbles
+```
+
+`NEXT_PUBLIC_AUTH_COOKIE_DOMAIN` is optional. When it is omitted, the dashboard
+derives a shared parent domain from `NEXT_PUBLIC_APP_URL`, which works for
+hosts like `dashboard.mrbubbles.test` and `dashboard.mrbubbles-src.dev`.

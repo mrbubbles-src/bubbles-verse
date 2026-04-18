@@ -7,12 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added shared dashboard auth cookie configuration so Supabase sessions can be
+  scoped to a parent domain like `.mrbubbles.test` or `.mrbubbles-src.dev`.
+
 ### Changed
 
 - Aligned the app's Next.js, React, and type package versions with the shared
   workspace packages to reduce monorepo version drift.
 - Replaced the `create-next-app` placeholder metadata and landing page copy with
   dashboard-specific scaffold content.
+- Documented the dashboard environment variables needed for Supabase auth and
+  database access.
 
 ### Documentation
 
