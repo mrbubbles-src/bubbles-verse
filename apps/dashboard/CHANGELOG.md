@@ -45,6 +45,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   links.
 - Added a live dashboard landing page that now reads real identity, profile,
   and Vault data instead of static mock content.
+- Added a first RLS layer for all dashboard tables plus the private allowlist,
+  using the custom JWT claims `dashboard_access` and `user_role`.
+- Added public-read RLS policies for published content, author data, active
+  app modules, and the visible Vault taxonomy so non-dashboard apps can query
+  shared data without login.
 
 ### Changed
 

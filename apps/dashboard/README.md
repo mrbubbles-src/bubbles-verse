@@ -92,6 +92,26 @@ checks. Access now comes from the private Supabase table
 `private.dashboard_github_allowlist`, which should also back your Supabase auth
 hooks.
 
+## Row Level Security
+
+- All dashboard tables in `public` now have RLS enabled, plus the private
+  `dashboard_github_allowlist` table as defense in depth.
+- Internal dashboard reads are tied to the custom JWT claim
+  `dashboard_access = true`.
+- Public read access is intentionally available without login for:
+  - active `app_modules`
+  - published `content_items`
+  - the matching `vault_entries` and `content_item_tags`
+  - `vault_categories` for public taxonomy reads across apps
+  - author `profiles` and `profile_social_links` for profiles that already
+    own published content
+- Owner-only data like the private allowlist is additionally protected by
+  `user_role = owner`.
+- Profile self-service stays scoped to the signed-in `auth.uid()`, while Vault
+  structure management is limited to `owner` and `editor`.
+- The RLS helper functions live in the `private` schema so the policies do not
+  depend on user-editable `user_metadata`.
+
 ## Auth flow
 
 - `proxy.ts` handles the fast, optimistic redirect between `/login` and the protected dashboard routes.
@@ -117,6 +137,8 @@ hooks.
 - First save also bootstraps a missing profile row, so older accounts do not need manual prep before using the editor.
 - Social links currently stay intentionally fixed to `website`, `github`, `linkedin`, and `twitter` so the first public profile use cases remain simple.
 - Access role and GitHub identity still come from Auth plus the private allowlist, not from editable profile form fields.
+- Public apps can read author rows and social links without login once that
+  profile owns at least one published content item.
 
 ## Dashboard home
 
@@ -145,3 +167,5 @@ hooks.
 - Entry duplicates go through `/api/vault/entries/[id]/duplicate` and reuse content, tags, and category while always creating a new draft copy with a free slug.
 - Entry deletes also go through `/api/vault/entries/[id]` and remove the shared `content_items` row, letting the existing schema cascades clean up `vault_entries` and `content_item_tags`.
 - Editor image uploads go through `/api/editor-image-upload` and use the shared Cloudinary helper from `@bubbles/markdown-editor`.
+- Published Vault content, tags, taxonomy, and author data are now readable
+  for unauthenticated apps through RLS, while drafts stay dashboard-only.
