@@ -8,7 +8,10 @@ import '@bubbles/ui/globals.css';
 import './dashboard.css';
 
 export const metadata: Metadata = {
-  title: 'Dashboard | Bubbles Verse',
+  title: {
+    default: 'BubbleVerse Dashboard',
+    template: '%s | BubbleVerse Dashboard',
+  },
   description: 'Shared dashboard app scaffold for the Bubbles Verse monorepo.',
 };
 
@@ -31,6 +34,12 @@ export default function RootLayout({
       lang="en"
       suppressHydrationWarning
       className={`${montserrat.variable} ${poppins.variable} ${firaCode.variable} antialiased`}>
+      <head>
+        <meta
+          name="apple-mobile-web-app-title"
+          content="BubbleVerse Dashboard"
+        />
+      </head>
       <body>
         <ThemeProvider attribute="class" defaultTheme="dark">
           {children}
