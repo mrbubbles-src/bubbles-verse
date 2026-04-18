@@ -25,6 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   updating, and deleting rows in `private.dashboard_github_allowlist`.
 - Added a DB-backed dashboard access layer so protected routes now resolve
   `dashboard_access` and `user_role` from the private allowlist table.
+- Added the first real `/vault/categories` CRUD workflow with create, edit, and
+  delete handling for the two-level Vault category tree.
+- Added the first real Vault entry authoring flow with a `/vault/entries` list,
+  a `/vault/entries/new` markdown-editor screen, and app-local save/upload API
+  routes.
 
 ### Changed
 
@@ -46,6 +51,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   recognized through `user_metadata` when `identities` is empty.
 - Replaced the old `.env`-based owner gate with a private-table-based access
   check, keeping `proxy.ts` as an optimistic session check only.
+- Opened Vault category management to `owner` and `editor` roles, while keeping
+  `/account` owner-only.
 
 ### Documentation
 

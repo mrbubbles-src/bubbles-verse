@@ -1,21 +1,25 @@
+import { CategoryManager } from '@/components/vault/categories/category-manager';
+import { CategoryFeedbackToast } from '@/components/vault/categories/category-feedback-toast';
+import { requireDashboardManagerSession } from '@/lib/auth/session';
+import { getVaultCategoryPageModel } from '@/lib/vault/categories';
+
 /**
- * Renders the initial placeholder for Vault category management.
+ * Renders the first real Vault category management page.
  *
- * The real CRUD flow for Ober- und Unterkategorien is added in the next task.
+ * Owners and Editors can create, edit, and delete the strict two-level Vault
+ * category tree directly inside the shared dashboard shell.
  */
-export default function VaultCategoriesPage() {
+export default async function VaultCategoriesPage() {
+  await requireDashboardManagerSession();
+  const categoryPageModel = await getVaultCategoryPageModel();
+
   return (
-    <section className="flex max-w-4xl flex-col gap-4 rounded-[2rem] border border-border/50 bg-background/80 px-5 py-6 shadow-sm shadow-black/5 sm:px-6">
-      <p className="text-xs font-semibold tracking-[0.28em] text-muted-foreground uppercase">
-        Coding Vault
-      </p>
-      <h1 className="text-3xl font-semibold tracking-tight text-balance">
-        Kategorienverwaltung kommt direkt als Nächstes.
-      </h1>
-      <p className="text-sm text-pretty text-muted-foreground sm:text-base">
-        Die Seite steht schon im Shell-Kontext bereit, damit wir die eigentliche
-        Baum- und Formlogik ohne Routing-Umbauten ergänzen können.
-      </p>
-    </section>
+    <>
+      <CategoryFeedbackToast />
+      <CategoryManager
+        categories={categoryPageModel.tree}
+        parentOptions={categoryPageModel.parentOptions}
+      />
+    </>
   );
 }

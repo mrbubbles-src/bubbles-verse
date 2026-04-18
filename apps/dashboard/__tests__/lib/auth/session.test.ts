@@ -2,6 +2,7 @@ import type { User } from '@supabase/supabase-js';
 
 import {
   requireDashboardSession,
+  requireDashboardManagerSession,
   requireOwnerSession,
 } from '@/lib/auth/session';
 
@@ -162,5 +163,30 @@ describe('dashboard session helpers', () => {
     });
 
     await expect(requireOwnerSession()).rejects.toThrow('NEXT_REDIRECT:/');
+  });
+
+  it('allows editors through the shared dashboard manager gate', async () => {
+    const user = createGithubUser('editor');
+    const accessEntry = {
+      githubUsername: 'editor',
+      email: 'editor@example.test',
+      note: null,
+      userRole: 'editor',
+      dashboardAccess: true,
+      createdAt: '2026-04-18T00:00:00.000Z',
+    };
+
+    getUserMock.mockResolvedValue({
+      data: {
+        user,
+      },
+    });
+    getDashboardAccessEntryByIdentityMock.mockResolvedValue(accessEntry);
+
+    await expect(requireDashboardManagerSession()).resolves.toEqual({
+      user,
+      accessEntry,
+      githubUsername: 'editor',
+    });
   });
 });

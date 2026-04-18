@@ -1,22 +1,38 @@
+import { requireDashboardManagerSession } from '@/lib/auth/session';
+import { getVaultEntryCreationModel } from '@/lib/vault/entries';
+
+import { VaultEntryEditor } from '@/components/vault/entries/vault-entry-editor';
+
 /**
- * Renders the initial placeholder for creating a new Vault entry.
+ * Renders the first real create-entry screen for the Coding Vault.
  *
- * The real `@bubbles/markdown-editor` integration lands in the dedicated entry
- * task once the shell and routing baseline are in place.
+ * Owners and editors can author new Markdown-based entries directly in the
+ * shared editor while the dashboard supplies the Vault-specific category
+ * context and persistence endpoint.
  */
-export default function NewVaultEntryPage() {
+export default async function NewVaultEntryPage() {
+  await requireDashboardManagerSession();
+  const creationModel = await getVaultEntryCreationModel();
+
   return (
-    <section className="flex max-w-4xl flex-col gap-4 rounded-[2rem] border border-border/50 bg-background/80 px-5 py-6 shadow-sm shadow-black/5 sm:px-6">
-      <p className="text-xs font-semibold tracking-[0.28em] text-muted-foreground uppercase">
-        Coding Vault
-      </p>
-      <h1 className="text-3xl font-semibold tracking-tight text-balance">
-        Neuer Vault-Eintrag
-      </h1>
-      <p className="text-sm text-pretty text-muted-foreground sm:text-base">
-        Der Editor-Slot steht bereit. Im nächsten Schritt binden wir den
-        Markdown-Editor und die ersten Speicherwege daran an.
-      </p>
-    </section>
+    <>
+      <section className="flex flex-col gap-4 rounded-[2rem] border border-border/50 bg-background/80 px-5 py-6 shadow-sm shadow-black/5 sm:px-6">
+        <p className="text-xs font-semibold tracking-[0.28em] text-muted-foreground uppercase">
+          Coding Vault
+        </p>
+        <div className="space-y-2">
+          <h1 className="text-3xl font-semibold tracking-tight text-balance">
+            Neuer Vault-Eintrag
+          </h1>
+          <p className="max-w-3xl text-sm text-pretty text-muted-foreground sm:text-base">
+            Schreibe den Inhalt direkt im gemeinsamen Markdown-Editor, inkl.
+            Bild-Uploads und automatischer Slug-Ableitung aus dem
+            Kategorienpfad.
+          </p>
+        </div>
+      </section>
+
+      <VaultEntryEditor categories={creationModel.categories} />
+    </>
   );
 }

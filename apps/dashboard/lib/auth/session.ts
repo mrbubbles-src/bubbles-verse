@@ -17,6 +17,8 @@ export type DashboardSession = {
   githubUsername: string;
 };
 
+export type DashboardManagerSession = DashboardSession;
+
 /**
  * Loads the current dashboard session and resolves the matching access row.
  *
@@ -78,6 +80,26 @@ async function loadDashboardSession(): Promise<DashboardSession> {
  */
 export async function requireDashboardSession() {
   return loadDashboardSession();
+}
+
+/**
+ * Returns the current dashboard session for editorial management routes.
+ *
+ * Owner and Editor roles may manage shared editorial structures like Vault
+ * categories, while more limited roles should be redirected away.
+ */
+export async function requireDashboardManagerSession() {
+  const session = await loadDashboardSession();
+
+  if (
+    session.accessEntry.userRole !== 'owner' &&
+    session.accessEntry.userRole !== 'editor'
+  ) {
+    redirect('/');
+    throw new Error('Dashboard manager access required.');
+  }
+
+  return session;
 }
 
 /**

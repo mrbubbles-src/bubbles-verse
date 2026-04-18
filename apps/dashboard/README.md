@@ -17,8 +17,10 @@ a clean base.
 - `/login` starts the owner-only GitHub OAuth flow through Supabase.
 - `/` now renders the first protected dashboard home inside the shared sidebar shell.
 - The shared shell already uses `BubblesSidebar`, the shared app header, theme toggle, and footer.
-- Placeholder protected routes exist for `/account`, `/vault`, `/vault/categories`, `/vault/entries`, and `/vault/entries/new`.
+- Protected routes exist for `/account`, `/vault`, `/vault/categories`, `/vault/entries`, and `/vault/entries/new`.
 - `/account` now lets Owners manage the private dashboard allowlist, including `dashboard_access` and `user_role`.
+- `/vault/categories` now ships the first real editorial CRUD screen for the Coding Vault category tree.
+- `/vault/entries` now shows the first real editorial list, and `/vault/entries/new` creates entries through `@bubbles/markdown-editor`.
 - Shared fonts, globals, theme provider, and toast host are wired in.
 - The app is configured to consume shared source packages from the monorepo.
 
@@ -98,3 +100,18 @@ hooks.
 - The same row also feeds the custom JWT claims hook for `dashboard_access` and `user_role`.
 - Identity fields are immutable in the first UI slice. If a GitHub username or email changes, remove the row and create a new one.
 - The dashboard protects the final active Owner row from being disabled or deleted in the UI.
+
+## Vault categories
+
+- `/vault/categories` is available for `owner` and `editor` roles.
+- The page manages `vault_categories` directly against Supabase Postgres via Drizzle.
+- V1 enforces a strict two-level tree: top-level categories plus one child layer.
+- Categories with children cannot be moved below another parent.
+- Categories that still have child categories or linked Vault entries cannot be deleted.
+
+## Vault entries
+
+- `/vault/entries` is available for `owner` and `editor` roles.
+- `/vault/entries/new` uses `@bubbles/markdown-editor` for shared authoring, metadata, draft handling, preview, and image uploads.
+- New entry saves go through `/api/vault/entries`, which bootstraps the shared `vault` app module and the current author's `profiles` row on first save.
+- Editor image uploads go through `/api/editor-image-upload` and use the shared Cloudinary helper from `@bubbles/markdown-editor`.
