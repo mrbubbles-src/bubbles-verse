@@ -18,6 +18,7 @@ a clean base.
 - `/` now renders the first protected dashboard home inside the shared sidebar shell.
 - The shared shell already uses `BubblesSidebar`, the shared app header, theme toggle, and footer.
 - Placeholder protected routes exist for `/account`, `/vault`, `/vault/categories`, `/vault/entries`, and `/vault/entries/new`.
+- `/account` now lets Owners manage the private dashboard allowlist, including `dashboard_access` and `user_role`.
 - Shared fonts, globals, theme provider, and toast host are wired in.
 - The app is configured to consume shared source packages from the monorepo.
 
@@ -66,7 +67,6 @@ NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...
 DATABASE_URL=...
-GITHUB_OWNER_ALLOWLIST=mrbubbles
 ```
 
 `NEXT_PUBLIC_AUTH_COOKIE_DOMAIN` is optional. When it is omitted, the dashboard
@@ -76,16 +76,25 @@ hosts like `dashboard.mrbubbles.test` and `dashboard.mrbubbles-src.dev`.
 If you change `NEXT_PUBLIC_*` values while `next dev` is already running,
 restart the dashboard dev server so the browser bundle picks up the new values.
 
-Important: the dashboard allowlist currently protects app access, but Supabase
-can still create an Auth user row after a successful GitHub OAuth signup. To
-block non-allowlisted users before they are created at all, add a Supabase
-`before-user-created` Auth Hook.
+The dashboard UI no longer depends on `GITHUB_OWNER_ALLOWLIST` for secure route
+checks. Access now comes from the private Supabase table
+`private.dashboard_github_allowlist`, which should also back your Supabase auth
+hooks.
 
 ## Auth flow
 
 - `proxy.ts` handles the fast, optimistic redirect between `/login` and the protected dashboard routes.
 - GitHub OAuth returns to `/auth/callback`, where the PKCE auth code is exchanged for the dashboard session cookie before redirecting to `/`.
-- `requireOwnerSession()` remains the authoritative owner check and logs out stale or unauthorized sessions on the server.
-- the server-side owner fallback now accepts the GitHub username from `user_metadata` when Supabase does not populate `identities`
+- `requireDashboardSession()` remains the authoritative secure check and logs out stale or unauthorized sessions on the server.
+- `requireOwnerSession()` builds on top of that DB-backed session check and protects owner-only routes like `/account`.
+- the server-side identity fallback still accepts the GitHub username from `user_metadata` when Supabase does not populate `identities`
 - The login page keeps Supabase auth errors neutral and does not expose that access is controlled by an internal allowlist.
 - A one-time success toast is only shown after a real GitHub OAuth round-trip, not when an already valid session is redirected away from `/login`.
+
+## Account access management
+
+- `/account` is Owner-only and reads from `private.dashboard_github_allowlist`.
+- Every row stores the exact GitHub username + verified email pair that Supabase should allow.
+- The same row also feeds the custom JWT claims hook for `dashboard_access` and `user_role`.
+- Identity fields are immutable in the first UI slice. If a GitHub username or email changes, remove the row and create a new one.
+- The dashboard protects the final active Owner row from being disabled or deleted in the UI.

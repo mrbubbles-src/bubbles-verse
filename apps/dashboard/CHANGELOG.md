@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   after a real sign-in round-trip.
 - Added a dedicated `/auth/callback` route so Supabase PKCE logins can exchange
   the auth code for a cookie-backed dashboard session before redirecting home.
+- Added the first owner-only `/account` access-management UI for creating,
+  updating, and deleting rows in `private.dashboard_github_allowlist`.
+- Added a DB-backed dashboard access layer so protected routes now resolve
+  `dashboard_access` and `user_role` from the private allowlist table.
 
 ### Changed
 
@@ -40,6 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rejected users do not keep a live dashboard session cookie after OAuth.
 - Updated the server-side owner fallback so GitHub users from Supabase can be
   recognized through `user_metadata` when `identities` is empty.
+- Replaced the old `.env`-based owner gate with a private-table-based access
+  check, keeping `proxy.ts` as an optimistic session check only.
 
 ### Documentation
 

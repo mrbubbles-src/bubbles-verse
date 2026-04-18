@@ -1,19 +1,29 @@
 import type { User } from '@supabase/supabase-js';
 
-import { requireOwnerSession } from '@/lib/auth/session';
+import {
+  requireDashboardSession,
+  requireOwnerSession,
+} from '@/lib/auth/session';
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const redirectMock = vi.fn();
+const redirectMock = vi.fn<(href: string) => never>();
 const getUserMock = vi.fn();
-const getServerDashboardEnvMock = vi.fn();
+const getDashboardAccessEntryByIdentityMock = vi.fn();
 
 vi.mock('next/navigation', () => ({
   redirect: (href: string) => redirectMock(href),
 }));
 
-vi.mock('@/lib/env', () => ({
-  getServerDashboardEnv: () => getServerDashboardEnvMock(),
+vi.mock('@/lib/account/dashboard-access', () => ({
+  getDashboardAccessEntryByIdentity: (identity: {
+    githubUsername: string;
+    email: string;
+  }) => getDashboardAccessEntryByIdentityMock(identity),
+  normalizeDashboardEmail: (value: string | null | undefined) =>
+    value ? value.trim().toLowerCase() : null,
+  normalizeGithubUsername: (value: string | null | undefined) =>
+    value ? value.trim().toLowerCase() : null,
 }));
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -56,17 +66,14 @@ function createGithubUser(username: string): User {
   };
 }
 
-describe('requireOwnerSession', () => {
+describe('dashboard session helpers', () => {
   beforeEach(() => {
     redirectMock.mockReset();
-    getUserMock.mockReset();
-    getServerDashboardEnvMock.mockReset();
-    getServerDashboardEnvMock.mockReturnValue({
-      NEXT_PUBLIC_APP_URL: 'http://dashboard.mrbubbles.test:3004',
-      NEXT_PUBLIC_SUPABASE_URL: 'https://example.supabase.co',
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: 'anon-key',
-      GITHUB_OWNER_ALLOWLIST: 'mrbubbles',
+    redirectMock.mockImplementation((href) => {
+      throw new Error(`NEXT_REDIRECT:${href}`);
     });
+    getUserMock.mockReset();
+    getDashboardAccessEntryByIdentityMock.mockReset();
   });
 
   it('redirects anonymous visitors to the login page', async () => {
@@ -76,33 +83,84 @@ describe('requireOwnerSession', () => {
       },
     });
 
-    await requireOwnerSession();
-
-    expect(redirectMock).toHaveBeenCalledWith('/login');
+    await expect(requireDashboardSession()).rejects.toThrow(
+      'NEXT_REDIRECT:/login'
+    );
   });
 
-  it('logs out non-allowlisted GitHub users before returning to login', async () => {
+  it('logs out GitHub users that do not have an access row', async () => {
     getUserMock.mockResolvedValue({
       data: {
         user: createGithubUser('stranger'),
       },
     });
+    getDashboardAccessEntryByIdentityMock.mockResolvedValue(null);
 
-    await requireOwnerSession();
-
-    expect(redirectMock).toHaveBeenCalledWith('/auth/logout?next=/login');
+    await expect(requireDashboardSession()).rejects.toThrow(
+      'NEXT_REDIRECT:/auth/logout?next=/login'
+    );
   });
 
-  it('returns the user for an allowlisted GitHub identity', async () => {
-    const user = createGithubUser('mrbubbles');
+  it('logs out GitHub users whose dashboard access is disabled', async () => {
+    getUserMock.mockResolvedValue({
+      data: {
+        user: createGithubUser('editor'),
+      },
+    });
+    getDashboardAccessEntryByIdentityMock.mockResolvedValue({
+      githubUsername: 'editor',
+      email: 'editor@example.test',
+      note: null,
+      userRole: 'editor',
+      dashboardAccess: false,
+      createdAt: '2026-04-18T00:00:00.000Z',
+    });
+
+    await expect(requireDashboardSession()).rejects.toThrow(
+      'NEXT_REDIRECT:/auth/logout?next=/login'
+    );
+  });
+
+  it('returns the full dashboard session for an active access row', async () => {
+    const user = createGithubUser('mrbubbles-src');
+    const accessEntry = {
+      githubUsername: 'mrbubbles-src',
+      email: 'mrbubbles-src@example.test',
+      note: 'owner',
+      userRole: 'owner',
+      dashboardAccess: true,
+      createdAt: '2026-04-18T00:00:00.000Z',
+    };
 
     getUserMock.mockResolvedValue({
       data: {
         user,
       },
     });
+    getDashboardAccessEntryByIdentityMock.mockResolvedValue(accessEntry);
 
-    await expect(requireOwnerSession()).resolves.toEqual(user);
-    expect(redirectMock).not.toHaveBeenCalled();
+    await expect(requireDashboardSession()).resolves.toEqual({
+      user,
+      accessEntry,
+      githubUsername: 'mrbubbles-src',
+    });
+  });
+
+  it('redirects non-owner dashboard users away from owner-only routes', async () => {
+    getUserMock.mockResolvedValue({
+      data: {
+        user: createGithubUser('editor'),
+      },
+    });
+    getDashboardAccessEntryByIdentityMock.mockResolvedValue({
+      githubUsername: 'editor',
+      email: 'editor@example.test',
+      note: null,
+      userRole: 'editor',
+      dashboardAccess: true,
+      createdAt: '2026-04-18T00:00:00.000Z',
+    });
+
+    await expect(requireOwnerSession()).rejects.toThrow('NEXT_REDIRECT:/');
   });
 });

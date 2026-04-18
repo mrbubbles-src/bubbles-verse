@@ -1,15 +1,18 @@
-import { sql } from 'drizzle-orm'
+import type { AnyPgColumn } from 'drizzle-orm/pg-core';
+
+import { sql } from 'drizzle-orm';
 import {
-  type AnyPgColumn,
   boolean,
   integer,
   jsonb,
   pgEnum,
+  pgSchema,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
-} from 'drizzle-orm/pg-core'
+} from 'drizzle-orm/pg-core';
 
 export type JsonValue =
   | string
@@ -17,31 +20,35 @@ export type JsonValue =
   | boolean
   | null
   | JsonObject
-  | JsonValue[]
+  | JsonValue[];
 
 export interface JsonObject {
-  [key: string]: JsonValue
+  [key: string]: JsonValue;
 }
 
-export const contentStatus = pgEnum('content_status', ['draft', 'published'])
+export const contentStatus = pgEnum('content_status', ['draft', 'published']);
 
 export const profileRole = pgEnum('profile_role', [
   'owner',
   'editor',
   'guest_author',
-])
+]);
 
 export const socialPlatform = pgEnum('social_platform', [
   'website',
   'github',
   'linkedin',
   'twitter',
-])
+]);
+
+const privateSchema = pgSchema('private');
 
 export const appModules = pgTable(
   'app_modules',
   {
-    id: text().primaryKey().default(sql`gen_random_uuid()`),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     slug: text().notNull(),
     name: text().notNull(),
     description: text().notNull().default(''),
@@ -55,13 +62,15 @@ export const appModules = pgTable(
   },
   (table) => ({
     slugIdx: uniqueIndex('app_modules_slug_idx').on(table.slug),
-  }),
-)
+  })
+);
 
 export const profiles = pgTable(
   'profiles',
   {
-    id: text().primaryKey().default(sql`gen_random_uuid()`),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     authUserId: text().notNull(),
     displayName: text().notNull(),
     slug: text().notNull(),
@@ -77,15 +86,19 @@ export const profiles = pgTable(
       .notNull(),
   },
   (table) => ({
-    authUserIdIdx: uniqueIndex('profiles_auth_user_id_idx').on(table.authUserId),
+    authUserIdIdx: uniqueIndex('profiles_auth_user_id_idx').on(
+      table.authUserId
+    ),
     slugIdx: uniqueIndex('profiles_slug_idx').on(table.slug),
-  }),
-)
+  })
+);
 
 export const profileSocialLinks = pgTable(
   'profile_social_links',
   {
-    id: text().primaryKey().default(sql`gen_random_uuid()`),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     profileId: text()
       .notNull()
       .references(() => profiles.id, { onDelete: 'cascade' }),
@@ -98,17 +111,18 @@ export const profileSocialLinks = pgTable(
       .notNull(),
   },
   (table) => ({
-    profilePlatformIdx: uniqueIndex('profile_social_links_profile_platform_idx').on(
-      table.profileId,
-      table.platform,
-    ),
-  }),
-)
+    profilePlatformIdx: uniqueIndex(
+      'profile_social_links_profile_platform_idx'
+    ).on(table.profileId, table.platform),
+  })
+);
 
 export const contentItems = pgTable(
   'content_items',
   {
-    id: text().primaryKey().default(sql`gen_random_uuid()`),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     appModuleId: text()
       .notNull()
       .references(() => appModules.id, { onDelete: 'restrict' }),
@@ -140,15 +154,17 @@ export const contentItems = pgTable(
     appTypeSlugIdx: uniqueIndex('content_items_app_type_slug_idx').on(
       table.appModuleId,
       table.contentType,
-      table.slug,
+      table.slug
     ),
-  }),
-)
+  })
+);
 
 export const contentItemTags = pgTable(
   'content_item_tags',
   {
-    id: text().primaryKey().default(sql`gen_random_uuid()`),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     contentItemId: text()
       .notNull()
       .references(() => contentItems.id, { onDelete: 'cascade' }),
@@ -160,15 +176,17 @@ export const contentItemTags = pgTable(
   (table) => ({
     contentItemTagIdx: uniqueIndex('content_item_tags_content_item_tag_idx').on(
       table.contentItemId,
-      table.tag,
+      table.tag
     ),
-  }),
-)
+  })
+);
 
 export const vaultCategories = pgTable(
   'vault_categories',
   {
-    id: text().primaryKey().default(sql`gen_random_uuid()`),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     name: text().notNull(),
     slug: text().notNull(),
     description: text().notNull().default(''),
@@ -185,23 +203,36 @@ export const vaultCategories = pgTable(
   },
   (table) => ({
     slugIdx: uniqueIndex('vault_categories_slug_idx').on(table.slug),
-  }),
-)
+  })
+);
 
-export const vaultEntries = pgTable(
-  'vault_entries',
+export const vaultEntries = pgTable('vault_entries', {
+  contentItemId: text()
+    .primaryKey()
+    .references(() => contentItems.id, { onDelete: 'cascade' }),
+  primaryCategoryId: text()
+    .notNull()
+    .references(() => vaultCategories.id, { onDelete: 'restrict' }),
+  createdAt: timestamp({ mode: 'string', precision: 3 }).defaultNow().notNull(),
+  updatedAt: timestamp({ mode: 'string', precision: 3 }).defaultNow().notNull(),
+});
+
+export const dashboardGithubAllowlist = privateSchema.table(
+  'dashboard_github_allowlist',
   {
-    contentItemId: text()
-      .primaryKey()
-      .references(() => contentItems.id, { onDelete: 'cascade' }),
-    primaryCategoryId: text()
-      .notNull()
-      .references(() => vaultCategories.id, { onDelete: 'restrict' }),
-    createdAt: timestamp({ mode: 'string', precision: 3 })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp({ mode: 'string', precision: 3 })
+    githubUsername: text('github_username').notNull(),
+    email: text().notNull(),
+    note: text(),
+    userRole: text('user_role').notNull().default('owner'),
+    dashboardAccess: boolean('dashboard_access').notNull().default(true),
+    createdAt: timestamp('created_at', { mode: 'string', precision: 3 })
       .defaultNow()
       .notNull(),
   },
-)
+  (table) => ({
+    pk: primaryKey({
+      name: 'dashboard_github_allowlist_pkey',
+      columns: [table.githubUsername, table.email],
+    }),
+  })
+);

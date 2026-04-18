@@ -8,6 +8,13 @@
       "when": 1776472879190,
       "tag": "0000_thankful_black_cat",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776524129231,
+      "tag": "0001_sloppy_rogue",
+      "breakpoints": true
     }
   ]
 }

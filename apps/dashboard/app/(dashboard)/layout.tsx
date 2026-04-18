@@ -1,4 +1,4 @@
-import { requireOwnerSession } from '@/lib/auth/session';
+import { requireDashboardSession } from '@/lib/auth/session';
 
 import AppShell from '@/components/app-shell';
 import { LoginSuccessToast } from '@/components/auth/login-success-toast';
@@ -7,14 +7,14 @@ import { LoginSuccessToast } from '@/components/auth/login-success-toast';
  * Protects dashboard routes behind the owner-only Supabase session gate.
  *
  * Any route placed inside the `(dashboard)` group must have an authenticated
- * allowlisted GitHub identity before its UI is rendered.
+ * GitHub identity with `dashboard_access` enabled before its UI is rendered.
  */
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const user = await requireOwnerSession();
+  const { user } = await requireDashboardSession();
   const metadata = {
     name:
       typeof user.user_metadata?.full_name === 'string'
