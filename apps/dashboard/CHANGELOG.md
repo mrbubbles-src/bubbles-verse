@@ -73,6 +73,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   truth.
 - Updated the local `typecheck` script to run `next typegen` before `tsc`, so
   route-aware Next.js types no longer break standalone type validation.
+- Cached the dashboard Drizzle/Postgres client across local HMR reloads so
+  simple Supabase allowlist queries no longer churn connections and hit
+  statement timeouts during `next dev`.
 - Reworked the dashboard home so quick actions are role-aware and the start
   page surfaces profile completeness plus current Vault activity.
 

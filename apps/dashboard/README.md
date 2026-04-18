@@ -57,6 +57,10 @@ bun run build
 `bun run typecheck` now runs `next typegen` first so Next's generated route
 types stay in sync before plain `tsc` validation runs.
 
+The Drizzle/Postgres client is cached process-wide so local Next.js HMR does
+not open fresh Supabase connections on every reload. That keeps simple
+allowlist checks from timing out during `next dev`.
+
 ## Shared packages
 
 - `@bubbles/ui` - shared globals, fonts, shadcn-style primitives, utilities
