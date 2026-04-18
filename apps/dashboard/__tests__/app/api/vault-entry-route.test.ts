@@ -2,10 +2,11 @@ import { NextRequest } from 'next/server';
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { PATCH } from '@/app/api/vault/entries/[id]/route';
+import { DELETE, PATCH } from '@/app/api/vault/entries/[id]/route';
 
 const getUserMock = vi.fn();
 const getDashboardAccessEntryByIdentityMock = vi.fn();
+const deleteVaultEntryMock = vi.fn();
 const parseUpdateVaultEntryRequestMock = vi.fn();
 const updateVaultEntryMock = vi.fn();
 const revalidatePathMock = vi.fn();
@@ -34,6 +35,7 @@ vi.mock('@/lib/account/dashboard-access', () => ({
 }));
 
 vi.mock('@/lib/vault/entries', () => ({
+  deleteVaultEntry: (id: string) => deleteVaultEntryMock(id),
   parseUpdateVaultEntryRequest: (value: object) =>
     parseUpdateVaultEntryRequestMock(value),
   updateVaultEntry: (input: object) => updateVaultEntryMock(input),
@@ -77,6 +79,7 @@ describe('PATCH /api/vault/entries/[id]', () => {
   beforeEach(() => {
     getUserMock.mockReset();
     getDashboardAccessEntryByIdentityMock.mockReset();
+    deleteVaultEntryMock.mockReset();
     parseUpdateVaultEntryRequestMock.mockReset();
     updateVaultEntryMock.mockReset();
     revalidatePathMock.mockReset();
@@ -135,6 +138,43 @@ describe('PATCH /api/vault/entries/[id]', () => {
 
     expect(response.status).toBe(200);
     expect(updateVaultEntryMock).toHaveBeenCalled();
+    expect(revalidatePathMock).toHaveBeenCalledWith('/vault/entries');
+    expect(revalidatePathMock).toHaveBeenCalledWith('/vault/entries/entry-id');
+  });
+
+  it('deletes a vault entry for an active editor session', async () => {
+    getUserMock.mockResolvedValue({
+      data: {
+        user: createGithubUser('editor'),
+      },
+    });
+    getDashboardAccessEntryByIdentityMock.mockResolvedValue({
+      githubUsername: 'editor',
+      email: 'editor@example.test',
+      note: null,
+      userRole: 'editor',
+      dashboardAccess: true,
+      createdAt: '2026-04-18T00:00:00.000Z',
+    });
+    deleteVaultEntryMock.mockResolvedValue(true);
+
+    const response = await DELETE(
+      new NextRequest(
+        'http://dashboard.mrbubbles.test:3004/api/vault/entries/entry-id',
+        {
+          method: 'DELETE',
+        }
+      ),
+      {
+        params: Promise.resolve({
+          id: 'entry-id',
+        }),
+      }
+    );
+
+    expect(response.status).toBe(204);
+    expect(deleteVaultEntryMock).toHaveBeenCalledWith('entry-id');
+    expect(revalidatePathMock).toHaveBeenCalledWith('/vault');
     expect(revalidatePathMock).toHaveBeenCalledWith('/vault/entries');
     expect(revalidatePathMock).toHaveBeenCalledWith('/vault/entries/entry-id');
   });

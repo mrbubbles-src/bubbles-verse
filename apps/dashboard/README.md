@@ -19,6 +19,7 @@ a clean base.
 - The shared shell already uses `BubblesSidebar`, the shared app header, theme toggle, and footer.
 - Protected routes exist for `/account`, `/vault`, `/vault/categories`, `/vault/entries`, and `/vault/entries/new`.
 - `/account` now lets Owners manage the private dashboard allowlist, including `dashboard_access` and `user_role`.
+- `/vault` now acts as the real landing page for the Coding Vault area with editorial stats, recent activity, and direct shortcuts into authoring.
 - `/vault/categories` now ships the first real editorial CRUD screen for the Coding Vault category tree.
 - `/vault/entries` now shows the first real editorial list, `/vault/entries/new` creates entries through `@bubbles/markdown-editor`, and `/vault/entries/[id]` edits existing entries in the same flow.
 - Shared fonts, globals, theme provider, and toast host are wired in.
@@ -111,9 +112,12 @@ hooks.
 
 ## Vault entries
 
+- `/vault` gives owners and editors one compact overview with entry counts, category counts, recent edits, and direct links into the main Vault workflows.
 - `/vault/entries` is available for `owner` and `editor` roles.
 - `/vault/entries/new` uses `@bubbles/markdown-editor` for shared authoring, metadata, draft handling, preview, and image uploads.
 - `/vault/entries/[id]` reuses the same editor in edit mode, including current category, tags, metadata, and saved editor content.
+- `/vault/entries/[id]` can now also remove an entry directly from the edit view, including the linked Vault row and tags.
 - New entry saves go through `/api/vault/entries`, which bootstraps the shared `vault` app module and the current author's `profiles` row on first save.
 - Entry updates go through `/api/vault/entries/[id]` and keep the original author while updating the latest editor, category, tags, and serialized content.
+- Entry deletes also go through `/api/vault/entries/[id]` and remove the shared `content_items` row, letting the existing schema cascades clean up `vault_entries` and `content_item_tags`.
 - Editor image uploads go through `/api/editor-image-upload` and use the shared Cloudinary helper from `@bubbles/markdown-editor`.

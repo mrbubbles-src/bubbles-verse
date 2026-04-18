@@ -663,3 +663,37 @@ export async function updateVaultEntry(input: {
     return updatedContentItem;
   });
 }
+
+/**
+ * Deletes one Vault entry and its linked category/tag rows.
+ *
+ * The shared schema already cascades from `content_items` into `vault_entries`
+ * and `content_item_tags`, so the helper only needs to remove the content row
+ * after confirming that the requested ID is actually a Vault entry.
+ *
+ * @param id Content item identifier of the Vault entry.
+ * @returns `true` when a Vault entry was removed, otherwise `false`.
+ */
+export async function deleteVaultEntry(id: string) {
+  const [existingEntry] = await db
+    .select({
+      id: contentItems.id,
+    })
+    .from(vaultEntries)
+    .innerJoin(contentItems, eq(vaultEntries.contentItemId, contentItems.id))
+    .where(eq(contentItems.id, id))
+    .limit(1);
+
+  if (!existingEntry) {
+    return false;
+  }
+
+  const deletedRows = await db
+    .delete(contentItems)
+    .where(eq(contentItems.id, id))
+    .returning({
+      id: contentItems.id,
+    });
+
+  return deletedRows.length > 0;
+}

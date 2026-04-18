@@ -6,6 +6,7 @@ import {
 import { getGithubIdentityUsername } from '@/lib/auth/allowed-identities';
 import { createDashboardServerSupabaseClient } from '@/lib/supabase/server';
 import {
+  deleteVaultEntry,
   parseUpdateVaultEntryRequest,
   updateVaultEntry,
 } from '@/lib/vault/entries';
@@ -133,4 +134,77 @@ export async function PATCH(
 
     return NextResponse.json({ message }, { status: 500 });
   }
+}
+
+/**
+ * Deletes an existing Vault entry for the current authenticated dashboard user.
+ *
+ * @param _request Request object for the delete call.
+ * @param context Dynamic route params containing the content item ID.
+ * @returns Empty success response or a JSON error payload.
+ */
+export async function DELETE(
+  _request: Request,
+  context: UpdateVaultEntryRouteProps
+) {
+  const supabase = await createDashboardServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json(
+      { message: 'Bitte melde dich zuerst im Dashboard an.' },
+      { status: 401 }
+    );
+  }
+
+  const githubUsername = normalizeGithubUsername(
+    getGithubIdentityUsername({
+      identities: user.identities,
+      userMetadata:
+        user.user_metadata && typeof user.user_metadata === 'object'
+          ? user.user_metadata
+          : null,
+    })
+  );
+  const email = normalizeDashboardEmail(user.email);
+
+  if (!githubUsername || !email) {
+    return NextResponse.json(
+      { message: 'Die GitHub-Identität ist unvollständig.' },
+      { status: 403 }
+    );
+  }
+
+  const accessEntry = await getDashboardAccessEntryByIdentity({
+    githubUsername,
+    email,
+  });
+
+  if (
+    !accessEntry?.dashboardAccess ||
+    (accessEntry.userRole !== 'owner' && accessEntry.userRole !== 'editor')
+  ) {
+    return NextResponse.json(
+      { message: 'Dieser User darf keine Vault-Einträge löschen.' },
+      { status: 403 }
+    );
+  }
+
+  const { id } = await context.params;
+  const deleted = await deleteVaultEntry(id);
+
+  if (!deleted) {
+    return NextResponse.json(
+      { message: 'Dieser Vault-Eintrag wurde nicht gefunden.' },
+      { status: 404 }
+    );
+  }
+
+  revalidatePath('/vault');
+  revalidatePath('/vault/entries');
+  revalidatePath(`/vault/entries/${id}`);
+
+  return new NextResponse(null, { status: 204 });
 }

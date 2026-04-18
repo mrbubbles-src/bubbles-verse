@@ -32,6 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   routes.
 - Added the first `/vault/entries/[id]` edit flow so existing Vault content can
   be reopened and updated in the same shared markdown-editor surface.
+- Added the first real `/vault` overview with quick authoring actions,
+  editorial counts, category context, and the latest touched Vault entries.
+- Added direct Vault-entry deletion from the edit flow, including API cleanup
+  and redirect feedback back to the entry list.
 
 ### Changed
 

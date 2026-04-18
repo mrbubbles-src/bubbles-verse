@@ -57,6 +57,7 @@ export function VaultEntryEditor({
   mode = 'create',
 }: VaultEntryEditorProps) {
   const router = useRouter();
+  const [isDeleting, setIsDeleting] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState(
     initialData?.primaryCategoryId ?? categories[0]?.id ?? ''
   );
@@ -112,6 +113,51 @@ export function VaultEntryEditor({
       getVaultEntryFeedbackHref(mode === 'edit' ? 'updated' : 'created')
     );
     router.refresh();
+  }
+
+  /**
+   * Deletes the current Vault entry after one explicit browser confirmation.
+   *
+   * The destructive action stays local to edit mode so the regular list page
+   * can remain focused on browsing instead of inline danger actions.
+   */
+  async function handleDelete() {
+    if (mode !== 'edit' || !initialData || isDeleting) {
+      return;
+    }
+
+    const shouldDelete = window.confirm(
+      'Willst du diesen Vault-Eintrag wirklich löschen? Dieser Schritt lässt sich nicht rückgängig machen.'
+    );
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      const response = await fetch(`/api/vault/entries/${initialData.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const responseBody = (await response.json().catch(() => null)) as {
+          message?: string;
+        } | null;
+        const message =
+          responseBody?.message ??
+          'Der Vault-Eintrag konnte gerade nicht gelöscht werden.';
+
+        toast.error(message);
+        return;
+      }
+
+      router.push(getVaultEntryFeedbackHref('deleted'));
+      router.refresh();
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   if (categories.length === 0) {
@@ -181,6 +227,27 @@ export function VaultEntryEditor({
             </FieldDescription>
           </FieldContent>
         </Field>
+
+        {mode === 'edit' && initialData ? (
+          <div className="flex flex-col gap-2 rounded-[1.5rem] border border-dashed border-destructive/35 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold tracking-tight text-foreground">
+                Eintrag endgültig entfernen
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Löscht Inhalt, Kategorie-Verknüpfung und Tags dauerhaft aus dem
+                Vault.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => void handleDelete()}
+              disabled={isDeleting}>
+              {isDeleting ? 'Lösche...' : 'Eintrag löschen'}
+            </Button>
+          </div>
+        ) : null}
       </section>
 
       <MarkdownEditor
