@@ -14,6 +14,9 @@ import {
   User02Icon,
 } from '@bubbles/ui/lib/hugeicons';
 
+import Icon from '@/public/images/icon/bubbles-verse-dashboard-icon.webp';
+import Logo from '@/public/images/logo/bubbles-verse-dashboard-logo-full.webp';
+
 /**
  * Shared navigation data for the dashboard shell.
  *
@@ -24,12 +27,12 @@ export const dashboardSidebarData: BubblesSidebarData = {
   brand: {
     href: '/',
     compactLogo: {
-      src: '/images/dashboard-icon.svg',
-      alt: 'Bubbles Dashboard icon',
+      src: Icon.src,
+      alt: 'BubblesVerse Dashboard icon',
     },
     fullLogo: {
-      src: '/images/dashboard-logo.svg',
-      alt: 'Bubbles Dashboard logo',
+      src: Logo.src,
+      alt: 'BubblesVerse Dashboard logo',
     },
   },
   sections: [
