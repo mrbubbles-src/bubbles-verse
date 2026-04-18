@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added shared dashboard auth cookie configuration so Supabase sessions can be
   scoped to a parent domain like `.mrbubbles.test` or `.mrbubbles-src.dev`.
+- Added the first protected dashboard shell with shared sidebar, header, footer,
+  and placeholder account/Vault routes.
+- Added the first dashboard home view with quick actions, recent content
+  sections, and app summaries.
 
 ### Changed
 
@@ -20,6 +24,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dashboard-specific scaffold content.
 - Documented the dashboard environment variables needed for Supabase auth and
   database access.
+- Replaced the temporary root placeholder route with the authenticated
+  dashboard home route inside the `(dashboard)` route group.
+- Fixed the login bootstrap so client-side `NEXT_PUBLIC_*` variables are read
+  from explicit public env keys instead of the full `process.env` object.
+- Reset the login pending state when GitHub OAuth cannot be started, so the
+  button no longer gets stuck on `Weiterleitung...`.
+- Non-allowlisted GitHub sessions are now redirected through server logout so
+  rejected users do not keep a live dashboard session cookie after OAuth.
 
 ### Documentation
 

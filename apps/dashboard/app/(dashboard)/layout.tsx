@@ -1,4 +1,6 @@
-import { requireOwnerSession } from '@/lib/auth/session'
+import { requireOwnerSession } from '@/lib/auth/session';
+
+import AppShell from '@/components/app-shell';
 
 /**
  * Protects dashboard routes behind the owner-only Supabase session gate.
@@ -9,9 +11,25 @@ import { requireOwnerSession } from '@/lib/auth/session'
 export default async function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  await requireOwnerSession()
+  const user = await requireOwnerSession();
+  const metadata = {
+    name:
+      typeof user.user_metadata?.full_name === 'string'
+        ? user.user_metadata.full_name
+        : typeof user.user_metadata?.name === 'string'
+          ? user.user_metadata.name
+          : (user.email?.split('@')[0] ?? 'Owner'),
+    email: user.email ?? 'dashboard-owner@mrbubbles.test',
+    avatarSrc:
+      typeof user.user_metadata?.avatar_url === 'string'
+        ? user.user_metadata.avatar_url
+        : undefined,
+    dashboardHref: '/',
+    settingsHref: '/account',
+    logoutHref: '/auth/logout',
+  };
 
-  return children
+  return <AppShell user={metadata}>{children}</AppShell>;
 }

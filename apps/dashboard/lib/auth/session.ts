@@ -1,12 +1,12 @@
-import { redirect } from 'next/navigation'
-
 import {
   getGithubIdentityUsername,
   isAllowedGithubIdentity,
   parseGithubOwnerAllowlist,
-} from '@/lib/auth/allowed-identities'
-import { getServerDashboardEnv } from '@/lib/env'
-import { createDashboardServerSupabaseClient } from '@/lib/supabase/server'
+} from '@/lib/auth/allowed-identities';
+import { getServerDashboardEnv } from '@/lib/env';
+import { createDashboardServerSupabaseClient } from '@/lib/supabase/server';
+
+import { redirect } from 'next/navigation';
 
 /**
  * Loads the current owner session and redirects to login when access is denied.
@@ -16,18 +16,22 @@ import { createDashboardServerSupabaseClient } from '@/lib/supabase/server'
  * only when the identity is allowed.
  */
 export async function requireOwnerSession() {
-  const env = getServerDashboardEnv()
-  const supabase = await createDashboardServerSupabaseClient()
+  const env = getServerDashboardEnv();
+  const supabase = await createDashboardServerSupabaseClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
-  const githubUsername = getGithubIdentityUsername(user?.identities)
-  const allowlist = parseGithubOwnerAllowlist(env.GITHUB_OWNER_ALLOWLIST)
+  const githubUsername = getGithubIdentityUsername(user?.identities);
+  const allowlist = parseGithubOwnerAllowlist(env.GITHUB_OWNER_ALLOWLIST);
 
-  if (!user || !isAllowedGithubIdentity(githubUsername, allowlist)) {
-    redirect('/login')
+  if (!user) {
+    redirect('/login');
   }
 
-  return user
+  if (!isAllowedGithubIdentity(githubUsername, allowlist)) {
+    redirect('/auth/logout?next=/login');
+  }
+
+  return user;
 }

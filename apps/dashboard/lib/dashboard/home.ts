@@ -1,34 +1,34 @@
-type DashboardHomeRecentItem = {
-  id: string
-  title: string
-  appSlug: string
-  status: 'draft' | 'published'
-  updatedAt: string
-}
+export type DashboardHomeRecentItem = {
+  id: string;
+  title: string;
+  appSlug: string;
+  status: 'draft' | 'published';
+  updatedAt: string;
+};
 
-type DashboardHomeSummary = {
-  appSlug: string
-  appName: string
-  draftCount: number
-  publishedCount: number
-}
+export type DashboardHomeSummary = {
+  appSlug: string;
+  appName: string;
+  draftCount: number;
+  publishedCount: number;
+};
 
 type DashboardHomeInput = {
-  recentItems: DashboardHomeRecentItem[]
-  appSummaries: DashboardHomeSummary[]
-}
+  recentItems: DashboardHomeRecentItem[];
+  appSummaries: DashboardHomeSummary[];
+};
 
-type DashboardHomeQuickAction = {
-  label: string
-  href: string
-}
+export type DashboardHomeQuickAction = {
+  label: string;
+  href: string;
+};
 
-type DashboardHomeModel = {
-  quickActions: DashboardHomeQuickAction[]
-  recentDrafts: DashboardHomeRecentItem[]
-  recentUpdates: DashboardHomeRecentItem[]
-  appSummaries: DashboardHomeSummary[]
-}
+export type DashboardHomeModel = {
+  quickActions: DashboardHomeQuickAction[];
+  recentDrafts: DashboardHomeRecentItem[];
+  recentUpdates: DashboardHomeRecentItem[];
+  appSummaries: DashboardHomeSummary[];
+};
 
 /**
  * Builds the dashboard home model from recent items and app summaries.
@@ -37,7 +37,7 @@ type DashboardHomeModel = {
  * It expects dashboard query results and returns a UI-ready view model.
  */
 export function buildDashboardHomeModel(
-  input: DashboardHomeInput,
+  input: DashboardHomeInput
 ): DashboardHomeModel {
   return {
     quickActions: [
@@ -47,5 +47,5 @@ export function buildDashboardHomeModel(
     recentDrafts: input.recentItems.filter((item) => item.status === 'draft'),
     recentUpdates: input.recentItems,
     appSummaries: input.appSummaries,
-  }
+  };
 }

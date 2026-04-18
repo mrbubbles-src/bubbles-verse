@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 
 const dashboardPublicEnvSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().url(),
@@ -11,6 +11,15 @@ const dashboardServerEnvSchema = dashboardPublicEnvSchema.extend({
   GITHUB_OWNER_ALLOWLIST: z.string().min(1),
 });
 
+function getDashboardPublicEnvSource() {
+  return {
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    NEXT_PUBLIC_AUTH_COOKIE_DOMAIN: process.env.NEXT_PUBLIC_AUTH_COOKIE_DOMAIN,
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  };
+}
+
 /**
  * Returns the public dashboard environment needed in browser and server code.
  *
@@ -19,7 +28,7 @@ const dashboardServerEnvSchema = dashboardPublicEnvSchema.extend({
  * and Supabase public credentials.
  */
 export function getPublicDashboardEnv() {
-  return dashboardPublicEnvSchema.parse(process.env);
+  return dashboardPublicEnvSchema.parse(getDashboardPublicEnvSource());
 }
 
 /**
@@ -29,5 +38,8 @@ export function getPublicDashboardEnv() {
  * public Supabase connection values.
  */
 export function getServerDashboardEnv() {
-  return dashboardServerEnvSchema.parse(process.env);
+  return dashboardServerEnvSchema.parse({
+    ...getDashboardPublicEnvSource(),
+    GITHUB_OWNER_ALLOWLIST: process.env.GITHUB_OWNER_ALLOWLIST,
+  });
 }

@@ -14,8 +14,11 @@ a clean base.
 
 ## Current scope
 
-- `/` currently renders a placeholder page that confirms the app shell is mounted.
-- Shared fonts, globals, theme provider, and toast host are already wired in.
+- `/login` starts the owner-only GitHub OAuth flow through Supabase.
+- `/` now renders the first protected dashboard home inside the shared sidebar shell.
+- The shared shell already uses `BubblesSidebar`, the shared app header, theme toggle, and footer.
+- Placeholder protected routes exist for `/account`, `/vault`, `/vault/categories`, `/vault/entries`, and `/vault/entries/new`.
+- Shared fonts, globals, theme provider, and toast host are wired in.
 - The app is configured to consume shared source packages from the monorepo.
 
 ## Run locally
@@ -40,6 +43,7 @@ The checked-in `dev` script binds to `http://dashboard.mrbubbles.test:3004`.
 
 ```bash
 cd apps/dashboard
+bun run test:run
 bun run lint
 bun run typecheck
 bun run build
@@ -68,3 +72,11 @@ GITHUB_OWNER_ALLOWLIST=mrbubbles
 `NEXT_PUBLIC_AUTH_COOKIE_DOMAIN` is optional. When it is omitted, the dashboard
 derives a shared parent domain from `NEXT_PUBLIC_APP_URL`, which works for
 hosts like `dashboard.mrbubbles.test` and `dashboard.mrbubbles-src.dev`.
+
+If you change `NEXT_PUBLIC_*` values while `next dev` is already running,
+restart the dashboard dev server so the browser bundle picks up the new values.
+
+Important: the dashboard allowlist currently protects app access, but Supabase
+can still create an Auth user row after a successful GitHub OAuth signup. To
+block non-allowlisted users before they are created at all, add a Supabase
+`before-user-created` Auth Hook.
