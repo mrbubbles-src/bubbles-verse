@@ -5,6 +5,7 @@ import { Button } from '@bubbles/ui/shadcn/button';
 type QuickAction = {
   label: string;
   href: string;
+  description: string;
 };
 
 type QuickActionsProps = {
@@ -28,15 +29,25 @@ export function QuickActions({ actions }: QuickActionsProps) {
           Heute weiterschreiben
         </h2>
       </div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+      <div className="grid gap-3 lg:grid-cols-2">
         {actions.map((action, index) => (
           <Button
             key={action.href}
             render={<Link href={action.href} />}
             nativeButton={false}
             variant={index === 0 ? 'default' : 'outline'}
-            className="h-11 justify-start rounded-full px-5">
-            {action.label}
+            className="h-auto min-h-24 justify-start rounded-[1.75rem] px-5 py-4 text-left whitespace-normal">
+            <span className="flex flex-col items-start gap-1">
+              <span className="font-semibold">{action.label}</span>
+              <span
+                className={
+                  index === 0
+                    ? 'text-sm text-primary-foreground/80'
+                    : 'text-sm text-muted-foreground'
+                }>
+                {action.description}
+              </span>
+            </span>
           </Button>
         ))}
       </div>

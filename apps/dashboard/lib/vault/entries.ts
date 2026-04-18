@@ -6,7 +6,7 @@ import type {
 } from '@bubbles/markdown-editor';
 import type { User } from '@supabase/supabase-js';
 
-import { getGithubIdentityUsername } from '@/lib/auth/allowed-identities';
+import { ensureDashboardProfile } from '@/lib/profile/profile';
 import { listVaultCategories } from '@/lib/vault/categories';
 import { buildVaultCategoryTree } from '@/lib/vault/category-tree';
 
@@ -18,7 +18,6 @@ import {
   appModules,
   contentItems,
   contentItemTags,
-  profiles,
   vaultCategories,
   vaultEntries,
 } from '@/drizzle/db/schema';
@@ -62,6 +61,7 @@ export type VaultEntryListItem = {
   status: 'draft' | 'published';
   categoryId: string;
   categoryLabel: string;
+  updatedAt: string;
   updatedAtLabel: string;
 };
 
@@ -87,20 +87,6 @@ export type VaultEntryInitialData = {
 export type CreateVaultEntryInput = z.infer<
   typeof createVaultEntryRequestSchema
 >;
-
-/**
- * Narrows dashboard access roles to the shared `profiles` enum.
- *
- * @param role Role string from the dashboard allowlist.
- * @returns A profile-role-compatible value.
- */
-function toProfileRole(role: string): 'owner' | 'editor' | 'guest_author' {
-  if (role === 'owner' || role === 'editor' || role === 'guest_author') {
-    return role;
-  }
-
-  return 'guest_author';
-}
 
 /**
  * Bridges validated editor output into the shared JSON column type.
@@ -273,15 +259,11 @@ export async function getVaultEntries(
   }
 ): Promise<VaultEntryListItem[]> {
   const whereClauses = [
-    filters.status === 'all'
-      ? null
-      : eq(contentItems.status, filters.status),
+    filters.status === 'all' ? null : eq(contentItems.status, filters.status),
     filters.categoryId === null
       ? null
       : eq(vaultEntries.primaryCategoryId, filters.categoryId),
-    filters.query
-      ? ilike(contentItems.title, `%${filters.query}%`)
-      : null,
+    filters.query ? ilike(contentItems.title, `%${filters.query}%`) : null,
   ].filter((clause) => clause !== null);
   const baseQuery = db
     .select({
@@ -299,9 +281,8 @@ export async function getVaultEntries(
       vaultCategories,
       eq(vaultEntries.primaryCategoryId, vaultCategories.id)
     );
-  const rows = await (whereClauses.length > 0
-    ? baseQuery.where(and(...whereClauses))
-    : baseQuery
+  const rows = await (
+    whereClauses.length > 0 ? baseQuery.where(and(...whereClauses)) : baseQuery
   ).orderBy(desc(contentItems.updatedAt));
 
   return rows.map((row) => ({
@@ -311,6 +292,7 @@ export async function getVaultEntries(
     status: row.status,
     categoryId: row.categoryId,
     categoryLabel: row.categoryName,
+    updatedAt: row.updatedAt,
     updatedAtLabel: new Intl.DateTimeFormat('de-DE', {
       dateStyle: 'medium',
       timeStyle: 'short',
@@ -324,7 +306,9 @@ export async function getVaultEntries(
  * @param filters Normalized list filters from the current request.
  * @returns Entries plus available category options for the filter UI.
  */
-export async function getVaultEntryListPageModel(filters: VaultEntryListFilters) {
+export async function getVaultEntryListPageModel(
+  filters: VaultEntryListFilters
+) {
   const [entries, categories] = await Promise.all([
     getVaultEntries(filters),
     listVaultEntryCategoryOptions(),
@@ -438,55 +422,6 @@ export async function getVaultEntryEditModel(id: string) {
 }
 
 /**
- * Creates a readable profile display name from the current dashboard user.
- *
- * @param user Current Supabase user.
- * @param githubUsername Normalized GitHub username for the same user.
- * @returns Human-facing profile name for the shared content model.
- */
-function resolveDashboardProfileDisplayName(
-  user: User,
-  githubUsername: string
-) {
-  const userMetadata =
-    user.user_metadata && typeof user.user_metadata === 'object'
-      ? user.user_metadata
-      : null;
-  const fullName = userMetadata?.full_name;
-  const name = userMetadata?.name;
-
-  if (typeof fullName === 'string' && fullName.trim()) {
-    return fullName.trim();
-  }
-
-  if (typeof name === 'string' && name.trim()) {
-    return name.trim();
-  }
-
-  return githubUsername;
-}
-
-/**
- * Creates a stable profile slug from the current GitHub identity.
- *
- * @param githubUsername Normalized GitHub username.
- * @param user Authenticated Supabase user.
- * @returns Slug-safe profile identifier.
- */
-function resolveDashboardProfileSlug(githubUsername: string, user: User) {
-  const fallbackValue = user.email?.split('@')[0] ?? user.id;
-
-  return (githubUsername || fallbackValue)
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 120);
-}
-
-/**
  * Finds or creates the shared `vault` app module row.
  *
  * @returns Shared app module used by Vault entries.
@@ -519,56 +454,6 @@ async function ensureVaultAppModule() {
 }
 
 /**
- * Finds or creates the shared profile row for the authenticated dashboard user.
- *
- * @param user Current Supabase user.
- * @param accessEntry Dashboard access row for the same user.
- * @returns Shared profile row referenced by new content items.
- */
-async function ensureDashboardProfile(input: {
-  user: User;
-  accessEntry: DashboardAccessEntry;
-}) {
-  const [existingProfile] = await db
-    .select()
-    .from(profiles)
-    .where(eq(profiles.authUserId, input.user.id))
-    .limit(1);
-
-  if (existingProfile) {
-    return existingProfile;
-  }
-
-  const githubUsername =
-    getGithubIdentityUsername({
-      identities: input.user.identities,
-      userMetadata:
-        input.user.user_metadata && typeof input.user.user_metadata === 'object'
-          ? input.user.user_metadata
-          : null,
-    }) ?? input.accessEntry.githubUsername;
-  const [createdProfile] = await db
-    .insert(profiles)
-    .values({
-      authUserId: input.user.id,
-      displayName: resolveDashboardProfileDisplayName(
-        input.user,
-        githubUsername
-      ),
-      slug: resolveDashboardProfileSlug(githubUsername, input.user),
-      email: input.user.email ?? input.accessEntry.email,
-      role: toProfileRole(input.accessEntry.userRole),
-    })
-    .returning();
-
-  if (!createdProfile) {
-    throw new Error('Das Autorenprofil konnte nicht angelegt werden.');
-  }
-
-  return createdProfile;
-}
-
-/**
  * Persists a brand-new Vault entry and its shared content rows.
  *
  * Missing bootstrap data such as the shared `vault` app module or the current
@@ -598,6 +483,7 @@ export async function createVaultEntry(input: {
   const profile = await ensureDashboardProfile({
     user: input.user,
     accessEntry: input.accessEntry,
+    githubUsername: input.accessEntry.githubUsername,
   });
   const normalizedTags = normalizeVaultEntryTags(input.payload.tags);
 
@@ -694,6 +580,7 @@ export async function updateVaultEntry(input: {
   const profile = await ensureDashboardProfile({
     user: input.user,
     accessEntry: input.accessEntry,
+    githubUsername: input.accessEntry.githubUsername,
   });
   const normalizedTags = normalizeVaultEntryTags(input.payload.tags);
 
@@ -788,7 +675,9 @@ async function resolveDuplicateVaultEntrySlug(sourceSlug: string) {
     }
   }
 
-  throw new Error('Für diese Kopie konnte gerade kein freier Slug erzeugt werden.');
+  throw new Error(
+    'Für diese Kopie konnte gerade kein freier Slug erzeugt werden.'
+  );
 }
 
 /**

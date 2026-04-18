@@ -15,6 +15,7 @@ describe('VaultEntryList', () => {
             status: 'published',
             categoryId: 'react-rendering',
             categoryLabel: 'React / Rendering',
+            updatedAt: '2026-04-18T18:00:00.000Z',
             updatedAtLabel: '18.04.2026, 18:00',
           },
         ]}

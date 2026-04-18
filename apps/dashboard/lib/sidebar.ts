@@ -11,6 +11,7 @@ import {
   DashboardSquare01Icon,
   Folder01Icon,
   Home01Icon,
+  User02Icon,
 } from '@bubbles/ui/lib/hugeicons';
 
 /**
@@ -41,6 +42,12 @@ export const dashboardSidebarData: BubblesSidebarData = {
           title: 'Dashboard',
           href: '/',
           icon: DashboardSquare01Icon,
+        },
+        {
+          id: 'profile',
+          title: 'Profil',
+          href: '/profile',
+          icon: User02Icon,
         },
         {
           id: 'account',

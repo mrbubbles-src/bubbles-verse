@@ -1,8 +1,9 @@
+import { buildVaultOverviewModel } from '@/lib/vault/overview';
+
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { VaultOverview } from '@/components/vault/vault-overview';
-import { buildVaultOverviewModel } from '@/lib/vault/overview';
 
 describe('VaultOverview', () => {
   it('renders stats, quick links, and recent entry content', () => {
@@ -21,6 +22,7 @@ describe('VaultOverview', () => {
           status: 'draft',
           categoryId: 'guides',
           categoryLabel: 'Guides',
+          updatedAt: '2026-04-18T09:40:00.000Z',
           updatedAtLabel: '18. Apr. 2026, 09:40',
         },
       ],

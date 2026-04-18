@@ -15,9 +15,10 @@ a clean base.
 ## Current scope
 
 - `/login` starts the owner-only GitHub OAuth flow through Supabase.
-- `/` now renders the first protected dashboard home inside the shared sidebar shell.
+- `/` now renders a live protected dashboard home with current identity context, Vault stats, profile readiness, and recent editorial activity.
 - The shared shell already uses `BubblesSidebar`, the shared app header, theme toggle, and footer.
-- Protected routes exist for `/account`, `/vault`, `/vault/categories`, `/vault/entries`, and `/vault/entries/new`.
+- Protected routes exist for `/profile`, `/account`, `/vault`, `/vault/categories`, `/vault/entries`, and `/vault/entries/new`.
+- `/profile` now gives every legit dashboard user a dedicated author-profile screen for display data, slug, avatar, bio, and the first fixed social links.
 - `/account` now lets Owners manage the private dashboard allowlist, including `dashboard_access` and `user_role`.
 - `/vault` now acts as the real landing page for the Coding Vault area with editorial stats, recent activity, and direct shortcuts into authoring.
 - `/vault/categories` now ships the first real editorial CRUD screen for the Coding Vault category tree.
@@ -52,6 +53,9 @@ bun run lint
 bun run typecheck
 bun run build
 ```
+
+`bun run typecheck` now runs `next typegen` first so Next's generated route
+types stay in sync before plain `tsc` validation runs.
 
 ## Shared packages
 
@@ -101,6 +105,20 @@ hooks.
 - The same row also feeds the custom JWT claims hook for `dashboard_access` and `user_role`.
 - Identity fields are immutable in the first UI slice. If a GitHub username or email changes, remove the row and create a new one.
 - The dashboard protects the final active Owner row from being disabled or deleted in the UI.
+
+## Profile
+
+- `/profile` is available to every dashboard user with `dashboard_access = true`.
+- The page manages the shared `profiles` row tied to the current Supabase auth user.
+- First save also bootstraps a missing profile row, so older accounts do not need manual prep before using the editor.
+- Social links currently stay intentionally fixed to `website`, `github`, `linkedin`, and `twitter` so the first public profile use cases remain simple.
+- Access role and GitHub identity still come from Auth plus the private allowlist, not from editable profile form fields.
+
+## Dashboard home
+
+- `/` reads live server data instead of hardcoded mock content.
+- The home combines current identity info, role-aware quick actions, compact Vault stats, profile completeness, and recent editorial work.
+- Quick actions adapt to the current role, so Owners also get direct access to `/account`, while editorial roles stay focused on content work.
 
 ## Vault categories
 

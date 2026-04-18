@@ -1,5 +1,6 @@
 export type RoutePath =
   | '/'
+  | '/profile'
   | '/account'
   | '/vault'
   | '/vault/categories'
@@ -28,6 +29,11 @@ export const ROUTE_PAGE_META_BY_PATH: Record<RoutePath, DashboardPageInfo> = {
     title: 'Account',
     description:
       'Dein Login, deine erlaubte Identität und dein Zugang zum Dashboard.',
+  },
+  '/profile': {
+    title: 'Profil',
+    description:
+      'Pflege dein Autorenprofil für wiederverwendbare Inhalte und Profilblöcke.',
   },
   '/vault': {
     title: 'Coding Vault',

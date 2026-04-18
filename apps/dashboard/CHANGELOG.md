@@ -40,6 +40,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   status filtering, and category filtering via query params.
 - Added draft duplication for existing Vault entries, including a dedicated
   duplicate route and a direct jump into the copied edit screen.
+- Added a dedicated `/profile` screen so every allowed dashboard user can edit
+  the shared author profile row, including slug, avatar, bio, and fixed social
+  links.
+- Added a live dashboard landing page that now reads real identity, profile,
+  and Vault data instead of static mock content.
 
 ### Changed
 
@@ -63,6 +68,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   check, keeping `proxy.ts` as an optimistic session check only.
 - Opened Vault category management to `owner` and `editor` roles, while keeping
   `/account` owner-only.
+- Moved the shared profile bootstrap logic out of the Vault entry flow so
+  `/profile` and future author surfaces can reuse the same profile source of
+  truth.
+- Updated the local `typecheck` script to run `next typegen` before `tsc`, so
+  route-aware Next.js types no longer break standalone type validation.
+- Reworked the dashboard home so quick actions are role-aware and the start
+  page surfaces profile completeness plus current Vault activity.
 
 ### Documentation
 

@@ -1,5 +1,5 @@
-import { getVaultEntries } from '@/lib/vault/entries';
 import { listVaultCategories } from '@/lib/vault/categories';
+import { getVaultEntries } from '@/lib/vault/entries';
 
 import { count, eq } from 'drizzle-orm';
 
@@ -25,6 +25,7 @@ export type VaultOverviewRecentEntry = {
   status: 'draft' | 'published';
   categoryId: string;
   categoryLabel: string;
+  updatedAt: string;
   updatedAtLabel: string;
 };
 
@@ -137,14 +138,19 @@ async function countVaultEntries(status?: 'draft' | 'published') {
  * @returns Quick actions, editorial stats, and the latest Vault activity.
  */
 export async function getVaultOverviewModel(): Promise<VaultOverviewModel> {
-  const [categories, recentEntries, totalEntries, draftEntries, publishedEntries] =
-    await Promise.all([
-      listVaultCategories(),
-      getVaultEntries(),
-      countVaultEntries(),
-      countVaultEntries('draft'),
-      countVaultEntries('published'),
-    ]);
+  const [
+    categories,
+    recentEntries,
+    totalEntries,
+    draftEntries,
+    publishedEntries,
+  ] = await Promise.all([
+    listVaultCategories(),
+    getVaultEntries(),
+    countVaultEntries(),
+    countVaultEntries('draft'),
+    countVaultEntries('published'),
+  ]);
   const topLevelCategories = categories.filter(
     (category) => category.parentId === null
   ).length;

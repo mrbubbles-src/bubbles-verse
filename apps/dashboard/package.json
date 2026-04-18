@@ -8,7 +8,7 @@
     "build": "bun --bun next build",
     "start": "bun --bun next start",
     "lint": "bun --bun eslint",
-    "typecheck": "bun --bun tsc",
+    "typecheck": "bun --bun next typegen && bun --bun tsc",
     "test": "bun --bun vitest",
     "test:run": "bun --bun vitest run"
   },

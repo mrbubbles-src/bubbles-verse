@@ -19,6 +19,7 @@ describe('buildVaultOverviewModel', () => {
           status: 'draft',
           categoryId: 'guides',
           categoryLabel: 'Guides',
+          updatedAt: '2026-04-18T10:00:00.000Z',
           updatedAtLabel: '18. Apr. 2026, 10:00',
         },
         {
@@ -28,6 +29,7 @@ describe('buildVaultOverviewModel', () => {
           status: 'published',
           categoryId: 'guides',
           categoryLabel: 'Guides',
+          updatedAt: '2026-04-18T10:05:00.000Z',
           updatedAtLabel: '18. Apr. 2026, 10:05',
         },
         {
@@ -37,6 +39,7 @@ describe('buildVaultOverviewModel', () => {
           status: 'published',
           categoryId: 'guides',
           categoryLabel: 'Guides',
+          updatedAt: '2026-04-18T10:10:00.000Z',
           updatedAtLabel: '18. Apr. 2026, 10:10',
         },
         {
@@ -46,6 +49,7 @@ describe('buildVaultOverviewModel', () => {
           status: 'published',
           categoryId: 'guides',
           categoryLabel: 'Guides',
+          updatedAt: '2026-04-18T10:15:00.000Z',
           updatedAtLabel: '18. Apr. 2026, 10:15',
         },
         {
@@ -55,6 +59,7 @@ describe('buildVaultOverviewModel', () => {
           status: 'published',
           categoryId: 'guides',
           categoryLabel: 'Guides',
+          updatedAt: '2026-04-18T10:20:00.000Z',
           updatedAtLabel: '18. Apr. 2026, 10:20',
         },
         {
@@ -64,6 +69,7 @@ describe('buildVaultOverviewModel', () => {
           status: 'published',
           categoryId: 'guides',
           categoryLabel: 'Guides',
+          updatedAt: '2026-04-18T10:25:00.000Z',
           updatedAtLabel: '18. Apr. 2026, 10:25',
         },
       ],

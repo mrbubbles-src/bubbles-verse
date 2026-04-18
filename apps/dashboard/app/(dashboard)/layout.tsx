@@ -28,7 +28,7 @@ export default async function DashboardLayout({
         ? user.user_metadata.avatar_url
         : undefined,
     dashboardHref: '/',
-    settingsHref: '/account',
+    settingsHref: '/profile',
     logoutHref: '/auth/logout',
   };
 

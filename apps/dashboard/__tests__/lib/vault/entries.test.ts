@@ -3,8 +3,8 @@ import {
   getVaultEntryInitialData,
   listVaultEntryCategoryOptions,
   parseCreateVaultEntryRequest,
-  parseVaultEntryListFilters,
   parseUpdateVaultEntryRequest,
+  parseVaultEntryListFilters,
 } from '@/lib/vault/entries';
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -200,6 +200,7 @@ describe('vault entry helpers', () => {
         status: 'published',
         categoryId: 'category-id',
         categoryLabel: 'React / Rendering',
+        updatedAt: '2026-04-18T18:00:00.000Z',
         updatedAtLabel: expectedUpdatedAtLabel,
       },
     ]);
