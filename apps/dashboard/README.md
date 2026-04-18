@@ -80,3 +80,12 @@ Important: the dashboard allowlist currently protects app access, but Supabase
 can still create an Auth user row after a successful GitHub OAuth signup. To
 block non-allowlisted users before they are created at all, add a Supabase
 `before-user-created` Auth Hook.
+
+## Auth flow
+
+- `proxy.ts` handles the fast, optimistic redirect between `/login` and the protected dashboard routes.
+- GitHub OAuth returns to `/auth/callback`, where the PKCE auth code is exchanged for the dashboard session cookie before redirecting to `/`.
+- `requireOwnerSession()` remains the authoritative owner check and logs out stale or unauthorized sessions on the server.
+- the server-side owner fallback now accepts the GitHub username from `user_metadata` when Supabase does not populate `identities`
+- The login page keeps Supabase auth errors neutral and does not expose that access is controlled by an internal allowlist.
+- A one-time success toast is only shown after a real GitHub OAuth round-trip, not when an already valid session is redirected away from `/login`.

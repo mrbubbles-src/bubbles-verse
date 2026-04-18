@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and placeholder account/Vault routes.
 - Added the first dashboard home view with quick actions, recent content
   sections, and app summaries.
+- Added an optimistic dashboard `proxy.ts` and shared session-cookie helpers for
+  faster auth redirects.
+- Added login feedback for failed OAuth returns plus a one-time success toast
+  after a real sign-in round-trip.
+- Added a dedicated `/auth/callback` route so Supabase PKCE logins can exchange
+  the auth code for a cookie-backed dashboard session before redirecting home.
 
 ### Changed
 
@@ -32,6 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   button no longer gets stuck on `Weiterleitung...`.
 - Non-allowlisted GitHub sessions are now redirected through server logout so
   rejected users do not keep a live dashboard session cookie after OAuth.
+- Updated the server-side owner fallback so GitHub users from Supabase can be
+  recognized through `user_metadata` when `identities` is empty.
 
 ### Documentation
 

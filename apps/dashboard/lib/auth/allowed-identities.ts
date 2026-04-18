@@ -1,7 +1,13 @@
 type GithubIdentityLike = {
-  provider?: unknown
-  identity_data?: unknown
-}
+  provider?: unknown;
+  identity_data?: unknown;
+};
+
+type GithubUserMetadataLike = {
+  user_name?: unknown;
+  preferred_username?: unknown;
+  login?: unknown;
+};
 
 /**
  * Matches a GitHub username against the configured owner allowlist.
@@ -12,15 +18,15 @@ type GithubIdentityLike = {
  */
 export function isAllowedGithubIdentity(
   username: string | null | undefined,
-  allowlist: string[],
+  allowlist: string[]
 ): boolean {
   if (!username) {
-    return false
+    return false;
   }
 
   return allowlist.some(
-    (candidate) => candidate.trim().toLowerCase() === username.toLowerCase(),
-  )
+    (candidate) => candidate.trim().toLowerCase() === username.toLowerCase()
+  );
 }
 
 /**
@@ -33,7 +39,7 @@ export function parseGithubOwnerAllowlist(raw: string): string[] {
   return raw
     .split(',')
     .map((entry) => entry.trim())
-    .filter(Boolean)
+    .filter(Boolean);
 }
 
 /**
@@ -42,19 +48,50 @@ export function parseGithubOwnerAllowlist(raw: string): string[] {
  * Supabase documents `user_metadata` as user-editable, so auth checks should
  * read the GitHub username from `identities[].identity_data` instead.
  */
-export function getGithubIdentityUsername(
-  identities: GithubIdentityLike[] | null | undefined,
+function getGithubIdentityUsernameFromIdentities(
+  identities: GithubIdentityLike[] | null | undefined
 ): string | null {
   const githubIdentity = identities?.find(
-    (identity) => identity.provider === 'github',
-  )
+    (identity) => identity.provider === 'github'
+  );
 
   if (!githubIdentity || typeof githubIdentity.identity_data !== 'object') {
-    return null
+    return null;
   }
 
   const username = (githubIdentity.identity_data as { user_name?: unknown })
-    .user_name
+    .user_name;
 
-  return typeof username === 'string' && username.length > 0 ? username : null
+  return typeof username === 'string' && username.length > 0 ? username : null;
+}
+
+/**
+ * Extracts the GitHub username from the available Supabase user payload.
+ *
+ * The dashboard prefers immutable GitHub identity data. Some Supabase GitHub
+ * sessions, however, only expose the username in `user_metadata`, so this
+ * helper falls back to the provider metadata to keep the owner gate aligned
+ * with the working OAuth payload.
+ */
+export function getGithubIdentityUsername({
+  identities,
+  userMetadata,
+}: {
+  identities: GithubIdentityLike[] | null | undefined;
+  userMetadata: GithubUserMetadataLike | null | undefined;
+}): string | null {
+  const immutableUsername = getGithubIdentityUsernameFromIdentities(identities);
+
+  if (immutableUsername) {
+    return immutableUsername;
+  }
+
+  const metadataUsername =
+    userMetadata?.user_name ??
+    userMetadata?.preferred_username ??
+    userMetadata?.login;
+
+  return typeof metadataUsername === 'string' && metadataUsername.length > 0
+    ? metadataUsername
+    : null;
 }

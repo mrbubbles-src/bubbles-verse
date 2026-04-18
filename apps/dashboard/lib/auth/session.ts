@@ -22,7 +22,13 @@ export async function requireOwnerSession() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const githubUsername = getGithubIdentityUsername(user?.identities);
+  const githubUsername = getGithubIdentityUsername({
+    identities: user?.identities,
+    userMetadata:
+      user?.user_metadata && typeof user.user_metadata === 'object'
+        ? user.user_metadata
+        : null,
+  });
   const allowlist = parseGithubOwnerAllowlist(env.GITHUB_OWNER_ALLOWLIST);
 
   if (!user) {

@@ -1,10 +1,15 @@
 'use client';
 
+import {
+  DASHBOARD_LOGIN_ATTEMPT_STORAGE_KEY,
+  getDashboardLoginErrorMessage,
+} from '@/lib/auth/login-feedback';
 import { getPublicDashboardEnv } from '@/lib/env';
 import { createDashboardBrowserSupabaseClient } from '@/lib/supabase/client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
+import { toast } from '@bubbles/ui/lib/sonner';
 import { Button } from '@bubbles/ui/shadcn/button';
 
 /**
@@ -15,6 +20,21 @@ import { Button } from '@bubbles/ui/shadcn/button';
  */
 export default function LoginPage() {
   const [isPending, setIsPending] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loginErrorMessage =
+      getDashboardLoginErrorMessage(window.location.hash) ??
+      getDashboardLoginErrorMessage(window.location.search);
+
+    if (!loginErrorMessage) {
+      return;
+    }
+
+    setErrorMessage(loginErrorMessage);
+    toast.error(loginErrorMessage);
+    window.history.replaceState(null, '', window.location.pathname);
+  }, []);
 
   /**
    * Starts the GitHub OAuth flow for the private dashboard.
@@ -24,6 +44,8 @@ export default function LoginPage() {
    */
   async function handleGithubLogin() {
     setIsPending(true);
+    setErrorMessage(null);
+    window.localStorage.setItem(DASHBOARD_LOGIN_ATTEMPT_STORAGE_KEY, 'true');
 
     try {
       const supabase = createDashboardBrowserSupabaseClient();
@@ -32,7 +54,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: `${env.NEXT_PUBLIC_APP_URL}/`,
+          redirectTo: `${env.NEXT_PUBLIC_APP_URL}/auth/callback`,
         },
       });
 
@@ -40,7 +62,9 @@ export default function LoginPage() {
         throw error;
       }
     } catch (error) {
+      window.localStorage.removeItem(DASHBOARD_LOGIN_ATTEMPT_STORAGE_KEY);
       console.error('Failed to start dashboard GitHub login.', error);
+      toast.error('Die GitHub-Anmeldung konnte nicht gestartet werden.');
       setIsPending(false);
     }
   }
@@ -59,6 +83,13 @@ export default function LoginPage() {
             Melde dich mit GitHub an, um dein Dashboard zu öffnen.
           </p>
         </div>
+        {errorMessage ? (
+          <p
+            role="alert"
+            className="mx-auto max-w-md rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-pretty text-destructive">
+            {errorMessage}
+          </p>
+        ) : null}
         <Button disabled={isPending} onClick={() => void handleGithubLogin()}>
           {isPending ? (
             'Weiterleitung...'
