@@ -1,5 +1,7 @@
 import type { VaultEntryListItem } from '@/lib/vault/entries';
 
+import Link from 'next/link';
+
 import { Badge } from '@bubbles/ui/shadcn/badge';
 
 type VaultEntryListProps = {
@@ -29,9 +31,11 @@ export function VaultEntryList({ entries }: VaultEntryListProps) {
           key={entry.id}
           className="grid gap-3 px-4 py-4 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)_auto] md:items-center">
           <div className="space-y-1">
-            <p className="font-medium tracking-tight text-balance">
+            <Link
+              href={`/vault/entries/${entry.id}`}
+              className="font-medium tracking-tight text-balance underline-offset-4 hover:underline">
               {entry.title}
-            </p>
+            </Link>
             <p className="text-sm text-muted-foreground">/{entry.slug}</p>
           </div>
           <div className="text-sm text-muted-foreground">

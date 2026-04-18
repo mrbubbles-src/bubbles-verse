@@ -1,5 +1,6 @@
 const VAULT_ENTRY_FEEDBACK_MESSAGES = {
   created: 'Vault-Eintrag erstellt.',
+  updated: 'Vault-Eintrag aktualisiert.',
 } as const;
 
 export const VAULT_ENTRY_FEEDBACK_PARAM = 'entry';

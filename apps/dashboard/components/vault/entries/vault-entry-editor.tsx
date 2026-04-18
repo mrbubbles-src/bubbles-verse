@@ -1,6 +1,9 @@
 'use client';
 
-import type { VaultEntryCategoryOption } from '@/lib/vault/entries';
+import type {
+  VaultEntryCategoryOption,
+  VaultEntryInitialData,
+} from '@/lib/vault/entries';
 import type { MarkdownEditorSubmitData } from '@bubbles/markdown-editor';
 
 import { useMemo, useState } from 'react';
@@ -37,6 +40,8 @@ import {
 
 type VaultEntryEditorProps = {
   categories: VaultEntryCategoryOption[];
+  initialData?: VaultEntryInitialData;
+  mode?: 'create' | 'edit';
 };
 
 /**
@@ -46,10 +51,14 @@ type VaultEntryEditorProps = {
  * uploads. The dashboard adds only the Vault-specific category selection and
  * persistence handoff to the local API route.
  */
-export function VaultEntryEditor({ categories }: VaultEntryEditorProps) {
+export function VaultEntryEditor({
+  categories,
+  initialData,
+  mode = 'create',
+}: VaultEntryEditorProps) {
   const router = useRouter();
   const [selectedCategoryId, setSelectedCategoryId] = useState(
-    categories[0]?.id ?? ''
+    initialData?.primaryCategoryId ?? categories[0]?.id ?? ''
   );
   const selectedCategory = useMemo(
     () =>
@@ -71,16 +80,21 @@ export function VaultEntryEditor({ categories }: VaultEntryEditorProps) {
       throw new Error('Missing Vault category.');
     }
 
-    const response = await fetch('/api/vault/entries', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        ...payload,
-        primaryCategoryId: selectedCategoryId,
-      }),
-    });
+    const response = await fetch(
+      mode === 'edit' && initialData
+        ? `/api/vault/entries/${initialData.id}`
+        : '/api/vault/entries',
+      {
+        method: mode === 'edit' ? 'PATCH' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...payload,
+          primaryCategoryId: selectedCategoryId,
+        }),
+      }
+    );
     const responseBody = (await response.json().catch(() => null)) as {
       message?: string;
     } | null;
@@ -94,7 +108,9 @@ export function VaultEntryEditor({ categories }: VaultEntryEditorProps) {
       throw new Error(message);
     }
 
-    router.push(getVaultEntryFeedbackHref('created'));
+    router.push(
+      getVaultEntryFeedbackHref(mode === 'edit' ? 'updated' : 'created')
+    );
     router.refresh();
   }
 
@@ -169,6 +185,19 @@ export function VaultEntryEditor({ categories }: VaultEntryEditorProps) {
 
       <MarkdownEditor
         imageUploader={imageUploader}
+        initialData={
+          initialData
+            ? {
+                content: initialData.editorContent,
+                title: initialData.title,
+                slug: initialData.slug,
+                description: initialData.description,
+                tags: initialData.tags,
+                status: initialData.status,
+              }
+            : undefined
+        }
+        isEditMode={mode === 'edit'}
         onSuccess={handleSuccess}
         slugStrategy={({ title }) => [
           selectedCategory?.topLevelSlug ?? '',

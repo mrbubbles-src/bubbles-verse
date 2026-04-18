@@ -4,7 +4,8 @@ export type RoutePath =
   | '/vault'
   | '/vault/categories'
   | '/vault/entries'
-  | '/vault/entries/new';
+  | '/vault/entries/new'
+  | '/vault/entries/[id]';
 
 export type DashboardPageInfo = {
   title: string;
@@ -48,6 +49,11 @@ export const ROUTE_PAGE_META_BY_PATH: Record<RoutePath, DashboardPageInfo> = {
     description:
       'Starte einen neuen Eintrag direkt aus dem zentralen Dashboard.',
   },
+  '/vault/entries/[id]': {
+    title: 'Vault-Eintrag bearbeiten',
+    description:
+      'Bearbeite einen bestehenden Coding-Vault-Eintrag direkt im Dashboard.',
+  },
 };
 
 /**
@@ -59,6 +65,10 @@ export const ROUTE_PAGE_META_BY_PATH: Record<RoutePath, DashboardPageInfo> = {
 export function getDashboardPageInfoByPath(
   pathname: string
 ): DashboardPageInfo {
+  if (pathname.startsWith('/vault/entries/')) {
+    return ROUTE_PAGE_META_BY_PATH['/vault/entries/[id]'];
+  }
+
   return (
     ROUTE_PAGE_META_BY_PATH[pathname as RoutePath] ??
     ROUTE_PAGE_META_BY_PATH['/']

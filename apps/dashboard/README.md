@@ -20,7 +20,7 @@ a clean base.
 - Protected routes exist for `/account`, `/vault`, `/vault/categories`, `/vault/entries`, and `/vault/entries/new`.
 - `/account` now lets Owners manage the private dashboard allowlist, including `dashboard_access` and `user_role`.
 - `/vault/categories` now ships the first real editorial CRUD screen for the Coding Vault category tree.
-- `/vault/entries` now shows the first real editorial list, and `/vault/entries/new` creates entries through `@bubbles/markdown-editor`.
+- `/vault/entries` now shows the first real editorial list, `/vault/entries/new` creates entries through `@bubbles/markdown-editor`, and `/vault/entries/[id]` edits existing entries in the same flow.
 - Shared fonts, globals, theme provider, and toast host are wired in.
 - The app is configured to consume shared source packages from the monorepo.
 
@@ -113,5 +113,7 @@ hooks.
 
 - `/vault/entries` is available for `owner` and `editor` roles.
 - `/vault/entries/new` uses `@bubbles/markdown-editor` for shared authoring, metadata, draft handling, preview, and image uploads.
+- `/vault/entries/[id]` reuses the same editor in edit mode, including current category, tags, metadata, and saved editor content.
 - New entry saves go through `/api/vault/entries`, which bootstraps the shared `vault` app module and the current author's `profiles` row on first save.
+- Entry updates go through `/api/vault/entries/[id]` and keep the original author while updating the latest editor, category, tags, and serialized content.
 - Editor image uploads go through `/api/editor-image-upload` and use the shared Cloudinary helper from `@bubbles/markdown-editor`.

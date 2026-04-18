@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added the first real Vault entry authoring flow with a `/vault/entries` list,
   a `/vault/entries/new` markdown-editor screen, and app-local save/upload API
   routes.
+- Added the first `/vault/entries/[id]` edit flow so existing Vault content can
+  be reopened and updated in the same shared markdown-editor surface.
 
 ### Changed
 
