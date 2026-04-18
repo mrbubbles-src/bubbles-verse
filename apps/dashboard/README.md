@@ -113,7 +113,7 @@ hooks.
 ## Vault entries
 
 - `/vault` gives owners and editors one compact overview with entry counts, category counts, recent edits, and direct links into the main Vault workflows.
-- `/vault/entries` is available for `owner` and `editor` roles.
+- `/vault/entries` is available for `owner` and `editor` roles and now supports URL-based filters for title search, status, and category.
 - `/vault/entries/new` uses `@bubbles/markdown-editor` for shared authoring, metadata, draft handling, preview, and image uploads.
 - `/vault/entries/[id]` reuses the same editor in edit mode, including current category, tags, metadata, and saved editor content.
 - `/vault/entries/[id]` can now also remove an entry directly from the edit view, including the linked Vault row and tags.

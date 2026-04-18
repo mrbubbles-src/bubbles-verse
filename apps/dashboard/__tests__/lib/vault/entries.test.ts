@@ -1,7 +1,9 @@
 import {
+  getVaultEntries,
   getVaultEntryInitialData,
   listVaultEntryCategoryOptions,
   parseCreateVaultEntryRequest,
+  parseVaultEntryListFilters,
   parseUpdateVaultEntryRequest,
 } from '@/lib/vault/entries';
 
@@ -125,6 +127,84 @@ describe('vault entry helpers', () => {
     });
 
     expect(parsedPayload.success).toBe(true);
+  });
+
+  it('normalizes URL filters for the vault entry list page', () => {
+    expect(
+      parseVaultEntryListFilters({
+        query: ['  React  '],
+        status: 'published',
+        categoryId: 'category-id',
+      })
+    ).toEqual({
+      query: 'React',
+      status: 'published',
+      categoryId: 'category-id',
+    });
+
+    expect(
+      parseVaultEntryListFilters({
+        status: 'bogus',
+        categoryId: 'all',
+      })
+    ).toEqual({
+      query: '',
+      status: 'all',
+      categoryId: null,
+    });
+  });
+
+  it('passes normalized where clauses into the vault entry list query', async () => {
+    const expectedUpdatedAtLabel = new Intl.DateTimeFormat('de-DE', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(new Date('2026-04-18T18:00:00.000Z'));
+    const orderByMock = vi.fn().mockResolvedValue([
+      {
+        id: 'entry-id',
+        title: 'React Rendering',
+        slug: 'react/rendering',
+        status: 'published',
+        updatedAt: '2026-04-18T18:00:00.000Z',
+        categoryId: 'category-id',
+        categoryName: 'React / Rendering',
+      },
+    ]);
+    const whereMock = vi.fn().mockReturnValue({
+      orderBy: orderByMock,
+    });
+    const secondInnerJoinMock = vi.fn().mockReturnValue({
+      where: whereMock,
+    });
+    const firstInnerJoinMock = vi.fn().mockReturnValue({
+      innerJoin: secondInnerJoinMock,
+    });
+
+    dbSelectMock.mockReturnValue({
+      from: dbFromMock.mockReturnValue({
+        innerJoin: firstInnerJoinMock,
+      }),
+    });
+
+    await expect(
+      getVaultEntries({
+        query: 'React',
+        status: 'published',
+        categoryId: 'category-id',
+      })
+    ).resolves.toEqual([
+      {
+        id: 'entry-id',
+        title: 'React Rendering',
+        slug: 'react/rendering',
+        status: 'published',
+        categoryId: 'category-id',
+        categoryLabel: 'React / Rendering',
+        updatedAtLabel: expectedUpdatedAtLabel,
+      },
+    ]);
+
+    expect(whereMock).toHaveBeenCalledTimes(1);
   });
 
   it('loads one vault entry with category and tag metadata for edit mode', async () => {

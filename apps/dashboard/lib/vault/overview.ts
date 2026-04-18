@@ -23,6 +23,7 @@ export type VaultOverviewRecentEntry = {
   title: string;
   slug: string;
   status: 'draft' | 'published';
+  categoryId: string;
   categoryLabel: string;
   updatedAtLabel: string;
 };

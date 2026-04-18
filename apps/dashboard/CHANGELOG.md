@@ -36,6 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   editorial counts, category context, and the latest touched Vault entries.
 - Added direct Vault-entry deletion from the edit flow, including API cleanup
   and redirect feedback back to the entry list.
+- Added server-side filters for `/vault/entries`, including title search,
+  status filtering, and category filtering via query params.
 
 ### Changed
 

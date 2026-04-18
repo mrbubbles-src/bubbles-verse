@@ -1,12 +1,22 @@
 import { requireDashboardManagerSession } from '@/lib/auth/session';
-import { getVaultEntries } from '@/lib/vault/entries';
+import {
+  getVaultEntryListPageModel,
+  parseVaultEntryListFilters,
+} from '@/lib/vault/entries';
 
 import Link from 'next/link';
 
 import { Button } from '@bubbles/ui/shadcn/button';
 
 import { EntryFeedbackToast } from '@/components/vault/entries/entry-feedback-toast';
+import { VaultEntryFilters } from '@/components/vault/entries/vault-entry-filters';
 import { VaultEntryList } from '@/components/vault/entries/vault-entry-list';
+
+type VaultEntriesPageProps = {
+  searchParams: Promise<{
+    [key: string]: string | string[] | undefined;
+  }>;
+};
 
 /**
  * Renders the first real Vault entry overview for owners and editors.
@@ -14,9 +24,16 @@ import { VaultEntryList } from '@/components/vault/entries/vault-entry-list';
  * The list stays intentionally compact for V1 and focuses on recently updated
  * entries, category context, and publication state.
  */
-export default async function VaultEntriesPage() {
+export default async function VaultEntriesPage({
+  searchParams,
+}: VaultEntriesPageProps) {
   await requireDashboardManagerSession();
-  const entries = await getVaultEntries();
+  const filters = parseVaultEntryListFilters(await searchParams);
+  const pageModel = await getVaultEntryListPageModel(filters);
+  const emptyState =
+    filters.query || filters.status !== 'all' || filters.categoryId
+      ? 'Keine Vault-Einträge passen gerade zu diesen Filtern.'
+      : undefined;
 
   return (
     <>
@@ -45,7 +62,13 @@ export default async function VaultEntriesPage() {
         </div>
       </section>
 
-      <VaultEntryList entries={entries} />
+      <VaultEntryFilters
+        categories={pageModel.categories}
+        filters={pageModel.filters}
+        resultCount={pageModel.entries.length}
+      />
+
+      <VaultEntryList entries={pageModel.entries} emptyState={emptyState} />
     </>
   );
 }

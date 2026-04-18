@@ -19,6 +19,7 @@ describe('VaultOverview', () => {
           title: 'Editor hints',
           slug: 'editor-hints',
           status: 'draft',
+          categoryId: 'guides',
           categoryLabel: 'Guides',
           updatedAtLabel: '18. Apr. 2026, 09:40',
         },

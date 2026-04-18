@@ -13,6 +13,7 @@ describe('VaultEntryList', () => {
             title: 'React Rendering',
             slug: 'react/rendering',
             status: 'published',
+            categoryId: 'react-rendering',
             categoryLabel: 'React / Rendering',
             updatedAtLabel: '18.04.2026, 18:00',
           },
@@ -24,5 +25,18 @@ describe('VaultEntryList', () => {
     expect(screen.getByText('/react/rendering')).toBeInTheDocument();
     expect(screen.getByText('React / Rendering')).toBeInTheDocument();
     expect(screen.getByText('Veröffentlicht')).toBeInTheDocument();
+  });
+
+  it('renders a custom empty state when filters return no results', () => {
+    render(
+      <VaultEntryList
+        entries={[]}
+        emptyState="Keine Vault-Einträge passen gerade zu diesen Filtern."
+      />
+    );
+
+    expect(
+      screen.getByText('Keine Vault-Einträge passen gerade zu diesen Filtern.')
+    ).toBeInTheDocument();
   });
 });

@@ -10,7 +10,7 @@ import { getGithubIdentityUsername } from '@/lib/auth/allowed-identities';
 import { listVaultCategories } from '@/lib/vault/categories';
 import { buildVaultCategoryTree } from '@/lib/vault/category-tree';
 
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq, ilike } from 'drizzle-orm';
 import * as z from 'zod';
 
 import { db } from '@/drizzle/db';
@@ -60,8 +60,17 @@ export type VaultEntryListItem = {
   title: string;
   slug: string;
   status: 'draft' | 'published';
+  categoryId: string;
   categoryLabel: string;
   updatedAtLabel: string;
+};
+
+export type VaultEntryListFilterStatus = 'all' | 'draft' | 'published';
+
+export type VaultEntryListFilters = {
+  query: string;
+  status: VaultEntryListFilterStatus;
+  categoryId: string | null;
 };
 
 export type VaultEntryInitialData = {
@@ -216,18 +225,72 @@ export async function getVaultEntryCreationModel() {
 }
 
 /**
+ * Normalizes URL-driven list filters for the Vault entry overview.
+ *
+ * The page keeps filters in the query string so editorial states are shareable
+ * and survive reloads without introducing client-side state.
+ *
+ * @param searchParams Page-level search params from the Next.js route.
+ * @returns A stable filter object with defaults applied.
+ */
+export function parseVaultEntryListFilters(searchParams: {
+  [key: string]: string | string[] | undefined;
+}): VaultEntryListFilters {
+  const rawQuery = searchParams.query;
+  const rawStatus = searchParams.status;
+  const rawCategoryId = searchParams.categoryId;
+  const queryValue = Array.isArray(rawQuery) ? rawQuery[0] : rawQuery;
+  const statusValue = Array.isArray(rawStatus) ? rawStatus[0] : rawStatus;
+  const categoryIdValue = Array.isArray(rawCategoryId)
+    ? rawCategoryId[0]
+    : rawCategoryId;
+  const normalizedStatus: VaultEntryListFilterStatus =
+    statusValue === 'draft' || statusValue === 'published'
+      ? statusValue
+      : 'all';
+  const normalizedCategoryId = categoryIdValue?.trim();
+
+  return {
+    query: queryValue?.trim().slice(0, 120) ?? '',
+    status: normalizedStatus,
+    categoryId:
+      normalizedCategoryId && normalizedCategoryId !== 'all'
+        ? normalizedCategoryId
+        : null,
+  };
+}
+
+/**
  * Loads the editorial list model for the Vault entry overview.
  *
  * @returns Recently updated Vault entries with category labels.
  */
-export async function getVaultEntries(): Promise<VaultEntryListItem[]> {
-  const rows = await db
+export async function getVaultEntries(
+  filters: VaultEntryListFilters = {
+    query: '',
+    status: 'all',
+    categoryId: null,
+  }
+): Promise<VaultEntryListItem[]> {
+  const whereClauses = [
+    filters.status === 'all'
+      ? null
+      : eq(contentItems.status, filters.status),
+    filters.categoryId === null
+      ? null
+      : eq(vaultEntries.primaryCategoryId, filters.categoryId),
+    filters.query
+      ? ilike(contentItems.title, `%${filters.query}%`)
+      : null,
+  ].filter((clause) => clause !== null);
+  const baseQuery = db
     .select({
       id: contentItems.id,
       title: contentItems.title,
       slug: contentItems.slug,
       status: contentItems.status,
       updatedAt: contentItems.updatedAt,
+      categoryId: vaultCategories.id,
       categoryName: vaultCategories.name,
     })
     .from(vaultEntries)
@@ -235,20 +298,43 @@ export async function getVaultEntries(): Promise<VaultEntryListItem[]> {
     .innerJoin(
       vaultCategories,
       eq(vaultEntries.primaryCategoryId, vaultCategories.id)
-    )
-    .orderBy(desc(contentItems.updatedAt));
+    );
+  const rows = await (whereClauses.length > 0
+    ? baseQuery.where(and(...whereClauses))
+    : baseQuery
+  ).orderBy(desc(contentItems.updatedAt));
 
   return rows.map((row) => ({
     id: row.id,
     title: row.title,
     slug: row.slug,
     status: row.status,
+    categoryId: row.categoryId,
     categoryLabel: row.categoryName,
     updatedAtLabel: new Intl.DateTimeFormat('de-DE', {
       dateStyle: 'medium',
       timeStyle: 'short',
     }).format(new Date(row.updatedAt)),
   }));
+}
+
+/**
+ * Loads the full list-page model for `/vault/entries`.
+ *
+ * @param filters Normalized list filters from the current request.
+ * @returns Entries plus available category options for the filter UI.
+ */
+export async function getVaultEntryListPageModel(filters: VaultEntryListFilters) {
+  const [entries, categories] = await Promise.all([
+    getVaultEntries(filters),
+    listVaultEntryCategoryOptions(),
+  ]);
+
+  return {
+    entries,
+    categories,
+    filters,
+  };
 }
 
 /**

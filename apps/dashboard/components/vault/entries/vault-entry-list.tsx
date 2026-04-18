@@ -6,6 +6,7 @@ import { Badge } from '@bubbles/ui/shadcn/badge';
 
 type VaultEntryListProps = {
   entries: VaultEntryListItem[];
+  emptyState?: string;
 };
 
 /**
@@ -14,12 +15,14 @@ type VaultEntryListProps = {
  * The list stays intentionally compact and mobile-first, surfacing only the
  * fields editors need for the next authoring decisions.
  */
-export function VaultEntryList({ entries }: VaultEntryListProps) {
+export function VaultEntryList({
+  entries,
+  emptyState = 'Noch keine Vault-Einträge. Lege deinen ersten Eintrag an und er taucht hier direkt in der Redaktionsliste auf.',
+}: VaultEntryListProps) {
   if (entries.length === 0) {
     return (
       <div className="rounded-[1.5rem] border border-dashed border-border/60 px-4 py-8 text-sm text-muted-foreground">
-        Noch keine Vault-Einträge. Lege deinen ersten Eintrag an und er taucht
-        hier direkt in der Redaktionsliste auf.
+        {emptyState}
       </div>
     );
   }
