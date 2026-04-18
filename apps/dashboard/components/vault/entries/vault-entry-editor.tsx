@@ -58,6 +58,7 @@ export function VaultEntryEditor({
 }: VaultEntryEditorProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState(
     initialData?.primaryCategoryId ?? categories[0]?.id ?? ''
   );
@@ -122,7 +123,7 @@ export function VaultEntryEditor({
    * can remain focused on browsing instead of inline danger actions.
    */
   async function handleDelete() {
-    if (mode !== 'edit' || !initialData || isDeleting) {
+    if (mode !== 'edit' || !initialData || isDeleting || isDuplicating) {
       return;
     }
 
@@ -157,6 +158,46 @@ export function VaultEntryEditor({
       router.refresh();
     } finally {
       setIsDeleting(false);
+    }
+  }
+
+  /**
+   * Creates a draft copy of the current entry and opens it directly in edit
+   * mode so the next revision can start without rebuilding metadata by hand.
+   */
+  async function handleDuplicate() {
+    if (mode !== 'edit' || !initialData || isDeleting || isDuplicating) {
+      return;
+    }
+
+    setIsDuplicating(true);
+
+    try {
+      const response = await fetch(
+        `/api/vault/entries/${initialData.id}/duplicate`,
+        {
+          method: 'POST',
+        }
+      );
+      const responseBody = (await response.json().catch(() => null)) as {
+        id?: string;
+        message?: string;
+      } | null;
+
+      if (!response.ok || !responseBody?.id) {
+        const message =
+          responseBody?.message ??
+          'Der Vault-Eintrag konnte gerade nicht dupliziert werden.';
+
+        toast.error(message);
+        return;
+      }
+
+      toast.success('Vault-Eintrag dupliziert.');
+      router.push(`/vault/entries/${responseBody.id}`);
+      router.refresh();
+    } finally {
+      setIsDuplicating(false);
     }
   }
 
@@ -229,23 +270,48 @@ export function VaultEntryEditor({
         </Field>
 
         {mode === 'edit' && initialData ? (
-          <div className="flex flex-col gap-2 rounded-[1.5rem] border border-dashed border-destructive/35 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <p className="text-sm font-semibold tracking-tight text-foreground">
-                Eintrag endgültig entfernen
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Löscht Inhalt, Kategorie-Verknüpfung und Tags dauerhaft aus dem
-                Vault.
-              </p>
+          <div className="grid gap-3 lg:grid-cols-2">
+            <div className="flex flex-col gap-2 rounded-[1.5rem] border border-border/50 px-4 py-4">
+              <div className="space-y-1">
+                <p className="text-sm font-semibold tracking-tight text-foreground">
+                  Als Entwurf duplizieren
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Erstellt eine neue Fassung mit demselben Inhalt, derselben
+                  Kategorie und denselben Tags.
+                </p>
+              </div>
+              <div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => void handleDuplicate()}
+                  disabled={isDeleting || isDuplicating}>
+                  {isDuplicating ? 'Dupliziere...' : 'Eintrag duplizieren'}
+                </Button>
+              </div>
             </div>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => void handleDelete()}
-              disabled={isDeleting}>
-              {isDeleting ? 'Lösche...' : 'Eintrag löschen'}
-            </Button>
+
+            <div className="flex flex-col gap-2 rounded-[1.5rem] border border-dashed border-destructive/35 px-4 py-4">
+              <div className="space-y-1">
+                <p className="text-sm font-semibold tracking-tight text-foreground">
+                  Eintrag endgültig entfernen
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Löscht Inhalt, Kategorie-Verknüpfung und Tags dauerhaft aus dem
+                  Vault.
+                </p>
+              </div>
+              <div>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => void handleDelete()}
+                  disabled={isDeleting || isDuplicating}>
+                  {isDeleting ? 'Lösche...' : 'Eintrag löschen'}
+                </Button>
+              </div>
+            </div>
           </div>
         ) : null}
       </section>

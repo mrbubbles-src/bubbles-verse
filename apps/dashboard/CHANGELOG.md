@@ -38,6 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and redirect feedback back to the entry list.
 - Added server-side filters for `/vault/entries`, including title search,
   status filtering, and category filtering via query params.
+- Added draft duplication for existing Vault entries, including a dedicated
+  duplicate route and a direct jump into the copied edit screen.
 
 ### Changed
 

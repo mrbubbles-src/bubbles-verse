@@ -116,8 +116,10 @@ hooks.
 - `/vault/entries` is available for `owner` and `editor` roles and now supports URL-based filters for title search, status, and category.
 - `/vault/entries/new` uses `@bubbles/markdown-editor` for shared authoring, metadata, draft handling, preview, and image uploads.
 - `/vault/entries/[id]` reuses the same editor in edit mode, including current category, tags, metadata, and saved editor content.
+- `/vault/entries/[id]` can also duplicate the current entry into a fresh draft and jump straight into the new edit screen.
 - `/vault/entries/[id]` can now also remove an entry directly from the edit view, including the linked Vault row and tags.
 - New entry saves go through `/api/vault/entries`, which bootstraps the shared `vault` app module and the current author's `profiles` row on first save.
 - Entry updates go through `/api/vault/entries/[id]` and keep the original author while updating the latest editor, category, tags, and serialized content.
+- Entry duplicates go through `/api/vault/entries/[id]/duplicate` and reuse content, tags, and category while always creating a new draft copy with a free slug.
 - Entry deletes also go through `/api/vault/entries/[id]` and remove the shared `content_items` row, letting the existing schema cascades clean up `vault_entries` and `content_item_tags`.
 - Editor image uploads go through `/api/editor-image-upload` and use the shared Cloudinary helper from `@bubbles/markdown-editor`.

@@ -751,6 +751,115 @@ export async function updateVaultEntry(input: {
 }
 
 /**
+ * Resolves the next free duplicate slug for an existing Vault entry.
+ *
+ * Duplicates stay in the same app-module/type scope, so we probe exact slug
+ * candidates until one is free instead of relying on fragile pattern matches.
+ *
+ * @param sourceSlug Existing Vault slug of the original entry.
+ * @returns The first available duplicate slug candidate.
+ */
+async function resolveDuplicateVaultEntrySlug(sourceSlug: string) {
+  for (let copyIndex = 1; copyIndex < 100; copyIndex += 1) {
+    const candidateSlug =
+      copyIndex === 1
+        ? `${sourceSlug}-kopie`
+        : `${sourceSlug}-kopie-${copyIndex}`;
+    const [existingSlug] = await db
+      .select({
+        id: contentItems.id,
+      })
+      .from(contentItems)
+      .innerJoin(appModules, eq(contentItems.appModuleId, appModules.id))
+      .where(
+        and(
+          eq(appModules.slug, VAULT_APP_MODULE_SLUG),
+          eq(contentItems.contentType, VAULT_CONTENT_TYPE),
+          eq(contentItems.slug, candidateSlug)
+        )
+      )
+      .limit(1);
+
+    if (!existingSlug) {
+      return {
+        slug: candidateSlug,
+        copyIndex,
+      };
+    }
+  }
+
+  throw new Error('Für diese Kopie konnte gerade kein freier Slug erzeugt werden.');
+}
+
+/**
+ * Creates a new draft copy of an existing Vault entry.
+ *
+ * The duplicate inherits content, tags, and category context from the source
+ * entry, but is always persisted as a fresh draft owned by the current editor.
+ *
+ * @param input Source entry identifier plus current dashboard identity.
+ * @returns The new content item row or `null` when the source does not exist.
+ */
+export async function duplicateVaultEntry(input: {
+  id: string;
+  user: User;
+  accessEntry: DashboardAccessEntry;
+}) {
+  const [sourceEntry] = await db
+    .select({
+      id: contentItems.id,
+      title: contentItems.title,
+      slug: contentItems.slug,
+      description: contentItems.description,
+      editorContent: contentItems.editorContent,
+      serializedContent: contentItems.serializedContent,
+      primaryCategoryId: vaultEntries.primaryCategoryId,
+    })
+    .from(vaultEntries)
+    .innerJoin(contentItems, eq(vaultEntries.contentItemId, contentItems.id))
+    .where(eq(contentItems.id, input.id))
+    .limit(1);
+
+  if (!sourceEntry) {
+    return null;
+  }
+
+  if (!isMarkdownEditorContentData(sourceEntry.editorContent)) {
+    throw new Error('Der gespeicherte Editor-Inhalt ist ungültig.');
+  }
+
+  const tagRows = await db
+    .select({
+      tag: contentItemTags.tag,
+    })
+    .from(contentItemTags)
+    .where(eq(contentItemTags.contentItemId, input.id))
+    .orderBy(contentItemTags.tag);
+  const duplicateSlug = await resolveDuplicateVaultEntrySlug(sourceEntry.slug);
+  const duplicateTitle =
+    duplicateSlug.copyIndex === 1
+      ? `${sourceEntry.title} (Kopie)`
+      : `${sourceEntry.title} (Kopie ${duplicateSlug.copyIndex})`;
+  const duplicateEditorContent =
+    sourceEntry.editorContent as unknown as CreateVaultEntryInput['editorContent'];
+
+  return createVaultEntry({
+    payload: {
+      title: duplicateTitle,
+      slug: duplicateSlug.slug,
+      description: sourceEntry.description,
+      tags: tagRows.map((tagRow) => tagRow.tag),
+      status: 'unpublished',
+      editorContent: duplicateEditorContent,
+      serializedContent: sourceEntry.serializedContent,
+      primaryCategoryId: sourceEntry.primaryCategoryId,
+    },
+    user: input.user,
+    accessEntry: input.accessEntry,
+  });
+}
+
+/**
  * Deletes one Vault entry and its linked category/tag rows.
  *
  * The shared schema already cascades from `content_items` into `vault_entries`
