@@ -8,7 +8,7 @@ import type {
 import * as React from 'react';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 import {
   bubblesSidebarHasActiveDescendant,
@@ -27,6 +27,7 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
+  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
@@ -199,8 +200,29 @@ function BubblesSidebarNavItem({
   depth = 0,
   pathname,
 }: BubblesSidebarNavItemProps) {
+  const router = useRouter();
   const hasChildren = (item.children?.length ?? 0) > 0;
   const isActive = isBubblesSidebarItemActive(pathname, item);
+  const action = item.action;
+
+  const handleActionClick = (
+    event: React.MouseEvent<HTMLButtonElement>
+  ): void => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    action?.onSelect?.();
+
+    if (!action?.href) {
+      return;
+    }
+
+    if (action.navigateOnItemActiveOnly && pathname !== item.href) {
+      return;
+    }
+
+    router.push(action.href);
+  };
 
   if (hasChildren) {
     return (
@@ -216,6 +238,15 @@ function BubblesSidebarNavItem({
           item
         )}>
         <BubblesSidebarLeaf item={item} depth={depth} isActive={isActive} />
+        {action ? (
+          <SidebarMenuAction
+            type="button"
+            aria-label={action.ariaLabel}
+            showOnHover={action.showOnHover}
+            onClick={handleActionClick}>
+            <HugeiconsIcon icon={action.icon} strokeWidth={2} />
+          </SidebarMenuAction>
+        ) : null}
       </SidebarMenuItem>
     );
   }
@@ -227,6 +258,15 @@ function BubblesSidebarNavItem({
         item
       )}>
       <BubblesSidebarLeaf item={item} depth={depth} isActive={isActive} />
+      {action ? (
+        <SidebarMenuAction
+          type="button"
+          aria-label={action.ariaLabel}
+          showOnHover={action.showOnHover ?? true}
+          onClick={handleActionClick}>
+          <HugeiconsIcon icon={action.icon} strokeWidth={2} />
+        </SidebarMenuAction>
+      ) : null}
     </SidebarMenuSubItem>
   );
 }

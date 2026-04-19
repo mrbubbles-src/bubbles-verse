@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
-
 import { getVaultCategoryFeedbackMessage } from '@/lib/vault/category-feedback';
+
+import { useEffect } from 'react';
 
 import { toast } from '@bubbles/ui/lib/sonner';
 
