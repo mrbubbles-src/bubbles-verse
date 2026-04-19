@@ -1,10 +1,10 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { ProfileEditor } from '@/components/profile/profile-editor';
 
 describe('ProfileEditor', () => {
-  it('renders editable profile fields and current identity info', () => {
+  it('renders the profile view first and switches into edit mode on demand', async () => {
     render(
       <ProfileEditor
         model={{
@@ -20,8 +20,6 @@ describe('ProfileEditor', () => {
             createdAt: '2026-04-18T00:00:00.000Z',
             updatedAt: '2026-04-18T00:00:00.000Z',
           },
-          role: 'owner',
-          githubUsername: 'mrbubbles-src',
           socialLinks: {
             website: 'https://mrbubbles-src.dev',
             github: 'https://github.com/mrbubbles-src',
@@ -33,11 +31,27 @@ describe('ProfileEditor', () => {
     );
 
     expect(
-      screen.getByRole('textbox', { name: 'Anzeigename' })
-    ).toHaveValue('Manuel Fahrenholz');
-    expect(screen.getByText('@mrbubbles-src')).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: 'Profil speichern' })
+      screen.getByRole('heading', { name: 'Autorenprofil' })
     ).toBeInTheDocument();
+    expect(screen.getByText('Builder')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('textbox', { name: 'Anzeigename' })
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText('@mrbubbles-src')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Bearbeiten' }));
+
+    expect(screen.getByRole('textbox', { name: 'Anzeigename' })).toHaveValue(
+      'Manuel Fahrenholz'
+    );
+    expect(
+      screen.getByRole('button', { name: 'Speichern' })
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Abbrechen' }));
+
+    expect(
+      screen.queryByRole('textbox', { name: 'Anzeigename' })
+    ).not.toBeInTheDocument();
   });
 });

@@ -3,14 +3,11 @@ import { buildVaultOverviewModel } from '@/lib/vault/overview';
 import { describe, expect, it } from 'vitest';
 
 describe('buildVaultOverviewModel', () => {
-  it('returns stable stats, actions, and a capped recent-entry list', () => {
+  it('returns capped work queues, top actions, and a compact status line', () => {
     const model = buildVaultOverviewModel({
-      totalEntries: 8,
       draftEntries: 3,
       publishedEntries: 5,
       totalCategories: 6,
-      topLevelCategories: 2,
-      childCategories: 4,
       recentEntries: [
         {
           id: 'entry-1',
@@ -75,19 +72,20 @@ describe('buildVaultOverviewModel', () => {
       ],
     });
 
-    expect(model.quickActions).toHaveLength(3);
-    expect(model.stats).toEqual(
+    expect(model.quickActions).toEqual([
+      { label: 'Neuer Eintrag', href: '/vault/entries/new' },
+      { label: 'Neue Kategorie', href: '/vault/categories' },
+    ]);
+    expect(model.statusItems).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ label: 'Einträge gesamt', value: '8' }),
         expect.objectContaining({ label: 'Entwürfe', value: '3' }),
         expect.objectContaining({ label: 'Veröffentlicht', value: '5' }),
-        expect.objectContaining({
-          label: 'Kategorien',
-          detail: '2 Oberkategorien, 4 Unterkategorien.',
-        }),
+        expect.objectContaining({ label: 'Kategorien', value: '6' }),
       ])
     );
-    expect(model.recentEntries).toHaveLength(5);
-    expect(model.recentEntries.at(-1)?.id).toBe('entry-5');
+    expect(model.recentDrafts).toHaveLength(1);
+    expect(model.recentDrafts[0]?.id).toBe('entry-1');
+    expect(model.recentUpdates).toHaveLength(5);
+    expect(model.recentUpdates.at(-1)?.id).toBe('entry-5');
   });
 });

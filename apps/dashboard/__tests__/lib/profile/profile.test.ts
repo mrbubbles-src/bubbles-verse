@@ -1,11 +1,11 @@
 import {
-  getDashboardProfileFeedbackHref,
-  getDashboardProfileFeedbackMessage,
-} from '@/lib/profile/profile-feedback';
-import {
   parseUpdateDashboardProfile,
   slugifyDashboardProfile,
 } from '@/lib/profile/profile';
+import {
+  getDashboardProfileFeedbackHref,
+  getDashboardProfileFeedbackMessage,
+} from '@/lib/profile/profile-feedback';
 
 import { describe, expect, it } from 'vitest';
 
@@ -13,7 +13,6 @@ describe('dashboard profile helpers', () => {
   it('slugifies and normalizes profile payloads', () => {
     const formData = new FormData();
     formData.set('displayName', '  Manuel Fahrenholz  ');
-    formData.set('slug', '');
     formData.set('avatarUrl', 'https://res.cloudinary.com/example/image.png');
     formData.set('bio', '  Building bubbles.  ');
     formData.set('websiteUrl', 'https://mrbubbles-src.dev');
@@ -34,7 +33,6 @@ describe('dashboard profile helpers', () => {
 
     expect(parsedProfile.data).toMatchObject({
       displayName: 'Manuel Fahrenholz',
-      slug: 'manuel-fahrenholz',
       bio: 'Building bubbles.',
       websiteUrl: 'https://mrbubbles-src.dev',
       githubUrl: 'https://github.com/mrbubbles-src',

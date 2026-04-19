@@ -1,7 +1,9 @@
 import {
   getVaultEntries,
   getVaultEntryInitialData,
+  getVaultEntryPreviewHref,
   listVaultEntryCategoryOptions,
+  normalizeVaultEntryListPageSize,
   parseCreateVaultEntryRequest,
   parseUpdateVaultEntryRequest,
   parseVaultEntryListFilters,
@@ -140,18 +142,49 @@ describe('vault entry helpers', () => {
       query: 'React',
       status: 'published',
       categoryId: 'category-id',
+      page: 1,
+      pageSize: 20,
     });
 
     expect(
       parseVaultEntryListFilters({
         status: 'bogus',
         categoryId: 'all',
+        page: '4',
+        pageSize: '50',
       })
     ).toEqual({
       query: '',
       status: 'all',
       categoryId: null,
+      page: 4,
+      pageSize: 50,
     });
+  });
+
+  it('normalizes unsupported page sizes back to the default table size', () => {
+    expect(normalizeVaultEntryListPageSize('100')).toBe(100);
+    expect(normalizeVaultEntryListPageSize('13')).toBe(20);
+  });
+
+  it('only builds a public preview URL when a Vault app URL is configured', () => {
+    const previousVaultAppUrl = process.env.NEXT_PUBLIC_VAULT_APP_URL;
+    const previousCodingVaultAppUrl =
+      process.env.NEXT_PUBLIC_CODING_VAULT_APP_URL;
+
+    process.env.NEXT_PUBLIC_VAULT_APP_URL = '';
+    process.env.NEXT_PUBLIC_CODING_VAULT_APP_URL = '';
+
+    expect(getVaultEntryPreviewHref('react/rendering')).toBeNull();
+
+    process.env.NEXT_PUBLIC_VAULT_APP_URL = 'https://vault.example/';
+
+    expect(getVaultEntryPreviewHref('react/rendering')).toBe(
+      'https://vault.example/vault/react/rendering'
+    );
+
+    process.env.NEXT_PUBLIC_VAULT_APP_URL = previousVaultAppUrl;
+    process.env.NEXT_PUBLIC_CODING_VAULT_APP_URL = previousCodingVaultAppUrl;
   });
 
   it('passes normalized where clauses into the vault entry list query', async () => {
@@ -164,6 +197,7 @@ describe('vault entry helpers', () => {
         id: 'entry-id',
         title: 'React Rendering',
         slug: 'react/rendering',
+        description: '',
         status: 'published',
         updatedAt: '2026-04-18T18:00:00.000Z',
         categoryId: 'category-id',
@@ -191,17 +225,21 @@ describe('vault entry helpers', () => {
         query: 'React',
         status: 'published',
         categoryId: 'category-id',
+        page: 1,
+        pageSize: 20,
       })
     ).resolves.toEqual([
       {
         id: 'entry-id',
         title: 'React Rendering',
         slug: 'react/rendering',
+        description: '',
         status: 'published',
         categoryId: 'category-id',
         categoryLabel: 'React / Rendering',
         updatedAt: '2026-04-18T18:00:00.000Z',
         updatedAtLabel: expectedUpdatedAtLabel,
+        previewHref: null,
       },
     ]);
 

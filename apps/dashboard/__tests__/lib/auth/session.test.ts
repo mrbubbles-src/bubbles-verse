@@ -1,8 +1,8 @@
 import type { User } from '@supabase/supabase-js';
 
 import {
-  requireDashboardSession,
   requireDashboardManagerSession,
+  requireDashboardSession,
   requireOwnerSession,
 } from '@/lib/auth/session';
 

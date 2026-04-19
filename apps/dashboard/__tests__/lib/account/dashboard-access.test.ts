@@ -3,11 +3,13 @@ import {
   getDashboardAccessFeedbackMessage,
 } from '@/lib/account/access-feedback';
 import {
+  formatDashboardAccessRoleLabel,
   normalizeDashboardEmail,
   normalizeGithubUsername,
   parseCreateDashboardAccessEntry,
+  summarizeDashboardAccessEntries,
   toDashboardAccessInsertValues,
-} from '@/lib/account/dashboard-access';
+} from '@/lib/account/dashboard-access.shared';
 
 import { describe, expect, it } from 'vitest';
 
@@ -52,6 +54,34 @@ describe('dashboard access helpers', () => {
     formData.set('dashboardAccess', 'maybe');
 
     expect(parseCreateDashboardAccessEntry(formData).success).toBe(false);
+  });
+
+  it('formats role labels and summarizes the allowlist for the UI', () => {
+    expect(formatDashboardAccessRoleLabel('guest_author')).toBe('Gastautor');
+    expect(
+      summarizeDashboardAccessEntries([
+        {
+          githubUsername: 'manuel',
+          email: 'manuel@example.com',
+          userRole: 'owner',
+          dashboardAccess: true,
+          note: null,
+          createdAt: '2026-04-18T00:00:00.000Z',
+        },
+        {
+          githubUsername: 'guest',
+          email: 'guest@example.com',
+          userRole: 'guest_author',
+          dashboardAccess: false,
+          note: 'Extern',
+          createdAt: '2026-04-18T00:00:00.000Z',
+        },
+      ])
+    ).toEqual({
+      total: 2,
+      active: 1,
+      owners: 1,
+    });
   });
 });
 

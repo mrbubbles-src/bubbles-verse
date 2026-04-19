@@ -17,12 +17,17 @@ a clean base.
 - `/login` starts the owner-only GitHub OAuth flow through Supabase.
 - `/` now renders a live protected dashboard home with current identity context, Vault stats, profile readiness, and recent editorial activity.
 - The shared shell already uses `BubblesSidebar`, the shared app header, theme toggle, and footer.
+- The shared shell navigation now follows the redesign playbook: `Profil`
+  lives in the sidebar footer menu, `Account` is now `Zugangsverwaltung`, and
+  Vault entry drafts can appear as temporary child links below `Einträge`.
 - Protected routes exist for `/profile`, `/account`, `/vault`, `/vault/categories`, `/vault/entries`, and `/vault/entries/new`.
 - `/profile` now gives every legit dashboard user a dedicated author-profile screen for display data, slug, avatar, bio, and the first fixed social links.
 - `/account` now lets Owners manage the private dashboard allowlist, including `dashboard_access` and `user_role`.
 - `/vault` now acts as the real landing page for the Coding Vault area with editorial stats, recent activity, and direct shortcuts into authoring.
 - `/vault/categories` now ships the first real editorial CRUD screen for the Coding Vault category tree.
 - `/vault/entries` now shows the first real editorial list, `/vault/entries/new` creates entries through `@bubbles/markdown-editor`, and `/vault/entries/[id]` edits existing entries in the same flow.
+- `/vault/entries/new/preview` and `/vault/entries/[id]/preview` now open the
+  current draft or saved entry as a fullscreen preview in a separate tab.
 - Shared fonts, globals, theme provider, and toast host are wired in.
 - The app is configured to consume shared source packages from the monorepo.
 
@@ -127,6 +132,10 @@ hooks.
 - `/account` is Owner-only and reads from `private.dashboard_github_allowlist`.
 - Every row stores the exact GitHub username + verified email pair that Supabase should allow.
 - The same row also feeds the custom JWT claims hook for `dashboard_access` and `user_role`.
+- Shared role/summary/form helpers for this area now live in
+  `lib/account/dashboard-access.shared.ts`, while DB reads stay in the
+  server-only `lib/account/dashboard-access.ts` module so client components do
+  not bundle the Postgres driver.
 - Identity fields are immutable in the first UI slice. If a GitHub username or email changes, remove the row and create a new one.
 - The dashboard protects the final active Owner row from being disabled or deleted in the UI.
 
@@ -160,8 +169,11 @@ hooks.
 - `/vault/entries` is available for `owner` and `editor` roles and now supports URL-based filters for title search, status, and category.
 - `/vault/entries/new` uses `@bubbles/markdown-editor` for shared authoring, metadata, draft handling, preview, and image uploads.
 - `/vault/entries/[id]` reuses the same editor in edit mode, including current category, tags, metadata, and saved editor content.
-- `/vault/entries/[id]` can also duplicate the current entry into a fresh draft and jump straight into the new edit screen.
-- `/vault/entries/[id]` can now also remove an entry directly from the edit view, including the linked Vault row and tags.
+- The editor routes keep the shared package editor but now use a much flatter
+  dashboard header with inline category selection plus a dedicated `Vorschau`
+  action that opens a fullscreen preview route in a new tab.
+- Temporary sidebar draft items under `Einträge` can now also be dismissed
+  directly through a small trailing action, which removes the local draft state.
 - The Vault entry wrapper now scopes edit drafts per entry ID, so switching
   between two edit screens does not restore another entry's stale local draft.
 - New entry saves go through `/api/vault/entries`, which bootstraps the shared `vault` app module and the current author's `profiles` row on first save.

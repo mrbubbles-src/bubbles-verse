@@ -107,7 +107,17 @@ describe('VaultEntryEditor', () => {
     );
 
     expect(screen.getByText('Basics / HTML')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Vorschau' })).toHaveAttribute(
+      'href',
+      '/vault/entries/entry-id/preview'
+    );
     expect(screen.queryByText('category-a')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('Als Entwurf duplizieren')
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('Eintrag endgültig entfernen')
+    ).not.toBeInTheDocument();
   });
 
   it('sends description, tags, category, and scoped draft props when saving', async () => {

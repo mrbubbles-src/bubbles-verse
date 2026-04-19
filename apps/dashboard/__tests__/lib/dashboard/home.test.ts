@@ -54,18 +54,21 @@ describe('dashboard home model', () => {
       expect.arrayContaining([
         expect.objectContaining({ href: '/profile' }),
         expect.objectContaining({ href: '/vault/entries/new' }),
+        expect.objectContaining({ href: '/vault/entries' }),
         expect.objectContaining({ href: '/vault/categories' }),
         expect.objectContaining({ href: '/account' }),
       ])
     );
+    expect(model.greetingName).toBe('Manuel');
     expect(model.workspaceStats).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ label: 'Offene Entwürfe', value: '1' }),
         expect.objectContaining({ label: 'Veröffentlicht', value: '7' }),
         expect.objectContaining({ label: 'Kategorien', value: '5' }),
-        expect.objectContaining({ label: 'Profilstatus', value: '3/4' }),
       ])
     );
+    expect(model.workspaceStats).toHaveLength(3);
+    expect(model.profileStatus.isComplete).toBe(false);
     expect(model.profileStatus.summary).toContain('Noch 1 Bereich');
     expect(model.recentDrafts).toHaveLength(1);
     expect(model.recentUpdates).toHaveLength(2);

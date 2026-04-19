@@ -45,6 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   links.
 - Added a live dashboard landing page that now reads real identity, profile,
   and Vault data instead of static mock content.
+- Added fullscreen Vault preview routes for create/edit flows so draft content
+  can open in a separate browser tab outside the split editor preview.
 - Added a first RLS layer for all dashboard tables plus the private allowlist,
   using the custom JWT claims `dashboard_access` and `user_role`.
 - Added public-read RLS policies for published content, author data, active
@@ -53,8 +55,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Split shared dashboard-access helpers from the server-only DB module so the
+  `/account` client bundle no longer pulls in the Postgres driver during
+  Next.js development.
 - Aligned the app's Next.js, React, and type package versions with the shared
   workspace packages to reduce monorepo version drift.
+- Reworked the shared dashboard shell navigation to match the redesign
+  playbook, including shorter header copy, `Zugangsverwaltung` in the primary
+  nav, profile access in the sidebar footer menu, and temporary draft children
+  below `Einträge`.
+- Reworked the dashboard UI around the redesign playbook: flatter layouts,
+  work-first home and Vault overview, table-first management screens, and a
+  reduced authoring header around the shared markdown editor.
 - Replaced the `create-next-app` placeholder metadata and landing page copy with
   dashboard-specific scaffold content.
 - Documented the dashboard environment variables needed for Supabase auth and

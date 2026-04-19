@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { DashboardHome } from '@/components/home/dashboard-home';
 
 describe('DashboardHome', () => {
-  it('renders live-looking identity, actions, stats, and profile status', () => {
+  it('renders the flatter home work area and hides profile completion UI', () => {
     const model = buildDashboardHomeModel({
       identity: {
         displayName: 'Manuel Fahrenholz',
@@ -53,15 +53,18 @@ describe('DashboardHome', () => {
     render(<DashboardHome model={model} />);
 
     expect(
-      screen.getByRole('heading', {
-        name: 'Manuel Fahrenholz, hier ist dein Redaktionsstand für heute.',
-      })
+      screen.getByRole('heading', { name: 'Hallo, Manuel' })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: /Neuer Vault-Eintrag/i })
+      screen.getAllByRole('link', { name: /Neuer Eintrag/i })[0]
     ).toHaveAttribute('href', '/vault/entries/new');
-    expect(screen.getAllByText('Profilstatus')).toHaveLength(2);
-    expect(screen.getByText('Coding Vault')).toBeInTheDocument();
+    expect(
+      screen.getByRole('tab', { name: 'Offene Entwürfe' })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('Profil noch nicht vollständig')
+    ).not.toBeInTheDocument();
+    expect(screen.getAllByText('Coding Vault')).toHaveLength(2);
     expect(screen.getByText('4 veröffentlicht')).toBeInTheDocument();
   });
 });
