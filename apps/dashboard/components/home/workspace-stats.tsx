@@ -5,27 +5,22 @@ type WorkspaceStatsProps = {
 };
 
 /**
- * Renders compact dashboard stats without turning the home into a BI screen.
+ * Renders the three compact editorial stats for the dashboard home rail.
  *
- * Use this for a handful of stable numbers that help the next editorial
- * decision, not for exhaustive analytics.
+ * Keep these intentionally light so the page reads like a workspace and not a
+ * metrics dashboard.
  */
 export function WorkspaceStats({ stats }: WorkspaceStatsProps) {
   return (
-    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <section className="grid gap-0 sm:grid-cols-3">
       {stats.map((stat) => (
         <article
           key={stat.label}
-          className="flex flex-col gap-3 rounded-[1.75rem] border border-border/50 bg-background/80 px-5 py-5 shadow-sm shadow-black/5">
-          <div className="space-y-1">
-            <p className="text-xs font-semibold tracking-[0.24em] text-muted-foreground uppercase">
-              {stat.label}
-            </p>
-            <p className="text-3xl font-semibold tracking-tight">{stat.value}</p>
-          </div>
-          <p className="text-sm text-pretty text-muted-foreground">
-            {stat.detail}
+          className="border-t border-border/60 py-3 first:border-t-0 sm:border-t-0 sm:border-l sm:pl-4 sm:first:border-l-0 sm:first:pl-0">
+          <p className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            {stat.value}
           </p>
+          <p className="mt-1 text-sm text-muted-foreground">{stat.label}</p>
         </article>
       ))}
     </section>

@@ -1,9 +1,6 @@
 import type { ToolConstructable, ToolSettings } from '@editorjs/editorjs';
 
-import type {
-  MarkdownEditorImageUploader,
-  PluginKey,
-} from '../types/editor';
+import type { MarkdownEditorImageUploader, PluginKey } from '../types/editor';
 
 type EditorToolMap = Record<string, ToolConstructable | ToolSettings>;
 type LoadedEditorToolRegistry = {
@@ -118,9 +115,7 @@ const CODE_BLOCK_LANGUAGES = {
  * @param plugins - Optional plugin subset requested by the app.
  * @returns Active plugin keys in canonical toolbar order.
  */
-export function resolvePluginKeys(
-  plugins?: readonly PluginKey[]
-): PluginKey[] {
+export function resolvePluginKeys(plugins?: readonly PluginKey[]): PluginKey[] {
   if (!plugins) {
     return [...DEFAULT_PLUGIN_KEYS];
   }
@@ -247,7 +242,7 @@ export async function loadEditorToolRegistry(
  * Only requested tools are passed into EditorJS so subsetted editors do not
  * register unused toolbar entries.
  *
-  * @param pluginKeys - Active plugin keys in canonical order.
+ * @param pluginKeys - Active plugin keys in canonical order.
  * @param toolRegistry - Loaded tool constructors for the active subset.
  * @param imageUploader - Optional file uploader for the image tool.
  * @returns Tool map ready for `new EditorJS({ tools })`.

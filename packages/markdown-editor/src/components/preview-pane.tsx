@@ -1,10 +1,12 @@
 'use client';
 
 import type { OutputData } from '@editorjs/editorjs';
-import type { RefObject } from 'react';
-import type { ComponentType } from 'react';
+import type { ComponentType, RefObject } from 'react';
 
-import { evaluate } from '@mdx-js/mdx';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import * as runtime from 'react/jsx-runtime';
+
+import { previewComponents } from '@bubbles/markdown-renderer';
 import {
   Card,
   CardContent,
@@ -12,9 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@bubbles/ui/shadcn/card';
-import { previewComponents } from '@bubbles/markdown-renderer';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import * as runtime from 'react/jsx-runtime';
+import { evaluate } from '@mdx-js/mdx';
 import remarkGfm from 'remark-gfm';
 
 import { useScrollSync } from '../hooks/use-scroll-sync';
@@ -124,8 +124,7 @@ export function PreviewPane({
       <CardContent
         ref={previewScrollRef}
         className="markdown-editor-preview-scroll max-h-[60dvh] overflow-y-auto overscroll-contain"
-        data-testid="markdown-editor-preview"
-      >
+        data-testid="markdown-editor-preview">
         <div className="markdown-editor-preview-content">
           {Compiled ? (
             <Compiled />

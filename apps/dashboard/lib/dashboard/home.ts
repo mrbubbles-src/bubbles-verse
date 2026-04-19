@@ -38,7 +38,6 @@ export type DashboardHomeQuickAction = {
 export type DashboardHomeStat = {
   label: string;
   value: string;
-  detail: string;
 };
 
 export type DashboardHomeIdentity = {
@@ -50,15 +49,10 @@ export type DashboardHomeIdentity = {
 };
 
 export type DashboardHomeProfileStatus = {
-  slug: string | null;
-  socialLinkCount: number;
+  isComplete: boolean;
   completedFields: number;
   totalFields: number;
   summary: string;
-  checklist: Array<{
-    label: string;
-    done: boolean;
-  }>;
   nextStepLabel: string;
   nextStepHref: string;
 };
@@ -79,7 +73,7 @@ type DashboardHomeInput = {
 };
 
 export type DashboardHomeModel = {
-  identity: DashboardHomeIdentity;
+  greetingName: string;
   quickActions: DashboardHomeQuickAction[];
   workspaceStats: DashboardHomeStat[];
   profileStatus: DashboardHomeProfileStatus;
@@ -87,6 +81,21 @@ export type DashboardHomeModel = {
   recentUpdates: DashboardHomeRecentItem[];
   appSummaries: DashboardHomeSummary[];
 };
+
+/**
+ * Extracts the short greeting name for the dashboard home headline.
+ *
+ * Use the first non-empty token so the home only greets with a Vorname and
+ * still falls back gracefully for usernames or single-word identities.
+ *
+ * @param displayName Full display name or fallback username.
+ * @returns Short greeting name for `Hallo, …`.
+ */
+function getGreetingName(displayName: string) {
+  const [firstToken] = displayName.trim().split(/\s+/);
+
+  return firstToken && firstToken.length > 0 ? firstToken : displayName.trim();
+}
 
 /**
  * Maps dashboard access roles to short German UI labels.
@@ -147,34 +156,34 @@ async function countProfileSocialLinks(profileId: string) {
  */
 function buildDashboardQuickActions(input: {
   role: DashboardAccessRole;
-  completedProfileFields: number;
-  totalProfileFields: number;
+  profileComplete: boolean;
 }) {
-  const actions: DashboardHomeQuickAction[] = [
-    {
-      label:
-        input.completedProfileFields < input.totalProfileFields
-          ? 'Profil vervollständigen'
-          : 'Profil öffnen',
+  const actions: DashboardHomeQuickAction[] = [];
+
+  if (!input.profileComplete) {
+    actions.push({
+      label: 'Profil vervollständigen',
       href: '/profile',
-      description:
-        'Autorenprofil, Avatar, Bio und Links auf einen Blick pflegen.',
-    },
-  ];
+      description: 'Avatar, Bio und Social Links sauber fertigziehen.',
+    });
+  }
 
   if (input.role === 'owner' || input.role === 'editor') {
     actions.push(
       {
-        label: 'Neuer Vault-Eintrag',
+        label: 'Neuer Eintrag',
         href: '/vault/entries/new',
-        description:
-          'Direkt in den Markdown-Editor springen und einen neuen Draft anlegen.',
+        description: 'Direkt in den Editor springen und weiterschreiben.',
       },
       {
-        label: 'Vault-Struktur prüfen',
+        label: 'Einträge öffnen',
+        href: '/vault/entries',
+        description: 'Offene Entwürfe und letzte Änderungen durchgehen.',
+      },
+      {
+        label: 'Kategorien öffnen',
         href: '/vault/categories',
-        description:
-          'Kategorien schärfen und neue Inhalte sauber einsortieren.',
+        description: 'Struktur prüfen und neue Themen sauber einsortieren.',
       }
     );
   } else {
@@ -188,10 +197,9 @@ function buildDashboardQuickActions(input: {
 
   if (input.role === 'owner') {
     actions.push({
-      label: 'Zugänge verwalten',
+      label: 'Zugangsverwaltung',
       href: '/account',
-      description:
-        'Allowlist, Rollen und Dashboard-Zugänge für weitere Personen pflegen.',
+      description: 'Freigaben, Rollen und bestehende Zugänge verwalten.',
     });
   }
 
@@ -229,57 +237,42 @@ export function buildDashboardHomeModel(
     (item) => item.done
   ).length;
   const totalProfileFields = profileChecklist.length;
+  const profileComplete = completedProfileFields === totalProfileFields;
 
   return {
-    identity: input.identity,
+    greetingName: getGreetingName(input.identity.displayName),
     quickActions: buildDashboardQuickActions({
       role: input.identity.role,
-      completedProfileFields,
-      totalProfileFields,
+      profileComplete,
     }),
     workspaceStats: [
       {
         label: 'Offene Entwürfe',
         value: String(input.draftCount),
-        detail: 'Alles, was im Vault noch Feinschliff oder Review braucht.',
       },
       {
         label: 'Veröffentlicht',
         value: String(input.publishedCount),
-        detail: 'Bereits freigegebene Vault-Inhalte für spätere Ausspielungen.',
       },
       {
         label: 'Kategorien',
         value: String(input.categoryCount),
-        detail: 'Aktive Taxonomie für Themen, Serien und Inhaltsschwerpunkte.',
-      },
-      {
-        label: 'Profilstatus',
-        value: `${completedProfileFields}/${totalProfileFields}`,
-        detail:
-          completedProfileFields === totalProfileFields
-            ? 'Dein Profil ist bereit für spätere Autorenflächen.'
-            : 'Ein paar Profildaten fehlen noch für spätere Autorenkarten.',
       },
     ],
     profileStatus: {
-      slug: input.profileStatus.slug,
-      socialLinkCount: input.profileStatus.socialLinkCount,
+      isComplete: profileComplete,
       completedFields: completedProfileFields,
       totalFields: totalProfileFields,
-      summary:
-        completedProfileFields === totalProfileFields
-          ? 'Dein Profil wirkt vollständig genug für erste öffentliche Autorenblöcke.'
-          : `Noch ${totalProfileFields - completedProfileFields} Bereich(e) offen, bevor dein Profil rund wirkt.`,
-      checklist: profileChecklist,
-      nextStepLabel:
-        completedProfileFields === totalProfileFields
-          ? 'Profil prüfen'
-          : 'Profil vervollständigen',
+      summary: profileComplete
+        ? 'Dein Profil ist vollständig und muss hier nicht mehr auftauchen.'
+        : `Noch ${totalProfileFields - completedProfileFields} Bereich(e) offen, bis dein Autorenprofil vollständig ist.`,
+      nextStepLabel: 'Profil vervollständigen',
       nextStepHref: '/profile',
     },
-    recentDrafts: input.recentItems.filter((item) => item.status === 'draft'),
-    recentUpdates: input.recentItems,
+    recentDrafts: input.recentItems
+      .filter((item) => item.status === 'draft')
+      .slice(0, 5),
+    recentUpdates: input.recentItems.slice(0, 5),
     appSummaries: input.appSummaries,
   };
 }

@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { createCloudinaryUploadRoute } from '../../src/server/cloudinary-upload-route';
+
 const {
   createEditorImageUploadResponseMock,
   isUploadFileMock,
@@ -19,8 +21,6 @@ vi.mock('../../src/server/cloudinary-upload', () => ({
   resolveCloudinaryErrorResponse: resolveCloudinaryErrorResponseMock,
   uploadEditorImageToCloudinary: uploadEditorImageToCloudinaryMock,
 }));
-
-import { createCloudinaryUploadRoute } from '../../src/server/cloudinary-upload-route';
 
 afterEach(() => {
   createEditorImageUploadResponseMock.mockReset();
@@ -43,7 +43,9 @@ function createUploadRequest(formData: FormData): Request {
 
 describe('createCloudinaryUploadRoute', () => {
   it('uploads the image and returns the EditorJS image-tool response shape', async () => {
-    const file = new File(['image-bytes'], 'diagram.png', { type: 'image/png' });
+    const file = new File(['image-bytes'], 'diagram.png', {
+      type: 'image/png',
+    });
 
     isUploadFileMock.mockReturnValue(true);
     uploadEditorImageToCloudinaryMock.mockResolvedValue({
@@ -128,7 +130,9 @@ describe('createCloudinaryUploadRoute', () => {
   });
 
   it('maps upload helper errors through the shared error formatter', async () => {
-    const file = new File(['image-bytes'], 'diagram.png', { type: 'image/png' });
+    const file = new File(['image-bytes'], 'diagram.png', {
+      type: 'image/png',
+    });
 
     isUploadFileMock.mockReturnValue(true);
     uploadEditorImageToCloudinaryMock.mockRejectedValue({

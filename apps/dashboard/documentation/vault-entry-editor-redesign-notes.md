@@ -2,9 +2,10 @@
 
 Stand: 2026-04-19
 Routes:
+
 - `/vault/entries/new`
 - `/vault/entries/[id]`
-Status: laufendes Brainstorming, noch nicht final freigegeben
+  Status: laufendes Brainstorming, noch nicht final freigegeben
 
 ## Ziel
 

@@ -7,7 +7,7 @@
 export const DEFAULT_ALLOWED_MDX_COMPONENTS = [] as const;
 
 const allowedInlineComponentNames = new Set<string>(
-  DEFAULT_ALLOWED_MDX_COMPONENTS,
+  DEFAULT_ALLOWED_MDX_COMPONENTS
 );
 
 /**
@@ -36,7 +36,7 @@ export function tryParseInlineComponent(text: string): string | null {
 
   const trimmed = text.trim();
   const shortcodeMatch = trimmed.match(
-    /^\[\[(?<name>[A-Za-z_][A-Za-z0-9_]*)\s*(?<json>\{[\s\S]*\})?\]\]$/,
+    /^\[\[(?<name>[A-Za-z_][A-Za-z0-9_]*)\s*(?<json>\{[\s\S]*\})?\]\]$/
   );
 
   if (shortcodeMatch?.groups?.name) {

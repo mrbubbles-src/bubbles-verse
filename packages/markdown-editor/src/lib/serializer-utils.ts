@@ -12,7 +12,8 @@ export { escapeMdxBraces } from '../serializer/security';
 export function replaceLinksWithMarkdownLinks(text: string): string {
   return text.replace(
     /<a\s+href=["']([^"']+)["']>(.*?)<\/a>/g,
-    (_, href, content) => `<MarkdownLink href="${href}">${content}</MarkdownLink>`,
+    (_, href, content) =>
+      `<MarkdownLink href="${href}">${content}</MarkdownLink>`
   );
 }
 
@@ -27,7 +28,7 @@ export function replaceLinksWithMarkdownLinks(text: string): string {
 export function renderListItems(
   items: EditorJsListItem[],
   style: 'checklist' | 'ordered' | 'unordered',
-  depth = 0,
+  depth = 0
 ): string {
   return items
     .map((item, index) => {
@@ -40,7 +41,7 @@ export function renderListItems(
       }
 
       const content = replaceLinksWithMarkdownLinks(
-        escapeMdxBraces(item.content),
+        escapeMdxBraces(item.content)
       );
       const prefix = ' '.repeat(depth * 4);
       const line = `${prefix}${bullet} ${content}`;
@@ -68,7 +69,7 @@ export function normalizeAlertMessage(raw: string): string {
   sanitized = sanitized.replace(/<\/?span[^>]*>/gi, '');
   sanitized = sanitized.replace(
     /<div[^>]*data-empty=["']true["'][^>]*><br\s*\/?><\/div>/gi,
-    '\n\n',
+    '\n\n'
   );
   sanitized = sanitized.replace(/<br\b[^>]*\/?>/gi, '\n');
   sanitized = sanitized.replace(/<\/div>\s*<div[^>]*>/gi, '\n');

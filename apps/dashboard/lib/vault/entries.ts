@@ -10,7 +10,7 @@ import { ensureDashboardProfile } from '@/lib/profile/profile';
 import { listVaultCategories } from '@/lib/vault/categories';
 import { buildVaultCategoryTree } from '@/lib/vault/category-tree';
 
-import { and, desc, eq, ilike } from 'drizzle-orm';
+import { and, count, desc, eq, ilike } from 'drizzle-orm';
 import * as z from 'zod';
 
 import { db } from '@/drizzle/db';
@@ -24,6 +24,7 @@ import {
 
 const VAULT_APP_MODULE_SLUG = 'vault';
 const VAULT_CONTENT_TYPE = 'vault_entry';
+const VAULT_ENTRY_PAGE_SIZE_OPTIONS = [20, 50, 100] as const;
 
 const vaultEntryEditorContentSchema = z
   .object({
@@ -58,19 +59,40 @@ export type VaultEntryListItem = {
   id: string;
   title: string;
   slug: string;
+  description: string;
   status: 'draft' | 'published';
   categoryId: string;
   categoryLabel: string;
   updatedAt: string;
   updatedAtLabel: string;
+  previewHref: string | null;
 };
 
 export type VaultEntryListFilterStatus = 'all' | 'draft' | 'published';
+export type VaultEntryListPageSize =
+  (typeof VAULT_ENTRY_PAGE_SIZE_OPTIONS)[number];
 
 export type VaultEntryListFilters = {
   query: string;
   status: VaultEntryListFilterStatus;
   categoryId: string | null;
+  page: number;
+  pageSize: VaultEntryListPageSize;
+};
+
+export type VaultEntryListSummary = {
+  totalEntries: number;
+  draftEntries: number;
+  publishedEntries: number;
+};
+
+export type VaultEntryListPagination = {
+  page: number;
+  pageSize: VaultEntryListPageSize;
+  totalItems: number;
+  totalPages: number;
+  showPagination: boolean;
+  pageSizeOptions: readonly VaultEntryListPageSize[];
 };
 
 export type VaultEntryInitialData = {
@@ -82,6 +104,13 @@ export type VaultEntryInitialData = {
   status: MarkdownEditorStatus;
   primaryCategoryId: string;
   editorContent: MarkdownEditorContentData;
+};
+
+export type VaultEntryPreviewData = {
+  id: string;
+  title: string;
+  description: string;
+  serializedContent: string;
 };
 
 export type CreateVaultEntryInput = z.infer<
@@ -211,6 +240,176 @@ export async function getVaultEntryCreationModel() {
 }
 
 /**
+ * Normalizes the page-size query parameter to one supported table size.
+ *
+ * @param value Raw page size query value from the current request.
+ * @returns One of the supported dashboard table sizes.
+ */
+export function normalizeVaultEntryListPageSize(
+  value: string | null | undefined
+): VaultEntryListPageSize {
+  const normalizedValue = Number(value);
+
+  return VAULT_ENTRY_PAGE_SIZE_OPTIONS.includes(
+    normalizedValue as VaultEntryListPageSize
+  )
+    ? (normalizedValue as VaultEntryListPageSize)
+    : 20;
+}
+
+/**
+ * Builds the public preview target for one Vault entry when the public app URL
+ * is available in the dashboard environment.
+ *
+ * @param slug Published entry slug from the shared content row.
+ * @returns Public entry URL or `null` when preview wiring is not configured.
+ */
+export function getVaultEntryPreviewHref(slug: string) {
+  const baseUrl =
+    process.env.NEXT_PUBLIC_CODING_VAULT_APP_URL?.trim() ||
+    process.env.NEXT_PUBLIC_VAULT_APP_URL?.trim() ||
+    '';
+
+  if (!baseUrl) {
+    return null;
+  }
+
+  return `${baseUrl.replace(/\/$/, '')}/vault/${slug}`;
+}
+
+/**
+ * Collects the stable where clauses shared by Vault entry list queries.
+ *
+ * @param filters Normalized list filters without pagination data.
+ * @returns Drizzle predicates for search, status, and category filters.
+ */
+function buildVaultEntryListWhereClauses(filters: {
+  query: string;
+  status: VaultEntryListFilterStatus;
+  categoryId: string | null;
+}) {
+  return [
+    filters.status === 'all' ? null : eq(contentItems.status, filters.status),
+    filters.categoryId === null
+      ? null
+      : eq(vaultEntries.primaryCategoryId, filters.categoryId),
+    filters.query ? ilike(contentItems.title, `%${filters.query}%`) : null,
+  ].filter((clause) => clause !== null);
+}
+
+/**
+ * Loads the grouped entry totals for the current list filters.
+ *
+ * @param filters Normalized list filters without pagination data.
+ * @returns Totals for all matches plus their draft/published split.
+ */
+async function getVaultEntryListSummary(filters: {
+  query: string;
+  status: VaultEntryListFilterStatus;
+  categoryId: string | null;
+}): Promise<VaultEntryListSummary> {
+  const whereClauses = buildVaultEntryListWhereClauses(filters);
+  const summaryQuery = db
+    .select({
+      status: contentItems.status,
+      total: count(),
+    })
+    .from(vaultEntries)
+    .innerJoin(contentItems, eq(vaultEntries.contentItemId, contentItems.id))
+    .groupBy(contentItems.status);
+  const rows =
+    whereClauses.length > 0
+      ? await summaryQuery.where(and(...whereClauses))
+      : await summaryQuery;
+  const summary = rows.reduce<VaultEntryListSummary>(
+    (currentSummary, row) => ({
+      totalEntries: currentSummary.totalEntries + row.total,
+      draftEntries:
+        row.status === 'draft'
+          ? currentSummary.draftEntries + row.total
+          : currentSummary.draftEntries,
+      publishedEntries:
+        row.status === 'published'
+          ? currentSummary.publishedEntries + row.total
+          : currentSummary.publishedEntries,
+    }),
+    {
+      totalEntries: 0,
+      draftEntries: 0,
+      publishedEntries: 0,
+    }
+  );
+
+  return summary;
+}
+
+/**
+ * Loads the current entry rows with an optional offset/limit window.
+ *
+ * @param filters Normalized list filters without pagination data.
+ * @param options Optional pagination window for the list table.
+ * @returns Sorted Vault rows for the requested window.
+ */
+async function queryVaultEntryRows(
+  filters: {
+    query: string;
+    status: VaultEntryListFilterStatus;
+    categoryId: string | null;
+  },
+  options?: {
+    limit?: number;
+    offset?: number;
+  }
+) {
+  const whereClauses = buildVaultEntryListWhereClauses(filters);
+  const baseQuery = db
+    .select({
+      id: contentItems.id,
+      title: contentItems.title,
+      slug: contentItems.slug,
+      description: contentItems.description,
+      status: contentItems.status,
+      updatedAt: contentItems.updatedAt,
+      categoryId: vaultCategories.id,
+      categoryName: vaultCategories.name,
+    })
+    .from(vaultEntries)
+    .innerJoin(contentItems, eq(vaultEntries.contentItemId, contentItems.id))
+    .innerJoin(
+      vaultCategories,
+      eq(vaultEntries.primaryCategoryId, vaultCategories.id)
+    );
+  const orderedQuery =
+    whereClauses.length > 0
+      ? baseQuery
+          .where(and(...whereClauses))
+          .orderBy(desc(contentItems.updatedAt))
+      : baseQuery.orderBy(desc(contentItems.updatedAt));
+  const rows =
+    typeof options?.limit === 'number'
+      ? options.offset && options.offset > 0
+        ? await orderedQuery.limit(options.limit).offset(options.offset)
+        : await orderedQuery.limit(options.limit)
+      : await orderedQuery;
+
+  return rows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    slug: row.slug,
+    description: row.description,
+    status: row.status,
+    categoryId: row.categoryId,
+    categoryLabel: row.categoryName,
+    updatedAt: row.updatedAt,
+    updatedAtLabel: new Intl.DateTimeFormat('de-DE', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(new Date(row.updatedAt)),
+    previewHref: getVaultEntryPreviewHref(row.slug),
+  }));
+}
+
+/**
  * Normalizes URL-driven list filters for the Vault entry overview.
  *
  * The page keeps filters in the query string so editorial states are shareable
@@ -225,16 +424,23 @@ export function parseVaultEntryListFilters(searchParams: {
   const rawQuery = searchParams.query;
   const rawStatus = searchParams.status;
   const rawCategoryId = searchParams.categoryId;
+  const rawPage = searchParams.page;
+  const rawPageSize = searchParams.pageSize;
   const queryValue = Array.isArray(rawQuery) ? rawQuery[0] : rawQuery;
   const statusValue = Array.isArray(rawStatus) ? rawStatus[0] : rawStatus;
   const categoryIdValue = Array.isArray(rawCategoryId)
     ? rawCategoryId[0]
     : rawCategoryId;
+  const pageValue = Array.isArray(rawPage) ? rawPage[0] : rawPage;
+  const pageSizeValue = Array.isArray(rawPageSize)
+    ? rawPageSize[0]
+    : rawPageSize;
   const normalizedStatus: VaultEntryListFilterStatus =
     statusValue === 'draft' || statusValue === 'published'
       ? statusValue
       : 'all';
   const normalizedCategoryId = categoryIdValue?.trim();
+  const normalizedPage = Number(pageValue);
 
   return {
     query: queryValue?.trim().slice(0, 120) ?? '',
@@ -243,6 +449,11 @@ export function parseVaultEntryListFilters(searchParams: {
       normalizedCategoryId && normalizedCategoryId !== 'all'
         ? normalizedCategoryId
         : null,
+    page:
+      Number.isFinite(normalizedPage) && normalizedPage >= 1
+        ? Math.floor(normalizedPage)
+        : 1,
+    pageSize: normalizeVaultEntryListPageSize(pageSizeValue),
   };
 }
 
@@ -256,48 +467,15 @@ export async function getVaultEntries(
     query: '',
     status: 'all',
     categoryId: null,
+    page: 1,
+    pageSize: 20,
   }
 ): Promise<VaultEntryListItem[]> {
-  const whereClauses = [
-    filters.status === 'all' ? null : eq(contentItems.status, filters.status),
-    filters.categoryId === null
-      ? null
-      : eq(vaultEntries.primaryCategoryId, filters.categoryId),
-    filters.query ? ilike(contentItems.title, `%${filters.query}%`) : null,
-  ].filter((clause) => clause !== null);
-  const baseQuery = db
-    .select({
-      id: contentItems.id,
-      title: contentItems.title,
-      slug: contentItems.slug,
-      status: contentItems.status,
-      updatedAt: contentItems.updatedAt,
-      categoryId: vaultCategories.id,
-      categoryName: vaultCategories.name,
-    })
-    .from(vaultEntries)
-    .innerJoin(contentItems, eq(vaultEntries.contentItemId, contentItems.id))
-    .innerJoin(
-      vaultCategories,
-      eq(vaultEntries.primaryCategoryId, vaultCategories.id)
-    );
-  const rows = await (
-    whereClauses.length > 0 ? baseQuery.where(and(...whereClauses)) : baseQuery
-  ).orderBy(desc(contentItems.updatedAt));
-
-  return rows.map((row) => ({
-    id: row.id,
-    title: row.title,
-    slug: row.slug,
-    status: row.status,
-    categoryId: row.categoryId,
-    categoryLabel: row.categoryName,
-    updatedAt: row.updatedAt,
-    updatedAtLabel: new Intl.DateTimeFormat('de-DE', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    }).format(new Date(row.updatedAt)),
-  }));
+  return queryVaultEntryRows({
+    query: filters.query,
+    status: filters.status,
+    categoryId: filters.categoryId,
+  });
 }
 
 /**
@@ -309,15 +487,42 @@ export async function getVaultEntries(
 export async function getVaultEntryListPageModel(
   filters: VaultEntryListFilters
 ) {
-  const [entries, categories] = await Promise.all([
-    getVaultEntries(filters),
+  const queryFilters = {
+    query: filters.query,
+    status: filters.status,
+    categoryId: filters.categoryId,
+  };
+  const [summary, categories] = await Promise.all([
+    getVaultEntryListSummary(queryFilters),
     listVaultEntryCategoryOptions(),
   ]);
+  const totalPages =
+    summary.totalEntries === 0
+      ? 1
+      : Math.ceil(summary.totalEntries / filters.pageSize);
+  const currentPage = Math.min(filters.page, totalPages);
+  const offset = (currentPage - 1) * filters.pageSize;
+  const entries = await queryVaultEntryRows(queryFilters, {
+    limit: filters.pageSize,
+    offset,
+  });
 
   return {
     entries,
     categories,
-    filters,
+    filters: {
+      ...filters,
+      page: currentPage,
+    },
+    summary,
+    pagination: {
+      page: currentPage,
+      pageSize: filters.pageSize,
+      totalItems: summary.totalEntries,
+      totalPages,
+      showPagination: summary.totalEntries > filters.pageSize,
+      pageSizeOptions: VAULT_ENTRY_PAGE_SIZE_OPTIONS,
+    },
   };
 }
 
@@ -419,6 +624,37 @@ export async function getVaultEntryEditModel(id: string) {
     categories,
     initialData,
   };
+}
+
+/**
+ * Loads the persisted fallback state for the full-page Vault preview route.
+ *
+ * The preview page prefers unsaved browser drafts when they exist, but still
+ * needs a server-fetched baseline so opening the route directly remains useful.
+ *
+ * @param id Content item identifier of the Vault entry.
+ * @returns Stored preview data or `null` when the entry does not exist.
+ */
+export async function getVaultEntryPreviewData(
+  id: string
+): Promise<VaultEntryPreviewData | null> {
+  const [entry] = await db
+    .select({
+      id: contentItems.id,
+      title: contentItems.title,
+      description: contentItems.description,
+      serializedContent: contentItems.serializedContent,
+    })
+    .from(vaultEntries)
+    .innerJoin(contentItems, eq(vaultEntries.contentItemId, contentItems.id))
+    .where(eq(contentItems.id, id))
+    .limit(1);
+
+  if (!entry) {
+    return null;
+  }
+
+  return entry;
 }
 
 /**

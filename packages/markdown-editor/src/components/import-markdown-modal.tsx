@@ -4,6 +4,15 @@ import type { OutputData } from '@editorjs/editorjs';
 import type { ChangeEvent, DragEvent } from 'react';
 
 import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
+
+import {
   AlertCircleIcon,
   Cancel01Icon,
   File01Icon,
@@ -11,15 +20,6 @@ import {
   HugeiconsIcon,
   Upload01Icon,
 } from '@bubbles/ui/lib/hugeicons';
-import {
-  forwardRef,
-  useEffect,
-  useCallback,
-  useImperativeHandle,
-  useRef,
-  useState,
-} from 'react';
-
 import { Button } from '@bubbles/ui/shadcn/button';
 import { CardContent, CardHeader, CardTitle } from '@bubbles/ui/shadcn/card';
 import { Separator } from '@bubbles/ui/shadcn/separator';
@@ -76,10 +76,7 @@ function validateFile(file: File): string | null {
 export const ImportMarkdownModal = forwardRef<
   ImportMarkdownModalHandle,
   ImportMarkdownModalProps
->(function ImportMarkdownModal(
-  { hasExistingContent, onImport },
-  ref
-) {
+>(function ImportMarkdownModal({ hasExistingContent, onImport }, ref) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -145,10 +142,13 @@ export const ImportMarkdownModal = forwardRef<
    * @param file - Markdown file dropped onto the trigger surface.
    * @returns Promise that settles after the file has been processed.
    */
-  const openWithFile = useCallback(async (file: File): Promise<void> => {
-    openModal();
-    await processFile(file);
-  }, [processFile]);
+  const openWithFile = useCallback(
+    async (file: File): Promise<void> => {
+      openModal();
+      await processFile(file);
+    },
+    [processFile]
+  );
 
   useImperativeHandle(ref, () => ({
     openWithFile,
@@ -226,14 +226,13 @@ export const ImportMarkdownModal = forwardRef<
     <>
       <div className="markdown-editor-import-controls">
         <div
-          className={`markdown-editor-import-trigger${isDragging ? ' markdown-editor-import-trigger--dragging' : ''}`}
+          className={`markdown-editor-import-trigger${isDragging ? 'markdown-editor-import-trigger--dragging' : ''}`}
           onClick={openModal}
           onDragEnter={handleDragEnter}
           onDragLeave={handleDragLeave}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
-          title="Markdown-Datei hierher ziehen oder klicken"
-        >
+          title="Markdown-Datei hierher ziehen oder klicken">
           <HugeiconsIcon
             aria-hidden
             className="size-4"
@@ -249,16 +248,12 @@ export const ImportMarkdownModal = forwardRef<
           onClick={openModal}
           title="Markdown importieren"
           type="button"
-          variant="ghost"
-        >
+          variant="ghost">
           <HugeiconsIcon aria-hidden icon={Upload01Icon} strokeWidth={2} />
         </Button>
       </div>
 
-      <dialog
-        ref={dialogRef}
-        className="markdown-editor-import-dialog"
-      >
+      <dialog ref={dialogRef} className="markdown-editor-import-dialog">
         <div className="markdown-editor-import-panel">
           <CardHeader className="relative">
             <Button
@@ -266,8 +261,7 @@ export const ImportMarkdownModal = forwardRef<
               className="absolute top-2 right-2"
               onClick={closeModal}
               type="button"
-              variant="ghost"
-            >
+              variant="ghost">
               <HugeiconsIcon aria-hidden icon={Cancel01Icon} strokeWidth={2} />
             </Button>
             <CardTitle className="flex items-center gap-2">
@@ -285,8 +279,7 @@ export const ImportMarkdownModal = forwardRef<
             <div className="space-y-2">
               <label
                 className="block text-sm font-medium"
-                htmlFor="markdown-file"
-              >
+                htmlFor="markdown-file">
                 Markdown-Datei auswählen
               </label>
               <input
@@ -364,8 +357,7 @@ export const ImportMarkdownModal = forwardRef<
                         {conversionResult.warnings.map((warning) => (
                           <li
                             key={`${selectedFile.name}-${warning}`}
-                            className="flex items-start gap-1"
-                          >
+                            className="flex items-start gap-1">
                             <span aria-hidden>•</span>
                             <span>{warning}</span>
                           </li>
@@ -399,8 +391,7 @@ export const ImportMarkdownModal = forwardRef<
                   <Button
                     onClick={handleImportClick}
                     type="button"
-                    variant={showConfirmation ? 'destructive' : 'default'}
-                  >
+                    variant={showConfirmation ? 'destructive' : 'default'}>
                     {showConfirmation ? 'Trotzdem importieren' : 'Importieren'}
                   </Button>
                 </div>

@@ -1,6 +1,7 @@
-import { VaultOverview } from '@/components/vault/vault-overview';
 import { requireDashboardManagerSession } from '@/lib/auth/session';
 import { getVaultOverviewModel } from '@/lib/vault/overview';
+
+import { VaultOverview } from '@/components/vault/vault-overview';
 
 /**
  * Renders the first real Vault landing page for owners and editors.

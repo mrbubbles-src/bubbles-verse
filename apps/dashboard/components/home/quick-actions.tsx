@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { Button } from '@bubbles/ui/shadcn/button';
+import { Separator } from '@bubbles/ui/shadcn/separator';
 
 type QuickAction = {
   label: string;
@@ -13,42 +13,38 @@ type QuickActionsProps = {
 };
 
 /**
- * Renders the primary dashboard entry points for the next editing steps.
+ * Renders the quiet vertical action list for the dashboard right rail.
  *
- * Use this section on the home screen to keep the first-click paths obvious
- * without filling the interface with heavy cards.
+ * Use this to keep the next useful paths visible without default-selected
+ * buttons or another block of heavy cards.
  */
 export function QuickActions({ actions }: QuickActionsProps) {
   return (
-    <section className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <p className="text-xs font-semibold tracking-[0.28em] text-muted-foreground uppercase">
-          Schnell starten
-        </p>
-        <h2 className="text-2xl font-semibold tracking-tight text-balance">
-          Heute weiterschreiben
-        </h2>
-      </div>
-      <div className="grid gap-3 lg:grid-cols-2">
+    <section className="flex flex-col gap-3">
+      <h2 className="text-sm font-semibold tracking-[0.22em] text-muted-foreground uppercase">
+        Weiterschreiben
+      </h2>
+
+      <div className="flex flex-col">
         {actions.map((action, index) => (
-          <Button
-            key={action.href}
-            render={<Link href={action.href} />}
-            nativeButton={false}
-            variant={index === 0 ? 'default' : 'outline'}
-            className="h-auto min-h-24 justify-start rounded-[1.75rem] px-5 py-4 text-left whitespace-normal">
-            <span className="flex flex-col items-start gap-1">
-              <span className="font-semibold">{action.label}</span>
-              <span
-                className={
-                  index === 0
-                    ? 'text-sm text-primary-foreground/80'
-                    : 'text-sm text-muted-foreground'
-                }>
-                {action.description}
+          <div key={action.href}>
+            {index > 0 ? <Separator /> : null}
+            <Link
+              href={action.href}
+              className="group flex items-start justify-between gap-4 rounded-[1.5rem] py-3 transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none">
+              <span className="flex min-w-0 flex-col gap-1">
+                <span className="text-sm font-semibold tracking-tight">
+                  {action.label}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  {action.description}
+                </span>
               </span>
-            </span>
-          </Button>
+              <span className="rounded-full border border-border/60 px-3 py-1 text-xs font-medium text-muted-foreground transition-colors group-hover:border-foreground/20 group-hover:text-foreground">
+                Öffnen
+              </span>
+            </Link>
+          </div>
         ))}
       </div>
     </section>

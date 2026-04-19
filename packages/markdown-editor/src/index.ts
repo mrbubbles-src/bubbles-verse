@@ -2,6 +2,15 @@ export { EditorForm } from './components/editor-form';
 export { MarkdownEditor } from './components/markdown-editor';
 export { createEditorImageUploader } from './lib/create-image-uploader';
 export {
+  clearCreateDraft,
+  clearEditDraft,
+  CREATE_DRAFT_KEY,
+  EDIT_DRAFT_KEY,
+  loadCreateDraft,
+  loadEditDraft,
+} from './lib/draft-storage';
+export type { MarkdownEditorDraft } from './lib/draft-storage';
+export {
   generateSlug,
   joinSlugSegments,
   normalizeSlugPath,

@@ -4,9 +4,12 @@ import type {
   VaultEntryCategoryOption,
   VaultEntryInitialData,
 } from '@/lib/vault/entries';
-import type { MarkdownEditorSubmitData } from '@bubbles/markdown-editor';
+import type {
+  MarkdownEditorStatus,
+  MarkdownEditorSubmitData,
+} from '@bubbles/markdown-editor';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import {
   createEditorImageUploader,
@@ -16,19 +19,18 @@ import {
 import '@bubbles/markdown-editor/styles/editor';
 import '@bubbles/markdown-editor/styles/preview';
 
+import {
+  getVaultEntryDraftScope,
+  getVaultEntryPreviewHref,
+} from '@/lib/vault/entry-drafts';
 import { getVaultEntryFeedbackHref } from '@/lib/vault/entry-feedback';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { toast } from '@bubbles/ui/lib/sonner';
+import { Badge } from '@bubbles/ui/shadcn/badge';
 import { Button } from '@bubbles/ui/shadcn/button';
-import {
-  Field,
-  FieldContent,
-  FieldDescription,
-  FieldLabel,
-} from '@bubbles/ui/shadcn/field';
 import {
   Select,
   SelectContent,
@@ -57,19 +59,24 @@ export function VaultEntryEditor({
   mode = 'create',
 }: VaultEntryEditorProps) {
   const router = useRouter();
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isDuplicating, setIsDuplicating] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState(
     initialData?.primaryCategoryId ?? categories[0]?.id ?? ''
   );
-  const draftStorageScope =
-    mode === 'edit' && initialData
-      ? `vault-entry:${initialData.id}`
-      : 'vault-entry:create';
+  const draftStorageScope = getVaultEntryDraftScope({
+    id: initialData?.id,
+    mode,
+  });
   const selectedCategory = useMemo(
     () =>
       categories.find((category) => category.id === selectedCategoryId) ?? null,
     [categories, selectedCategoryId]
+  );
+  const previewHref = getVaultEntryPreviewHref({
+    id: initialData?.id,
+    mode,
+  });
+  const statusLabel = getVaultEntryStatusLabel(
+    mode === 'edit' ? initialData?.status : 'unpublished'
   );
   const imageUploader = useMemo(
     () =>
@@ -80,11 +87,14 @@ export function VaultEntryEditor({
     []
   );
 
-  useEffect(() => {
-    setSelectedCategoryId(
-      initialData?.primaryCategoryId ?? categories[0]?.id ?? ''
-    );
-  }, [categories, initialData?.primaryCategoryId]);
+  /**
+   * Returns the current category path as a short editorial label.
+   *
+   * @returns Flat category label for the active select value.
+   */
+  function getSelectedCategoryLabel() {
+    return selectedCategory?.label ?? 'Kategorie wählen';
+  }
 
   async function handleSuccess(payload: MarkdownEditorSubmitData) {
     if (!selectedCategoryId) {
@@ -126,91 +136,6 @@ export function VaultEntryEditor({
     router.refresh();
   }
 
-  /**
-   * Deletes the current Vault entry after one explicit browser confirmation.
-   *
-   * The destructive action stays local to edit mode so the regular list page
-   * can remain focused on browsing instead of inline danger actions.
-   */
-  async function handleDelete() {
-    if (mode !== 'edit' || !initialData || isDeleting || isDuplicating) {
-      return;
-    }
-
-    const shouldDelete = window.confirm(
-      'Willst du diesen Vault-Eintrag wirklich löschen? Dieser Schritt lässt sich nicht rückgängig machen.'
-    );
-
-    if (!shouldDelete) {
-      return;
-    }
-
-    setIsDeleting(true);
-
-    try {
-      const response = await fetch(`/api/vault/entries/${initialData.id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        const responseBody = (await response.json().catch(() => null)) as {
-          message?: string;
-        } | null;
-        const message =
-          responseBody?.message ??
-          'Der Vault-Eintrag konnte gerade nicht gelöscht werden.';
-
-        toast.error(message);
-        return;
-      }
-
-      router.push(getVaultEntryFeedbackHref('deleted'));
-      router.refresh();
-    } finally {
-      setIsDeleting(false);
-    }
-  }
-
-  /**
-   * Creates a draft copy of the current entry and opens it directly in edit
-   * mode so the next revision can start without rebuilding metadata by hand.
-   */
-  async function handleDuplicate() {
-    if (mode !== 'edit' || !initialData || isDeleting || isDuplicating) {
-      return;
-    }
-
-    setIsDuplicating(true);
-
-    try {
-      const response = await fetch(
-        `/api/vault/entries/${initialData.id}/duplicate`,
-        {
-          method: 'POST',
-        }
-      );
-      const responseBody = (await response.json().catch(() => null)) as {
-        id?: string;
-        message?: string;
-      } | null;
-
-      if (!response.ok || !responseBody?.id) {
-        const message =
-          responseBody?.message ??
-          'Der Vault-Eintrag konnte gerade nicht dupliziert werden.';
-
-        toast.error(message);
-        return;
-      }
-
-      toast.success('Vault-Eintrag dupliziert.');
-      router.push(`/vault/entries/${responseBody.id}`);
-      router.refresh();
-    } finally {
-      setIsDuplicating(false);
-    }
-  }
-
   if (categories.length === 0) {
     return (
       <section className="flex flex-col gap-4 rounded-[2rem] border border-dashed border-border/60 bg-background/70 px-5 py-8 shadow-sm shadow-black/5 sm:px-6">
@@ -235,98 +160,73 @@ export function VaultEntryEditor({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <section className="flex flex-col gap-4 rounded-[2rem] border border-border/50 bg-background/80 px-5 py-6 shadow-sm shadow-black/5 sm:px-6">
-        <div className="flex flex-col gap-2">
-          <p className="text-xs font-semibold tracking-[0.24em] text-muted-foreground uppercase">
-            Vault-Kontext
-          </p>
-          <p className="text-sm text-pretty text-muted-foreground">
-            Die gewählte Kategorie steuert den Vault-Pfad für den Default-Slug
-            und landet später als primäre Zuordnung in `vault_entries`.
-          </p>
-        </div>
-
-        <Field className="max-w-xl">
-          <FieldLabel htmlFor="vault-entry-category">
-            Primäre Kategorie
-          </FieldLabel>
-          <FieldContent>
-            <Select
-              value={selectedCategoryId}
-              onValueChange={(value) => setSelectedCategoryId(value ?? '')}>
-              <SelectTrigger id="vault-entry-category" className="w-full">
-                <SelectValue placeholder="Kategorie wählen">
-                  {selectedCategory?.label}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent align="start">
-                <SelectGroup>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-            <FieldDescription>
-              Aktueller Pfad:{' '}
-              {selectedCategory
-                ? selectedCategory.childSlug
-                  ? `/${selectedCategory.topLevelSlug}/${selectedCategory.childSlug}`
-                  : `/${selectedCategory.topLevelSlug}`
-                : 'noch keine Kategorie gewählt'}
-            </FieldDescription>
-          </FieldContent>
-        </Field>
-
-        {mode === 'edit' && initialData ? (
-          <div className="grid gap-3 lg:grid-cols-2">
-            <div className="flex flex-col gap-2 rounded-[1.5rem] border border-border/50 px-4 py-4">
+    <div className="flex flex-col gap-8">
+      <header className="flex flex-col gap-5 border-b border-border/50 pb-6 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 space-y-4">
+          <div className="space-y-2">
+            <p className="text-xs font-semibold tracking-[0.24em] text-muted-foreground uppercase">
+              {mode === 'edit' ? 'Eintrag bearbeiten' : 'Eintrag'}
+            </p>
+            {mode === 'edit' && initialData ? (
               <div className="space-y-1">
-                <p className="text-sm font-semibold tracking-tight text-foreground">
-                  Als Entwurf duplizieren
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Erstellt eine neue Fassung mit demselben Inhalt, derselben
-                  Kategorie und denselben Tags.
-                </p>
+                <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+                  {initialData.title}
+                </h1>
               </div>
-              <div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => void handleDuplicate()}
-                  disabled={isDeleting || isDuplicating}>
-                  {isDuplicating ? 'Dupliziere...' : 'Eintrag duplizieren'}
-                </Button>
-              </div>
-            </div>
+            ) : (
+              <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+                Neuer Eintrag
+              </h1>
+            )}
+          </div>
 
-            <div className="flex flex-col gap-2 rounded-[1.5rem] border border-dashed border-destructive/35 px-4 py-4">
-              <div className="space-y-1">
-                <p className="text-sm font-semibold tracking-tight text-foreground">
-                  Eintrag endgültig entfernen
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Löscht Inhalt, Kategorie-Verknüpfung und Tags dauerhaft aus
-                  dem Vault.
-                </p>
-              </div>
-              <div>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={() => void handleDelete()}
-                  disabled={isDeleting || isDuplicating}>
-                  {isDeleting ? 'Lösche...' : 'Eintrag löschen'}
-                </Button>
-              </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Badge
+              variant={
+                statusLabel === 'Veröffentlicht' ? 'default' : 'secondary'
+              }>
+              {statusLabel}
+            </Badge>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-muted-foreground">
+                Kategorie
+              </span>
+              <Select
+                value={selectedCategoryId}
+                onValueChange={(value) => setSelectedCategoryId(value ?? '')}>
+                <SelectTrigger
+                  id="vault-entry-category"
+                  className="h-9 w-auto min-w-[14rem] rounded-full border-border/60 bg-transparent px-3 text-sm shadow-none">
+                  <SelectValue placeholder="Kategorie wählen">
+                    {getSelectedCategoryLabel()}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent align="start">
+                  <SelectGroup>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
           </div>
-        ) : null}
-      </section>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            render={
+              <Link href={previewHref} target="_blank" rel="noreferrer" />
+            }
+            nativeButton={false}
+            type="button"
+            variant="outline">
+            Vorschau
+          </Button>
+        </div>
+      </header>
 
       <MarkdownEditor
         key={mode === 'edit' && initialData ? initialData.id : 'create'}
@@ -354,4 +254,16 @@ export function VaultEntryEditor({
       />
     </div>
   );
+}
+
+/**
+ * Maps package-level publish state to the compact editorial label.
+ *
+ * @param status Current markdown-editor status value.
+ * @returns Human-readable status label for the page header.
+ */
+function getVaultEntryStatusLabel(
+  status?: MarkdownEditorStatus
+): 'Entwurf' | 'Veröffentlicht' {
+  return status === 'published' ? 'Veröffentlicht' : 'Entwurf';
 }

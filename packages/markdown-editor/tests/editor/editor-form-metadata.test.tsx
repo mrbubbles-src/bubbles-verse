@@ -68,7 +68,9 @@ describe('EditorForm metadata derivation', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Story Driven Editor')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('story-driven-editor')).toBeInTheDocument();
+      expect(
+        screen.getByDisplayValue('story-driven-editor')
+      ).toBeInTheDocument();
     });
   });
 
@@ -83,7 +85,9 @@ describe('EditorForm metadata derivation', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue('story-driven-editor')).toBeInTheDocument();
+      expect(
+        screen.getByDisplayValue('story-driven-editor')
+      ).toBeInTheDocument();
     });
 
     rerender(
@@ -112,7 +116,9 @@ describe('EditorForm metadata derivation', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue('story-driven-editor')).toBeInTheDocument();
+      expect(
+        screen.getByDisplayValue('story-driven-editor')
+      ).toBeInTheDocument();
     });
 
     const slugInput = screen.getByLabelText('Slug');
@@ -157,7 +163,9 @@ describe('EditorForm metadata derivation', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue('story-driven-editor')).toBeInTheDocument();
+      expect(
+        screen.getByDisplayValue('story-driven-editor')
+      ).toBeInTheDocument();
     });
 
     fireEvent.change(screen.getByLabelText('Slug'), {
@@ -213,7 +221,9 @@ describe('EditorForm metadata derivation', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue('2026/04/story-driven-editor')).toBeInTheDocument();
+      expect(
+        screen.getByDisplayValue('2026/04/story-driven-editor')
+      ).toBeInTheDocument();
     });
   });
 
@@ -221,7 +231,9 @@ describe('EditorForm metadata derivation', () => {
     renderEditorForm(FIRST_OUTPUT);
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue('story-driven-editor')).toBeInTheDocument();
+      expect(
+        screen.getByDisplayValue('story-driven-editor')
+      ).toBeInTheDocument();
     });
 
     const slugInput = screen.getByLabelText('Slug');

@@ -1,6 +1,6 @@
 import type {
-  MarkdownEditorImageUploadResponse,
   MarkdownEditorImageUploader,
+  MarkdownEditorImageUploadResponse,
 } from '../types/editor';
 
 export type CreateEditorImageUploaderOptions = {
@@ -84,9 +84,9 @@ export function createEditorImageUploader(
     });
 
     if (!response.ok) {
-      const body = (await response.json().catch(() => null)) as
-        | { message?: string }
-        | null;
+      const body = (await response.json().catch(() => null)) as {
+        message?: string;
+      } | null;
 
       throw new Error(body?.message ?? 'Bild-Upload fehlgeschlagen.');
     }

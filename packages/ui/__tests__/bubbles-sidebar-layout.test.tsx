@@ -8,9 +8,13 @@ import type { BubblesSidebarData } from '../src/lib/bubbles-sidebar';
 import { BubblesSidebarLayout } from '../src/components/bubbles-sidebar/bubbles-sidebar-layout';
 
 const usePathnameMock = vi.fn();
+const pushMock = vi.fn();
 
 vi.mock('next/navigation', () => ({
   usePathname: () => usePathnameMock(),
+  useRouter: () => ({
+    push: pushMock,
+  }),
 }));
 
 vi.mock('next/link', () => ({
@@ -89,6 +93,7 @@ const sidebarData: BubblesSidebarData = {
 describe('BubblesSidebarLayout', () => {
   beforeEach(() => {
     usePathnameMock.mockReturnValue('/');
+    pushMock.mockReset();
   });
 
   it('renders the layout shell without an injected header', () => {
@@ -151,7 +156,9 @@ describe('BubblesSidebarLayout', () => {
     );
 
     expect(screen.queryByText('jane@example.com')).not.toBeInTheDocument();
-    expect(screen.queryByText('Accounteinstellungen')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('Autorenprofil bearbeiten')
+    ).not.toBeInTheDocument();
   });
 
   it('renders the user footer menu and its entries', async () => {
@@ -173,7 +180,9 @@ describe('BubblesSidebarLayout', () => {
 
     await user.click(screen.getByRole('button', { name: /jane doe/i }));
 
-    expect(await screen.findByText('Accounteinstellungen')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Autorenprofil bearbeiten')
+    ).toBeInTheDocument();
     expect(screen.getByText('Logout')).toBeInTheDocument();
     expect(screen.getAllByText('Dashboard').length).toBeGreaterThan(1);
   });

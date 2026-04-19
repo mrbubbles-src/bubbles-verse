@@ -10,8 +10,31 @@ export type RoutePath =
 
 export type DashboardPageInfo = {
   title: string;
-  description: string;
+  description?: string;
 };
+
+/**
+ * Normalizes a concrete pathname to the closest typed dashboard route key.
+ *
+ * Dynamic Vault-entry edit routes share one metadata definition so the shell
+ * can keep breadcrumbs and copy consistent without every page duplicating it.
+ *
+ * @param pathname - Current dashboard pathname from the app shell.
+ * @returns Matching typed route key used by the shell metadata helpers.
+ */
+export function getDashboardRoutePath(pathname: string): RoutePath {
+  if (pathname === '/vault/entries/new') {
+    return '/vault/entries/new';
+  }
+
+  if (pathname.startsWith('/vault/entries/')) {
+    return '/vault/entries/[id]';
+  }
+
+  return (pathname as RoutePath) in ROUTE_PAGE_META_BY_PATH
+    ? (pathname as RoutePath)
+    : '/';
+}
 
 /**
  * Route-level copy used by the shared dashboard shell header.
@@ -22,43 +45,34 @@ export type DashboardPageInfo = {
 export const ROUTE_PAGE_META_BY_PATH: Record<RoutePath, DashboardPageInfo> = {
   '/': {
     title: 'Dashboard',
-    description:
-      'Dein privater Arbeitsbereich für Inhalte in allen Bubbles-Apps.',
+    description: 'Dein Arbeitsbereich für Inhalte und Redaktion.',
   },
   '/account': {
-    title: 'Account',
-    description:
-      'Dein Login, deine erlaubte Identität und dein Zugang zum Dashboard.',
+    title: 'Zugangsverwaltung',
+    description: 'Freigaben, Rollen und Hinweise für Dashboard-Zugänge.',
   },
   '/profile': {
-    title: 'Profil',
-    description:
-      'Pflege dein Autorenprofil für wiederverwendbare Inhalte und Profilblöcke.',
+    title: 'Autorenprofil',
+    description: 'Pflege die Daten für Autorenansicht, Bio und Links.',
   },
   '/vault': {
     title: 'Coding Vault',
-    description:
-      'Übersicht für deine Vault-Inhalte, Kategorien und offenen Entwürfe.',
+    description: 'Arbeite direkt an Entwürfen und zuletzt geänderten Inhalten.',
   },
   '/vault/categories': {
-    title: 'Vault Kategorien',
-    description:
-      'Pflege Ober- und Unterkategorien für die Struktur des Coding Vaults.',
+    title: 'Kategorien',
+    description: 'Strukturiere Ober- und Unterkategorien für den Vault.',
   },
   '/vault/entries': {
-    title: 'Vault Einträge',
+    title: 'Einträge',
     description:
-      'Alle Coding-Vault-Einträge an einem Ort, inklusive Drafts und Veröffentlichungen.',
+      'Suche, filtere und verwalte alle Vault-Einträge an einem Ort.',
   },
   '/vault/entries/new': {
-    title: 'Neuer Vault-Eintrag',
-    description:
-      'Starte einen neuen Eintrag direkt aus dem zentralen Dashboard.',
+    title: 'Neuer Eintrag',
   },
   '/vault/entries/[id]': {
-    title: 'Vault-Eintrag bearbeiten',
-    description:
-      'Bearbeite einen bestehenden Coding-Vault-Eintrag direkt im Dashboard.',
+    title: 'Eintrag bearbeiten',
   },
 };
 
@@ -71,12 +85,5 @@ export const ROUTE_PAGE_META_BY_PATH: Record<RoutePath, DashboardPageInfo> = {
 export function getDashboardPageInfoByPath(
   pathname: string
 ): DashboardPageInfo {
-  if (pathname.startsWith('/vault/entries/')) {
-    return ROUTE_PAGE_META_BY_PATH['/vault/entries/[id]'];
-  }
-
-  return (
-    ROUTE_PAGE_META_BY_PATH[pathname as RoutePath] ??
-    ROUTE_PAGE_META_BY_PATH['/']
-  );
+  return ROUTE_PAGE_META_BY_PATH[getDashboardRoutePath(pathname)];
 }

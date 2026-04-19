@@ -32,7 +32,20 @@ export type BubblesSidebarItem = {
   href?: string;
   icon?: IconSvgElement;
   match?: BubblesSidebarMatch;
+  action?: BubblesSidebarItemAction;
   children?: BubblesSidebarItem[];
+};
+
+/**
+ * Describes one optional trailing action attached to a sidebar item.
+ */
+export type BubblesSidebarItemAction = {
+  ariaLabel: string;
+  icon: IconSvgElement;
+  onSelect?: () => void;
+  href?: string;
+  navigateOnItemActiveOnly?: boolean;
+  showOnHover?: boolean;
 };
 
 /**

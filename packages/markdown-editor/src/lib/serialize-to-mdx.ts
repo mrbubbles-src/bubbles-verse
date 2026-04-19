@@ -76,7 +76,7 @@ function wrapWithBlockId(
   headingAnchorId?: string
 ): string {
   const anchorIdAttribute = headingAnchorId
-    ? ` id="${headingAnchorId}" class="topic-anchor-target"`
+    ? ` id="${headingAnchorId}" className="topic-anchor-target"`
     : '';
 
   return `<div data-block-id="${blockId}"${anchorIdAttribute}>\n\n${content}\n\n</div>`;

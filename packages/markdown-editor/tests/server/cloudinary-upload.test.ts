@@ -17,33 +17,37 @@ describe('uploadEditorImageToCloudinary', () => {
     vi.stubEnv('NEXT_PUBLIC_CLOUDINARY_API_KEY', 'demo-key');
     vi.stubEnv('CLOUDINARY_API_SECRET', 'demo-secret');
 
-    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
-      expect(_input).toBe('https://api.cloudinary.com/v1_1/demo-cloud/image/upload');
-      expect(init?.method).toBe('POST');
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, init?: RequestInit) => {
+        expect(_input).toBe(
+          'https://api.cloudinary.com/v1_1/demo-cloud/image/upload'
+        );
+        expect(init?.method).toBe('POST');
 
-      const formData = init?.body as FormData;
+        const formData = init?.body as FormData;
 
-      expect(formData.get('api_key')).toBe('demo-key');
-      expect(formData.get('folder')).toBe('vault-uploads');
-      expect(formData.get('timestamp')).toMatch(/^\d+$/);
-      expect(formData.get('signature')).toMatch(/^[a-f0-9]{40}$/);
+        expect(formData.get('api_key')).toBe('demo-key');
+        expect(formData.get('folder')).toBe('vault-uploads');
+        expect(formData.get('timestamp')).toMatch(/^\d+$/);
+        expect(formData.get('signature')).toMatch(/^[a-f0-9]{40}$/);
 
-      const file = formData.get('file');
+        const file = formData.get('file');
 
-      expect(file).toBeInstanceOf(File);
-      expect((file as File).name).toBe('diagram.png');
+        expect(file).toBeInstanceOf(File);
+        expect((file as File).name).toBe('diagram.png');
 
-      return new Response(
-        JSON.stringify({
-          height: 720,
-          original_filename: 'diagram',
-          public_id: 'vault/diagram',
-          secure_url: 'https://cdn.example.com/diagram.png',
-          width: 1280,
-        }),
-        { status: 200 }
-      );
-    });
+        return new Response(
+          JSON.stringify({
+            height: 720,
+            original_filename: 'diagram',
+            public_id: 'vault/diagram',
+            secure_url: 'https://cdn.example.com/diagram.png',
+            width: 1280,
+          }),
+          { status: 200 }
+        );
+      }
+    );
 
     vi.stubGlobal('fetch', fetchMock);
 
@@ -70,16 +74,18 @@ describe('uploadEditorImageToCloudinary', () => {
 
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () =>
-        new Response(
-          JSON.stringify({
-            error: {
-              http_code: 400,
-              message: 'Upload preset must be specified when using unsigned upload',
-            },
-          }),
-          { status: 400 }
-        )
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              error: {
+                http_code: 400,
+                message:
+                  'Upload preset must be specified when using unsigned upload',
+              },
+            }),
+            { status: 400 }
+          )
       )
     );
 

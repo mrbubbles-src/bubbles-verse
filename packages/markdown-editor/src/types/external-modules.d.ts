@@ -13,9 +13,7 @@ declare module '*.png' {
 
 declare module 'node:buffer' {
   export const Buffer: {
-    from(
-      input: ArrayBuffer | ArrayBufferView | string
-    ): {
+    from(input: ArrayBuffer | ArrayBufferView | string): {
       toString(encoding?: string): string;
     };
   };

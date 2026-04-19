@@ -38,37 +38,39 @@ export default async function VaultEntriesPage({
   return (
     <>
       <EntryFeedbackToast />
-      <section className="flex flex-col gap-4 rounded-[2rem] border border-border/50 bg-background/80 px-5 py-6 shadow-sm shadow-black/5 sm:px-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-2">
-            <p className="text-xs font-semibold tracking-[0.28em] text-muted-foreground uppercase">
-              Coding Vault
-            </p>
-            <h1 className="text-3xl font-semibold tracking-tight text-balance">
-              Vault-Einträge
+      <section className="flex flex-col gap-4 sm:gap-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              Einträge
             </h1>
-            <p className="max-w-3xl text-sm text-pretty text-muted-foreground sm:text-base">
-              Alle Inhalte für den Coding Vault an einem Ort, inklusive
-              Kategorie, Status und letztem Änderungszeitpunkt.
+            <p className="text-sm text-muted-foreground">
+              {pageModel.summary.totalEntries} Einträge ·{' '}
+              {pageModel.summary.draftEntries} Entwürfe ·{' '}
+              {pageModel.summary.publishedEntries} veröffentlicht
             </p>
           </div>
 
           <Button
             render={<Link href="/vault/entries/new" />}
             nativeButton={false}
-            className="rounded-full px-5">
+            className="w-full sm:w-auto">
             Neuer Eintrag
           </Button>
         </div>
+
+        <VaultEntryFilters
+          categories={pageModel.categories}
+          filters={pageModel.filters}
+        />
+
+        <VaultEntryList
+          entries={pageModel.entries}
+          emptyState={emptyState}
+          filters={pageModel.filters}
+          pagination={pageModel.pagination}
+        />
       </section>
-
-      <VaultEntryFilters
-        categories={pageModel.categories}
-        filters={pageModel.filters}
-        resultCount={pageModel.entries.length}
-      />
-
-      <VaultEntryList entries={pageModel.entries} emptyState={emptyState} />
     </>
   );
 }

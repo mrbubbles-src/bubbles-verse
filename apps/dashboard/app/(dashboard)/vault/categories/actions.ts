@@ -1,14 +1,8 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
+import type { VaultCategoryFeedbackStatus } from '@/lib/vault/category-feedback';
 
-import { db } from '@/drizzle/db';
-import { vaultCategories } from '@/drizzle/db/schema';
-import {
-  getVaultCategoryFeedbackHref,
-  type VaultCategoryFeedbackStatus,
-} from '@/lib/vault/category-feedback';
+import { requireDashboardManagerSession } from '@/lib/auth/session';
 import {
   canAssignVaultCategoryParent,
   countVaultCategoryChildren,
@@ -17,9 +11,15 @@ import {
   parseCreateVaultCategory,
   parseUpdateVaultCategory,
 } from '@/lib/vault/categories';
-import { requireDashboardManagerSession } from '@/lib/auth/session';
+import { getVaultCategoryFeedbackHref } from '@/lib/vault/category-feedback';
+
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
 import { eq } from 'drizzle-orm';
+
+import { db } from '@/drizzle/db';
+import { vaultCategories } from '@/drizzle/db/schema';
 
 /**
  * Redirects back to the categories page after a finished mutation.

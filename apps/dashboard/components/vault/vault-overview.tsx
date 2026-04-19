@@ -1,143 +1,160 @@
-import type { VaultOverviewModel } from '@/lib/vault/overview';
+import type {
+  VaultOverviewModel,
+  VaultOverviewRecentEntry,
+} from '@/lib/vault/overview';
 
 import Link from 'next/link';
 
 import { Badge } from '@bubbles/ui/shadcn/badge';
 import { Button } from '@bubbles/ui/shadcn/button';
 import { Separator } from '@bubbles/ui/shadcn/separator';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@bubbles/ui/shadcn/tabs';
 
-import { VaultEntryList } from '@/components/vault/entries/vault-entry-list';
+type VaultOverviewEntryListProps = {
+  entries: VaultOverviewRecentEntry[];
+  emptyState: string;
+  showStatus?: boolean;
+};
 
 /**
- * Renders the first real landing page for the Coding Vault section.
+ * Renders the flat work queue for the Vault overview tabs.
  *
- * The layout stays editorial and mobile-first: it gives quick entry points
- * into writing, a small set of stable numbers, and the latest touched content.
+ * Each row links straight into the editor so the overview behaves like a work
+ * surface instead of a summary page.
+ *
+ * @param props Entries for one queue plus empty-state handling.
+ * @returns Compact editorial list for the Vault overview.
+ */
+function VaultOverviewEntryList({
+  entries,
+  emptyState,
+  showStatus = false,
+}: VaultOverviewEntryListProps) {
+  if (entries.length === 0) {
+    return <p className="py-10 text-sm text-muted-foreground">{emptyState}</p>;
+  }
+
+  return (
+    <div className="flex flex-col">
+      {entries.map((entry, index) => (
+        <div key={entry.id}>
+          {index > 0 ? <Separator /> : null}
+          <Link
+            href={`/vault/entries/${entry.id}`}
+            className="group flex flex-col gap-3 rounded-[1.5rem] px-1 py-4 transition-colors hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0 space-y-1">
+                <p className="text-base font-semibold tracking-tight text-balance text-foreground">
+                  {entry.title}
+                </p>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+                  <Badge variant="secondary">{entry.categoryLabel}</Badge>
+                  {showStatus ? (
+                    <>
+                      <span aria-hidden="true">•</span>
+                      <Badge
+                        variant={
+                          entry.status === 'published' ? 'default' : 'secondary'
+                        }>
+                        {entry.status === 'draft'
+                          ? 'Entwurf'
+                          : 'Veröffentlicht'}
+                      </Badge>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+
+              <p className="text-sm text-muted-foreground sm:text-right">
+                {entry.updatedAtLabel}
+              </p>
+            </div>
+          </Link>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Renders the Coding Vault landing page as a focused work overview.
+ *
+ * The page intentionally skips intro copy and large cards. Instead it uses one
+ * tabbed queue, two small actions, and a single status line.
  *
  * @param props Prepared overview model from `getVaultOverviewModel`.
- * @returns Vault overview content inside the shared dashboard shell.
+ * @returns Flat Vault work overview inside the shared dashboard shell.
  */
 export function VaultOverview({ model }: { model: VaultOverviewModel }) {
   return (
-    <div className="flex flex-col gap-6">
-      <section className="flex flex-col gap-5 rounded-[2rem] border border-border/50 bg-linear-to-br from-background via-background to-muted/35 px-5 py-6 shadow-sm shadow-black/5 sm:px-6 sm:py-7">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-          <div className="max-w-3xl space-y-3">
-            <p className="text-xs font-semibold tracking-[0.3em] text-muted-foreground uppercase">
-              Coding Vault
-            </p>
-            <div className="space-y-2">
-              <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-                Redaktion, Taxonomie und Schreibfluss an einem Ort.
-              </h1>
-              <p className="text-sm text-pretty text-muted-foreground sm:text-base">
-                Die Vault-Startseite bündelt deine wichtigsten Zahlen,
-                Redaktionswege und zuletzt bearbeiteten Inhalte, damit du nicht
-                immer erst durch Listen springen musst.
-              </p>
-            </div>
-          </div>
-
-          <Button
-            render={<Link href="/vault/entries/new" />}
-            nativeButton={false}
-            className="rounded-full px-5">
-            Neuer Eintrag
-          </Button>
-        </div>
-
-        <Separator />
-
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {model.stats.map((stat) => (
-            <div
-              key={stat.label}
-              className="flex min-h-32 flex-col justify-between gap-4 rounded-[1.5rem] border border-border/50 bg-background/80 px-4 py-4">
-              <div className="space-y-2">
-                <p className="text-xs font-semibold tracking-[0.24em] text-muted-foreground uppercase">
-                  {stat.label}
-                </p>
-                <p className="text-3xl font-semibold tracking-tight">
-                  {stat.value}
-                </p>
-              </div>
-              <p className="text-sm text-pretty text-muted-foreground">
-                {stat.detail}
-              </p>
-            </div>
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+          {model.statusItems.map((item, index) => (
+            <span key={item.label} className="flex items-center gap-2">
+              {index > 0 ? <span aria-hidden="true">•</span> : null}
+              <span>{item.value}</span>
+              <span>{item.label.toLowerCase()}</span>
+            </span>
           ))}
         </div>
-      </section>
 
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.9fr)]">
-        <div className="flex flex-col gap-4 rounded-[2rem] border border-border/50 bg-background/80 px-5 py-6 shadow-sm shadow-black/5 sm:px-6">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div className="space-y-1">
-              <p className="text-xs font-semibold tracking-[0.28em] text-muted-foreground uppercase">
-                Zuletzt bearbeitet
-              </p>
-              <h2 className="text-2xl font-semibold tracking-tight">
-                Die letzten fünf Vault-Einträge
-              </h2>
-            </div>
+        <div className="flex flex-wrap gap-2">
+          {model.quickActions.map((action) => (
             <Button
-              render={<Link href="/vault/entries" />}
+              key={action.href}
+              render={<Link href={action.href} />}
               nativeButton={false}
-              variant="secondary"
-              className="rounded-full px-5">
-              Alle Einträge
+              variant={
+                action.href === '/vault/entries/new' ? 'default' : 'secondary'
+              }
+              className="rounded-full px-4">
+              {action.label}
             </Button>
-          </div>
-
-          <VaultEntryList entries={model.recentEntries} />
+          ))}
         </div>
+      </div>
 
-        <div className="flex flex-col gap-4 rounded-[2rem] border border-border/50 bg-muted/25 px-5 py-6 sm:px-6">
-          <div className="space-y-2">
-            <p className="text-xs font-semibold tracking-[0.28em] text-muted-foreground uppercase">
-              Nächste Schritte
-            </p>
-            <h2 className="text-2xl font-semibold tracking-tight">
-              Direkt in die richtige Spur springen
-            </h2>
-            <p className="text-sm text-pretty text-muted-foreground sm:text-base">
-              {model.taxonomySummary.description}
-            </p>
+      <section className="flex flex-col gap-4 rounded-[2rem] border border-border/60 bg-background/80 px-4 py-4 shadow-sm shadow-black/5 sm:px-6 sm:py-5">
+        <Tabs defaultValue="drafts" className="gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+              Weiterschreiben
+            </h1>
+
+            <TabsList
+              variant="line"
+              aria-label="Vault Arbeitslisten"
+              className="h-auto w-full justify-start gap-4 p-0 sm:w-auto">
+              <TabsTrigger value="drafts" className="px-0 py-2 text-sm">
+                Offene Entwürfe
+              </TabsTrigger>
+              <TabsTrigger value="updates" className="px-0 py-2 text-sm">
+                Zuletzt bearbeitet
+              </TabsTrigger>
+            </TabsList>
           </div>
 
-          <div className="flex flex-col gap-3">
-            {model.quickActions.map((action) => (
-              <Link
-                key={action.href}
-                href={action.href}
-                className="group flex flex-col gap-2 rounded-[1.5rem] border border-border/50 bg-background/80 px-4 py-4 transition-colors hover:border-foreground/20 hover:bg-background">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-base font-semibold tracking-tight">
-                    {action.label}
-                  </p>
-                  <Badge variant="secondary">Öffnen</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {action.description}
-                </p>
-              </Link>
-            ))}
-          </div>
+          <TabsContent value="drafts" className="mt-0">
+            <VaultOverviewEntryList
+              entries={model.recentDrafts}
+              emptyState="Gerade liegen keine offenen Entwürfe im Coding Vault."
+            />
+          </TabsContent>
 
-          <div className="rounded-[1.5rem] border border-dashed border-border/60 px-4 py-4">
-            <p className="text-xs font-semibold tracking-[0.24em] text-muted-foreground uppercase">
-              Taxonomie
-            </p>
-            <p className="mt-2 text-base font-semibold tracking-tight">
-              {model.taxonomySummary.title}
-            </p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Saubere Kategorien sparen dir später Editorial-Aufwand, weil
-              neue Serien, Snippets und Deep Dives direkt an der richtigen
-              Stelle landen.
-            </p>
-          </div>
-        </div>
+          <TabsContent value="updates" className="mt-0">
+            <VaultOverviewEntryList
+              entries={model.recentUpdates}
+              emptyState="Sobald du Einträge bearbeitest, tauchen sie hier auf."
+              showStatus
+            />
+          </TabsContent>
+        </Tabs>
       </section>
     </div>
   );

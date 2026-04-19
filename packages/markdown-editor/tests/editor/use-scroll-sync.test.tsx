@@ -1,5 +1,6 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useMemo, useRef } from 'react';
+
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useScrollSync } from '../../src/hooks/use-scroll-sync';
@@ -72,7 +73,8 @@ function defineScrollableMetrics(
     },
   });
 
-  element.getBoundingClientRect = () => createRect({ top: 0, height: clientHeight });
+  element.getBoundingClientRect = () =>
+    createRect({ top: 0, height: clientHeight });
 }
 
 /**
@@ -181,22 +183,34 @@ describe('useScrollSync', () => {
       top: 100,
       height: 100,
     });
-    defineBlockMetrics(screen.getByTestId('editor-block-summary'), editorScroll, {
-      id: 'summary',
-      top: 200,
-      height: 100,
-    });
+    defineBlockMetrics(
+      screen.getByTestId('editor-block-summary'),
+      editorScroll,
+      {
+        id: 'summary',
+        top: 200,
+        height: 100,
+      }
+    );
 
-    defineBlockMetrics(screen.getByTestId('preview-block-intro'), previewScroll, {
-      id: 'intro',
-      top: 0,
-      height: 200,
-    });
-    defineBlockMetrics(screen.getByTestId('preview-block-body'), previewScroll, {
-      id: 'body',
-      top: 200,
-      height: 200,
-    });
+    defineBlockMetrics(
+      screen.getByTestId('preview-block-intro'),
+      previewScroll,
+      {
+        id: 'intro',
+        top: 0,
+        height: 200,
+      }
+    );
+    defineBlockMetrics(
+      screen.getByTestId('preview-block-body'),
+      previewScroll,
+      {
+        id: 'body',
+        top: 200,
+        height: 200,
+      }
+    );
     defineBlockMetrics(
       screen.getByTestId('preview-block-summary'),
       previewScroll,
@@ -235,22 +249,34 @@ describe('useScrollSync', () => {
       top: 100,
       height: 100,
     });
-    defineBlockMetrics(screen.getByTestId('editor-block-summary'), editorScroll, {
-      id: 'summary',
-      top: 200,
-      height: 100,
-    });
+    defineBlockMetrics(
+      screen.getByTestId('editor-block-summary'),
+      editorScroll,
+      {
+        id: 'summary',
+        top: 200,
+        height: 100,
+      }
+    );
 
-    defineBlockMetrics(screen.getByTestId('preview-block-intro'), previewScroll, {
-      id: 'intro',
-      top: 0,
-      height: 200,
-    });
-    defineBlockMetrics(screen.getByTestId('preview-block-body'), previewScroll, {
-      id: 'body',
-      top: 200,
-      height: 200,
-    });
+    defineBlockMetrics(
+      screen.getByTestId('preview-block-intro'),
+      previewScroll,
+      {
+        id: 'intro',
+        top: 0,
+        height: 200,
+      }
+    );
+    defineBlockMetrics(
+      screen.getByTestId('preview-block-body'),
+      previewScroll,
+      {
+        id: 'body',
+        top: 200,
+        height: 200,
+      }
+    );
     defineBlockMetrics(
       screen.getByTestId('preview-block-summary'),
       previewScroll,

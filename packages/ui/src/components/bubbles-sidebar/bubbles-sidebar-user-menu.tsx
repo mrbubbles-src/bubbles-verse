@@ -107,7 +107,7 @@ export function BubblesSidebarUserMenu({ user }: BubblesSidebarUserMenuProps) {
                   href={user.settingsHref}
                   className="flex w-full items-center gap-2 px-2 py-1">
                   <HugeiconsIcon icon={User02Icon} strokeWidth={2} />
-                  <span>Accounteinstellungen</span>
+                  <span>Autorenprofil bearbeiten</span>
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>

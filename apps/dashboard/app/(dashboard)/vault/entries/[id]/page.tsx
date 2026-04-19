@@ -12,10 +12,10 @@ type EditVaultEntryPageProps = {
 };
 
 /**
- * Renders the edit screen for an existing Vault entry.
+ * Renders the edit workspace for one existing Vault entry.
  *
- * The page reuses the shared editor wrapper from create mode, but preloads the
- * current content, metadata, and primary category before persisting updates.
+ * The page keeps only the route-level data loading and lets the shared Vault
+ * editor wrapper own the actual authoring chrome and persistence flow.
  */
 export default async function EditVaultEntryPage({
   params,
@@ -29,27 +29,10 @@ export default async function EditVaultEntryPage({
   }
 
   return (
-    <>
-      <section className="flex flex-col gap-4 rounded-[2rem] border border-border/50 bg-background/80 px-5 py-6 shadow-sm shadow-black/5 sm:px-6">
-        <p className="text-xs font-semibold tracking-[0.28em] text-muted-foreground uppercase">
-          Coding Vault
-        </p>
-        <div className="space-y-2">
-          <h1 className="text-3xl font-semibold tracking-tight text-balance">
-            Vault-Eintrag bearbeiten
-          </h1>
-          <p className="max-w-3xl text-sm text-pretty text-muted-foreground sm:text-base">
-            Passe Inhalt, Kategorienpfad und Metadaten im selben gemeinsamen
-            Markdown-Editor an, den du auch für neue Vault-Einträge nutzt.
-          </p>
-        </div>
-      </section>
-
-      <VaultEntryEditor
-        categories={editModel.categories}
-        initialData={editModel.initialData}
-        mode="edit"
-      />
-    </>
+    <VaultEntryEditor
+      categories={editModel.categories}
+      initialData={editModel.initialData}
+      mode="edit"
+    />
   );
 }

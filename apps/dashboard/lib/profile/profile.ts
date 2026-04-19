@@ -7,7 +7,7 @@ import { asc, eq } from 'drizzle-orm';
 import * as z from 'zod';
 
 import { db } from '@/drizzle/db';
-import { profileSocialLinks, profiles } from '@/drizzle/db/schema';
+import { profiles, profileSocialLinks } from '@/drizzle/db/schema';
 
 export const DASHBOARD_PROFILE_SOCIAL_PLATFORMS = [
   'website',
@@ -23,8 +23,6 @@ export type DashboardProfileRecord = typeof profiles.$inferSelect;
 
 export type DashboardProfilePageModel = {
   profile: DashboardProfileRecord;
-  role: DashboardAccessEntry['userRole'];
-  githubUsername: string;
   socialLinks: Record<DashboardProfileSocialPlatform, string>;
 };
 
@@ -44,7 +42,6 @@ const updateDashboardProfileSchema = z.object({
     .trim()
     .min(1, 'Bitte gib einen Anzeigenamen ein.')
     .max(80, 'Anzeigenamen dürfen höchstens 80 Zeichen lang sein.'),
-  slug: z.string().trim().max(120),
   avatarUrl: dashboardProfileUrlSchema,
   bio: z
     .string()
@@ -94,7 +91,10 @@ export function slugifyDashboardProfile(value: string) {
  * @param githubUsername Normalized GitHub username for the same user.
  * @returns Human-facing profile name for the shared content model.
  */
-function resolveDashboardProfileDisplayName(user: User, githubUsername: string) {
+function resolveDashboardProfileDisplayName(
+  user: User,
+  githubUsername: string
+) {
   const userMetadata =
     user.user_metadata && typeof user.user_metadata === 'object'
       ? user.user_metadata
@@ -196,27 +196,19 @@ export async function ensureDashboardProfile(input: {
 /**
  * Parses and normalizes the profile form payload from `/profile`.
  *
- * Empty slug input falls back to the slugified display name.
- *
  * @param formData Submitted profile form.
  * @returns Safe parse result with normalized values.
  */
 export function parseUpdateDashboardProfile(formData: FormData) {
-  return updateDashboardProfileSchema
-    .transform((values) => ({
-      ...values,
-      slug: slugifyDashboardProfile(values.slug || values.displayName),
-    }))
-    .safeParse({
-      displayName: formData.get('displayName'),
-      slug: formData.get('slug') ?? '',
-      avatarUrl: formData.get('avatarUrl') ?? '',
-      bio: formData.get('bio') ?? '',
-      websiteUrl: formData.get('websiteUrl') ?? '',
-      githubUrl: formData.get('githubUrl') ?? '',
-      linkedinUrl: formData.get('linkedinUrl') ?? '',
-      twitterUrl: formData.get('twitterUrl') ?? '',
-    });
+  return updateDashboardProfileSchema.safeParse({
+    displayName: formData.get('displayName'),
+    avatarUrl: formData.get('avatarUrl') ?? '',
+    bio: formData.get('bio') ?? '',
+    websiteUrl: formData.get('websiteUrl') ?? '',
+    githubUrl: formData.get('githubUrl') ?? '',
+    linkedinUrl: formData.get('linkedinUrl') ?? '',
+    twitterUrl: formData.get('twitterUrl') ?? '',
+  });
 }
 
 /**
@@ -238,7 +230,10 @@ export async function getDashboardProfilePageModel(input: {
     })
     .from(profileSocialLinks)
     .where(eq(profileSocialLinks.profileId, profile.id))
-    .orderBy(asc(profileSocialLinks.sortOrder), asc(profileSocialLinks.platform));
+    .orderBy(
+      asc(profileSocialLinks.sortOrder),
+      asc(profileSocialLinks.platform)
+    );
   const socialLinkMap: Record<DashboardProfileSocialPlatform, string> = {
     website: '',
     github: '',
@@ -255,8 +250,6 @@ export async function getDashboardProfilePageModel(input: {
 
   return {
     profile,
-    role: input.accessEntry.userRole,
-    githubUsername: input.githubUsername,
     socialLinks: socialLinkMap,
   };
 }
@@ -309,7 +302,7 @@ export async function updateDashboardProfile(input: {
       .update(profiles)
       .set({
         displayName: input.payload.displayName,
-        slug: input.payload.slug,
+        slug: resolveDashboardProfileSlug(input.githubUsername, input.user),
         avatarUrl: input.payload.avatarUrl,
         bio: input.payload.bio,
         role: toProfileRole(input.accessEntry.userRole),

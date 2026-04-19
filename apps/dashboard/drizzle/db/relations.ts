@@ -1,23 +1,23 @@
-import { relations } from 'drizzle-orm'
+import { relations } from 'drizzle-orm';
 
 import {
   appModules,
-  contentItemTags,
   contentItems,
-  profileSocialLinks,
+  contentItemTags,
   profiles,
+  profileSocialLinks,
   vaultCategories,
   vaultEntries,
-} from './schema'
+} from './schema';
 
 export const appModuleRelations = relations(appModules, ({ many }) => ({
   contentItems: many(contentItems),
-}))
+}));
 
 export const profileRelations = relations(profiles, ({ many }) => ({
   socialLinks: many(profileSocialLinks),
   authoredContent: many(contentItems, { relationName: 'author_profile' }),
-}))
+}));
 
 export const profileSocialLinkRelations = relations(
   profileSocialLinks,
@@ -26,25 +26,28 @@ export const profileSocialLinkRelations = relations(
       fields: [profileSocialLinks.profileId],
       references: [profiles.id],
     }),
-  }),
-)
+  })
+);
 
-export const contentItemRelations = relations(contentItems, ({ one, many }) => ({
-  appModule: one(appModules, {
-    fields: [contentItems.appModuleId],
-    references: [appModules.id],
-  }),
-  authorProfile: one(profiles, {
-    fields: [contentItems.authorProfileId],
-    references: [profiles.id],
-    relationName: 'author_profile',
-  }),
-  tags: many(contentItemTags),
-  vaultEntry: one(vaultEntries, {
-    fields: [contentItems.id],
-    references: [vaultEntries.contentItemId],
-  }),
-}))
+export const contentItemRelations = relations(
+  contentItems,
+  ({ one, many }) => ({
+    appModule: one(appModules, {
+      fields: [contentItems.appModuleId],
+      references: [appModules.id],
+    }),
+    authorProfile: one(profiles, {
+      fields: [contentItems.authorProfileId],
+      references: [profiles.id],
+      relationName: 'author_profile',
+    }),
+    tags: many(contentItemTags),
+    vaultEntry: one(vaultEntries, {
+      fields: [contentItems.id],
+      references: [vaultEntries.contentItemId],
+    }),
+  })
+);
 
 export const contentItemTagRelations = relations(
   contentItemTags,
@@ -53,8 +56,8 @@ export const contentItemTagRelations = relations(
       fields: [contentItemTags.contentItemId],
       references: [contentItems.id],
     }),
-  }),
-)
+  })
+);
 
 export const vaultCategoryRelations = relations(
   vaultCategories,
@@ -68,8 +71,8 @@ export const vaultCategoryRelations = relations(
       relationName: 'vault_category_parent',
     }),
     entries: many(vaultEntries),
-  }),
-)
+  })
+);
 
 export const vaultEntryRelations = relations(vaultEntries, ({ one }) => ({
   contentItem: one(contentItems, {
@@ -80,4 +83,4 @@ export const vaultEntryRelations = relations(vaultEntries, ({ one }) => ({
     fields: [vaultEntries.primaryCategoryId],
     references: [vaultCategories.id],
   }),
-}))
+}));

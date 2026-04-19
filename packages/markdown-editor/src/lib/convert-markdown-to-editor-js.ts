@@ -264,9 +264,7 @@ function convertListItem(
  * @param markdown - Raw Markdown or MDX-like text selected by the author.
  * @returns Converted EditorJS payload plus preview stats and warnings.
  */
-export function convertMarkdownToEditorJs(
-  markdown: string
-): ConversionResult {
+export function convertMarkdownToEditorJs(markdown: string): ConversionResult {
   const warnings: string[] = [];
   const unsupportedElements: string[] = [];
   let imagePlaceholders = 0;
@@ -414,9 +412,7 @@ export function convertMarkdownToEditorJs(
             withHeadings: true,
             content: table.children.map((row: MarkdownTableRowNode) =>
               row.children.map((cell: MarkdownTableCellNode) =>
-                cell.type === 'tableCell'
-                  ? phrasingToHtml(cell.children)
-                  : ''
+                cell.type === 'tableCell' ? phrasingToHtml(cell.children) : ''
               )
             ),
           },
@@ -458,7 +454,9 @@ export function convertMarkdownToEditorJs(
           },
         });
 
-        if (!warnings.includes('HTML blocks have been converted to code blocks.')) {
+        if (
+          !warnings.includes('HTML blocks have been converted to code blocks.')
+        ) {
           warnings.push('HTML blocks have been converted to code blocks.');
         }
         break;
@@ -476,9 +474,7 @@ export function convertMarkdownToEditorJs(
             `Unsupported element type "${node.type}" was skipped.`
           )
         ) {
-          warnings.push(
-            `Unsupported element type "${node.type}" was skipped.`
-          );
+          warnings.push(`Unsupported element type "${node.type}" was skipped.`);
         }
     }
   }

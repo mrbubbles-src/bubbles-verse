@@ -3,11 +3,11 @@
 import type { DashboardProfileFeedbackStatus } from '@/lib/profile/profile-feedback';
 
 import { requireDashboardSession } from '@/lib/auth/session';
-import { getDashboardProfileFeedbackHref } from '@/lib/profile/profile-feedback';
 import {
   parseUpdateDashboardProfile,
   updateDashboardProfile,
 } from '@/lib/profile/profile';
+import { getDashboardProfileFeedbackHref } from '@/lib/profile/profile-feedback';
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';

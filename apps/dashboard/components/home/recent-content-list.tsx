@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import { Badge } from '@bubbles/ui/shadcn/badge';
 import { Separator } from '@bubbles/ui/shadcn/separator';
 
@@ -10,9 +12,9 @@ type RecentContentItem = {
 };
 
 type RecentContentListProps = {
-  title: string;
   emptyState: string;
   items: RecentContentItem[];
+  showStatus?: boolean;
 };
 
 function formatEntryTimestamp(timestamp: string) {
@@ -23,50 +25,62 @@ function formatEntryTimestamp(timestamp: string) {
 }
 
 /**
- * Renders a lightweight vertical list for recent dashboard content activity.
+ * Renders the flat work queue rows for the dashboard home tabs.
  *
- * Keep the presentation editorial and compact so the dashboard home can show
- * work-in-progress without turning every section into another card grid.
+ * Each row links straight into the editor so the home stays a working surface,
+ * not a passive preview.
  */
 export function RecentContentList({
-  title,
   emptyState,
   items,
+  showStatus = false,
 }: RecentContentListProps) {
   return (
-    <section className="flex flex-col gap-4 rounded-[2rem] border border-border/50 bg-background/80 p-5 shadow-sm shadow-black/5">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
-        <Badge variant="secondary">{items.length}</Badge>
-      </div>
+    <div className="flex flex-col">
       {items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{emptyState}</p>
+        <p className="py-10 text-sm text-muted-foreground">{emptyState}</p>
       ) : (
-        <div className="flex flex-col">
-          {items.map((item, index) => (
-            <div key={item.id}>
-              {index > 0 ? <Separator className="my-4" /> : null}
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <Badge
-                    variant={item.status === 'draft' ? 'default' : 'secondary'}>
-                    {item.status === 'draft' ? 'Entwurf' : 'Veröffentlicht'}
-                  </Badge>
-                  <span className="text-xs font-medium tracking-[0.24em] text-muted-foreground uppercase">
-                    {item.appSlug}
-                  </span>
+        items.map((item, index) => (
+          <div key={item.id}>
+            {index > 0 ? <Separator /> : null}
+            <Link
+              href={`/vault/entries/${item.id}`}
+              className="group flex flex-col gap-3 rounded-[1.5rem] px-1 py-4 transition-colors hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 space-y-1">
+                  <p className="text-base font-semibold tracking-tight text-balance text-foreground">
+                    {item.title}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+                    <span>
+                      {item.appSlug === 'vault' ? 'Coding Vault' : item.appSlug}
+                    </span>
+                    {showStatus ? (
+                      <>
+                        <span aria-hidden="true">•</span>
+                        <Badge
+                          variant={
+                            item.status === 'published'
+                              ? 'default'
+                              : 'secondary'
+                          }>
+                          {item.status === 'draft'
+                            ? 'Entwurf'
+                            : 'Veröffentlicht'}
+                        </Badge>
+                      </>
+                    ) : null}
+                  </div>
                 </div>
-                <p className="text-base font-medium text-foreground">
-                  {item.title}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Zuletzt bearbeitet am {formatEntryTimestamp(item.updatedAt)}
+
+                <p className="text-sm text-muted-foreground sm:text-right">
+                  {formatEntryTimestamp(item.updatedAt)}
                 </p>
               </div>
-            </div>
-          ))}
-        </div>
+            </Link>
+          </div>
+        ))
       )}
-    </section>
+    </div>
   );
 }

@@ -37,9 +37,10 @@ export function getVaultCategoryFeedbackMessage(search: string) {
     return null;
   }
 
-  return VAULT_CATEGORY_FEEDBACK_MESSAGES[
-    status as VaultCategoryFeedbackStatus
-  ] ?? null;
+  return (
+    VAULT_CATEGORY_FEEDBACK_MESSAGES[status as VaultCategoryFeedbackStatus] ??
+    null
+  );
 }
 
 /**

@@ -8,23 +8,25 @@ afterEach(() => {
 
 describe('createEditorImageUploader', () => {
   it('posts the file plus imageFolder to the configured endpoint', async () => {
-    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
-      const formData = init?.body as FormData;
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, init?: RequestInit) => {
+        const formData = init?.body as FormData;
 
-      expect(init?.method).toBe('POST');
-      expect(formData.get('imageFolder')).toBe('docs/editor-standard');
-      expect(formData.get('image')).toBeInstanceOf(File);
+        expect(init?.method).toBe('POST');
+        expect(formData.get('imageFolder')).toBe('docs/editor-standard');
+        expect(formData.get('image')).toBeInstanceOf(File);
 
-      return new Response(
-        JSON.stringify({
-          file: {
-            url: 'https://cdn.example.com/image.png',
-          },
-          success: 1,
-        }),
-        { status: 200 }
-      );
-    });
+        return new Response(
+          JSON.stringify({
+            file: {
+              url: 'https://cdn.example.com/image.png',
+            },
+            success: 1,
+          }),
+          { status: 200 }
+        );
+      }
+    );
 
     vi.stubGlobal('fetch', fetchMock);
 
@@ -46,14 +48,15 @@ describe('createEditorImageUploader', () => {
   it('surfaces the route error message when the upload fails', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () =>
-        new Response(
-          JSON.stringify({
-            message: 'Ungültiger Bildordner.',
-            success: 0,
-          }),
-          { status: 400 }
-        )
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              message: 'Ungültiger Bildordner.',
+              success: 0,
+            }),
+            { status: 400 }
+          )
       )
     );
 
@@ -68,24 +71,26 @@ describe('createEditorImageUploader', () => {
   });
 
   it('normalizes blob uploads into named files before posting them', async () => {
-    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
-      const formData = init?.body as FormData;
-      const image = formData.get('image');
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, init?: RequestInit) => {
+        const formData = init?.body as FormData;
+        const image = formData.get('image');
 
-      expect(image).toBeInstanceOf(File);
-      expect((image as File).name).toBe('upload.png');
-      expect((image as File).type).toBe('image/png');
+        expect(image).toBeInstanceOf(File);
+        expect((image as File).name).toBe('upload.png');
+        expect((image as File).type).toBe('image/png');
 
-      return new Response(
-        JSON.stringify({
-          file: {
-            url: 'https://cdn.example.com/blob.png',
-          },
-          success: 1,
-        }),
-        { status: 200 }
-      );
-    });
+        return new Response(
+          JSON.stringify({
+            file: {
+              url: 'https://cdn.example.com/blob.png',
+            },
+            success: 1,
+          }),
+          { status: 200 }
+        );
+      }
+    );
 
     vi.stubGlobal('fetch', fetchMock);
 
@@ -94,12 +99,13 @@ describe('createEditorImageUploader', () => {
       imageFolder: 'docs/editor-standard',
     });
 
-    await expect(uploadImage(new Blob(['image'], { type: 'image/png' }))).resolves
-      .toEqual({
-        file: {
-          url: 'https://cdn.example.com/blob.png',
-        },
-        success: 1,
-      });
+    await expect(
+      uploadImage(new Blob(['image'], { type: 'image/png' }))
+    ).resolves.toEqual({
+      file: {
+        url: 'https://cdn.example.com/blob.png',
+      },
+      success: 1,
+    });
   });
 });

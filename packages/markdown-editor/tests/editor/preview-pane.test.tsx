@@ -98,7 +98,8 @@ const SECOND_OUTPUT: OutputData = {
 
 describe('PreviewPane', () => {
   it('keeps the previous successful preview mounted while the next compile is pending', async () => {
-    const pendingCompile = createDeferred<ReturnType<typeof createEvaluatedModule>>();
+    const pendingCompile =
+      createDeferred<ReturnType<typeof createEvaluatedModule>>();
 
     evaluateMock
       .mockResolvedValueOnce(createEvaluatedModule('First preview'))

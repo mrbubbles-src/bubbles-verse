@@ -1,4 +1,5 @@
 import type { RefObject } from 'react';
+
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 
 type ScrollPane = 'editor' | 'preview';
@@ -151,13 +152,11 @@ function findAnchorBlock(
     return null;
   }
 
-  let previous:
-    | {
-        id: string;
-        top: number;
-        height: number;
-      }
-    | null = null;
+  let previous: {
+    id: string;
+    top: number;
+    height: number;
+  } | null = null;
 
   for (const entry of entries) {
     const { top, height } = getRelativeMetrics(entry.element, container);
@@ -254,7 +253,8 @@ export function useScrollSync({
   );
 
   const getTargetPane = useCallback(
-    (pane: ScrollPane): ScrollPane => (pane === 'editor' ? 'preview' : 'editor'),
+    (pane: ScrollPane): ScrollPane =>
+      pane === 'editor' ? 'preview' : 'editor',
     []
   );
 
@@ -337,7 +337,10 @@ export function useScrollSync({
         );
 
         if (targetEntry) {
-          const { top, height } = getRelativeMetrics(targetEntry.element, target);
+          const { top, height } = getRelativeMetrics(
+            targetEntry.element,
+            target
+          );
           const targetAnchorPosition =
             top + height * sourceAnchor.relativeProgress;
 
@@ -356,7 +359,13 @@ export function useScrollSync({
       markProgrammatic(targetPane);
       target.scrollTop = targetScrollTop;
     },
-    [anchorRatio, getContainer, getEntriesForPane, getTargetPane, markProgrammatic]
+    [
+      anchorRatio,
+      getContainer,
+      getEntriesForPane,
+      getTargetPane,
+      markProgrammatic,
+    ]
   );
 
   const scheduleSync = useCallback(

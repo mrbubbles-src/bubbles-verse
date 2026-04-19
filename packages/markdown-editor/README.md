@@ -19,11 +19,17 @@ This package now ships:
 
 ```ts
 import {
+  clearCreateDraft,
+  clearEditDraft,
+  CREATE_DRAFT_KEY,
   createEditorImageUploader,
   DEFAULT_PLUGIN_KEYS,
+  EDIT_DRAFT_KEY,
   EditorForm,
   generateSlug,
   joinSlugSegments,
+  loadCreateDraft,
+  loadEditDraft,
   MarkdownEditor,
   normalizeSlugPath,
   serializeToMdx,
@@ -57,6 +63,8 @@ Shared client wrapper around the reference EditorJS setup from
 - restores mode-specific drafts from localStorage on mount
 - autosaves create/edit drafts to the reference storage keys while authors type
 - accepts optional `draftStorageScope` so apps can isolate drafts per record
+- exports the draft load/clear helpers plus the base storage keys for shells or
+  fullscreen preview routes that need to react to the current local draft state
 - imports `.md`, `.mdx`, and `.markdown` files through the portal-ref modal flow
 - previews converted block counts, image placeholders, and import warnings
 - renders a live MDX preview through a reference-style local compile step

@@ -54,7 +54,7 @@ describe('serializeToMdx', () => {
 
     expect(result).toContain('<div data-block-id="header-anchor-1"');
     expect(result).toContain('id="intro-header-1"');
-    expect(result).toContain('class="topic-anchor-target"');
+    expect(result).toContain('className="topic-anchor-target"');
     expect(result).toContain('## Intro');
   });
 
@@ -195,7 +195,7 @@ describe('serializeToMdx', () => {
     );
 
     expect(result).toContain('id="nested-anchor-heading"');
-    expect(result).toContain('class="topic-anchor-target"');
+    expect(result).toContain('className="topic-anchor-target"');
     expect(result).toContain('### Nested anchor heading');
   });
 

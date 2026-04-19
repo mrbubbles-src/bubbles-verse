@@ -1,12 +1,22 @@
-import { createVaultCategoryAction } from '@/app/(dashboard)/vault/categories/actions';
-import { CategoryTreeList } from '@/components/vault/categories/category-tree-list';
-import type { VaultCategoryTreeNode } from '@/lib/vault/category-tree';
+'use client';
 
+import type {
+  VaultCategoryTreeLevelFilter,
+  VaultCategoryTreeNode,
+} from '@/lib/vault/category-tree';
+
+import {
+  filterVaultCategoryTree,
+  getVaultCategoryTreeSummary,
+} from '@/lib/vault/category-tree';
+
+import { useState } from 'react';
+
+import { Add01Icon, HugeiconsIcon } from '@bubbles/ui/lib/hugeicons';
 import { Button } from '@bubbles/ui/shadcn/button';
 import {
   Field,
   FieldContent,
-  FieldDescription,
   FieldGroup,
   FieldLabel,
 } from '@bubbles/ui/shadcn/field';
@@ -19,8 +29,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@bubbles/ui/shadcn/select';
-import { Separator } from '@bubbles/ui/shadcn/separator';
-import { Textarea } from '@bubbles/ui/shadcn/textarea';
+
+import { createVaultCategoryAction } from '@/app/(dashboard)/vault/categories/actions';
+import { CategoryDialog } from '@/components/vault/categories/category-dialog';
+import { CategoryTreeList } from '@/components/vault/categories/category-tree-list';
 
 type CategoryManagerProps = {
   categories: VaultCategoryTreeNode[];
@@ -28,125 +40,111 @@ type CategoryManagerProps = {
 };
 
 /**
- * Renders the full Vault category management workspace.
- *
- * The left side keeps the editable tree in view, while the right side holds
- * the lightweight creation form for new top-level categories or subcategories.
+ * Coordinates the flat categories management view with local search/filter
+ * state while keeping create/edit flows inside dialogs.
  */
 export function CategoryManager({
   categories,
   parentOptions,
 }: CategoryManagerProps) {
+  const [query, setQuery] = useState('');
+  const [levelFilter, setLevelFilter] =
+    useState<VaultCategoryTreeLevelFilter>('all');
+  const summary = getVaultCategoryTreeSummary(categories);
+  const filteredCategories = filterVaultCategoryTree(categories, {
+    query,
+    level: levelFilter,
+  });
+
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
-      <section className="flex flex-col gap-4 rounded-[2rem] border border-border/50 bg-background/80 px-5 py-6 shadow-sm shadow-black/5 sm:px-6">
-        <div className="flex flex-col gap-2">
-          <p className="text-xs font-semibold tracking-[0.24em] text-muted-foreground uppercase">
-            Kategorienbaum
-          </p>
-          <p className="text-sm text-pretty text-muted-foreground">
-            V1 bleibt bewusst bei zwei Ebenen: Oberkategorien und genau eine
-            Unterkategorie-Ebene darunter.
-          </p>
-        </div>
-        <CategoryTreeList categories={categories} parentOptions={parentOptions} />
-      </section>
-
-      <aside className="flex flex-col gap-4 rounded-[2rem] border border-border/50 bg-background/80 px-5 py-6 shadow-sm shadow-black/5 sm:px-6">
-        <div className="flex flex-col gap-2">
-          <p className="text-xs font-semibold tracking-[0.24em] text-muted-foreground uppercase">
-            Neue Kategorie
-          </p>
-          <p className="text-sm text-pretty text-muted-foreground">
-            Lege neue Oberkategorien oder direkte Unterkategorien an.
+    <section className="flex flex-col gap-4 sm:gap-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            Kategorien
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {summary.total} Kategorien · {summary.topLevel} Oberkategorien ·{' '}
+            {summary.child} Unterkategorien
           </p>
         </div>
 
-        <Separator />
+        <CategoryDialog
+          action={createVaultCategoryAction}
+          dialogId="vault-category-create"
+          title="Neue Kategorie"
+          description="Lege eine neue Oberkategorie oder direkte Unterkategorie an."
+          submitLabel="Kategorie anlegen"
+          parentOptions={parentOptions}
+          trigger={
+            <Button type="button" className="w-full sm:w-auto">
+              <HugeiconsIcon
+                icon={Add01Icon}
+                strokeWidth={2}
+                data-icon="inline-start"
+              />
+              Neue Kategorie
+            </Button>
+          }
+        />
+      </div>
 
-        <form action={createVaultCategoryAction} className="flex flex-col gap-4">
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="vault-category-name">Name</FieldLabel>
-              <FieldContent>
-                <Input
-                  id="vault-category-name"
-                  name="name"
-                  placeholder="z. B. Rendering"
-                />
-              </FieldContent>
-            </Field>
+      <div className="border-y border-border/60 py-4 sm:py-5">
+        <FieldGroup className="grid gap-3 md:grid-cols-[minmax(0,1.2fr)_minmax(12rem,0.7fr)] md:items-end">
+          <Field>
+            <FieldLabel htmlFor="vault-category-query">Suche</FieldLabel>
+            <FieldContent>
+              <Input
+                id="vault-category-query"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Nach Name oder Beschreibung suchen"
+              />
+            </FieldContent>
+          </Field>
 
-            <Field>
-              <FieldLabel htmlFor="vault-category-slug">Slug</FieldLabel>
-              <FieldContent>
-                <Input
-                  id="vault-category-slug"
-                  name="slug"
-                  placeholder="optional, wird sonst automatisch gebaut"
-                />
-              </FieldContent>
-            </Field>
+          <Field>
+            <FieldLabel htmlFor="vault-category-level-filter">
+              Filter
+            </FieldLabel>
+            <FieldContent>
+              <Select
+                defaultValue={levelFilter}
+                name="level"
+                onValueChange={(value) =>
+                  setLevelFilter(value as VaultCategoryTreeLevelFilter)
+                }>
+                <SelectTrigger
+                  id="vault-category-level-filter"
+                  className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="start">
+                  <SelectGroup>
+                    <SelectItem value="all">Alle Ebenen</SelectItem>
+                    <SelectItem value="top-level">
+                      Nur Oberkategorien
+                    </SelectItem>
+                    <SelectItem value="children">
+                      Nur Unterkategorien
+                    </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </FieldContent>
+          </Field>
+        </FieldGroup>
+      </div>
 
-            <Field>
-              <FieldLabel htmlFor="vault-category-parent">
-                Übergeordnete Kategorie
-              </FieldLabel>
-              <FieldContent>
-                <Select defaultValue="root" name="parentId">
-                  <SelectTrigger id="vault-category-parent" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent align="start">
-                    <SelectGroup>
-                      <SelectItem value="root">Keine Oberkategorie</SelectItem>
-                      {parentOptions.map((option) => (
-                        <SelectItem key={option.id} value={option.id}>
-                          {option.name}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-                <FieldDescription>
-                  Unterkategorien dürfen nur unter top-level Kategorien liegen.
-                </FieldDescription>
-              </FieldContent>
-            </Field>
-
-            <Field>
-              <FieldLabel htmlFor="vault-category-sort-order">
-                Sortierung
-              </FieldLabel>
-              <FieldContent>
-                <Input
-                  id="vault-category-sort-order"
-                  type="number"
-                  name="sortOrder"
-                  defaultValue="0"
-                />
-              </FieldContent>
-            </Field>
-
-            <Field>
-              <FieldLabel htmlFor="vault-category-description">
-                Beschreibung
-              </FieldLabel>
-              <FieldContent>
-                <Textarea
-                  id="vault-category-description"
-                  name="description"
-                  rows={3}
-                  className="min-h-24"
-                  placeholder="Kurzer Kontext für die Redaktion oder spätere Filter."
-                />
-              </FieldContent>
-            </Field>
-          </FieldGroup>
-
-          <Button type="submit">Kategorie anlegen</Button>
-        </form>
-      </aside>
-    </div>
+      <CategoryTreeList
+        categories={filteredCategories}
+        parentOptions={parentOptions}
+        emptyState={
+          query || levelFilter !== 'all'
+            ? 'Keine Kategorien passen gerade zu dieser Suche oder diesem Filter.'
+            : undefined
+        }
+      />
+    </section>
   );
 }

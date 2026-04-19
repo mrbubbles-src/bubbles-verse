@@ -139,12 +139,8 @@
           "name": "content_item_tags_contentItemId_content_items_id_fk",
           "tableFrom": "content_item_tags",
           "tableTo": "content_items",
-          "columnsFrom": [
-            "contentItemId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["contentItemId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -291,12 +287,8 @@
           "name": "content_items_appModuleId_app_modules_id_fk",
           "tableFrom": "content_items",
           "tableTo": "app_modules",
-          "columnsFrom": [
-            "appModuleId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["appModuleId"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -304,12 +296,8 @@
           "name": "content_items_authorProfileId_profiles_id_fk",
           "tableFrom": "content_items",
           "tableTo": "profiles",
-          "columnsFrom": [
-            "authorProfileId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["authorProfileId"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -317,12 +305,8 @@
           "name": "content_items_createdByProfileId_profiles_id_fk",
           "tableFrom": "content_items",
           "tableTo": "profiles",
-          "columnsFrom": [
-            "createdByProfileId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["createdByProfileId"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -330,12 +314,8 @@
           "name": "content_items_updatedByProfileId_profiles_id_fk",
           "tableFrom": "content_items",
           "tableTo": "profiles",
-          "columnsFrom": [
-            "updatedByProfileId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["updatedByProfileId"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -395,10 +375,7 @@
       "compositePrimaryKeys": {
         "dashboard_github_allowlist_pkey": {
           "name": "dashboard_github_allowlist_pkey",
-          "columns": [
-            "github_username",
-            "email"
-          ]
+          "columns": ["github_username", "email"]
         }
       },
       "uniqueConstraints": {},
@@ -486,12 +463,8 @@
           "name": "profile_social_links_profileId_profiles_id_fk",
           "tableFrom": "profile_social_links",
           "tableTo": "profiles",
-          "columnsFrom": [
-            "profileId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["profileId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -692,12 +665,8 @@
           "name": "vault_categories_parentId_vault_categories_id_fk",
           "tableFrom": "vault_categories",
           "tableTo": "vault_categories",
-          "columnsFrom": [
-            "parentId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["parentId"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -745,12 +714,8 @@
           "name": "vault_entries_contentItemId_content_items_id_fk",
           "tableFrom": "vault_entries",
           "tableTo": "content_items",
-          "columnsFrom": [
-            "contentItemId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["contentItemId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -758,12 +723,8 @@
           "name": "vault_entries_primaryCategoryId_vault_categories_id_fk",
           "tableFrom": "vault_entries",
           "tableTo": "vault_categories",
-          "columnsFrom": [
-            "primaryCategoryId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["primaryCategoryId"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -779,29 +740,17 @@
     "public.content_status": {
       "name": "content_status",
       "schema": "public",
-      "values": [
-        "draft",
-        "published"
-      ]
+      "values": ["draft", "published"]
     },
     "public.profile_role": {
       "name": "profile_role",
       "schema": "public",
-      "values": [
-        "owner",
-        "editor",
-        "guest_author"
-      ]
+      "values": ["owner", "editor", "guest_author"]
     },
     "public.social_platform": {
       "name": "social_platform",
       "schema": "public",
-      "values": [
-        "website",
-        "github",
-        "linkedin",
-        "twitter"
-      ]
+      "values": ["website", "github", "linkedin", "twitter"]
     }
   },
   "schemas": {},
