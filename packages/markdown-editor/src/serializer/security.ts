@@ -21,6 +21,23 @@ export function escapeMdxBraces(text: string): string {
 }
 
 /**
+ * Rewrite raw HTML `class` attributes so embedded HTML stays React/MDX-safe.
+ *
+ * Use this on user-authored HTML fragments before they are inserted into MDX
+ * source. Do not run it across the final serialized document because that
+ * would also mutate code examples stored inside MDX prop strings.
+ *
+ * @param text - Raw inline HTML fragment from EditorJS text fields.
+ * @returns Fragment with HTML `class` attributes rewritten to `className`.
+ */
+export function normalizeHtmlClassAttributes(text: string): string {
+  return text.replace(
+    /(<[A-Za-z][^>]*?)\bclass=(["'][^"']*["'])/g,
+    '$1className=$2'
+  );
+}
+
+/**
  * Parse a safe inline component shortcode from paragraph content.
  *
  * Supports only the reference syntaxes and only for allowlisted component

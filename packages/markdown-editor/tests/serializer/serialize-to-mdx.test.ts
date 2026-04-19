@@ -26,10 +26,12 @@ describe('serializeToMdx', () => {
     });
 
     expect(result).toContain('<div data-block-id="paragraph-1">');
-    expect(result).toContain('<span class="inline-code">npm init</span>');
+    expect(result).toContain('<span className="inline-code">npm init</span>');
     expect(result).toContain('<s>done</s>');
-    expect(result).toContain('class="cdx-annotation"');
-    expect(result).toContain('<kbd class="editorjs-inline-hotkey">CMD+K</kbd>');
+    expect(result).toContain('className="cdx-annotation"');
+    expect(result).toContain(
+      '<kbd className="editorjs-inline-hotkey">CMD+K</kbd>'
+    );
   });
 
   it('serializes headers as markdown headings', () => {

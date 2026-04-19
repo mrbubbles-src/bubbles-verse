@@ -328,6 +328,8 @@ implementation:
 - only expands explicitly allowlisted inline component shortcodes
 - rejects malformed shortcode JSON props and falls back to plain text
 - normalizes `<br>` tags to `<br />` in the final MDX output
+- rewrites raw inline HTML `class="..."` attributes to `className="..."`
+  so the compiled MDX does not emit React DOM warnings
 - optionally accepts `headingAnchorIdsByBlockId` so heading wrapper elements
   expose stable hash targets for TOC links
 

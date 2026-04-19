@@ -11,8 +11,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Export the draft load/clear helpers and base storage keys so consuming apps
   can build fullscreen previews or shell-level draft affordances on top of the
   same local draft state as `MarkdownEditor`.
-- Fix heading-anchor wrapper serialization so the live MDX preview no longer
-  emits a React `class`/`className` DOM warning.
+- Fix MDX serialization so heading wrappers and inline HTML fragments no longer
+  emit React `class`/`className` DOM warnings in previews or rendered entries.
 
 ## [1.0.0] - 2026-04-17
 

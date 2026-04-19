@@ -1,5 +1,8 @@
 import type { EditorJsListItem } from '../types/serializer';
-import { escapeMdxBraces } from '../serializer/security';
+import {
+  escapeMdxBraces,
+  normalizeHtmlClassAttributes,
+} from '../serializer/security';
 
 export { escapeMdxBraces } from '../serializer/security';
 
@@ -41,7 +44,7 @@ export function renderListItems(
       }
 
       const content = replaceLinksWithMarkdownLinks(
-        escapeMdxBraces(item.content)
+        normalizeHtmlClassAttributes(escapeMdxBraces(item.content))
       );
       const prefix = ' '.repeat(depth * 4);
       const line = `${prefix}${bullet} ${content}`;

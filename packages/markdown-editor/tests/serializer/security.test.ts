@@ -4,6 +4,7 @@ import { serializeToMdx } from '../../src';
 import {
   DEFAULT_ALLOWED_MDX_COMPONENTS,
   escapeMdxBraces,
+  normalizeHtmlClassAttributes,
   sanitizeSerializedMdx,
   tryParseInlineComponent,
 } from '../../src/serializer/security';
@@ -52,6 +53,18 @@ describe('sanitizeSerializedMdx', () => {
     expect(
       sanitizeSerializedMdx('<div>Line one<br class="soft">Line two</div>')
     ).toBe('<div>Line one<br />Line two</div>');
+  });
+});
+
+describe('normalizeHtmlClassAttributes', () => {
+  it('rewrites HTML class attributes to className for MDX runtime compatibility', () => {
+    expect(
+      normalizeHtmlClassAttributes(
+        '<span class="inline-code">npm init</span><kbd class="editorjs-inline-hotkey">CMD+K</kbd>'
+      )
+    ).toBe(
+      '<span className="inline-code">npm init</span><kbd className="editorjs-inline-hotkey">CMD+K</kbd>'
+    );
   });
 });
 

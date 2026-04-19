@@ -6,6 +6,7 @@ import type {
 } from '../types/serializer';
 import {
   escapeMdxBraces,
+  normalizeHtmlClassAttributes,
   sanitizeSerializedMdx,
   tryParseInlineComponent,
 } from '../serializer/security';
@@ -22,7 +23,9 @@ import {
  * @returns Serialized MDX-safe text.
  */
 function processTextForMdx(text: string): string {
-  return replaceLinksWithMarkdownLinks(escapeMdxBraces(text));
+  return replaceLinksWithMarkdownLinks(
+    normalizeHtmlClassAttributes(escapeMdxBraces(text))
+  );
 }
 
 /**
@@ -59,7 +62,9 @@ function serializeMdxNumberProp(
  * @returns Normalized cell text safe for row concatenation.
  */
 function normalizeTableCell(cell: string): string {
-  return cell.trim().replace(/\r?\n/g, '<br />').replace(/\|/g, '\\|');
+  return normalizeHtmlClassAttributes(cell.trim())
+    .replace(/\r?\n/g, '<br />')
+    .replace(/\|/g, '\\|');
 }
 
 /**
