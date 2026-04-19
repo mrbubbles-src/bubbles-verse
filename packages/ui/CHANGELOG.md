@@ -17,6 +17,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - `@bubbles/ui` README now documents the shared dialog shells and pagination
   entrypoint alongside the existing shell components.
+- Raised the shared desktop typography baseline for primary controls, menus,
+  dialogs, cards, and sidebar navigation from extra-small defaults to a more
+  readable `text-sm`/`text-base` scale.
+- Raised shared `Badge` chips from the old micro-label sizing so dashboard
+  status and taxonomy labels no longer read noticeably smaller than the
+  surrounding UI.
+- Raised shared `Badge` chips one more step to a clearer `text-sm` size so
+  status labels stay readable even after the dashboard content width opened up.
+- Tuned shared `Badge` chips back down one step and switched them to
+  `font-semibold` so they stay readable without visually overpowering nearby
+  body text.
 
 ## [1.1.0] - 2026-04-17
 

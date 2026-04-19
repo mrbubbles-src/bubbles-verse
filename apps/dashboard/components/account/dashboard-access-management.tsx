@@ -56,10 +56,10 @@ export function DashboardAccessManagement({
       <section className="flex flex-col gap-6">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex min-w-0 flex-col gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
+            <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
               Zugangsverwaltung
             </h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-base text-muted-foreground">
               {summary.total} Zugänge · {summary.active} aktiv ·{' '}
               {summary.owners} Owner
             </p>
@@ -69,9 +69,9 @@ export function DashboardAccessManagement({
         </header>
 
         <div className="overflow-x-auto border-y border-border/50">
-          <table className="min-w-[70rem] border-separate border-spacing-0 text-left text-sm">
+          <table className="min-w-280 border-separate border-spacing-0 text-left text-base">
             <thead>
-              <tr className="text-xs font-semibold tracking-[0.24em] text-muted-foreground uppercase">
+              <tr className="text-sm font-semibold tracking-[0.18em] text-muted-foreground uppercase">
                 <th className="border-b border-border/50 px-3 py-3 font-semibold">
                   GitHub-Name
                 </th>
@@ -103,7 +103,7 @@ export function DashboardAccessManagement({
 
                 return (
                   <tr key={`${entry.githubUsername}:${entry.email}`}>
-                    <td className="border-b border-border/40 px-3 py-4 align-top">
+                    <td className="border-b border-border/40 px-3 py-5 align-top">
                       <div className="flex min-w-0 items-center gap-2">
                         <span className="font-medium">
                           @{entry.githubUsername}
@@ -113,15 +113,15 @@ export function DashboardAccessManagement({
                         ) : null}
                       </div>
                     </td>
-                    <td className="border-b border-border/40 px-3 py-4 align-top text-muted-foreground">
+                    <td className="border-b border-border/40 px-3 py-5 align-top text-muted-foreground">
                       <span className="block max-w-[18rem] truncate">
                         {entry.email}
                       </span>
                     </td>
-                    <td className="border-b border-border/40 px-3 py-4 align-top">
+                    <td className="border-b border-border/40 px-3 py-5 align-top">
                       {formatDashboardAccessRoleLabel(entry.userRole)}
                     </td>
-                    <td className="border-b border-border/40 px-3 py-4 align-top text-muted-foreground">
+                    <td className="border-b border-border/40 px-3 py-5 align-top text-muted-foreground">
                       {entry.note ? (
                         <Tooltip>
                           <TooltipTrigger
@@ -141,10 +141,10 @@ export function DashboardAccessManagement({
                         '—'
                       )}
                     </td>
-                    <td className="border-b border-border/40 px-3 py-4 align-top text-muted-foreground">
+                    <td className="border-b border-border/40 px-3 py-5 align-top text-muted-foreground">
                       {formatAccessDate(entry.createdAt)}
                     </td>
-                    <td className="border-b border-border/40 px-3 py-4 align-top">
+                    <td className="border-b border-border/40 px-3 py-5 align-top">
                       <Badge
                         variant={
                           entry.dashboardAccess ? 'secondary' : 'outline'
@@ -152,7 +152,7 @@ export function DashboardAccessManagement({
                         {entry.dashboardAccess ? 'Aktiv' : 'Gesperrt'}
                       </Badge>
                     </td>
-                    <td className="border-b border-border/40 px-3 py-4 align-top">
+                    <td className="border-b border-border/40 px-3 py-5 align-top">
                       <div className="flex justify-end gap-2">
                         {isCurrentOwner ? (
                           <>

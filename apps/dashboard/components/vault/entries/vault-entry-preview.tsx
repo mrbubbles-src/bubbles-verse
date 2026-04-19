@@ -80,20 +80,20 @@ export function VaultEntryPreview({
   const hasContent = serializedContent.length > 0;
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-5xl flex-col gap-8 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-      <header className="flex flex-col gap-4 border-b border-border/50 pb-6">
+    <main className="mx-auto flex min-h-dvh w-full max-w-screen-2xl flex-col gap-10 px-5 py-7 sm:px-7 sm:py-9 lg:px-10">
+      <header className="flex flex-col gap-5 border-b border-border/50 pb-7">
         <div className="flex flex-wrap items-center gap-3">
           <Badge variant="outline">Vorschau</Badge>
           <Badge variant="secondary">
             {mode === 'edit' ? 'Bearbeiten' : 'Neuer Eintrag'}
           </Badge>
         </div>
-        <div className="space-y-2">
-          <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+        <div className="space-y-3">
+          <h1 className="text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
             {title}
           </h1>
           {description ? (
-            <p className="max-w-3xl text-sm leading-6 text-pretty text-muted-foreground sm:text-base">
+            <p className="max-w-4xl text-base leading-7 text-pretty text-muted-foreground sm:text-lg">
               {description}
             </p>
           ) : null}
@@ -105,12 +105,12 @@ export function VaultEntryPreview({
           <MdxRenderer content={serializedContent} />
         </section>
       ) : (
-        <section className="flex min-h-[40dvh] items-center justify-center rounded-3xl border border-dashed border-border/60 px-6 py-10 text-center">
-          <div className="max-w-md space-y-2">
-            <h2 className="text-xl font-semibold tracking-tight">
+        <section className="flex min-h-[40dvh] items-center justify-center rounded-3xl border border-dashed border-border/60 px-8 py-12 text-center">
+          <div className="max-w-lg space-y-3">
+            <h2 className="text-2xl font-semibold tracking-tight">
               Noch nichts zum Anzeigen
             </h2>
-            <p className="text-sm leading-6 text-muted-foreground">
+            <p className="text-base leading-7 text-muted-foreground">
               Sobald Inhalt im Editor liegt, erscheint hier die Vollseiten-
               Vorschau des aktuellen Drafts.
             </p>

@@ -14,21 +14,21 @@ import { WorkspaceStats } from '@/components/home/workspace-stats';
  */
 export function DashboardHome({ model }: { model: DashboardHomeModel }) {
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-10">
       <header>
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+        <h1 className="text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
           Hallo, {model.greetingName}
         </h1>
       </header>
 
-      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,21rem)] xl:items-start">
-        <div className="flex min-w-0 flex-col gap-6">
+      <div className="grid gap-10 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,24rem)] xl:items-start">
+        <div className="flex min-w-0 flex-col gap-8">
           <HomeWorkArea
             recentDrafts={model.recentDrafts}
             recentUpdates={model.recentUpdates}
           />
 
-          <div className="flex flex-col gap-6 xl:hidden">
+          <div className="flex flex-col gap-8 xl:hidden">
             <QuickActions actions={model.quickActions} />
             <ProfileStatus profileStatus={model.profileStatus} />
             <WorkspaceStats stats={model.workspaceStats} />
@@ -37,7 +37,7 @@ export function DashboardHome({ model }: { model: DashboardHomeModel }) {
           <ModuleStatusLine summaries={model.appSummaries} />
         </div>
 
-        <aside className="hidden xl:sticky xl:top-6 xl:flex xl:flex-col xl:gap-6">
+        <aside className="hidden xl:sticky xl:top-6 xl:flex xl:flex-col xl:gap-8">
           <QuickActions actions={model.quickActions} />
           <ProfileStatus profileStatus={model.profileStatus} />
           <WorkspaceStats stats={model.workspaceStats} />

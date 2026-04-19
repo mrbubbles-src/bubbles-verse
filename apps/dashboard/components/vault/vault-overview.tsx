@@ -36,7 +36,9 @@ function VaultOverviewEntryList({
   showStatus = false,
 }: VaultOverviewEntryListProps) {
   if (entries.length === 0) {
-    return <p className="py-10 text-sm text-muted-foreground">{emptyState}</p>;
+    return (
+      <p className="py-12 text-base text-muted-foreground">{emptyState}</p>
+    );
   }
 
   return (
@@ -46,13 +48,13 @@ function VaultOverviewEntryList({
           {index > 0 ? <Separator /> : null}
           <Link
             href={`/vault/entries/${entry.id}`}
-            className="group flex flex-col gap-3 rounded-[1.5rem] px-1 py-4 transition-colors hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-              <div className="min-w-0 space-y-1">
-                <p className="text-base font-semibold tracking-tight text-balance text-foreground">
+            className="group flex flex-col gap-4 rounded-[1.5rem] px-2 py-5 transition-colors hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0 space-y-1.5">
+                <p className="text-lg font-semibold tracking-tight text-balance text-foreground sm:text-xl">
                   {entry.title}
                 </p>
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-base text-muted-foreground">
                   <Badge variant="secondary">{entry.categoryLabel}</Badge>
                   {showStatus ? (
                     <>
@@ -70,7 +72,7 @@ function VaultOverviewEntryList({
                 </div>
               </div>
 
-              <p className="text-sm text-muted-foreground sm:text-right">
+              <p className="text-base text-muted-foreground sm:text-right">
                 {entry.updatedAtLabel}
               </p>
             </div>
@@ -92,9 +94,9 @@ function VaultOverviewEntryList({
  */
 export function VaultOverview({ model }: { model: VaultOverviewModel }) {
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-base text-muted-foreground">
           {model.statusItems.map((item, index) => (
             <span key={item.label} className="flex items-center gap-2">
               {index > 0 ? <span aria-hidden="true">•</span> : null}
@@ -120,21 +122,21 @@ export function VaultOverview({ model }: { model: VaultOverviewModel }) {
         </div>
       </div>
 
-      <section className="flex flex-col gap-4 rounded-[2rem] border border-border/60 bg-background/80 px-4 py-4 shadow-sm shadow-black/5 sm:px-6 sm:py-5">
-        <Tabs defaultValue="drafts" className="gap-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+      <section className="flex flex-col gap-5 rounded-[2rem] border border-border/60 bg-background/80 px-5 py-5 shadow-sm shadow-black/5 sm:px-7 sm:py-6">
+        <Tabs defaultValue="drafts" className="gap-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
               Weiterschreiben
             </h1>
 
             <TabsList
               variant="line"
               aria-label="Vault Arbeitslisten"
-              className="h-auto w-full justify-start gap-4 p-0 sm:w-auto">
-              <TabsTrigger value="drafts" className="px-0 py-2 text-sm">
+              className="h-auto w-full justify-start gap-5 p-0 sm:w-auto">
+              <TabsTrigger value="drafts" className="px-0 py-2 text-base">
                 Offene Entwürfe
               </TabsTrigger>
-              <TabsTrigger value="updates" className="px-0 py-2 text-sm">
+              <TabsTrigger value="updates" className="px-0 py-2 text-base">
                 Zuletzt bearbeitet
               </TabsTrigger>
             </TabsList>

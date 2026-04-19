@@ -66,7 +66,7 @@ function BubblesSidebarLeaf({
         }
         isActive={isActive}
         tooltip={item.title}
-        className="h-11 rounded-xl px-3 text-[15px] font-medium group-data-[collapsible=icon]:size-10! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:p-0! md:h-12 md:text-base group-data-[collapsible=icon]:[&>span]:hidden [&>svg]:size-5">
+        className="h-11 rounded-xl px-3 text-base font-medium group-data-[collapsible=icon]:size-10! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:p-0! md:h-12 group-data-[collapsible=icon]:[&>span]:hidden [&>svg]:size-5">
         {item.icon ? <HugeiconsIcon icon={item.icon} strokeWidth={2} /> : null}
         <span>{item.title}</span>
       </SidebarMenuButton>
@@ -83,7 +83,7 @@ function BubblesSidebarLeaf({
         )
       }
       isActive={isActive}
-      className="min-h-8 rounded-lg px-2.5 text-sm font-medium md:min-h-9 md:text-[15px] [&>svg]:size-4">
+      className="min-h-8 rounded-lg px-2.5 text-sm font-medium md:min-h-9 md:text-base [&>svg]:size-4">
       {item.icon ? <HugeiconsIcon icon={item.icon} strokeWidth={2} /> : null}
       <span>{item.title}</span>
     </SidebarMenuSubButton>
@@ -110,7 +110,7 @@ function BubblesSidebarGroupItem({
       <SidebarMenuButton
         isActive={isActive}
         tooltip={item.title}
-        className="h-11 rounded-xl px-3 text-[15px] font-medium group-data-[collapsible=icon]:size-10! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:p-0! md:h-12 md:text-base group-data-[collapsible=icon]:[&>span]:hidden [&>svg]:size-5">
+        className="h-11 rounded-xl px-3 text-base font-medium group-data-[collapsible=icon]:size-10! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:p-0! md:h-12 group-data-[collapsible=icon]:[&>span]:hidden [&>svg]:size-5">
         {item.icon ? <HugeiconsIcon icon={item.icon} strokeWidth={2} /> : null}
         <span>{item.title}</span>
         <HugeiconsIcon
@@ -123,7 +123,7 @@ function BubblesSidebarGroupItem({
       <SidebarMenuSubButton
         render={<button type="button" />}
         isActive={isActive}
-        className="min-h-8 rounded-lg px-2.5 text-sm font-medium md:min-h-9 md:text-[15px] [&>svg]:size-4">
+        className="min-h-8 rounded-lg px-2.5 text-sm font-medium md:min-h-9 md:text-base [&>svg]:size-4">
         {item.icon ? <HugeiconsIcon icon={item.icon} strokeWidth={2} /> : null}
         <span>{item.title}</span>
         <HugeiconsIcon

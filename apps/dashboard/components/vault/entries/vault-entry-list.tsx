@@ -145,7 +145,7 @@ export function VaultEntryList({
 
   if (entries.length === 0) {
     return (
-      <div className="border-b border-dashed border-border/60 py-10 text-sm text-muted-foreground">
+      <div className="border-b border-dashed border-border/60 py-12 text-base text-muted-foreground">
         {emptyState}
       </div>
     );
@@ -153,16 +153,16 @@ export function VaultEntryList({
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-5">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[52rem] border-collapse text-left text-sm">
+          <table className="w-full min-w-[52rem] border-collapse text-left text-base">
             <thead>
-              <tr className="border-y border-border/60 text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
-                <th className="py-3 pr-4">Titel</th>
-                <th className="w-[18%] py-3 pr-4">Kategorie</th>
-                <th className="w-[12%] py-3 pr-4">Status</th>
-                <th className="w-[16%] py-3 pr-4">Zuletzt bearbeitet</th>
-                <th className="w-[10rem] py-3 text-right">Aktionen</th>
+              <tr className="border-y border-border/60 text-sm font-medium tracking-[0.16em] text-muted-foreground uppercase">
+                <th className="py-4 pr-4">Titel</th>
+                <th className="w-[18%] py-4 pr-4">Kategorie</th>
+                <th className="w-[12%] py-4 pr-4">Status</th>
+                <th className="w-[16%] py-4 pr-4">Zuletzt bearbeitet</th>
+                <th className="w-[10rem] py-4 text-right">Aktionen</th>
               </tr>
             </thead>
             <tbody>
@@ -170,18 +170,18 @@ export function VaultEntryList({
                 <tr
                   key={entry.id}
                   className="border-b border-border/50 align-top">
-                  <td className="py-4 pr-4">
+                  <td className="py-5 pr-4">
                     <div className="min-w-0">
                       <Link
                         href={`/vault/entries/${entry.id}`}
-                        className="text-base font-medium tracking-tight underline-offset-4 hover:underline">
+                        className="text-lg font-medium tracking-tight underline-offset-4 hover:underline sm:text-xl">
                         {entry.title}
                       </Link>
                       {entry.description ? (
                         <Tooltip>
                           <TooltipTrigger
                             render={
-                              <p className="mt-1 truncate text-sm text-muted-foreground">
+                              <p className="mt-1.5 truncate text-base text-muted-foreground">
                                 {entry.description}
                               </p>
                             }
@@ -191,16 +191,16 @@ export function VaultEntryList({
                           </TooltipContent>
                         </Tooltip>
                       ) : (
-                        <p className="mt-1 text-sm text-muted-foreground">
+                        <p className="mt-1.5 text-base text-muted-foreground">
                           Keine Beschreibung.
                         </p>
                       )}
                     </div>
                   </td>
-                  <td className="py-4 pr-4 text-sm text-muted-foreground">
+                  <td className="py-5 pr-4 text-base text-muted-foreground">
                     {entry.categoryLabel}
                   </td>
-                  <td className="py-4 pr-4">
+                  <td className="py-5 pr-4">
                     <Badge
                       variant={
                         entry.status === 'published' ? 'default' : 'secondary'
@@ -210,10 +210,10 @@ export function VaultEntryList({
                         : 'Entwurf'}
                     </Badge>
                   </td>
-                  <td className="py-4 pr-4 text-sm text-muted-foreground">
+                  <td className="py-5 pr-4 text-base text-muted-foreground">
                     {entry.updatedAtLabel}
                   </td>
-                  <td className="py-4">
+                  <td className="py-5">
                     <div className="flex items-center justify-end gap-1">
                       <Tooltip>
                         <TooltipTrigger

@@ -6,7 +6,7 @@ import { cn } from '@bubbles/ui/lib/utils';
 import { cva } from 'class-variance-authority';
 
 const badgeVariants = cva(
-  'group/badge inline-flex h-5 w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-[0.625rem] font-medium whitespace-nowrap transition-all focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-2.5!',
+  'group/badge inline-flex h-6 w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-full border border-transparent px-2.5 py-0.5 text-xs/relaxed font-semibold whitespace-nowrap transition-all focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3!',
   {
     variants: {
       variant: {
@@ -28,6 +28,15 @@ const badgeVariants = cva(
   }
 );
 
+/**
+ * Renders a compact semantic chip for statuses, labels, and short metadata.
+ *
+ * Use this for short inline state markers like `Entwurf`, `Aktiv`, or
+ * category labels. Keep the content brief so the badge stays scannable.
+ *
+ * @param props Visual variant, optional custom render target, and badge content.
+ * @returns One inline badge element with the shared chip sizing.
+ */
 function Badge({
   className,
   variant = 'default',

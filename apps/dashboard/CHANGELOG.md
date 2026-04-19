@@ -108,6 +108,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `FormDialog` and `StagedConfirmDialog` shells.
 - Replaced the custom Vault entry list footer with the shared
   `@bubbles/ui/components/pagination` component.
+- Opened the dashboard shell width on desktop and aligned it with the larger
+  shared `@bubbles/ui` typography baseline so pages no longer sit inside such a
+  narrow central rail.
+- Raised the dashboard screen-local typography, table density, and preview
+  width so the larger desktop layout now reads visibly bigger instead of being
+  pulled back down by local `text-xs` and `text-sm` overrides.
 
 ### Documentation
 

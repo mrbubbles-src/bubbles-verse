@@ -196,7 +196,7 @@ export function VaultEntryEditor({
                 onValueChange={(value) => setSelectedCategoryId(value ?? '')}>
                 <SelectTrigger
                   id="vault-entry-category"
-                  className="h-9 w-auto min-w-[14rem] rounded-full border-border/60 bg-transparent px-3 text-sm shadow-none">
+                  className="h-9 w-auto min-w-56 rounded-full border-border/60 bg-transparent px-3 text-sm shadow-none">
                   <SelectValue placeholder="Kategorie wählen">
                     {getSelectedCategoryLabel()}
                   </SelectValue>

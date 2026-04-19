@@ -38,20 +38,20 @@ export function RecentContentList({
   return (
     <div className="flex flex-col">
       {items.length === 0 ? (
-        <p className="py-10 text-sm text-muted-foreground">{emptyState}</p>
+        <p className="py-12 text-base text-muted-foreground">{emptyState}</p>
       ) : (
         items.map((item, index) => (
           <div key={item.id}>
             {index > 0 ? <Separator /> : null}
             <Link
               href={`/vault/entries/${item.id}`}
-              className="group flex flex-col gap-3 rounded-[1.5rem] px-1 py-4 transition-colors hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0 space-y-1">
-                  <p className="text-base font-semibold tracking-tight text-balance text-foreground">
+              className="group flex flex-col gap-4 rounded-[1.5rem] px-2 py-5 transition-colors hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 space-y-1.5">
+                  <p className="text-lg font-semibold tracking-tight text-balance text-foreground sm:text-xl">
                     {item.title}
                   </p>
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-base text-muted-foreground">
                     <span>
                       {item.appSlug === 'vault' ? 'Coding Vault' : item.appSlug}
                     </span>
@@ -73,7 +73,7 @@ export function RecentContentList({
                   </div>
                 </div>
 
-                <p className="text-sm text-muted-foreground sm:text-right">
+                <p className="text-base text-muted-foreground sm:text-right">
                   {formatEntryTimestamp(item.updatedAt)}
                 </p>
               </div>

@@ -34,7 +34,7 @@ export function BubblesBreadcrumbs({
 
   return (
     <Breadcrumb>
-      <BreadcrumbList className={cn('text-sm md:text-[15px]', className)}>
+      <BreadcrumbList className={cn('text-sm md:text-base', className)}>
         {breadcrumbs.map((breadcrumb, index) => {
           const isLast = index === breadcrumbs.length - 1;
 
@@ -48,7 +48,7 @@ export function BubblesBreadcrumbs({
                     {breadcrumb.label}
                   </BreadcrumbLink>
                 ) : (
-                  <BreadcrumbPage className="text-[15px] font-semibold text-primary md:text-base">
+                  <BreadcrumbPage className="text-base font-semibold text-primary">
                     {breadcrumb.label}
                   </BreadcrumbPage>
                 )}

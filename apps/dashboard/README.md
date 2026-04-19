@@ -20,6 +20,12 @@ a clean base.
 - The shared shell navigation now follows the redesign playbook: `Profil`
   lives in the sidebar footer menu, `Account` is now `Zugangsverwaltung`, and
   Vault entry drafts can appear as temporary child links below `Einträge`.
+- The desktop shell now uses the full available content width instead of a
+  fixed centered max-width rail, while shared `@bubbles/ui` controls render at
+  a larger default text scale.
+- The main dashboard screens now also raise their own local headings, table
+  text, metadata, and preview widths so the desktop UI actually feels larger
+  in day-to-day use instead of shrinking back through page-level overrides.
 - Protected routes exist for `/profile`, `/account`, `/vault`, `/vault/categories`, `/vault/entries`, and `/vault/entries/new`.
 - `/profile` now gives every legit dashboard user a dedicated author-profile screen for display data, slug, avatar, bio, and the first fixed social links.
 - `/account` now lets Owners manage the private dashboard allowlist, including `dashboard_access` and `user_role`.

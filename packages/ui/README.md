@@ -83,6 +83,14 @@ track the trigger exactly.
 `globals.css` ships heading, body, and code defaults that read `--font-heading`, `--font-body`, and `--font-code`.
 Those variables stay inert until a consuming app applies the classes from `@bubbles/ui/fonts` on `<html>`.
 
+Shared control primitives now default to a `text-sm`-first baseline for forms,
+menus, dialogs, cards, and sidebar navigation so app shells do not need to
+fight tiny desktop typography case by case.
+
+`Badge` now sits one step below body copy at `text-xs` with `font-semibold`, so
+inline status and category labels stay readable without overpowering adjacent
+text.
+
 More detail: [documentation/overview.md](documentation/overview.md) · [CHANGELOG.md](CHANGELOG.md)
 
 Shared sidebar layout docs: [documentation/sidebar-v1-spec.md](documentation/sidebar-v1-spec.md)

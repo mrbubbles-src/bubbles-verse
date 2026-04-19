@@ -156,13 +156,13 @@ export function Pagination({
         <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
           <p
             data-slot="pagination-label"
-            className="text-sm text-muted-foreground">
+            className="text-sm/relaxed text-muted-foreground">
             {label ?? `Seite ${currentPage} von ${totalPages}`}
           </p>
 
           {hasPageSizeSelector ? (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">
+              <span className="text-sm text-muted-foreground">
                 {pageSizeLabel}
               </span>
 

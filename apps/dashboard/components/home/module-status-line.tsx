@@ -19,8 +19,8 @@ export function ModuleStatusLine({ summaries }: ModuleStatusLineProps) {
   }
 
   return (
-    <section className="border-t border-border/60 pt-4">
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+    <section className="border-t border-border/60 pt-5">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-base text-muted-foreground">
         {summaries.map((summary, index) => (
           <span
             key={summary.appSlug}

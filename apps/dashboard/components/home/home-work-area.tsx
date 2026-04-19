@@ -28,21 +28,21 @@ export function HomeWorkArea({
   recentUpdates,
 }: HomeWorkAreaProps) {
   return (
-    <section className="flex flex-col gap-4 rounded-[2rem] border border-border/60 bg-background/80 px-4 py-4 shadow-sm shadow-black/5 sm:px-6 sm:py-5">
-      <Tabs defaultValue="drafts" className="gap-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+    <section className="flex flex-col gap-5 rounded-[2rem] border border-border/60 bg-background/80 px-5 py-5 shadow-sm shadow-black/5 sm:px-7 sm:py-6">
+      <Tabs defaultValue="drafts" className="gap-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             Weiterschreiben
           </h2>
 
           <TabsList
             variant="line"
             aria-label="Home Arbeitslisten"
-            className="h-auto w-full justify-start gap-4 p-0 sm:w-auto">
-            <TabsTrigger value="drafts" className="px-0 py-2 text-sm">
+            className="h-auto w-full justify-start gap-5 p-0 sm:w-auto">
+            <TabsTrigger value="drafts" className="px-0 py-2 text-base">
               Offene Entwürfe
             </TabsTrigger>
-            <TabsTrigger value="updates" className="px-0 py-2 text-sm">
+            <TabsTrigger value="updates" className="px-0 py-2 text-base">
               Zuletzt bearbeitet
             </TabsTrigger>
           </TabsList>

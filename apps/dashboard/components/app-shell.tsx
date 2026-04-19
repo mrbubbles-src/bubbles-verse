@@ -170,14 +170,14 @@ export default function AppShell({
         />
       }>
       <div className="flex min-h-dvh flex-1 flex-col">
-        <main className="mx-auto flex w-full max-w-[96rem] flex-1 flex-col px-4 py-5 sm:px-6 sm:py-6 xl:px-10">
+        <main className="flex w-full flex-1 flex-col px-5 py-6 sm:px-6 sm:py-7 xl:px-8 2xl:px-10">
           {children}
         </main>
         <Footer
           author="mrbubbles-src"
           authorHref="https://mrbubbles-src.dev"
           hideCatppuccinCredit
-          className="mx-auto w-full max-w-[96rem] px-4 sm:px-6 xl:px-10"
+          className="w-full px-5 sm:px-6 xl:px-8 2xl:px-10"
         />
       </div>
     </BubblesSidebarLayout>

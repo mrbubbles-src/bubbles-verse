@@ -49,7 +49,7 @@ export function CategoryTreeList({
 }: CategoryTreeListProps) {
   if (categories.length === 0) {
     return (
-      <div className="border-b border-dashed border-border/60 py-10 text-sm text-muted-foreground">
+      <div className="border-b border-dashed border-border/60 py-12 text-base text-muted-foreground">
         {emptyState}
       </div>
     );
@@ -96,7 +96,7 @@ function CategoryTreeListItem({
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <div className="border-b border-border/50">
           <div
-            className="flex items-start gap-3 py-4"
+            className="flex items-start gap-3 py-5"
             style={{ paddingLeft: `${category.depth * 1.25}rem` }}>
             <div className="flex items-center pt-0.5">
               {hasChildren ? (
@@ -119,9 +119,9 @@ function CategoryTreeListItem({
               )}
             </div>
 
-            <div className="min-w-0 flex-1 space-y-2">
+            <div className="min-w-0 flex-1 space-y-2.5">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-base font-medium tracking-tight">
+                <h2 className="text-lg font-medium tracking-tight sm:text-xl">
                   {category.name}
                 </h2>
                 <Badge variant={category.depth === 0 ? 'default' : 'secondary'}>
@@ -129,11 +129,11 @@ function CategoryTreeListItem({
                 </Badge>
               </div>
 
-              <p className="text-sm text-muted-foreground">
+              <p className="text-base text-muted-foreground">
                 {category.description || 'Keine Beschreibung hinterlegt.'}
               </p>
 
-              <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                 <span>{category.entryCount} Einträge</span>
                 {hasChildren ? (
                   <span>{category.children.length} Unterkategorien</span>

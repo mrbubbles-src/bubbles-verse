@@ -20,16 +20,16 @@ export function ProfileStatus({ profileStatus }: ProfileStatusProps) {
   }
 
   return (
-    <section className="border-t border-border/60 pt-4">
+    <section className="border-t border-border/60 pt-5">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-semibold tracking-tight">
+        <p className="text-base font-semibold tracking-tight sm:text-lg">
           Profil noch nicht vollständig
         </p>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-base text-muted-foreground">
           {profileStatus.completedFields}/{profileStatus.totalFields}
         </p>
       </div>
-      <p className="mt-2 text-sm text-muted-foreground">
+      <p className="mt-2 text-base text-muted-foreground">
         {profileStatus.summary}
       </p>
 
@@ -37,7 +37,7 @@ export function ProfileStatus({ profileStatus }: ProfileStatusProps) {
         render={<Link href={profileStatus.nextStepHref} />}
         nativeButton={false}
         variant="secondary"
-        className="mt-3 w-fit rounded-full px-4">
+        className="mt-4 w-fit rounded-full px-5">
         {profileStatus.nextStepLabel}
       </Button>
     </section>

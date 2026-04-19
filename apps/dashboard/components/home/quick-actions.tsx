@@ -20,8 +20,8 @@ type QuickActionsProps = {
  */
 export function QuickActions({ actions }: QuickActionsProps) {
   return (
-    <section className="flex flex-col gap-3">
-      <h2 className="text-sm font-semibold tracking-[0.22em] text-muted-foreground uppercase">
+    <section className="flex flex-col gap-4">
+      <h2 className="text-base font-semibold tracking-[0.18em] text-muted-foreground uppercase">
         Weiterschreiben
       </h2>
 
@@ -31,16 +31,16 @@ export function QuickActions({ actions }: QuickActionsProps) {
             {index > 0 ? <Separator /> : null}
             <Link
               href={action.href}
-              className="group flex items-start justify-between gap-4 rounded-[1.5rem] py-3 transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none">
-              <span className="flex min-w-0 flex-col gap-1">
-                <span className="text-sm font-semibold tracking-tight">
+              className="group flex items-start justify-between gap-4 rounded-[1.5rem] py-4 transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none">
+              <span className="flex min-w-0 flex-col gap-1.5">
+                <span className="text-base font-semibold tracking-tight sm:text-lg">
                   {action.label}
                 </span>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-base text-muted-foreground">
                   {action.description}
                 </span>
               </span>
-              <span className="rounded-full border border-border/60 px-3 py-1 text-xs font-medium text-muted-foreground transition-colors group-hover:border-foreground/20 group-hover:text-foreground">
+              <span className="rounded-full border border-border/60 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors group-hover:border-foreground/20 group-hover:text-foreground">
                 Öffnen
               </span>
             </Link>
