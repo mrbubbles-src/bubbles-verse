@@ -1,0 +1,380 @@
+<style>
+  .entry-v2-grid {
+    display: grid;
+    gap: 22px;
+  }
+
+  @media (min-width: 1180px) {
+    .entry-v2-grid {
+      grid-template-columns: 0.92fr 1.08fr;
+    }
+  }
+
+  .entry-v2-frame {
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.08);
+    background: #0c1015;
+    box-shadow: 0 18px 50px rgba(0,0,0,.28);
+  }
+
+  .entry-v2-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    background: rgba(255,255,255,.02);
+  }
+
+  .entry-v2-head strong {
+    font-size: 13px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.8);
+  }
+
+  .entry-v2-head span {
+    font-size: 12px;
+    color: rgba(255,255,255,.48);
+  }
+
+  .entry-v2-body {
+    padding: 22px;
+    background:
+      radial-gradient(circle at top right, rgba(123,239,191,.08), transparent 24%),
+      radial-gradient(circle at top left, rgba(114,152,255,.08), transparent 30%),
+      #0b0f14;
+  }
+
+  .entry-v2-shell {
+    color: #f4f7fa;
+  }
+
+  .entry-v2-mobile {
+    max-width: 420px;
+    margin: 0 auto;
+  }
+
+  .entry-v2-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .entry-v2-overline {
+    font-size: 11px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: rgba(190,198,210,.62);
+  }
+
+  .entry-v2-title {
+    margin: 8px 0 0;
+    font-size: 32px;
+    line-height: 1.02;
+    letter-spacing: -.055em;
+    color: #f5f8fc;
+  }
+
+  .entry-v2-subtitle {
+    margin: 8px 0 0;
+    font-size: 20px;
+    line-height: 1.14;
+    letter-spacing: -.03em;
+    color: rgba(244,247,251,.93);
+  }
+
+  .entry-v2-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .entry-v2-button,
+  .entry-v2-button-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 9px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    border: 1px solid rgba(255,255,255,.08);
+    white-space: nowrap;
+  }
+
+  .entry-v2-button {
+    background: rgba(255,255,255,.06);
+    color: rgba(244,247,251,.92);
+  }
+
+  .entry-v2-button-secondary {
+    background: transparent;
+    color: rgba(202,209,219,.74);
+  }
+
+  .entry-v2-context {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    font-size: 13px;
+    color: rgba(214,221,230,.72);
+  }
+
+  .entry-v2-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 9px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.08);
+    background: rgba(255,255,255,.04);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: rgba(241,246,250,.88);
+  }
+
+  .entry-v2-dot {
+    color: rgba(255,255,255,.3);
+  }
+
+  .entry-v2-host {
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(255,255,255,.08);
+  }
+
+  .entry-v2-label {
+    margin-bottom: 12px;
+    font-size: 11px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: rgba(186,194,206,.58);
+  }
+
+  .entry-v2-surface {
+    min-height: 580px;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,.08);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02)),
+      rgba(255,255,255,.02);
+    overflow: hidden;
+  }
+
+  .entry-v2-surface.mobile {
+    min-height: 500px;
+  }
+
+  .entry-v2-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    background: rgba(255,255,255,.02);
+  }
+
+  .entry-v2-topbar strong {
+    font-size: 13px;
+    color: #f4f7fa;
+  }
+
+  .entry-v2-topbar span {
+    font-size: 12px;
+    color: rgba(193,201,213,.64);
+  }
+
+  .entry-v2-main {
+    display: grid;
+    min-height: calc(100% - 49px);
+  }
+
+  @media (min-width: 980px) {
+    .entry-v2-main {
+      grid-template-columns: minmax(0, 1.18fr) minmax(300px, .82fr);
+    }
+  }
+
+  .entry-v2-pane {
+    padding: 16px;
+    min-height: 0;
+  }
+
+  .entry-v2-pane + .entry-v2-pane {
+    border-left: 1px solid rgba(255,255,255,.08);
+  }
+
+  .entry-v2-pane h4 {
+    margin: 0;
+    font-size: 14px;
+    letter-spacing: -.01em;
+    color: #f3f6fa;
+  }
+
+  .entry-v2-pane p {
+    margin: 8px 0 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: rgba(193,201,213,.68);
+  }
+
+  .entry-v2-block {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255,255,255,.08);
+  }
+
+  .entry-v2-note {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255,255,255,.08);
+    font-size: 12px;
+    line-height: 1.55;
+    color: rgba(193,201,213,.62);
+  }
+</style>
+
+<h2>Editor `new/edit` · korrigierte Mockup-Runde</h2>
+<p class="subtitle">
+  Fokus nur auf den Kopfbereich und die Breite. Der Editor selbst bleibt das vorhandene
+  Paket mit Editor, Preview und Metadaten-Form.
+</p>
+
+<div class="entry-v2-grid">
+  <div class="entry-v2-frame entry-v2-mobile">
+    <div class="entry-v2-head">
+      <strong>Neuer Eintrag</strong>
+      <span>Mobile 390 × 844</span>
+    </div>
+    <div class="entry-v2-body">
+      <div class="entry-v2-shell">
+        <div class="entry-v2-header">
+          <div>
+            <div class="entry-v2-overline">Eintrag</div>
+            <div class="entry-v2-title">Neuer Eintrag</div>
+          </div>
+          <div class="entry-v2-actions">
+            <div class="entry-v2-button-secondary">Vorschau</div>
+            <div class="entry-v2-button">Speichern</div>
+          </div>
+        </div>
+
+        <div class="entry-v2-context">
+          <span class="entry-v2-badge">Entwurf</span>
+          <span class="entry-v2-dot">•</span>
+          <span>Next.js</span>
+        </div>
+
+        <div class="entry-v2-host">
+          <div class="entry-v2-label">Vorhandene Arbeitsfläche</div>
+          <div class="entry-v2-surface mobile">
+            <div class="entry-v2-topbar">
+              <strong>Markdown Editor Paket</strong>
+              <span>bestehend</span>
+            </div>
+            <div class="entry-v2-main" style="display:block;">
+              <div class="entry-v2-pane">
+                <h4>Editor + Metadaten + Vorschau</h4>
+                <p>
+                  Dieser Bereich steht bewusst nur generisch für das bestehende
+                  Paket. Hier soll nichts neu erfunden oder in zusätzliche Kästen
+                  aufgeteilt werden.
+                </p>
+                <div class="entry-v2-block">
+                  <p>
+                    Wichtig ist hier nur: Die vorhandene Arbeitsfläche bekommt
+                    mehr Raum und muss nicht erst durch neue Meta-Boxen
+                    oberhalb gequetscht werden.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="entry-v2-frame">
+    <div class="entry-v2-head">
+      <strong>Eintrag bearbeiten</strong>
+      <span>Desktop 1440 × 980</span>
+    </div>
+    <div class="entry-v2-body">
+      <div class="entry-v2-shell">
+        <div class="entry-v2-header">
+          <div>
+            <div class="entry-v2-overline">Eintrag bearbeiten</div>
+            <div class="entry-v2-title">React View Transitions mit echter Richtungsnavigation</div>
+          </div>
+          <div class="entry-v2-actions">
+            <div class="entry-v2-button-secondary">Vorschau</div>
+            <div class="entry-v2-button">Speichern</div>
+          </div>
+        </div>
+
+        <div class="entry-v2-context">
+          <span class="entry-v2-badge">Entwurf</span>
+          <span class="entry-v2-dot">•</span>
+          <span>Animation</span>
+        </div>
+
+        <div class="entry-v2-host">
+          <div class="entry-v2-label">Vorhandene Arbeitsfläche</div>
+          <div class="entry-v2-surface">
+            <div class="entry-v2-topbar">
+              <strong>Markdown Editor Paket</strong>
+              <span>Editor, Metadaten und Preview bleiben</span>
+            </div>
+            <div class="entry-v2-main">
+              <div class="entry-v2-pane">
+                <h4>Editor-Bereich</h4>
+                <p>
+                  Hier bleibt der bestehende Editor mit dem gewohnten
+                  Schreibfluss. Kein neuer Aufbau, keine zusätzlichen Meta-Kästen,
+                  kein künstliches Zweitsystem.
+                </p>
+                <div class="entry-v2-block">
+                  <p>
+                    Der eigentliche Mehrwert des Redesigns liegt oben im
+                    flachen Kopfbereich und darin, dass die Seite die verfügbare
+                    Breite endlich sinnvoll nutzt.
+                  </p>
+                </div>
+              </div>
+
+              <div class="entry-v2-pane">
+                <h4>Preview / Metadaten aus dem Paket</h4>
+                <p>
+                  Die vorhandene Side-by-side Preview und die Metadaten-Form
+                  bleiben Teil des Pakets. Die Seitenaktion `Vorschau` öffnet
+                  zusätzlich die gerenderte Vollansicht im neuen Tab.
+                </p>
+                <div class="entry-v2-block">
+                  <p>
+                    Das Markdown-Renderer-Paket kann später dafür im Dashboard
+                    eingebunden werden.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="entry-v2-note">
+            Die temporären Draft-Punkte bleiben Teil der echten App-Sidebar unter
+            `Einträge`, nicht ein zusätzliches Panel im Seiteninhalt.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
