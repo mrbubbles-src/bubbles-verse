@@ -1,3 +1,9 @@
+import {
+  createRedirectFeedbackConfig,
+  getRedirectFeedbackHref,
+  getRedirectFeedbackMessage,
+} from '@/lib/feedback/redirect-feedback';
+
 const VAULT_CATEGORY_FEEDBACK_MESSAGES = {
   created: 'Kategorie erstellt.',
   updated: 'Kategorie aktualisiert.',
@@ -14,6 +20,13 @@ export const VAULT_CATEGORY_FEEDBACK_PARAM = 'category';
 export type VaultCategoryFeedbackStatus =
   keyof typeof VAULT_CATEGORY_FEEDBACK_MESSAGES;
 
+export const VAULT_CATEGORY_FEEDBACK_CONFIG =
+  createRedirectFeedbackConfig<VaultCategoryFeedbackStatus>({
+    pathname: '/vault/categories',
+    param: VAULT_CATEGORY_FEEDBACK_PARAM,
+    messages: VAULT_CATEGORY_FEEDBACK_MESSAGES,
+  });
+
 /**
  * Reads the current Vault category feedback message from a query string.
  *
@@ -24,23 +37,7 @@ export type VaultCategoryFeedbackStatus =
  * @returns The matching user-facing message or `null`.
  */
 export function getVaultCategoryFeedbackMessage(search: string) {
-  const normalizedSearch = search.startsWith('?') ? search.slice(1) : search;
-
-  if (!normalizedSearch) {
-    return null;
-  }
-
-  const params = new URLSearchParams(normalizedSearch);
-  const status = params.get(VAULT_CATEGORY_FEEDBACK_PARAM);
-
-  if (!status) {
-    return null;
-  }
-
-  return (
-    VAULT_CATEGORY_FEEDBACK_MESSAGES[status as VaultCategoryFeedbackStatus] ??
-    null
-  );
+  return getRedirectFeedbackMessage(search, VAULT_CATEGORY_FEEDBACK_CONFIG);
 }
 
 /**
@@ -52,5 +49,5 @@ export function getVaultCategoryFeedbackMessage(search: string) {
 export function getVaultCategoryFeedbackHref(
   status: VaultCategoryFeedbackStatus
 ) {
-  return `/vault/categories?${VAULT_CATEGORY_FEEDBACK_PARAM}=${status}`;
+  return getRedirectFeedbackHref(status, VAULT_CATEGORY_FEEDBACK_CONFIG);
 }

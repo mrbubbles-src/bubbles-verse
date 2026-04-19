@@ -118,7 +118,7 @@ describe('VaultEntryList', () => {
       'href',
       '/vault/entries?query=React'
     );
-    expect(screen.getByRole('button', { name: '2' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Seite 2' })).toBeDisabled();
   });
 
   it('uses the two-step delete confirmation flow before deleting an entry', async () => {

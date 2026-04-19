@@ -13,15 +13,9 @@ import {
 
 import { useState } from 'react';
 
+import { FormDialog } from '@bubbles/ui/components/form-dialog';
 import { Button } from '@bubbles/ui/shadcn/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@bubbles/ui/shadcn/dialog';
+import { DialogFooter } from '@bubbles/ui/shadcn/dialog';
 import {
   Field,
   FieldContent,
@@ -170,121 +164,106 @@ export function DashboardAccessDialog(props: DashboardAccessDialogProps) {
       ).replace(/[^a-z0-9]/gi, '-')}`;
 
   return (
-    <>
-      {isCreateDialog ? (
-        <Button type="button" onClick={() => setOpen(true)}>
-          Zugang freigeben
-        </Button>
-      ) : (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => setOpen(true)}>
-          Bearbeiten
-        </Button>
-      )}
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-[calc(100%-1.5rem)] gap-6 p-5 sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
-              {isCreateDialog ? 'Zugang freigeben' : 'Zugang bearbeiten'}
-            </DialogTitle>
-            <DialogDescription>
-              {isCreateDialog
-                ? 'Lege genau die GitHub-Identität an, die Supabase beim Login liefern soll.'
-                : 'GitHub-Name und E-Mail bleiben stabil. Rolle, Status und Notiz kannst du hier anpassen.'}
-            </DialogDescription>
-          </DialogHeader>
-
-          <form
-            action={
-              isCreateDialog
-                ? createDashboardAccessEntryAction
-                : updateDashboardAccessEntryAction
-            }
-            className="flex flex-col gap-6">
-            {isCreateDialog ? (
-              <FieldGroup className="grid gap-4 sm:grid-cols-2">
-                <Field>
-                  <FieldLabel htmlFor={`${idPrefix}-github-username`}>
-                    GitHub-Name
-                  </FieldLabel>
-                  <FieldContent>
-                    <Input
-                      id={`${idPrefix}-github-username`}
-                      name="githubUsername"
-                      placeholder="mrbubbles-src"
-                      autoComplete="off"
-                    />
-                  </FieldContent>
-                </Field>
-
-                <Field>
-                  <FieldLabel htmlFor={`${idPrefix}-email`}>E-Mail</FieldLabel>
-                  <FieldContent>
-                    <Input
-                      id={`${idPrefix}-email`}
-                      type="email"
-                      name="email"
-                      placeholder="name@example.com"
-                      autoComplete="off"
-                    />
-                  </FieldContent>
-                </Field>
-              </FieldGroup>
-            ) : (
-              <>
-                <input
-                  type="hidden"
+    <FormDialog
+      open={open}
+      onOpenChange={setOpen}
+      size="md"
+      title={isCreateDialog ? 'Zugang freigeben' : 'Zugang bearbeiten'}
+      description={
+        isCreateDialog
+          ? 'Lege genau die GitHub-Identität an, die Supabase beim Login liefern soll.'
+          : 'GitHub-Name und E-Mail bleiben stabil. Rolle, Status und Notiz kannst du hier anpassen.'
+      }
+      trigger={
+        isCreateDialog ? (
+          <Button type="button">Zugang freigeben</Button>
+        ) : (
+          <Button type="button" variant="ghost" size="sm">
+            Bearbeiten
+          </Button>
+        )
+      }>
+      <form
+        action={
+          isCreateDialog
+            ? createDashboardAccessEntryAction
+            : updateDashboardAccessEntryAction
+        }
+        className="flex flex-col gap-6">
+        {isCreateDialog ? (
+          <FieldGroup className="grid gap-4 sm:grid-cols-2">
+            <Field>
+              <FieldLabel htmlFor={`${idPrefix}-github-username`}>
+                GitHub-Name
+              </FieldLabel>
+              <FieldContent>
+                <Input
+                  id={`${idPrefix}-github-username`}
                   name="githubUsername"
-                  value={editEntry?.githubUsername ?? ''}
+                  placeholder="mrbubbles-src"
+                  autoComplete="off"
                 />
-                <input
-                  type="hidden"
+              </FieldContent>
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor={`${idPrefix}-email`}>E-Mail</FieldLabel>
+              <FieldContent>
+                <Input
+                  id={`${idPrefix}-email`}
+                  type="email"
                   name="email"
-                  value={editEntry?.email ?? ''}
+                  placeholder="name@example.com"
+                  autoComplete="off"
                 />
-
-                <dl className="grid gap-3 text-sm sm:grid-cols-2">
-                  <div className="flex flex-col gap-1">
-                    <dt className="text-xs font-semibold tracking-[0.24em] text-muted-foreground uppercase">
-                      GitHub-Name
-                    </dt>
-                    <dd className="font-medium">
-                      @{editEntry?.githubUsername ?? ''}
-                    </dd>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <dt className="text-xs font-semibold tracking-[0.24em] text-muted-foreground uppercase">
-                      E-Mail
-                    </dt>
-                    <dd className="truncate">{editEntry?.email ?? ''}</dd>
-                  </div>
-                </dl>
-              </>
-            )}
-
-            <DashboardAccessMutableFields
-              idPrefix={idPrefix}
-              note={editEntry?.note ?? ''}
-              dashboardAccess={editEntry?.dashboardAccess ?? true}
-              userRole={toDashboardAccessRole(editEntry?.userRole ?? 'editor')}
+              </FieldContent>
+            </Field>
+          </FieldGroup>
+        ) : (
+          <>
+            <input
+              type="hidden"
+              name="githubUsername"
+              value={editEntry?.githubUsername ?? ''}
             />
+            <input type="hidden" name="email" value={editEntry?.email ?? ''} />
 
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setOpen(false)}>
-                Abbrechen
-              </Button>
-              <DashboardAccessSubmitButton label={submitLabel} />
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </>
+            <dl className="grid gap-3 text-sm sm:grid-cols-2">
+              <div className="flex flex-col gap-1">
+                <dt className="text-xs font-semibold tracking-[0.24em] text-muted-foreground uppercase">
+                  GitHub-Name
+                </dt>
+                <dd className="font-medium">
+                  @{editEntry?.githubUsername ?? ''}
+                </dd>
+              </div>
+              <div className="flex flex-col gap-1">
+                <dt className="text-xs font-semibold tracking-[0.24em] text-muted-foreground uppercase">
+                  E-Mail
+                </dt>
+                <dd className="truncate">{editEntry?.email ?? ''}</dd>
+              </div>
+            </dl>
+          </>
+        )}
+
+        <DashboardAccessMutableFields
+          idPrefix={idPrefix}
+          note={editEntry?.note ?? ''}
+          dashboardAccess={editEntry?.dashboardAccess ?? true}
+          userRole={toDashboardAccessRole(editEntry?.userRole ?? 'editor')}
+        />
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setOpen(false)}>
+            Abbrechen
+          </Button>
+          <DashboardAccessSubmitButton label={submitLabel} />
+        </DialogFooter>
+      </form>
+    </FormDialog>
   );
 }

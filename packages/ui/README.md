@@ -94,7 +94,22 @@ Shared shell entrypoints:
 - `@bubbles/ui/components/bubbles-app-header`
 - `@bubbles/ui/components/bubbles-sidebar-layout`
 - `@bubbles/ui/components/bubbles-breadcrumbs`
+- `@bubbles/ui/components/form-dialog`
+- `@bubbles/ui/components/staged-confirm-dialog`
+- `@bubbles/ui/components/pagination`
 - `@bubbles/ui/lib/bubbles-sidebar`
+
+`FormDialog` and `StagedConfirmDialog` ship shared modal shells for:
+
+- create / edit forms with consistent header and sizing
+- staged destructive confirmations with one explicit pause step
+
+`Pagination` ships a shared classic list footer with:
+
+- prev / next actions
+- condensed page chips with ellipsis
+- optional page-size selector
+- support for either `href` builders, callbacks, or both
 
 `BubblesSidebarLayout` now stays focused on the shell itself:
 

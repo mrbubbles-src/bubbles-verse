@@ -2,7 +2,6 @@ import { requireDashboardSession } from '@/lib/auth/session';
 import { getDashboardProfilePageModel } from '@/lib/profile/profile';
 
 import { ProfileEditor } from '@/components/profile/profile-editor';
-import { ProfileFeedbackToast } from '@/components/profile/profile-feedback-toast';
 
 /**
  * Renders the current dashboard user's editable author profile.
@@ -20,7 +19,6 @@ export default async function ProfilePage() {
 
   return (
     <>
-      <ProfileFeedbackToast />
       <ProfileEditor model={profileModel} />
     </>
   );

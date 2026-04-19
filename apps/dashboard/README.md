@@ -29,6 +29,9 @@ a clean base.
 - `/vault/entries/new/preview` and `/vault/entries/[id]/preview` now open the
   current draft or saved entry as a fullscreen preview in a separate tab.
 - Shared fonts, globals, theme provider, and toast host are wired in.
+- Redirect-based success/error toasts for `/account`, `/profile`,
+  `/vault/categories`, and `/vault/entries` now run through one shared
+  dashboard bridge in the `(dashboard)` layout instead of per-page wrappers.
 - The app is configured to consume shared source packages from the monorepo.
 
 ## Run locally
@@ -136,6 +139,8 @@ hooks.
   `lib/account/dashboard-access.shared.ts`, while DB reads stay in the
   server-only `lib/account/dashboard-access.ts` module so client components do
   not bundle the Postgres driver.
+- Dashboard management dialogs now reuse shared `@bubbles/ui` shells for form
+  and staged destructive flows instead of repeating modal wiring per feature.
 - Identity fields are immutable in the first UI slice. If a GitHub username or email changes, remove the row and create a new one.
 - The dashboard protects the final active Owner row from being disabled or deleted in the UI.
 
@@ -167,6 +172,8 @@ hooks.
 
 - `/vault` gives owners and editors one compact overview with entry counts, category counts, recent edits, and direct links into the main Vault workflows.
 - `/vault/entries` is available for `owner` and `editor` roles and now supports URL-based filters for title search, status, and category.
+- The list footer now uses the shared `@bubbles/ui/components/pagination`
+  shell, including the shared page-size selector and compact chip logic.
 - `/vault/entries/new` uses `@bubbles/markdown-editor` for shared authoring, metadata, draft handling, preview, and image uploads.
 - `/vault/entries/[id]` reuses the same editor in edit mode, including current category, tags, metadata, and saved editor content.
 - The editor routes keep the shared package editor but now use a much flatter

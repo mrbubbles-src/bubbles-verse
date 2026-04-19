@@ -1,3 +1,9 @@
+import {
+  createRedirectFeedbackConfig,
+  getRedirectFeedbackHref,
+  getRedirectFeedbackMessage,
+} from '@/lib/feedback/redirect-feedback';
+
 const VAULT_ENTRY_FEEDBACK_MESSAGES = {
   created: 'Vault-Eintrag erstellt.',
   updated: 'Vault-Eintrag aktualisiert.',
@@ -9,6 +15,13 @@ export const VAULT_ENTRY_FEEDBACK_PARAM = 'entry';
 export type VaultEntryFeedbackStatus =
   keyof typeof VAULT_ENTRY_FEEDBACK_MESSAGES;
 
+export const VAULT_ENTRY_FEEDBACK_CONFIG =
+  createRedirectFeedbackConfig<VaultEntryFeedbackStatus>({
+    pathname: '/vault/entries',
+    param: VAULT_ENTRY_FEEDBACK_PARAM,
+    messages: VAULT_ENTRY_FEEDBACK_MESSAGES,
+  });
+
 /**
  * Reads the current Vault entry feedback message from a query string.
  *
@@ -19,22 +32,7 @@ export type VaultEntryFeedbackStatus =
  * @returns The matching feedback message or `null`.
  */
 export function getVaultEntryFeedbackMessage(search: string) {
-  const normalizedSearch = search.startsWith('?') ? search.slice(1) : search;
-
-  if (!normalizedSearch) {
-    return null;
-  }
-
-  const params = new URLSearchParams(normalizedSearch);
-  const status = params.get(VAULT_ENTRY_FEEDBACK_PARAM);
-
-  if (!status) {
-    return null;
-  }
-
-  return (
-    VAULT_ENTRY_FEEDBACK_MESSAGES[status as VaultEntryFeedbackStatus] ?? null
-  );
+  return getRedirectFeedbackMessage(search, VAULT_ENTRY_FEEDBACK_CONFIG);
 }
 
 /**
@@ -44,5 +42,5 @@ export function getVaultEntryFeedbackMessage(search: string) {
  * @returns The Vault entry list URL with encoded feedback.
  */
 export function getVaultEntryFeedbackHref(status: VaultEntryFeedbackStatus) {
-  return `/vault/entries?${VAULT_ENTRY_FEEDBACK_PARAM}=${status}`;
+  return getRedirectFeedbackHref(status, VAULT_ENTRY_FEEDBACK_CONFIG);
 }

@@ -8,7 +8,6 @@ import Link from 'next/link';
 
 import { Button } from '@bubbles/ui/shadcn/button';
 
-import { EntryFeedbackToast } from '@/components/vault/entries/entry-feedback-toast';
 import { VaultEntryFilters } from '@/components/vault/entries/vault-entry-filters';
 import { VaultEntryList } from '@/components/vault/entries/vault-entry-list';
 
@@ -37,7 +36,6 @@ export default async function VaultEntriesPage({
 
   return (
     <>
-      <EntryFeedbackToast />
       <section className="flex flex-col gap-4 sm:gap-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-1">

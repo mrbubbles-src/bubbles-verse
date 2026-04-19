@@ -4,6 +4,7 @@ import type { VaultCategoryTreeNode } from '@/lib/vault/category-tree';
 
 import { useState } from 'react';
 
+import { StagedConfirmDialog } from '@bubbles/ui/components/staged-confirm-dialog';
 import {
   Add01Icon,
   ArrowDown01Icon,
@@ -13,14 +14,9 @@ import {
   PencilEdit01Icon,
 } from '@bubbles/ui/lib/hugeicons';
 import {
-  AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
   AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
 } from '@bubbles/ui/shadcn/alert-dialog';
 import { Badge } from '@bubbles/ui/shadcn/badge';
 import { Button } from '@bubbles/ui/shadcn/button';
@@ -89,19 +85,11 @@ function CategoryTreeListItem({
   parentOptions: Array<{ id: string; name: string }>;
 }) {
   const [isOpen, setIsOpen] = useState(true);
-  const [isFirstDeleteDialogOpen, setIsFirstDeleteDialogOpen] = useState(false);
-  const [isSecondDeleteDialogOpen, setIsSecondDeleteDialogOpen] =
-    useState(false);
   const hasChildren = category.children.length > 0;
   const levelLabel =
     category.depth === 0
       ? 'Oberkategorie'
       : `Unterkategorie${parentName ? ` in ${parentName}` : ''}`;
-
-  function closeDeleteFlow() {
-    setIsFirstDeleteDialogOpen(false);
-    setIsSecondDeleteDialogOpen(false);
-  }
 
   return (
     <>
@@ -207,15 +195,50 @@ function CategoryTreeListItem({
                 }
               />
 
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label="Kategorie löschen"
-                title="Löschen"
-                onClick={() => setIsFirstDeleteDialogOpen(true)}>
-                <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} />
-              </Button>
+              <StagedConfirmDialog
+                trigger={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Kategorie löschen"
+                    title="Löschen">
+                    <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} />
+                  </Button>
+                }
+                firstStep={{
+                  title: 'Kategorie löschen?',
+                  description: (
+                    <>
+                      Möchtest du{' '}
+                      <span className="font-medium text-foreground">
+                        {category.name}
+                      </span>{' '}
+                      wirklich aus der Kategorienverwaltung entfernen?
+                    </>
+                  ),
+                  confirmLabel: 'Löschen',
+                }}
+                secondStep={{
+                  alertSize: 'sm',
+                  title: 'Wirklich endgültig löschen?',
+                  description:
+                    'Kategorien mit Unterkategorien oder verknüpften Einträgen lassen sich weiterhin nicht entfernen.',
+                  children: (
+                    <form
+                      action={deleteVaultCategoryAction}
+                      className="flex flex-col gap-4">
+                      <input type="hidden" name="id" value={category.id} />
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Zurück</AlertDialogCancel>
+                        <AlertDialogAction type="submit" variant="destructive">
+                          Ja, löschen
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </form>
+                  ),
+                }}
+              />
             </div>
           </div>
 
@@ -235,72 +258,6 @@ function CategoryTreeListItem({
           ) : null}
         </div>
       </Collapsible>
-
-      <AlertDialog
-        open={isFirstDeleteDialogOpen}
-        onOpenChange={(open) => {
-          setIsFirstDeleteDialogOpen(open);
-
-          if (!open && !isSecondDeleteDialogOpen) {
-            closeDeleteFlow();
-          }
-        }}>
-        <AlertDialogContent size="sm">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Kategorie löschen?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Möchtest du{' '}
-              <span className="font-medium text-foreground">
-                {category.name}
-              </span>{' '}
-              wirklich aus der Kategorienverwaltung entfernen?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction
-              type="button"
-              variant="destructive"
-              onClick={() => {
-                setIsFirstDeleteDialogOpen(false);
-                setIsSecondDeleteDialogOpen(true);
-              }}>
-              Löschen
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog
-        open={isSecondDeleteDialogOpen}
-        onOpenChange={(open) => {
-          setIsSecondDeleteDialogOpen(open);
-
-          if (!open) {
-            closeDeleteFlow();
-          }
-        }}>
-        <AlertDialogContent size="sm">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Wirklich endgültig löschen?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Kategorien mit Unterkategorien oder verknüpften Einträgen lassen
-              sich weiterhin nicht entfernen.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <form
-            action={deleteVaultCategoryAction}
-            className="flex flex-col gap-4">
-            <input type="hidden" name="id" value={category.id} />
-            <AlertDialogFooter>
-              <AlertDialogCancel>Zurück</AlertDialogCancel>
-              <AlertDialogAction type="submit" variant="destructive">
-                Ja, löschen
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </form>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }

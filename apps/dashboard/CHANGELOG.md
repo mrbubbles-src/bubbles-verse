@@ -52,6 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added public-read RLS policies for published content, author data, active
   app modules, and the visible Vault taxonomy so non-dashboard apps can query
   shared data without login.
+- Added a shared dashboard redirect-feedback bridge plus generic helper layer
+  so server-first mutation toasts no longer need per-page wrapper components.
 
 ### Changed
 
@@ -102,6 +104,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the raw category UUID after selection.
 - Allowed `manifest.json` and generated app icons to bypass the dashboard auth
   proxy so browsers no longer parse redirected HTML as a broken manifest.
+- Replaced repeated dashboard modal wiring with shared `@bubbles/ui`
+  `FormDialog` and `StagedConfirmDialog` shells.
+- Replaced the custom Vault entry list footer with the shared
+  `@bubbles/ui/components/pagination` component.
 
 ### Documentation
 

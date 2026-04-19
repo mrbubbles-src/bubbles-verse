@@ -1,7 +1,10 @@
 import { requireDashboardSession } from '@/lib/auth/session';
 
+import { Suspense } from 'react';
+
 import AppShell from '@/components/app-shell';
 import { LoginSuccessToast } from '@/components/auth/login-success-toast';
+import { DashboardRedirectFeedbackToast } from '@/components/feedback/dashboard-redirect-feedback-toast';
 
 /**
  * Protects dashboard routes behind the owner-only Supabase session gate.
@@ -35,6 +38,9 @@ export default async function DashboardLayout({
   return (
     <>
       <LoginSuccessToast />
+      <Suspense fallback={null}>
+        <DashboardRedirectFeedbackToast />
+      </Suspense>
       <AppShell user={metadata}>{children}</AppShell>
     </>
   );

@@ -1,3 +1,9 @@
+import {
+  createRedirectFeedbackConfig,
+  getRedirectFeedbackHref,
+  getRedirectFeedbackMessage,
+} from '@/lib/feedback/redirect-feedback';
+
 const DASHBOARD_PROFILE_FEEDBACK_MESSAGES = {
   updated: 'Profil aktualisiert.',
   invalid: 'Bitte prüfe die Profilangaben und versuche es noch einmal.',
@@ -10,6 +16,13 @@ export const DASHBOARD_PROFILE_FEEDBACK_PARAM = 'profile';
 export type DashboardProfileFeedbackStatus =
   keyof typeof DASHBOARD_PROFILE_FEEDBACK_MESSAGES;
 
+export const DASHBOARD_PROFILE_FEEDBACK_CONFIG =
+  createRedirectFeedbackConfig<DashboardProfileFeedbackStatus>({
+    pathname: '/profile',
+    param: DASHBOARD_PROFILE_FEEDBACK_PARAM,
+    messages: DASHBOARD_PROFILE_FEEDBACK_MESSAGES,
+  });
+
 /**
  * Reads the current profile feedback message from a query string.
  *
@@ -20,24 +33,7 @@ export type DashboardProfileFeedbackStatus =
  * @returns The matching message or `null`.
  */
 export function getDashboardProfileFeedbackMessage(search: string) {
-  const normalizedSearch = search.startsWith('?') ? search.slice(1) : search;
-
-  if (!normalizedSearch) {
-    return null;
-  }
-
-  const params = new URLSearchParams(normalizedSearch);
-  const status = params.get(DASHBOARD_PROFILE_FEEDBACK_PARAM);
-
-  if (!status) {
-    return null;
-  }
-
-  return (
-    DASHBOARD_PROFILE_FEEDBACK_MESSAGES[
-      status as DashboardProfileFeedbackStatus
-    ] ?? null
-  );
+  return getRedirectFeedbackMessage(search, DASHBOARD_PROFILE_FEEDBACK_CONFIG);
 }
 
 /**
@@ -49,5 +45,5 @@ export function getDashboardProfileFeedbackMessage(search: string) {
 export function getDashboardProfileFeedbackHref(
   status: DashboardProfileFeedbackStatus
 ) {
-  return `/profile?${DASHBOARD_PROFILE_FEEDBACK_PARAM}=${status}`;
+  return getRedirectFeedbackHref(status, DASHBOARD_PROFILE_FEEDBACK_CONFIG);
 }

@@ -11,6 +11,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
+import { Pagination } from '@bubbles/ui/components/pagination';
+import { StagedConfirmDialog } from '@bubbles/ui/components/staged-confirm-dialog';
 import {
   Delete02Icon,
   HugeiconsIcon,
@@ -19,14 +21,8 @@ import {
 } from '@bubbles/ui/lib/hugeicons';
 import { toast } from '@bubbles/ui/lib/sonner';
 import {
-  AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
   AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
 } from '@bubbles/ui/shadcn/alert-dialog';
 import { Badge } from '@bubbles/ui/shadcn/badge';
 import { Button } from '@bubbles/ui/shadcn/button';
@@ -87,44 +83,6 @@ function buildVaultEntriesHref(
 }
 
 /**
- * Reduces large page counts to a compact set of numbered pagination chips.
- *
- * @param currentPage Active table page from the server model.
- * @param totalPages Total pages available for the current filters.
- * @returns Ordered page numbers plus ellipsis markers for gaps.
- */
-function buildVisiblePageItems(currentPage: number, totalPages: number) {
-  if (totalPages <= 7) {
-    return Array.from({ length: totalPages }, (_, index) => index + 1);
-  }
-
-  if (currentPage <= 3) {
-    return [1, 2, 3, 4, 'ellipsis-right', totalPages] as const;
-  }
-
-  if (currentPage >= totalPages - 2) {
-    return [
-      1,
-      'ellipsis-left',
-      totalPages - 3,
-      totalPages - 2,
-      totalPages - 1,
-      totalPages,
-    ] as const;
-  }
-
-  return [
-    1,
-    'ellipsis-left',
-    currentPage - 1,
-    currentPage,
-    currentPage + 1,
-    'ellipsis-right',
-    totalPages,
-  ] as const;
-}
-
-/**
  * Renders the real Vault management table with icon actions and classic
  * pagination while keeping deletion inside the list view.
  */
@@ -137,44 +95,17 @@ export function VaultEntryList({
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [entryToDelete, setEntryToDelete] = useState<VaultEntryListItem | null>(
-    null
-  );
-  const [isFirstDeleteDialogOpen, setIsFirstDeleteDialogOpen] = useState(false);
-  const [isSecondDeleteDialogOpen, setIsSecondDeleteDialogOpen] =
-    useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const pageItems = buildVisiblePageItems(
-    pagination.page,
-    pagination.totalPages
-  );
+  const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
 
-  function resetDeleteFlow() {
-    setIsFirstDeleteDialogOpen(false);
-    setIsSecondDeleteDialogOpen(false);
-    setEntryToDelete(null);
-  }
-
-  function handleDeleteRequest(entry: VaultEntryListItem) {
-    setEntryToDelete(entry);
-    setIsFirstDeleteDialogOpen(true);
-    setIsSecondDeleteDialogOpen(false);
-  }
-
-  function handleDeleteContinue() {
-    setIsFirstDeleteDialogOpen(false);
-    setIsSecondDeleteDialogOpen(true);
-  }
-
-  async function handleDeleteConfirmed() {
-    if (!entryToDelete || isDeleting) {
+  async function handleDeleteConfirmed(entry: VaultEntryListItem) {
+    if (deletingEntryId) {
       return;
     }
 
-    setIsDeleting(true);
+    setDeletingEntryId(entry.id);
 
     try {
-      const response = await fetch(`/api/vault/entries/${entryToDelete.id}`, {
+      const response = await fetch(`/api/vault/entries/${entry.id}`, {
         method: 'DELETE',
       });
 
@@ -199,8 +130,7 @@ export function VaultEntryList({
       router.push(nextHref);
       router.refresh();
     } finally {
-      setIsDeleting(false);
-      resetDeleteFlow();
+      setDeletingEntryId(null);
     }
   }
 
@@ -355,16 +285,64 @@ export function VaultEntryList({
 
                       <Tooltip>
                         <TooltipTrigger
-                          render={
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              type="button"
-                              aria-label="Eintrag löschen"
-                              onClick={() => handleDeleteRequest(entry)}
-                            />
-                          }>
-                          <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} />
+                          render={<span className="inline-flex" />}>
+                          <StagedConfirmDialog
+                            trigger={
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                type="button"
+                                aria-label="Eintrag löschen"
+                                title="Löschen"
+                                disabled={deletingEntryId === entry.id}>
+                                <HugeiconsIcon
+                                  icon={Delete02Icon}
+                                  strokeWidth={2}
+                                />
+                              </Button>
+                            }
+                            firstStep={{
+                              alertSize: 'sm',
+                              title: 'Eintrag löschen?',
+                              description: (
+                                <>
+                                  Möchtest du{' '}
+                                  <span className="font-medium text-foreground">
+                                    {entry.title}
+                                  </span>{' '}
+                                  wirklich aus dem Vault entfernen?
+                                </>
+                              ),
+                              confirmLabel: 'Löschen',
+                            }}
+                            secondStep={{
+                              alertSize: 'sm',
+                              title: 'Wirklich endgültig löschen?',
+                              description: (
+                                <>
+                                  Der Eintrag{' '}
+                                  <span className="font-medium text-foreground">
+                                    {entry.title}
+                                  </span>{' '}
+                                  wird dauerhaft entfernt.
+                                </>
+                              ),
+                              children: (
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Zurück</AlertDialogCancel>
+                                  <Button
+                                    type="button"
+                                    variant="destructive"
+                                    onClick={() => handleDeleteConfirmed(entry)}
+                                    disabled={deletingEntryId === entry.id}>
+                                    {deletingEntryId === entry.id
+                                      ? 'Lösche…'
+                                      : 'Ja, löschen'}
+                                  </Button>
+                                </AlertDialogFooter>
+                              ),
+                            }}
+                          />
                         </TooltipTrigger>
                         <TooltipContent>Löschen</TooltipContent>
                       </Tooltip>
@@ -377,172 +355,20 @@ export function VaultEntryList({
         </div>
 
         {pagination.showPagination ? (
-          <div className="flex flex-col gap-3 border-t border-border/60 pt-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>Items pro Seite</span>
-              <select
-                className="h-8 rounded-md border border-border bg-background px-2 text-sm text-foreground"
-                value={String(pagination.pageSize)}
-                onChange={(event) => handlePageSizeChange(event.target.value)}>
-                {pagination.pageSizeOptions.map((pageSizeOption) => (
-                  <option key={pageSizeOption} value={String(pageSizeOption)}>
-                    {pageSizeOption}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-3 sm:items-end">
-              <p className="text-sm text-muted-foreground">
-                Seite {pagination.page} von {pagination.totalPages}
-              </p>
-              <div className="flex flex-wrap items-center gap-1">
-                {pagination.page === 1 ? (
-                  <Button type="button" variant="outline" size="sm" disabled>
-                    Zurück
-                  </Button>
-                ) : (
-                  <Button
-                    render={
-                      <Link
-                        href={buildVaultEntriesHref(filters, {
-                          page: pagination.page - 1,
-                        })}
-                      />
-                    }
-                    nativeButton={false}
-                    variant="outline"
-                    size="sm">
-                    Zurück
-                  </Button>
-                )}
-
-                {pageItems.map((pageItem) =>
-                  typeof pageItem === 'number' ? (
-                    pageItem === pagination.page ? (
-                      <Button
-                        key={pageItem}
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        disabled>
-                        {pageItem}
-                      </Button>
-                    ) : (
-                      <Button
-                        key={pageItem}
-                        render={
-                          <Link
-                            href={buildVaultEntriesHref(filters, {
-                              page: pageItem,
-                            })}
-                          />
-                        }
-                        nativeButton={false}
-                        variant="ghost"
-                        size="sm">
-                        {pageItem}
-                      </Button>
-                    )
-                  ) : (
-                    <span
-                      key={pageItem}
-                      className="px-2 text-sm text-muted-foreground">
-                      …
-                    </span>
-                  )
-                )}
-
-                {pagination.page === pagination.totalPages ? (
-                  <Button type="button" variant="outline" size="sm" disabled>
-                    Weiter
-                  </Button>
-                ) : (
-                  <Button
-                    render={
-                      <Link
-                        href={buildVaultEntriesHref(filters, {
-                          page: pagination.page + 1,
-                        })}
-                      />
-                    }
-                    nativeButton={false}
-                    variant="outline"
-                    size="sm">
-                    Weiter
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
+          <Pagination
+            page={pagination.page}
+            totalPages={pagination.totalPages}
+            label={`Seite ${pagination.page} von ${pagination.totalPages}`}
+            getPageHref={(page) => buildVaultEntriesHref(filters, { page })}
+            pageSize={pagination.pageSize}
+            pageSizeLabel="Items pro Seite"
+            pageSizeOptions={pagination.pageSizeOptions}
+            onPageSizeChange={(pageSize) =>
+              handlePageSizeChange(String(pageSize))
+            }
+          />
         ) : null}
       </div>
-
-      <AlertDialog
-        open={isFirstDeleteDialogOpen}
-        onOpenChange={(open) => {
-          setIsFirstDeleteDialogOpen(open);
-
-          if (!open && !isSecondDeleteDialogOpen) {
-            setEntryToDelete(null);
-          }
-        }}>
-        <AlertDialogContent size="sm">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Eintrag löschen?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Möchtest du{' '}
-              <span className="font-medium text-foreground">
-                {entryToDelete?.title ?? 'diesen Eintrag'}
-              </span>{' '}
-              wirklich aus dem Vault entfernen?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction
-              type="button"
-              variant="destructive"
-              onClick={handleDeleteContinue}
-              disabled={isDeleting}>
-              Löschen
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog
-        open={isSecondDeleteDialogOpen}
-        onOpenChange={(open) => {
-          setIsSecondDeleteDialogOpen(open);
-
-          if (!open) {
-            resetDeleteFlow();
-          }
-        }}>
-        <AlertDialogContent size="sm">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Wirklich endgültig löschen?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Der Eintrag{' '}
-              <span className="font-medium text-foreground">
-                {entryToDelete?.title ?? 'dieser Eintrag'}
-              </span>{' '}
-              wird dauerhaft entfernt.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Zurück</AlertDialogCancel>
-            <AlertDialogAction
-              type="button"
-              variant="destructive"
-              onClick={handleDeleteConfirmed}
-              disabled={isDeleting}>
-              {isDeleting ? 'Lösche…' : 'Ja, löschen'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </TooltipProvider>
   );
 }

@@ -2,16 +2,9 @@
 
 import type { ReactElement } from 'react';
 
+import { FormDialog } from '@bubbles/ui/components/form-dialog';
 import { Button } from '@bubbles/ui/shadcn/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@bubbles/ui/shadcn/dialog';
+import { DialogFooter } from '@bubbles/ui/shadcn/dialog';
 import {
   Field,
   FieldContent,
@@ -72,127 +65,122 @@ export function CategoryDialog({
     : (initialValues?.parentId ?? 'root');
 
   return (
-    <Dialog>
-      <DialogTrigger render={trigger} />
-      <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
+    <FormDialog
+      trigger={trigger}
+      title={title}
+      description={description}
+      size="lg"
+      className="max-w-[calc(100%-2rem)]">
+      <form action={action} className="flex flex-col gap-4">
+        {initialValues?.id ? (
+          <input type="hidden" name="id" value={initialValues.id} />
+        ) : null}
 
-        <form action={action} className="flex flex-col gap-4">
-          {initialValues?.id ? (
-            <input type="hidden" name="id" value={initialValues.id} />
-          ) : null}
+        {fixedParent ? (
+          <input type="hidden" name="parentId" value={fixedParent.id} />
+        ) : null}
+
+        <FieldGroup className="grid gap-4 sm:grid-cols-2">
+          <Field className="sm:col-span-2">
+            <FieldLabel htmlFor={`${dialogId}-name`}>Name</FieldLabel>
+            <FieldContent>
+              <Input
+                id={`${dialogId}-name`}
+                name="name"
+                defaultValue={initialValues?.name ?? ''}
+                placeholder="z. B. Rendering"
+              />
+            </FieldContent>
+          </Field>
+
+          <Field>
+            <FieldLabel htmlFor={`${dialogId}-slug`}>Slug</FieldLabel>
+            <FieldContent>
+              <Input
+                id={`${dialogId}-slug`}
+                name="slug"
+                defaultValue={initialValues?.slug ?? ''}
+                placeholder="Optional"
+              />
+              <FieldDescription>
+                Leer lassen, dann wird der Slug automatisch erzeugt.
+              </FieldDescription>
+            </FieldContent>
+          </Field>
+
+          <Field>
+            <FieldLabel htmlFor={`${dialogId}-sort-order`}>
+              Sortierung
+            </FieldLabel>
+            <FieldContent>
+              <Input
+                id={`${dialogId}-sort-order`}
+                type="number"
+                name="sortOrder"
+                defaultValue={String(initialValues?.sortOrder ?? 0)}
+              />
+            </FieldContent>
+          </Field>
 
           {fixedParent ? (
-            <input type="hidden" name="parentId" value={fixedParent.id} />
-          ) : null}
-
-          <FieldGroup className="grid gap-4 sm:grid-cols-2">
             <Field className="sm:col-span-2">
-              <FieldLabel htmlFor={`${dialogId}-name`}>Name</FieldLabel>
+              <FieldLabel>Übergeordnete Kategorie</FieldLabel>
               <FieldContent>
-                <Input
-                  id={`${dialogId}-name`}
-                  name="name"
-                  defaultValue={initialValues?.name ?? ''}
-                  placeholder="z. B. Rendering"
-                />
+                <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm">
+                  {fixedParent.name}
+                </div>
               </FieldContent>
             </Field>
-
-            <Field>
-              <FieldLabel htmlFor={`${dialogId}-slug`}>Slug</FieldLabel>
+          ) : (
+            <Field className="sm:col-span-2">
+              <FieldLabel htmlFor={`${dialogId}-parent`}>
+                Übergeordnete Kategorie
+              </FieldLabel>
               <FieldContent>
-                <Input
-                  id={`${dialogId}-slug`}
-                  name="slug"
-                  defaultValue={initialValues?.slug ?? ''}
-                  placeholder="Optional"
-                />
+                <Select defaultValue={defaultParentId} name="parentId">
+                  <SelectTrigger id={`${dialogId}-parent`} className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent align="start">
+                    <SelectGroup>
+                      <SelectItem value="root">Keine Oberkategorie</SelectItem>
+                      {parentOptions.map((option) => (
+                        <SelectItem key={option.id} value={option.id}>
+                          {option.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
                 <FieldDescription>
-                  Leer lassen, dann wird der Slug automatisch erzeugt.
+                  Unterkategorien bleiben in V1 auf eine Ebene unter den
+                  Oberkategorien begrenzt.
                 </FieldDescription>
               </FieldContent>
             </Field>
+          )}
 
-            <Field>
-              <FieldLabel htmlFor={`${dialogId}-sort-order`}>
-                Sortierung
-              </FieldLabel>
-              <FieldContent>
-                <Input
-                  id={`${dialogId}-sort-order`}
-                  type="number"
-                  name="sortOrder"
-                  defaultValue={String(initialValues?.sortOrder ?? 0)}
-                />
-              </FieldContent>
-            </Field>
+          <Field className="sm:col-span-2">
+            <FieldLabel htmlFor={`${dialogId}-description`}>
+              Beschreibung
+            </FieldLabel>
+            <FieldContent>
+              <Textarea
+                id={`${dialogId}-description`}
+                name="description"
+                defaultValue={initialValues?.description ?? ''}
+                rows={4}
+                className="min-h-28"
+                placeholder="Kurzer redaktioneller Kontext für diese Kategorie."
+              />
+            </FieldContent>
+          </Field>
+        </FieldGroup>
 
-            {fixedParent ? (
-              <Field className="sm:col-span-2">
-                <FieldLabel>Übergeordnete Kategorie</FieldLabel>
-                <FieldContent>
-                  <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm">
-                    {fixedParent.name}
-                  </div>
-                </FieldContent>
-              </Field>
-            ) : (
-              <Field className="sm:col-span-2">
-                <FieldLabel htmlFor={`${dialogId}-parent`}>
-                  Übergeordnete Kategorie
-                </FieldLabel>
-                <FieldContent>
-                  <Select defaultValue={defaultParentId} name="parentId">
-                    <SelectTrigger id={`${dialogId}-parent`} className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent align="start">
-                      <SelectGroup>
-                        <SelectItem value="root">
-                          Keine Oberkategorie
-                        </SelectItem>
-                        {parentOptions.map((option) => (
-                          <SelectItem key={option.id} value={option.id}>
-                            {option.name}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                  <FieldDescription>
-                    Unterkategorien bleiben in V1 auf eine Ebene unter den
-                    Oberkategorien begrenzt.
-                  </FieldDescription>
-                </FieldContent>
-              </Field>
-            )}
-
-            <Field className="sm:col-span-2">
-              <FieldLabel htmlFor={`${dialogId}-description`}>
-                Beschreibung
-              </FieldLabel>
-              <FieldContent>
-                <Textarea
-                  id={`${dialogId}-description`}
-                  name="description"
-                  defaultValue={initialValues?.description ?? ''}
-                  rows={4}
-                  className="min-h-28"
-                  placeholder="Kurzer redaktioneller Kontext für diese Kategorie."
-                />
-              </FieldContent>
-            </Field>
-          </FieldGroup>
-
-          <DialogFooter>
-            <Button type="submit">{submitLabel}</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        <DialogFooter>
+          <Button type="submit">{submitLabel}</Button>
+        </DialogFooter>
+      </form>
+    </FormDialog>
   );
 }

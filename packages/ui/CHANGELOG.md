@@ -6,6 +6,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Shared `FormDialog` and `StagedConfirmDialog` components for reusable
+  create/edit and staged destructive modal flows across apps.
+- Shared `Pagination` component plus `getPaginationItems()` helper for classic
+  paged lists with compact chips and optional page-size selection.
+
+### Changed
+
+- `@bubbles/ui` README now documents the shared dialog shells and pagination
+  entrypoint alongside the existing shell components.
+
 ## [1.1.0] - 2026-04-17
 
 ### Added

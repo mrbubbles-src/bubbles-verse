@@ -2,27 +2,13 @@
 
 import type { DashboardAccessEntry } from '@/lib/account/dashboard-access.shared';
 
-import { useState } from 'react';
-
+import { StagedConfirmDialog } from '@bubbles/ui/components/staged-confirm-dialog';
 import {
-  AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
   AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
 } from '@bubbles/ui/shadcn/alert-dialog';
 import { Button } from '@bubbles/ui/shadcn/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@bubbles/ui/shadcn/dialog';
 import { useFormStatus } from 'react-dom';
 
 import { deleteDashboardAccessEntryAction } from '@/app/(dashboard)/account/actions';
@@ -47,77 +33,39 @@ function DashboardAccessRevokeSubmitButton() {
 }
 
 /**
- * Renders the two-step revocation flow for an existing dashboard access row.
+ * Renders the shared two-step revocation flow for one dashboard access row.
  *
  * @param props Access row that may be removed from the allowlist.
- * @returns A direct row action plus the required double-confirmation dialogs.
+ * @returns A row action with a staged destructive confirmation flow.
  */
 export function DashboardAccessRevokeDialog({
   entry,
 }: DashboardAccessRevokeDialogProps) {
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [finalConfirmOpen, setFinalConfirmOpen] = useState(false);
-
   return (
-    <>
-      <Button
-        type="button"
-        variant="destructive"
-        size="sm"
-        onClick={() => setConfirmOpen(true)}>
-        Zugang entziehen
-      </Button>
-
-      <Dialog
-        open={confirmOpen}
-        onOpenChange={(nextOpen) => {
-          setConfirmOpen(nextOpen);
-
-          if (!nextOpen) {
-            setFinalConfirmOpen(false);
-          }
-        }}>
-        <DialogContent className="max-w-[calc(100%-1.5rem)] gap-5 p-5 sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Zugang entziehen?</DialogTitle>
-            <DialogDescription>
-              @{entry.githubUsername} verliert den Dashboard-Zugang für{' '}
-              {entry.email}. Die Identität bleibt nur erhalten, wenn du sie
-              später erneut freigibst.
-            </DialogDescription>
-          </DialogHeader>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setConfirmOpen(false)}>
-              Abbrechen
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => {
-                setConfirmOpen(false);
-                setFinalConfirmOpen(true);
-              }}>
-              Weiter
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={finalConfirmOpen} onOpenChange={setFinalConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Bist du dir wirklich sicher?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Dieser Schritt entfernt die freigegebene Identität aus der
-              Allowlist. Bereits bestehende Sessions laufen erst mit dem
-              nächsten Login oder Token-Refresh aus.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-
+    <StagedConfirmDialog
+      trigger={
+        <Button type="button" variant="destructive" size="sm">
+          Zugang entziehen
+        </Button>
+      }
+      firstStep={{
+        kind: 'dialog',
+        dialogSize: 'sm',
+        title: 'Zugang entziehen?',
+        description: (
+          <>
+            @{entry.githubUsername} verliert den Dashboard-Zugang für{' '}
+            {entry.email}. Die Identität bleibt nur erhalten, wenn du sie später
+            erneut freigibst.
+          </>
+        ),
+        confirmLabel: 'Weiter',
+      }}
+      secondStep={{
+        title: 'Bist du dir wirklich sicher?',
+        description:
+          'Dieser Schritt entfernt die freigegebene Identität aus der Allowlist. Bereits bestehende Sessions laufen erst mit dem nächsten Login oder Token-Refresh aus.',
+        children: (
           <form action={deleteDashboardAccessEntryAction}>
             <input
               type="hidden"
@@ -131,8 +79,8 @@ export function DashboardAccessRevokeDialog({
               <DashboardAccessRevokeSubmitButton />
             </AlertDialogFooter>
           </form>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+        ),
+      }}
+    />
   );
 }

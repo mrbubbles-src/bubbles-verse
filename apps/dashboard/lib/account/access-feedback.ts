@@ -1,3 +1,9 @@
+import {
+  createRedirectFeedbackConfig,
+  getRedirectFeedbackHref,
+  getRedirectFeedbackMessage,
+} from '@/lib/feedback/redirect-feedback';
+
 const DASHBOARD_ACCESS_FEEDBACK_MESSAGES = {
   created: 'Zugang freigegeben.',
   updated: 'Zugang aktualisiert.',
@@ -16,6 +22,13 @@ export const DASHBOARD_ACCESS_FEEDBACK_PARAM = 'access';
 export type DashboardAccessFeedbackStatus =
   keyof typeof DASHBOARD_ACCESS_FEEDBACK_MESSAGES;
 
+export const DASHBOARD_ACCESS_FEEDBACK_CONFIG =
+  createRedirectFeedbackConfig<DashboardAccessFeedbackStatus>({
+    pathname: '/account',
+    param: DASHBOARD_ACCESS_FEEDBACK_PARAM,
+    messages: DASHBOARD_ACCESS_FEEDBACK_MESSAGES,
+  });
+
 /**
  * Reads the current account-management feedback message from a query string.
  *
@@ -26,24 +39,7 @@ export type DashboardAccessFeedbackStatus =
  * @returns The matching human-friendly message or `null`.
  */
 export function getDashboardAccessFeedbackMessage(search: string) {
-  const normalizedSearch = search.startsWith('?') ? search.slice(1) : search;
-
-  if (!normalizedSearch) {
-    return null;
-  }
-
-  const params = new URLSearchParams(normalizedSearch);
-  const status = params.get(DASHBOARD_ACCESS_FEEDBACK_PARAM);
-
-  if (!status) {
-    return null;
-  }
-
-  return (
-    DASHBOARD_ACCESS_FEEDBACK_MESSAGES[
-      status as DashboardAccessFeedbackStatus
-    ] ?? null
-  );
+  return getRedirectFeedbackMessage(search, DASHBOARD_ACCESS_FEEDBACK_CONFIG);
 }
 
 /**
@@ -58,5 +54,5 @@ export function getDashboardAccessFeedbackMessage(search: string) {
 export function getDashboardAccessFeedbackHref(
   status: DashboardAccessFeedbackStatus
 ) {
-  return `/account?${DASHBOARD_ACCESS_FEEDBACK_PARAM}=${status}`;
+  return getRedirectFeedbackHref(status, DASHBOARD_ACCESS_FEEDBACK_CONFIG);
 }

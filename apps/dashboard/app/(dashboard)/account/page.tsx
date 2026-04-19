@@ -1,7 +1,6 @@
 import { listDashboardAccessEntries } from '@/lib/account/dashboard-access';
 import { requireOwnerSession } from '@/lib/auth/session';
 
-import { AccountFeedbackToast } from '@/components/account/account-feedback-toast';
 import { DashboardAccessManagement } from '@/components/account/dashboard-access-management';
 
 /**
@@ -17,7 +16,6 @@ export default async function AccountPage() {
 
   return (
     <>
-      <AccountFeedbackToast />
       <DashboardAccessManagement
         accessEntries={accessEntries}
         currentIdentity={{
