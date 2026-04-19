@@ -58,19 +58,26 @@ const latestOutput: OutputData = INITIAL_OUTPUT;
 
 class MockEditorJs {
   static instances: MockEditorJs[] = [];
+  static destroyConnectedStates: boolean[] = [];
 
   public isReady: Promise<void>;
   private currentOutput: OutputData;
   private readonly destroyMock: () => void;
+  private readonly holder: HTMLElement | null;
   public readonly renderMock: (data: OutputData) => Promise<void>;
   public readonly blocks: {
     render: (data: OutputData) => Promise<void>;
   };
 
-  constructor(config: { data?: OutputData; onReady?: () => void }) {
+  constructor(config: {
+    data?: OutputData;
+    holder?: Element | string;
+    onReady?: () => void;
+  }) {
     MockEditorJs.instances.push(this);
     this.currentOutput = config.data ?? latestOutput;
     this.destroyMock = vi.fn();
+    this.holder = config.holder instanceof HTMLElement ? config.holder : null;
     this.renderMock = vi.fn(async (data: OutputData) => {
       this.currentOutput = data;
     });
@@ -93,6 +100,7 @@ class MockEditorJs {
   }
 
   destroy() {
+    MockEditorJs.destroyConnectedStates.push(Boolean(this.holder?.isConnected));
     this.destroyMock();
   }
 }
@@ -146,11 +154,13 @@ function RenderFormProbe({
 describe('MarkdownEditor form surface', () => {
   beforeEach(() => {
     MockEditorJs.instances = [];
+    MockEditorJs.destroyConnectedStates = [];
     window.localStorage.clear();
   });
 
   afterEach(() => {
     MockEditorJs.instances = [];
+    MockEditorJs.destroyConnectedStates = [];
     window.localStorage.clear();
   });
 
@@ -547,6 +557,19 @@ describe('MarkdownEditor form surface', () => {
       );
       expect(screen.getByLabelText('Tags')).toHaveValue('b');
     });
+  });
+
+  it('destroys the live editor instance before React disconnects the holder', async () => {
+    const { unmount } = render(<MarkdownEditor initialData={INITIAL_DATA} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('markdown-editor')).toBeInTheDocument();
+      expect(MockEditorJs.instances).toHaveLength(1);
+    });
+
+    unmount();
+
+    expect(MockEditorJs.destroyConnectedStates).toEqual([true]);
   });
 
   it('saves edit-mode drafts to the edit localStorage key', async () => {

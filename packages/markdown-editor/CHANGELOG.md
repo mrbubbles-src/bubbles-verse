@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- Run the shared EditorJS mount lifecycle through `useLayoutEffect` so route
+  transitions tear down the live holder before React disconnects it, avoiding
+  intermittent browser `removeChild` errors when apps navigate into entry
+  editor pages.
 - Add optional `draftStorageScope` support so consuming apps can isolate
   create/edit drafts per record instead of sharing one global edit draft key.
 - Export the draft load/clear helpers and base storage keys so consuming apps

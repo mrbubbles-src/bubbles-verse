@@ -3,7 +3,7 @@
 import type EditorJS from '@editorjs/editorjs';
 import type { API, OutputData } from '@editorjs/editorjs';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { cn } from '@bubbles/ui/lib/utils';
 import {
@@ -67,6 +67,7 @@ export function MarkdownEditor({
   const editorTeardownRef = useRef<Promise<void>>(Promise.resolve());
   const appliedInitialDataRef = useRef<OutputData | null>(null);
   const initialEditorDataRef = useRef<OutputData | null>(null);
+  const readyEditorsRef = useRef<WeakSet<EditorJS>>(new WeakSet());
   const editorOutputRef = useRef<() => Promise<OutputData | undefined>>(
     async () => undefined
   );
@@ -109,6 +110,17 @@ export function MarkdownEditor({
 
     appliedInitialDataRef.current = null;
     setEditorReady(false);
+
+    if (readyEditorsRef.current.has(editorInstance)) {
+      try {
+        editorInstance.destroy();
+      } catch {
+        /* Destroy failures should not block route changes or editor re-init. */
+      }
+
+      editorTeardownRef.current = Promise.resolve();
+      return;
+    }
 
     editorTeardownRef.current = Promise.resolve(editorInstance.isReady)
       .then(() => {
@@ -181,7 +193,7 @@ export function MarkdownEditor({
     };
   }, [normalizedInitialEditorData]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     let cancelled = false;
 
     if (!holderRef.current) {
@@ -221,6 +233,7 @@ export function MarkdownEditor({
         defaultBlock: resolveDefaultBlock(activePluginKeys),
         holder: holderRef.current,
         onReady: () => {
+          readyEditorsRef.current.add(editor);
           previousBlockCountRef.current = initialEditorData.blocks.length;
           setEditorReady(true);
           onReadyRef.current?.(editor);

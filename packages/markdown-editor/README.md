@@ -55,6 +55,8 @@ Shared client wrapper around the reference EditorJS setup from
 
 - keeps EditorJS mounts stable across React dev lifecycles with explicit
   teardown/re-init sequencing
+- tears down the live EditorJS holder in `useLayoutEffect`, which keeps
+  client-side route transitions from tripping browser `removeChild` errors
 - tears down and recreates EditorJS explicitly when real configuration changes require it
 - avoids replaying the same initial document back into a freshly mounted
   EditorJS instance, which prevents DOM teardown races in live app mounts
