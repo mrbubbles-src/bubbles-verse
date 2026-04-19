@@ -92,16 +92,6 @@ export function VaultEntryEditor({
       throw new Error('Missing Vault category.');
     }
 
-    if (process.env.NODE_ENV !== 'production') {
-      console.info('[vault-entry-editor] submit payload', {
-        description: payload.description,
-        primaryCategoryId: selectedCategoryId,
-        slug: payload.slug,
-        tags: payload.tags,
-        title: payload.title,
-      });
-    }
-
     const response = await fetch(
       mode === 'edit' && initialData
         ? `/api/vault/entries/${initialData.id}`

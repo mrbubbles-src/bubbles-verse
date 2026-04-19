@@ -88,8 +88,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   session.
 - Updated the Vault category select to keep showing the human label instead of
   the raw category UUID after selection.
-- Added dev-time Vault entry submit traces so browser payloads and parsed API
-  bodies can be compared quickly while debugging metadata persistence.
 - Allowed `manifest.json` and generated app icons to bypass the dashboard auth
   proxy so browsers no longer parse redirected HTML as a broken manifest.
 

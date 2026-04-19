@@ -87,17 +87,6 @@ export async function PATCH(
     );
   }
 
-  if (process.env.NODE_ENV !== 'production') {
-    console.info('[api/vault/entries/:id] parsed payload', {
-      description: parsedBody.data.description,
-      id,
-      primaryCategoryId: parsedBody.data.primaryCategoryId,
-      slug: parsedBody.data.slug,
-      tags: parsedBody.data.tags,
-      title: parsedBody.data.title,
-    });
-  }
-
   try {
     const updatedEntry = await updateVaultEntry({
       id,
