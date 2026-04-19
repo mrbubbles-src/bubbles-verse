@@ -1,0 +1,533 @@
+<style>
+  .flat-wrap {
+    display: grid;
+    gap: 22px;
+  }
+
+  @media (min-width: 1120px) {
+    .flat-wrap {
+      grid-template-columns: 0.9fr 1.15fr;
+    }
+  }
+
+  .flat-view {
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.08);
+    background: #0c1015;
+    box-shadow: 0 18px 50px rgba(0,0,0,.28);
+  }
+
+  .flat-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    background: rgba(255,255,255,.02);
+  }
+
+  .flat-head strong {
+    font-size: 13px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.8);
+  }
+
+  .flat-head span {
+    font-size: 12px;
+    color: rgba(255,255,255,.48);
+  }
+
+  .flat-body {
+    padding: 22px;
+    background:
+      radial-gradient(circle at top right, rgba(123,239,191,.10), transparent 24%),
+      radial-gradient(circle at top left, rgba(114,152,255,.10), transparent 28%),
+      #0b0f14;
+  }
+
+  .flat-shell {
+    color: #f3f6fa;
+    font-family: inherit;
+  }
+
+  .flat-shell h3 {
+    margin: 0;
+    font-size: 30px;
+    line-height: 1.02;
+    letter-spacing: -.05em;
+  }
+
+  .flat-eyebrow {
+    margin-bottom: 8px;
+    font-size: 11px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: rgba(190,198,210,.62);
+  }
+
+  .flat-mobile {
+    max-width: 410px;
+    margin: 0 auto;
+  }
+
+  .flat-main {
+    margin-top: 20px;
+  }
+
+  .tab-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255,255,255,.12);
+  }
+
+  .tab-group {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+
+  .tab-link-active,
+  .tab-link-idle {
+    position: relative;
+    padding-bottom: 8px;
+    font-size: 13px;
+    letter-spacing: .03em;
+  }
+
+  .tab-link-active {
+    color: #f7fbff;
+    font-weight: 700;
+  }
+
+  .tab-link-active::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -13px;
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #7af0bd, #7ad4ff);
+  }
+
+  .tab-link-idle {
+    color: rgba(196,203,213,.6);
+  }
+
+  .meta-note {
+    font-size: 12px;
+    color: rgba(196,203,213,.56);
+    white-space: nowrap;
+  }
+
+  .editorial-list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .editorial-row {
+    padding: 16px 0;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+
+  .editorial-row:last-child {
+    border-bottom: none;
+  }
+
+  .editorial-title {
+    font-size: 17px;
+    font-weight: 650;
+    line-height: 1.28;
+    color: #f4f7fb;
+  }
+
+  .editorial-sub {
+    margin-top: 7px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px 11px;
+    font-size: 12px;
+    color: rgba(193,201,213,.64);
+  }
+
+  .editorial-sub strong {
+    color: rgba(241,245,250,.78);
+  }
+
+  .flat-section {
+    margin-top: 22px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,.08);
+  }
+
+  .section-label {
+    margin-bottom: 10px;
+    font-size: 11px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: rgba(186,194,207,.58);
+  }
+
+  .action-plain-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .action-plain-item {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) auto;
+    gap: 12px;
+    align-items: start;
+  }
+
+  .action-plain-item strong {
+    display: block;
+    font-size: 14px;
+    color: #f2f6fa;
+  }
+
+  .action-plain-item span {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: rgba(192,200,212,.63);
+  }
+
+  .action-mini {
+    padding: 7px 10px;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 999px;
+    font-size: 11px;
+    color: rgba(243,246,251,.78);
+    background: rgba(255,255,255,.03);
+  }
+
+  .stats-inline-plain {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px 22px;
+  }
+
+  .stats-inline-plain div span {
+    display: block;
+    font-size: 11px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: rgba(183,191,203,.56);
+  }
+
+  .stats-inline-plain div strong {
+    display: block;
+    margin-top: 6px;
+    font-size: 28px;
+    line-height: 1;
+    letter-spacing: -.05em;
+    color: #f5f8fc;
+  }
+
+  .stats-inline-plain div small {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+    color: rgba(190,198,210,.6);
+  }
+
+  .module-textline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px 10px;
+    font-size: 13px;
+    color: rgba(214,221,230,.72);
+  }
+
+  .module-textline .bullet {
+    color: rgba(255,255,255,.3);
+  }
+
+  .desktop-open {
+    display: grid;
+    gap: 26px;
+  }
+
+  @media (min-width: 940px) {
+    .desktop-open {
+      grid-template-columns: minmax(0,1.48fr) minmax(270px,.82fr);
+      align-items: start;
+    }
+  }
+
+  .desktop-aside {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  .aside-sticky-note {
+    font-size: 11px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: rgba(181,190,201,.52);
+  }
+</style>
+
+<h2>Startseite `/` · flachere Mockup-Runde</h2>
+<p class="subtitle">
+  Weniger Kaesten. Mehr Seitenflaeche, Typografie, Trenner und offene Struktur.
+  Die Arbeitsliste ist hier bewusst fast rahmenlos gedacht.
+</p>
+
+<div class="flat-wrap">
+  <div class="flat-view flat-mobile">
+    <div class="flat-head">
+      <strong>Mobile</strong>
+      <span>390 × 844</span>
+    </div>
+    <div class="flat-body">
+      <div class="flat-shell">
+        <div class="flat-eyebrow">Dashboard</div>
+        <h3>Hallo, Marcel</h3>
+
+        <div class="flat-main">
+          <div class="tab-line">
+            <div class="tab-group">
+              <div class="tab-link-active">Offene Entwuerfe</div>
+              <div class="tab-link-idle">Zuletzt bearbeitet</div>
+            </div>
+            <div class="meta-note">3 offen</div>
+          </div>
+
+          <div class="editorial-list">
+            <div class="editorial-row">
+              <div class="editorial-title">
+                React View Transitions mit echter Richtungsnavigation
+              </div>
+              <div class="editorial-sub">
+                <span><strong>Animation</strong></span>
+                <span>Heute, 09:41</span>
+              </div>
+            </div>
+            <div class="editorial-row">
+              <div class="editorial-title">
+                Next Cache Components praxisnah erklaert
+              </div>
+              <div class="editorial-sub">
+                <span><strong>Next.js</strong></span>
+                <span>Gestern, 18:12</span>
+              </div>
+            </div>
+            <div class="editorial-row">
+              <div class="editorial-title">
+                EditorJS zu MDX Migration ohne kaputte Shortcodes
+              </div>
+              <div class="editorial-sub">
+                <span><strong>Tooling</strong></span>
+                <span>Vor 3 Tagen</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flat-section">
+            <div class="section-label">Heute weiterschreiben</div>
+            <div class="action-plain-list">
+              <div class="action-plain-item">
+                <div>
+                  <strong>Neuer Eintrag</strong>
+                  <span>Direkt in eine neue Arbeitsseite springen</span>
+                </div>
+                <div class="action-mini">Neu</div>
+              </div>
+              <div class="action-plain-item">
+                <div>
+                  <strong>Eintraege oeffnen</strong>
+                  <span>Alle Inhalte mit Suche und Aktionen sehen</span>
+                </div>
+                <div class="action-mini">Liste</div>
+              </div>
+              <div class="action-plain-item">
+                <div>
+                  <strong>Kategorien pflegen</strong>
+                  <span>Vault-Struktur schnell nachschaerfen</span>
+                </div>
+                <div class="action-mini">Struktur</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flat-section">
+            <div class="section-label">Stand</div>
+            <div class="stats-inline-plain">
+              <div>
+                <span>Entwuerfe</span>
+                <strong>3</strong>
+                <small>offen</small>
+              </div>
+              <div>
+                <span>Veroeffentlicht</span>
+                <strong>18</strong>
+                <small>live</small>
+              </div>
+              <div>
+                <span>Kategorien</span>
+                <strong>12</strong>
+                <small>aktiv</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="flat-section">
+            <div class="section-label">Module</div>
+            <div class="module-textline">
+              <span>Coding Vault</span>
+              <span class="bullet">•</span>
+              <span>3 Entwuerfe</span>
+              <span class="bullet">•</span>
+              <span>18 veroeffentlicht</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flat-view">
+    <div class="flat-head">
+      <strong>Desktop</strong>
+      <span>1440 × 980</span>
+    </div>
+    <div class="flat-body">
+      <div class="flat-shell">
+        <div class="flat-eyebrow">Dashboard</div>
+        <h3>Hallo, Marcel</h3>
+
+        <div class="flat-main desktop-open">
+          <div>
+            <div class="tab-line">
+              <div class="tab-group">
+                <div class="tab-link-active">Offene Entwuerfe</div>
+                <div class="tab-link-idle">Zuletzt bearbeitet</div>
+              </div>
+              <div class="meta-note">Klick oeffnet direkt den Eintrag</div>
+            </div>
+
+            <div class="editorial-list">
+              <div class="editorial-row">
+                <div class="editorial-title">
+                  React View Transitions mit echter Richtungsnavigation
+                </div>
+                <div class="editorial-sub">
+                  <span><strong>Kategorie:</strong> Animation</span>
+                  <span><strong>Zuletzt:</strong> Heute, 09:41</span>
+                  <span><strong>App:</strong> Coding Vault</span>
+                </div>
+              </div>
+              <div class="editorial-row">
+                <div class="editorial-title">
+                  Next Cache Components praxisnah erklaert
+                </div>
+                <div class="editorial-sub">
+                  <span><strong>Kategorie:</strong> Next.js</span>
+                  <span><strong>Zuletzt:</strong> Gestern, 18:12</span>
+                  <span><strong>Hinweis:</strong> Introbild fehlt</span>
+                </div>
+              </div>
+              <div class="editorial-row">
+                <div class="editorial-title">
+                  EditorJS zu MDX Migration ohne kaputte Shortcodes
+                </div>
+                <div class="editorial-sub">
+                  <span><strong>Kategorie:</strong> Tooling</span>
+                  <span><strong>Zuletzt:</strong> Vor 3 Tagen</span>
+                  <span><strong>Hinweis:</strong> wartet auf Review</span>
+                </div>
+              </div>
+              <div class="editorial-row">
+                <div class="editorial-title">
+                  Auth Flows im Dashboard ohne unnnoetige Redirect-Loops
+                </div>
+                <div class="editorial-sub">
+                  <span><strong>Kategorie:</strong> Auth</span>
+                  <span><strong>Zuletzt:</strong> Vor 5 Tagen</span>
+                  <span><strong>Hinweis:</strong> Schlusslektorat offen</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flat-section">
+              <div class="section-label">Module</div>
+              <div class="module-textline">
+                <span>Coding Vault</span>
+                <span class="bullet">•</span>
+                <span>3 Entwuerfe</span>
+                <span class="bullet">•</span>
+                <span>18 veroeffentlicht</span>
+                <span class="bullet">•</span>
+                <span>12 Kategorien</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="desktop-aside">
+            <div>
+              <div class="section-label">Heute weiterschreiben</div>
+              <div class="action-plain-list">
+                <div class="action-plain-item">
+                  <div>
+                    <strong>Neuer Eintrag</strong>
+                    <span>Neue Arbeitsseite im Editor oeffnen</span>
+                  </div>
+                  <div class="action-mini">Neu</div>
+                </div>
+                <div class="action-plain-item">
+                  <div>
+                    <strong>Eintraege oeffnen</strong>
+                    <span>Komplette Liste mit Suche und Aktionen</span>
+                  </div>
+                  <div class="action-mini">Liste</div>
+                </div>
+                <div class="action-plain-item">
+                  <div>
+                    <strong>Kategorien pflegen</strong>
+                    <span>Struktur ohne Kartenchaos anpassen</span>
+                  </div>
+                  <div class="action-mini">Struktur</div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="section-label">Stand</div>
+              <div class="stats-inline-plain">
+                <div>
+                  <span>Entwuerfe</span>
+                  <strong>3</strong>
+                  <small>offene Arbeit</small>
+                </div>
+                <div>
+                  <span>Veroeffentlicht</span>
+                  <strong>18</strong>
+                  <small>bereits live</small>
+                </div>
+                <div>
+                  <span>Kategorien</span>
+                  <strong>12</strong>
+                  <small>aktive Struktur</small>
+                </div>
+              </div>
+            </div>
+
+            <div class="aside-sticky-note">
+              Rechte Spalte nur als leiser Kontext, nicht als Boxenstapel
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
