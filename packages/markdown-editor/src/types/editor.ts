@@ -172,6 +172,7 @@ export type EditorRenderFormProps = {
  * rendered by `MarkdownEditor`.
  */
 export type EditorFormProps = EditorRenderFormProps & {
+  draftStorageScope?: string;
   onSuccess?: (data: MarkdownEditorSubmitData) => void;
   slugStrategy?: MarkdownEditorSlugStrategy;
   slugStrategyContext?: MarkdownEditorSlugStrategyContext;
@@ -245,6 +246,7 @@ export type MarkdownEditorProps = {
   imageUploader?: MarkdownEditorImageUploader;
   initialData?: MarkdownEditorInitialDataInput;
   isEditMode?: boolean;
+  draftStorageScope?: string;
   onChange?: MarkdownEditorChangeHandler;
   onReady?: MarkdownEditorReadyHandler;
   onSuccess?: MarkdownEditorSuccessHandler;

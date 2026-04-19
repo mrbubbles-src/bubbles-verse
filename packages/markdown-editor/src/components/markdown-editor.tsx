@@ -5,6 +5,7 @@ import type { API, OutputData } from '@editorjs/editorjs';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { cn } from '@bubbles/ui/lib/utils';
 import {
   Card,
   CardContent,
@@ -12,19 +13,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@bubbles/ui/shadcn/card';
-import { cn } from '@bubbles/ui/lib/utils';
 
-import { EditorForm } from './editor-form';
-import {
-  ImportMarkdownModal,
-  type ImportMarkdownModalHandle,
-} from './import-markdown-modal';
-import { PreviewPane } from './preview-pane';
+import type { MarkdownEditorProps } from '../types/editor';
+import type { ImportMarkdownModalHandle } from './import-markdown-modal';
+import { loadCreateDraft, loadEditDraft } from '../lib/draft-storage';
 import {
   normalizeInitialEditorData,
   normalizeInitialFormData,
 } from '../lib/editor-content';
-import { loadCreateDraft, loadEditDraft } from '../lib/draft-storage';
 import {
   buildEditorTools,
   loadEditorToolRegistry,
@@ -32,7 +28,9 @@ import {
   resolvePluginKeys,
 } from '../lib/editor-tools';
 import { loadEditorJs } from '../lib/load-editorjs';
-import type { MarkdownEditorProps } from '../types/editor';
+import { EditorForm } from './editor-form';
+import { ImportMarkdownModal } from './import-markdown-modal';
+import { PreviewPane } from './preview-pane';
 
 /**
  * Shared EditorJS wrapper for markdown authoring surfaces.
@@ -46,6 +44,7 @@ import type { MarkdownEditorProps } from '../types/editor';
 export function MarkdownEditor({
   autofocus = true,
   className,
+  draftStorageScope,
   imageUploader,
   initialData,
   isEditMode = false,
@@ -129,10 +128,12 @@ export function MarkdownEditor({
   useEffect(() => {
     setDraftResolved(false);
     setResolvedInitialData(
-      (isEditMode ? loadEditDraft() : loadCreateDraft()) ?? initialData
+      (isEditMode
+        ? loadEditDraft(draftStorageScope)
+        : loadCreateDraft(draftStorageScope)) ?? initialData
     );
     setDraftResolved(true);
-  }, [initialData, isEditMode]);
+  }, [draftStorageScope, initialData, isEditMode]);
 
   useEffect(() => {
     setEditorContent(normalizedInitialEditorData);
@@ -328,8 +329,7 @@ export function MarkdownEditor({
         </CardHeader>
         <CardContent
           ref={editorScrollRef}
-          className="markdown-editor-pane__content max-h-[60dvh] overflow-y-auto overscroll-contain"
-        >
+          className="markdown-editor-pane__content max-h-[60dvh] overflow-y-auto overscroll-contain">
           <div
             ref={holderRef}
             className={cn('markdown-editor-holder', className)}
@@ -357,6 +357,7 @@ export function MarkdownEditor({
       ) : (
         <div className="xl:col-span-2">
           <EditorForm
+            draftStorageScope={draftStorageScope}
             editorOutput={editorOutput}
             editorContent={editorContent}
             editorReady={editorReady}

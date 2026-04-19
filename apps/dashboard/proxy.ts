@@ -10,6 +10,13 @@ const PUBLIC_DASHBOARD_PATHS = new Set([
   '/auth/logout',
 ]);
 
+const PUBLIC_DASHBOARD_ASSET_PATHS = new Set([
+  '/manifest.json',
+  '/apple-icon.png',
+  '/icon0.svg',
+  '/icon1.png',
+]);
+
 /**
  * Returns whether the current pathname can be visited without a session.
  *
@@ -20,7 +27,10 @@ const PUBLIC_DASHBOARD_PATHS = new Set([
  * @returns `true` when the route should bypass the optimistic auth redirect.
  */
 function isPublicDashboardPath(pathname: string) {
-  return PUBLIC_DASHBOARD_PATHS.has(pathname);
+  return (
+    PUBLIC_DASHBOARD_PATHS.has(pathname) ||
+    PUBLIC_DASHBOARD_ASSET_PATHS.has(pathname)
+  );
 }
 
 /**

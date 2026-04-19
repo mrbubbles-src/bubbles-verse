@@ -6,7 +6,7 @@ import type {
 } from '@/lib/vault/entries';
 import type { MarkdownEditorSubmitData } from '@bubbles/markdown-editor';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
   createEditorImageUploader,
@@ -62,6 +62,10 @@ export function VaultEntryEditor({
   const [selectedCategoryId, setSelectedCategoryId] = useState(
     initialData?.primaryCategoryId ?? categories[0]?.id ?? ''
   );
+  const draftStorageScope =
+    mode === 'edit' && initialData
+      ? `vault-entry:${initialData.id}`
+      : 'vault-entry:create';
   const selectedCategory = useMemo(
     () =>
       categories.find((category) => category.id === selectedCategoryId) ?? null,
@@ -76,10 +80,26 @@ export function VaultEntryEditor({
     []
   );
 
+  useEffect(() => {
+    setSelectedCategoryId(
+      initialData?.primaryCategoryId ?? categories[0]?.id ?? ''
+    );
+  }, [categories, initialData?.primaryCategoryId]);
+
   async function handleSuccess(payload: MarkdownEditorSubmitData) {
     if (!selectedCategoryId) {
       toast.error('Bitte wähle zuerst eine Vault-Kategorie.');
       throw new Error('Missing Vault category.');
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.info('[vault-entry-editor] submit payload', {
+        description: payload.description,
+        primaryCategoryId: selectedCategoryId,
+        slug: payload.slug,
+        tags: payload.tags,
+        title: payload.title,
+      });
     }
 
     const response = await fetch(
@@ -246,7 +266,9 @@ export function VaultEntryEditor({
               value={selectedCategoryId}
               onValueChange={(value) => setSelectedCategoryId(value ?? '')}>
               <SelectTrigger id="vault-entry-category" className="w-full">
-                <SelectValue placeholder="Kategorie wählen" />
+                <SelectValue placeholder="Kategorie wählen">
+                  {selectedCategory?.label}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent align="start">
                 <SelectGroup>
@@ -298,8 +320,8 @@ export function VaultEntryEditor({
                   Eintrag endgültig entfernen
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Löscht Inhalt, Kategorie-Verknüpfung und Tags dauerhaft aus dem
-                  Vault.
+                  Löscht Inhalt, Kategorie-Verknüpfung und Tags dauerhaft aus
+                  dem Vault.
                 </p>
               </div>
               <div>
@@ -317,6 +339,8 @@ export function VaultEntryEditor({
       </section>
 
       <MarkdownEditor
+        key={mode === 'edit' && initialData ? initialData.id : 'create'}
+        draftStorageScope={draftStorageScope}
         imageUploader={imageUploader}
         initialData={
           initialData

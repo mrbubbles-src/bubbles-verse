@@ -1,17 +1,18 @@
 import type { OutputData } from '@editorjs/editorjs';
 import type { ComponentPropsWithoutRef } from 'react';
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useState } from 'react';
+
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { MarkdownEditor } from '../../src/components/markdown-editor';
-import { CREATE_DRAFT_KEY, EDIT_DRAFT_KEY } from '../../src/lib/draft-storage';
 import type {
   EditorRenderFormProps,
   MarkdownEditorInitialData,
   MarkdownEditorSubmitData,
 } from '../../src/types/editor';
+import { MarkdownEditor } from '../../src/components/markdown-editor';
+import { CREATE_DRAFT_KEY, EDIT_DRAFT_KEY } from '../../src/lib/draft-storage';
 
 vi.mock('@bubbles/markdown-renderer', () => {
   return {
@@ -102,10 +103,8 @@ vi.mock('../../src/lib/load-editorjs', () => {
   };
 });
 
-vi.mock('../../src/lib/editor-tools', async () => {
-  const actual = await vi.importActual<typeof import('../../src/lib/editor-tools')>(
-    '../../src/lib/editor-tools'
-  );
+vi.mock(import('../../src/lib/editor-tools'), async (importOriginal) => {
+  const actual = await importOriginal();
 
   return {
     ...actual,
@@ -137,8 +136,7 @@ function RenderFormProbe({
         onClick={async () => {
           const output = await editorOutput();
           setSavedBlockCount(String(output?.blocks.length ?? 0));
-        }}
-      >
+        }}>
         Read output
       </button>
     </section>
@@ -171,7 +169,9 @@ describe('MarkdownEditor form surface', () => {
     });
 
     expect(screen.getByTestId('is-edit-mode')).toHaveTextContent('true');
-    expect(screen.getByTestId('initial-title')).toHaveTextContent('Existing title');
+    expect(screen.getByTestId('initial-title')).toHaveTextContent(
+      'Existing title'
+    );
     expect(screen.getByTestId('editor-block-count')).toHaveTextContent('2');
 
     fireEvent.click(screen.getByRole('button', { name: 'Read output' }));
@@ -208,7 +208,9 @@ describe('MarkdownEditor form surface', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue('vault/story-driven-editor')).toBeInTheDocument();
+      expect(
+        screen.getByDisplayValue('vault/story-driven-editor')
+      ).toBeInTheDocument();
     });
   });
 
@@ -457,7 +459,94 @@ describe('MarkdownEditor form surface', () => {
       expect(screen.getByLabelText('Tags')).toHaveValue('edit, draft');
     });
 
-    expect(screen.getAllByText('Edit Draft Title').length).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getAllByText('Edit Draft Title').length
+    ).toBeGreaterThanOrEqual(1);
+  });
+
+  it('isolates edit-mode drafts by the provided storage scope', async () => {
+    window.localStorage.setItem(
+      `${EDIT_DRAFT_KEY}:vault-entry:a`,
+      JSON.stringify({
+        content: {
+          blocks: [
+            {
+              id: 'draft-a-heading',
+              type: 'header',
+              data: {
+                level: 1,
+                text: 'Entry A Draft',
+              },
+            },
+          ],
+          time: 101,
+          version: '2.31.0',
+        },
+        description: 'Draft A description',
+        slug: 'entry-a-draft',
+        status: 'published',
+        tags: ['a'],
+        title: 'Entry A Draft',
+      } satisfies MarkdownEditorInitialData)
+    );
+    window.localStorage.setItem(
+      `${EDIT_DRAFT_KEY}:vault-entry:b`,
+      JSON.stringify({
+        content: {
+          blocks: [
+            {
+              id: 'draft-b-heading',
+              type: 'header',
+              data: {
+                level: 1,
+                text: 'Entry B Draft',
+              },
+            },
+          ],
+          time: 202,
+          version: '2.31.0',
+        },
+        description: 'Draft B description',
+        slug: 'entry-b-draft',
+        status: 'unpublished',
+        tags: ['b'],
+        title: 'Entry B Draft',
+      } satisfies MarkdownEditorInitialData)
+    );
+
+    const { unmount } = render(
+      <MarkdownEditor
+        draftStorageScope="vault-entry:a"
+        initialData={INITIAL_DATA}
+        isEditMode
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Slug')).toHaveValue('entry-a-draft');
+      expect(screen.getByLabelText('Description')).toHaveValue(
+        'Draft A description'
+      );
+      expect(screen.getByLabelText('Tags')).toHaveValue('a');
+    });
+
+    unmount();
+
+    render(
+      <MarkdownEditor
+        draftStorageScope="vault-entry:b"
+        initialData={INITIAL_DATA}
+        isEditMode
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Slug')).toHaveValue('entry-b-draft');
+      expect(screen.getByLabelText('Description')).toHaveValue(
+        'Draft B description'
+      );
+      expect(screen.getByLabelText('Tags')).toHaveValue('b');
+    });
   });
 
   it('saves edit-mode drafts to the edit localStorage key', async () => {

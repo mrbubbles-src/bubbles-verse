@@ -2,8 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 describe('editor tool helpers', () => {
   class StubTool {
-    constructor(..._args: unknown[]) {}
-
     render() {
       return document.createElement('div');
     }
@@ -36,7 +34,9 @@ describe('editor tool helpers', () => {
 
     expect(DEFAULT_PLUGIN_KEYS).toHaveLength(15);
     expect(resolveDefaultBlock(DEFAULT_PLUGIN_KEYS)).toBe('paragraph');
-    expect(Object.keys(buildEditorTools(DEFAULT_PLUGIN_KEYS, toolRegistry))).toEqual([
+    expect(
+      Object.keys(buildEditorTools(DEFAULT_PLUGIN_KEYS, toolRegistry))
+    ).toEqual([
       'header',
       'list',
       'code',
@@ -74,9 +74,8 @@ describe('editor tool helpers', () => {
   });
 
   it('keeps the reference image and inline-only tools behind the same registry', async () => {
-    const { buildEditorTools, resolveDefaultBlock } = await import(
-      '../../src/lib/editor-tools'
-    );
+    const { buildEditorTools, resolveDefaultBlock } =
+      await import('../../src/lib/editor-tools');
 
     expect(
       Object.keys(
@@ -86,9 +85,9 @@ describe('editor tool helpers', () => {
         )
       )
     ).toEqual(['image', 'annotation', 'InlineHotkey', 'embed']);
-    expect(resolveDefaultBlock(['annotation', 'inlineHotkey', 'strikethrough'])).toBe(
-      'paragraph'
-    );
+    expect(
+      resolveDefaultBlock(['annotation', 'inlineHotkey', 'strikethrough'])
+    ).toBe('paragraph');
   });
 
   it('wires the app-provided image uploader into the image tool config', async () => {
@@ -108,14 +107,12 @@ describe('editor tool helpers', () => {
 
     expect(imageTool.config.uploader?.uploadByFile).toBe(uploadByFile);
   });
-
 });
 
 describe('editor content helpers', () => {
   it('normalizes string and wrapped content into EditorJS output data', async () => {
-    const { normalizeInitialEditorData } = await import(
-      '../../src/lib/editor-content'
-    );
+    const { normalizeInitialEditorData } =
+      await import('../../src/lib/editor-content');
 
     expect(
       normalizeInitialEditorData({
@@ -132,9 +129,8 @@ describe('editor content helpers', () => {
   });
 
   it('falls back to an empty starter payload when content is invalid', async () => {
-    const { normalizeInitialEditorData } = await import(
-      '../../src/lib/editor-content'
-    );
+    const { normalizeInitialEditorData } =
+      await import('../../src/lib/editor-content');
     const result = normalizeInitialEditorData('{not-json}');
 
     expect(result.blocks).toEqual([]);

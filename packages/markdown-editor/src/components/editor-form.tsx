@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+
 import { Button } from '@bubbles/ui/shadcn/button';
 import {
   Card,
@@ -24,9 +26,15 @@ import {
   SelectValue,
 } from '@bubbles/ui/shadcn/select';
 import { Textarea } from '@bubbles/ui/shadcn/textarea';
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 
+import type {
+  EditorFormProps,
+  MarkdownEditorInitialData,
+  MarkdownEditorSlugStrategyInput,
+  MarkdownEditorSlugStrategyResult,
+  MarkdownEditorStatus,
+} from '../types/editor';
 import { useDraftAutosave } from '../hooks/use-draft-autosave';
 import { clearCreateDraft, clearEditDraft } from '../lib/draft-storage';
 import { serializeToMdx } from '../lib/serialize-to-mdx';
@@ -36,13 +44,6 @@ import {
   joinSlugSegments,
   normalizeSlugPath,
 } from '../lib/slug-utils';
-import type {
-  EditorFormProps,
-  MarkdownEditorInitialData,
-  MarkdownEditorSlugStrategyInput,
-  MarkdownEditorSlugStrategyResult,
-  MarkdownEditorStatus,
-} from '../types/editor';
 
 type EditorFormValues = {
   description: string;
@@ -147,6 +148,7 @@ function resolveDerivedSlug({
  * @returns Metadata form for the shared markdown editor surface.
  */
 export function EditorForm({
+  draftStorageScope,
   editorContent,
   editorOutput,
   editorReady,
@@ -156,7 +158,10 @@ export function EditorForm({
   slugStrategy,
   slugStrategyContext,
 }: EditorFormProps) {
-  const defaultValues = useMemo(() => buildDefaultValues(initialData), [initialData]);
+  const defaultValues = useMemo(
+    () => buildDefaultValues(initialData),
+    [initialData]
+  );
   const slugManuallyEditedRef = useRef(false);
   const [draftSavingDisabledSessionId, setDraftSavingDisabledSessionId] =
     useState<string | null>(null);
@@ -169,7 +174,6 @@ export function EditorForm({
     formState: { isSubmitting },
     getValues,
     handleSubmit,
-    register,
     reset,
     setValue,
   } = form;
@@ -178,8 +182,6 @@ export function EditorForm({
   const status = useWatch({ control, name: 'status' }) ?? 'unpublished';
   const tagsText = useWatch({ control, name: 'tagsText' }) ?? '';
   const title = useWatch({ control, name: 'title' }) ?? '';
-  const descriptionField = register('description');
-  const tagsField = register('tagsText');
   const formSessionId = useMemo(
     () => `${isEditMode ? 'edit' : 'create'}:${JSON.stringify(defaultValues)}`,
     [defaultValues, isEditMode]
@@ -275,6 +277,7 @@ export function EditorForm({
 
   useDraftAutosave({
     disabled: draftSavingDisabled,
+    draftStorageScope,
     editorContent,
     formValues: {
       description,
@@ -326,11 +329,11 @@ export function EditorForm({
       );
 
       if (isEditMode) {
-        clearEditDraft();
+        clearEditDraft(draftStorageScope);
         return;
       }
 
-      clearCreateDraft();
+      clearCreateDraft(draftStorageScope);
     } catch (error) {
       setDraftSavingDisabledSessionId(null);
       throw error;
@@ -340,7 +343,9 @@ export function EditorForm({
   return (
     <Card size="sm">
       <CardHeader>
-        <CardTitle>{isEditMode ? 'Edit entry metadata' : 'Entry metadata'}</CardTitle>
+        <CardTitle>
+          {isEditMode ? 'Edit entry metadata' : 'Entry metadata'}
+        </CardTitle>
         <CardDescription>
           Keep the metadata package-level and app-agnostic. Persistence and
           navigation stay in the consuming app.
@@ -371,7 +376,9 @@ export function EditorForm({
                     placeholder="story-driven-editor"
                     value={field.value ?? ''}
                     onBlur={(event) => {
-                      const normalizedSlug = normalizeSlugPath(event.target.value);
+                      const normalizedSlug = normalizeSlugPath(
+                        event.target.value
+                      );
 
                       event.target.value = normalizedSlug;
 
@@ -397,10 +404,17 @@ export function EditorForm({
               <FieldLabel htmlFor="markdown-editor-description">
                 Description
               </FieldLabel>
-              <Textarea
-                id="markdown-editor-description"
-                rows={4}
-                {...descriptionField}
+              <Controller
+                control={control}
+                name="description"
+                render={({ field }) => (
+                  <Textarea
+                    {...field}
+                    id="markdown-editor-description"
+                    rows={4}
+                    value={field.value ?? ''}
+                  />
+                )}
               />
               <FieldDescription>
                 Optional summary used by the consuming app for cards, SEO, or
@@ -410,10 +424,17 @@ export function EditorForm({
 
             <Field>
               <FieldLabel htmlFor="markdown-editor-tags">Tags</FieldLabel>
-              <Input
-                id="markdown-editor-tags"
-                placeholder="nextjs, mdx, editorjs"
-                {...tagsField}
+              <Controller
+                control={control}
+                name="tagsText"
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    id="markdown-editor-tags"
+                    placeholder="nextjs, mdx, editorjs"
+                    value={field.value ?? ''}
+                  />
+                )}
               />
               <FieldDescription>
                 Enter comma-separated tags. The package emits them as a string
@@ -431,12 +452,10 @@ export function EditorForm({
                     value={field.value}
                     onValueChange={(value) => {
                       field.onChange(value);
-                    }}
-                  >
+                    }}>
                     <SelectTrigger
                       aria-labelledby={statusLabelId}
-                      id="markdown-editor-status"
-                    >
+                      id="markdown-editor-status">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

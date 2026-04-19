@@ -79,6 +79,16 @@ export async function POST(request: Request) {
     );
   }
 
+  if (process.env.NODE_ENV !== 'production') {
+    console.info('[api/vault/entries] parsed payload', {
+      description: parsedBody.data.description,
+      primaryCategoryId: parsedBody.data.primaryCategoryId,
+      slug: parsedBody.data.slug,
+      tags: parsedBody.data.tags,
+      title: parsedBody.data.title,
+    });
+  }
+
   try {
     const createdEntry = await createVaultEntry({
       payload: parsedBody.data,

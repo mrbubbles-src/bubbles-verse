@@ -19,12 +19,12 @@ This package now ships:
 
 ```ts
 import {
+  createEditorImageUploader,
   DEFAULT_PLUGIN_KEYS,
   EditorForm,
-  MarkdownEditor,
-  createEditorImageUploader,
   generateSlug,
   joinSlugSegments,
+  MarkdownEditor,
   normalizeSlugPath,
   serializeToMdx,
   slugifySegment,
@@ -39,7 +39,6 @@ import {
   resolveCloudinaryErrorResponse,
   uploadEditorImageToCloudinary,
 } from '@bubbles/markdown-editor/cloudinary-upload';
-
 import { createCloudinaryUploadRoute } from '@bubbles/markdown-editor/cloudinary-upload-route';
 ```
 
@@ -57,6 +56,7 @@ Shared client wrapper around the reference EditorJS setup from
 - accepts `plugins` to subset the toolbar without changing the canonical order
 - restores mode-specific drafts from localStorage on mount
 - autosaves create/edit drafts to the reference storage keys while authors type
+- accepts optional `draftStorageScope` so apps can isolate drafts per record
 - imports `.md`, `.mdx`, and `.markdown` files through the portal-ref modal flow
 - previews converted block counts, image placeholders, and import warnings
 - renders a live MDX preview through a reference-style local compile step
@@ -75,6 +75,7 @@ Shared client wrapper around the reference EditorJS setup from
 
 ```tsx
 <MarkdownEditor
+  draftStorageScope="vault-entry:create"
   imageUploader={uploadImage}
   onSuccess={(entry) => saveEntry(entry)}
   plugins={['paragraph', 'header', 'list', 'image']}
@@ -91,6 +92,7 @@ The editor header includes the same import affordances as `portal-ref`:
 
 ```tsx
 <MarkdownEditor
+  draftStorageScope={`vault-entry:${existingEntry.id}`}
   initialData={{
     content: existingEntry.editorContent,
     description: existingEntry.description,
@@ -125,6 +127,8 @@ provided.
   `section/title`-style values
 - description, tags, and status (`published` | `unpublished`) stay package-level
 - create mode uses `topic-editor-create-draft`; edit mode uses `topic-editor-edit-draft`
+- `draftStorageScope` appends a stable suffix like `vault-entry:<id>` when one
+  app needs isolated local drafts per entity
 - successful submits clear the active draft and stop stale post-submit rewrites
 - loading a new `initialData` session resets form-local overrides instead of relying on a remount key
 - apps can shape the default-form slug through `slugStrategy` and optional
@@ -252,6 +256,7 @@ Minimaler Route-Handler mit app-seitiger Folder-Validierung:
 
 ```ts
 import { NextResponse } from 'next/server';
+
 import {
   createEditorImageUploadResponse,
   isUploadFile,

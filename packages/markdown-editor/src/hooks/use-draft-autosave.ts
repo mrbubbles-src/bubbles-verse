@@ -1,13 +1,14 @@
 import type { OutputData } from '@editorjs/editorjs';
+
 import { useEffect } from 'react';
 
-import { parseEditorContent } from '../lib/editor-content';
-import { saveCreateDraft, saveEditDraft } from '../lib/draft-storage';
 import type {
   MarkdownEditorContentData,
   MarkdownEditorInitialData,
   MarkdownEditorStatus,
 } from '../types/editor';
+import { saveCreateDraft, saveEditDraft } from '../lib/draft-storage';
+import { parseEditorContent } from '../lib/editor-content';
 
 type DraftFormValues = {
   title: string;
@@ -18,6 +19,7 @@ type DraftFormValues = {
 };
 
 type UseDraftAutosaveOptions = {
+  draftStorageScope?: string;
   editorContent: OutputData | null;
   formValues: DraftFormValues;
   initialData?: MarkdownEditorInitialData;
@@ -85,6 +87,7 @@ function buildDraftFromFormValues(
  */
 export function useDraftAutosave({
   editorContent,
+  draftStorageScope,
   formValues,
   initialData,
   isEditMode,
@@ -102,10 +105,17 @@ export function useDraftAutosave({
     );
 
     if (isEditMode) {
-      saveEditDraft(draft);
+      saveEditDraft(draft, draftStorageScope);
       return;
     }
 
-    saveCreateDraft(draft);
-  }, [disabled, editorContent, formValues, initialData, isEditMode]);
+    saveCreateDraft(draft, draftStorageScope);
+  }, [
+    disabled,
+    draftStorageScope,
+    editorContent,
+    formValues,
+    initialData,
+    isEditMode,
+  ]);
 }

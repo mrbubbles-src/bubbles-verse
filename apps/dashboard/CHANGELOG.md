@@ -83,6 +83,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   statement timeouts during `next dev`.
 - Reworked the dashboard home so quick actions are role-aware and the start
   page surfaces profile completeness plus current Vault activity.
+- Isolated Vault edit drafts per entry so reopening one entry no longer leaks
+  another entry's metadata or editor content into the shared markdown-editor
+  session.
+- Updated the Vault category select to keep showing the human label instead of
+  the raw category UUID after selection.
+- Added dev-time Vault entry submit traces so browser payloads and parsed API
+  bodies can be compared quickly while debugging metadata persistence.
+- Allowed `manifest.json` and generated app icons to bypass the dashboard auth
+  proxy so browsers no longer parse redirected HTML as a broken manifest.
 
 ### Documentation
 

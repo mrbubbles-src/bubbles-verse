@@ -4,17 +4,16 @@ import type {
   SerializeOptions,
   SerializeToMdxInput,
 } from '../types/serializer';
-
-import {
-  normalizeAlertMessage,
-  renderListItems,
-  replaceLinksWithMarkdownLinks,
-} from './serializer-utils';
 import {
   escapeMdxBraces,
   sanitizeSerializedMdx,
   tryParseInlineComponent,
 } from '../serializer/security';
+import {
+  normalizeAlertMessage,
+  renderListItems,
+  replaceLinksWithMarkdownLinks,
+} from './serializer-utils';
 
 /**
  * Escape user text first, then swap inline anchors for `MarkdownLink`.
@@ -46,7 +45,7 @@ function serializeMdxStringProp(name: string, value: string): string {
  */
 function serializeMdxNumberProp(
   name: string,
-  value: number | undefined,
+  value: number | undefined
 ): string | null {
   return typeof value === 'number' && Number.isFinite(value)
     ? `${name}={${String(value)}}`
@@ -60,10 +59,7 @@ function serializeMdxNumberProp(
  * @returns Normalized cell text safe for row concatenation.
  */
 function normalizeTableCell(cell: string): string {
-  return cell
-    .trim()
-    .replace(/\r?\n/g, '<br />')
-    .replace(/\|/g, '\\|');
+  return cell.trim().replace(/\r?\n/g, '<br />').replace(/\|/g, '\\|');
 }
 
 /**
@@ -77,10 +73,10 @@ function normalizeTableCell(cell: string): string {
 function wrapWithBlockId(
   blockId: string,
   content: string,
-  headingAnchorId?: string,
+  headingAnchorId?: string
 ): string {
   const anchorIdAttribute = headingAnchorId
-    ? ` id="${headingAnchorId}" className="topic-anchor-target"`
+    ? ` id="${headingAnchorId}" class="topic-anchor-target"`
     : '';
 
   return `<div data-block-id="${blockId}"${anchorIdAttribute}>\n\n${content}\n\n</div>`;
@@ -98,7 +94,7 @@ function wrapWithBlockId(
  */
 export function serializeToMdx(
   editorData: SerializeToMdxInput,
-  options?: SerializeOptions,
+  options?: SerializeOptions
 ): string {
   if (!editorData?.blocks || !Array.isArray(editorData.blocks)) {
     return '';
@@ -204,7 +200,9 @@ ${message}
         const itemsCount = data.items ?? 0;
         const toggleBlocks = blocks.slice(index + 1, index + 1 + itemsCount);
         const inner = toggleBlocks
-          .map((nestedBlock) => serializeToMdx({ blocks: [nestedBlock] }, options))
+          .map((nestedBlock) =>
+            serializeToMdx({ blocks: [nestedBlock] }, options)
+          )
           .join('\n\n');
 
         content = `<MarkdownToggle ${serializeMdxStringProp('text', text)}>
@@ -223,7 +221,8 @@ ${inner}
         };
         const tableData = {
           content: data.content,
-          withHeadings: data.withHeadings === undefined ? true : data.withHeadings,
+          withHeadings:
+            data.withHeadings === undefined ? true : data.withHeadings,
         };
         const columnWidths: number[] = [];
 
@@ -232,23 +231,29 @@ ${inner}
             const normalizedCell = normalizeTableCell(cell);
             columnWidths[cellIndex] = Math.max(
               columnWidths[cellIndex] || 0,
-              normalizedCell.length,
+              normalizedCell.length
             );
           });
         });
 
-        const rows = tableData.content.map((row: string[]) =>
-          `| ${row
-            .map((cell: string, cellIndex: number) =>
-              normalizeTableCell(cell).padEnd(columnWidths[cellIndex] ?? 0, ' '),
-            )
-            .join(' | ')} |`,
+        const rows = tableData.content.map(
+          (row: string[]) =>
+            `| ${row
+              .map((cell: string, cellIndex: number) =>
+                normalizeTableCell(cell).padEnd(
+                  columnWidths[cellIndex] ?? 0,
+                  ' '
+                )
+              )
+              .join(' | ')} |`
         );
 
         if (tableData.withHeadings && rows.length > 1) {
           const headerRow = rows[0] ?? '';
           const divider =
-            '| ' + columnWidths.map((width) => '-'.repeat(width)).join(' | ') + ' |';
+            '| ' +
+            columnWidths.map((width) => '-'.repeat(width)).join(' | ') +
+            ' |';
 
           content = [
             processTextForMdx(headerRow),
@@ -286,7 +291,10 @@ ${inner}
         const imageProps = [
           serializeMdxStringProp('url', file.url || ''),
           serializeMdxStringProp('caption', data.caption || ''),
-          serializeMdxStringProp('original_filename', file.original_filename || ''),
+          serializeMdxStringProp(
+            'original_filename',
+            file.original_filename || ''
+          ),
           serializeMdxStringProp('public_id', file.public_id || ''),
           serializeMdxNumberProp('width', file.width),
           serializeMdxNumberProp('height', file.height),

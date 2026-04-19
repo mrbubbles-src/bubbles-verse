@@ -69,4 +69,13 @@ describe('proxy', () => {
 
     expect(response.status).toBe(200);
   });
+
+  it('allows manifest requests without a session cookie', async () => {
+    const request = new NextRequest(
+      'http://dashboard.mrbubbles.test:3004/manifest.json'
+    );
+    const response = await proxy(request);
+
+    expect(response.status).toBe(200);
+  });
 });

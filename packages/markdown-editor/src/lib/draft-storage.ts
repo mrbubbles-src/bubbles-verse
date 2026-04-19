@@ -13,6 +13,26 @@ export const EDIT_DRAFT_UPDATED_EVENT = 'edit-draft-updated';
 export const CREATE_DRAFT_UPDATED_EVENT = 'create-draft-updated';
 
 /**
+ * Build the final localStorage key for a package draft scope.
+ *
+ * The shared editor defaults to one key per mode, but apps can provide a
+ * stable scope such as an entry ID so edit drafts do not leak between records.
+ *
+ * @param storageKey - Base key for create or edit mode.
+ * @param scope - Optional app-defined suffix for per-record isolation.
+ * @returns Stable localStorage key for the current editor session.
+ */
+function getScopedDraftStorageKey(storageKey: string, scope?: string): string {
+  const normalizedScope = scope?.trim();
+
+  if (!normalizedScope) {
+    return storageKey;
+  }
+
+  return `${storageKey}:${normalizedScope}`;
+}
+
+/**
  * Internal draft payload persisted by the package.
  *
  * The shape mirrors the reference metadata envelope while storing normalized
@@ -41,14 +61,18 @@ function canUseDraftStorage(): boolean {
 function saveDraft(
   storageKey: string,
   eventName: string,
-  draft: MarkdownEditorDraft
+  draft: MarkdownEditorDraft,
+  scope?: string
 ): void {
   if (!canUseDraftStorage()) {
     return;
   }
 
   try {
-    window.localStorage.setItem(storageKey, JSON.stringify(draft));
+    window.localStorage.setItem(
+      getScopedDraftStorageKey(storageKey, scope),
+      JSON.stringify(draft)
+    );
     window.dispatchEvent(new Event(eventName));
   } catch {
     /* Ignore storage failures so editing stays interactive. */
@@ -61,13 +85,18 @@ function saveDraft(
  * @param storageKey - LocalStorage key for the requested draft mode.
  * @returns Stored draft payload or `null` when unavailable.
  */
-function loadDraft(storageKey: string): MarkdownEditorDraft | null {
+function loadDraft(
+  storageKey: string,
+  scope?: string
+): MarkdownEditorDraft | null {
   if (!canUseDraftStorage()) {
     return null;
   }
 
   try {
-    const rawDraft = window.localStorage.getItem(storageKey);
+    const rawDraft = window.localStorage.getItem(
+      getScopedDraftStorageKey(storageKey, scope)
+    );
 
     if (!rawDraft) {
       return null;
@@ -103,8 +132,11 @@ function clearDraft(storageKey: string, eventName: string): void {
  *
  * @param draft - Draft payload for create mode.
  */
-export function saveCreateDraft(draft: MarkdownEditorDraft): void {
-  saveDraft(CREATE_DRAFT_KEY, CREATE_DRAFT_UPDATED_EVENT, draft);
+export function saveCreateDraft(
+  draft: MarkdownEditorDraft,
+  scope?: string
+): void {
+  saveDraft(CREATE_DRAFT_KEY, CREATE_DRAFT_UPDATED_EVENT, draft, scope);
 }
 
 /**
@@ -112,15 +144,18 @@ export function saveCreateDraft(draft: MarkdownEditorDraft): void {
  *
  * @returns Stored create-mode draft or `null`.
  */
-export function loadCreateDraft(): MarkdownEditorDraft | null {
-  return loadDraft(CREATE_DRAFT_KEY);
+export function loadCreateDraft(scope?: string): MarkdownEditorDraft | null {
+  return loadDraft(CREATE_DRAFT_KEY, scope);
 }
 
 /**
  * Clear the create-mode draft payload.
  */
-export function clearCreateDraft(): void {
-  clearDraft(CREATE_DRAFT_KEY, CREATE_DRAFT_UPDATED_EVENT);
+export function clearCreateDraft(scope?: string): void {
+  clearDraft(
+    getScopedDraftStorageKey(CREATE_DRAFT_KEY, scope),
+    CREATE_DRAFT_UPDATED_EVENT
+  );
 }
 
 /**
@@ -128,8 +163,11 @@ export function clearCreateDraft(): void {
  *
  * @param draft - Draft payload for edit mode.
  */
-export function saveEditDraft(draft: MarkdownEditorDraft): void {
-  saveDraft(EDIT_DRAFT_KEY, EDIT_DRAFT_UPDATED_EVENT, draft);
+export function saveEditDraft(
+  draft: MarkdownEditorDraft,
+  scope?: string
+): void {
+  saveDraft(EDIT_DRAFT_KEY, EDIT_DRAFT_UPDATED_EVENT, draft, scope);
 }
 
 /**
@@ -137,13 +175,16 @@ export function saveEditDraft(draft: MarkdownEditorDraft): void {
  *
  * @returns Stored edit-mode draft or `null`.
  */
-export function loadEditDraft(): MarkdownEditorDraft | null {
-  return loadDraft(EDIT_DRAFT_KEY);
+export function loadEditDraft(scope?: string): MarkdownEditorDraft | null {
+  return loadDraft(EDIT_DRAFT_KEY, scope);
 }
 
 /**
  * Clear the edit-mode draft payload.
  */
-export function clearEditDraft(): void {
-  clearDraft(EDIT_DRAFT_KEY, EDIT_DRAFT_UPDATED_EVENT);
+export function clearEditDraft(scope?: string): void {
+  clearDraft(
+    getScopedDraftStorageKey(EDIT_DRAFT_KEY, scope),
+    EDIT_DRAFT_UPDATED_EVENT
+  );
 }

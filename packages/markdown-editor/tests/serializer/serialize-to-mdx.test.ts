@@ -54,17 +54,19 @@ describe('serializeToMdx', () => {
 
     expect(result).toContain('<div data-block-id="header-anchor-1"');
     expect(result).toContain('id="intro-header-1"');
-    expect(result).toContain('className="topic-anchor-target"');
+    expect(result).toContain('class="topic-anchor-target"');
     expect(result).toContain('## Intro');
   });
 
   it('keeps header wrapper compatibility when no anchor map is provided', () => {
     const result = serializeToMdx({
-      blocks: [createHeaderBlock({ id: 'header-anchor-2', text: 'Quickstart' })],
+      blocks: [
+        createHeaderBlock({ id: 'header-anchor-2', text: 'Quickstart' }),
+      ],
     });
 
     expect(result).toContain('<div data-block-id="header-anchor-2">');
-    expect(result).not.toContain('className="topic-anchor-target"');
+    expect(result).not.toContain('class="topic-anchor-target"');
   });
 
   it('serializes ordered lists with nested children', () => {
@@ -193,7 +195,7 @@ describe('serializeToMdx', () => {
     );
 
     expect(result).toContain('id="nested-anchor-heading"');
-    expect(result).toContain('className="topic-anchor-target"');
+    expect(result).toContain('class="topic-anchor-target"');
     expect(result).toContain('### Nested anchor heading');
   });
 
@@ -266,7 +268,9 @@ describe('serializeToMdx', () => {
     });
 
     expect(result).toContain('caption={"Says \\"hello\\""}');
-    expect(result).toContain('embed={"https://example.com/embed?note=\\"quoted\\""}');
+    expect(result).toContain(
+      'embed={"https://example.com/embed?note=\\"quoted\\""}'
+    );
     expect(result).toContain('caption={"Caption with \\"quotes\\""}');
     expect(result).toContain('original_filename={"quote \\"image\\".png"}');
   });
