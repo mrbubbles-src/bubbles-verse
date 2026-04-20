@@ -49,7 +49,7 @@ export function Footer({
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className={cn('border-t border-border/40', className)}>
+    <footer className={cn(className)}>
       <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-3 px-4 py-6 text-center text-sm text-muted-foreground/70">
         {image && (
           <Image

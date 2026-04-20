@@ -30,6 +30,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   body text.
 - Sidebar actions can now cancel their follow-up navigation, which lets apps
   gate destructive sidebar actions behind a confirmation step.
+- Destructive dropdown items no longer get their descendant text reset to the
+  neutral accent color, so nested actions like the sidebar logout link render
+  with the expected destructive treatment again.
+- Normal dropdown hover and focus states now keep `foreground` text so nested
+  labels stay readable against the shared translucent hover background.
 
 ## [1.1.0] - 2026-04-17
 

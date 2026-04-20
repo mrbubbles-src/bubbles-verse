@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- Render the `MarkdownCodeBlock` copy action as a direct button trigger instead
+  of an outer wrapper span, avoiding intermittent browser `removeChild` errors
+  in client-rendered edit previews with many code blocks.
+
 ## [1.0.0] - 2026-04-17
 
 - Initial package scaffold.

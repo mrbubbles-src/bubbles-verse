@@ -38,9 +38,7 @@ export function VaultEntryFilters({
   filters,
 }: VaultEntryFiltersProps) {
   return (
-    <form
-      action="/vault/entries"
-      className="border-y border-border/60 py-4 sm:py-5">
+    <form action="/vault/entries" className="py-4 sm:py-5">
       <input type="hidden" name="page" value="1" />
       <input type="hidden" name="pageSize" value={String(filters.pageSize)} />
 

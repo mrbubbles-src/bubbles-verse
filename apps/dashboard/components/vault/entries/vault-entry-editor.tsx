@@ -161,7 +161,7 @@ export function VaultEntryEditor({
 
   return (
     <div className="flex flex-col gap-8">
-      <header className="flex flex-col gap-5 border-b border-border/50 pb-6 lg:flex-row lg:items-start lg:justify-between">
+      <header className="flex flex-col gap-5 pb-6 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 space-y-4">
           <div className="space-y-2">
             <p className="text-xs font-semibold tracking-[0.24em] text-muted-foreground uppercase">
@@ -196,7 +196,7 @@ export function VaultEntryEditor({
                 onValueChange={(value) => setSelectedCategoryId(value ?? '')}>
                 <SelectTrigger
                   id="vault-entry-category"
-                  className="h-9 w-auto min-w-56 rounded-full border-border/60 bg-transparent px-3 text-sm shadow-none">
+                  className="h-9 w-auto min-w-56 rounded-full bg-transparent px-3 text-sm shadow-none">
                   <SelectValue placeholder="Kategorie wählen">
                     {getSelectedCategoryLabel()}
                   </SelectValue>

@@ -64,9 +64,6 @@ export function BubblesSidebarUserMenu({ user }: BubblesSidebarUserMenuProps) {
             </Avatar>
             <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
               <span className="truncate font-medium">{user.name}</span>
-              <span className="truncate text-sm text-sidebar-foreground/70">
-                {user.email}
-              </span>
             </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -85,9 +82,6 @@ export function BubblesSidebarUserMenu({ user }: BubblesSidebarUserMenuProps) {
                   </Avatar>
                   <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">{user.name}</span>
-                    <span className="truncate text-sm text-muted-foreground">
-                      {user.email}
-                    </span>
                   </div>
                 </div>
               </DropdownMenuLabel>
@@ -97,7 +91,7 @@ export function BubblesSidebarUserMenu({ user }: BubblesSidebarUserMenuProps) {
               <DropdownMenuItem className="p-0">
                 <Link
                   href={user.dashboardHref}
-                  className="flex w-full items-center gap-2 px-2 py-1">
+                  className="flex w-full items-center gap-2 px-2 py-1 text-inherit">
                   <HugeiconsIcon icon={Home01Icon} strokeWidth={2} />
                   <span>Dashboard</span>
                 </Link>
@@ -105,7 +99,7 @@ export function BubblesSidebarUserMenu({ user }: BubblesSidebarUserMenuProps) {
               <DropdownMenuItem className="p-0">
                 <Link
                   href={user.settingsHref}
-                  className="flex w-full items-center gap-2 px-2 py-1">
+                  className="flex w-full items-center gap-2 px-2 py-1 text-inherit">
                   <HugeiconsIcon icon={User02Icon} strokeWidth={2} />
                   <span>Autorenprofil bearbeiten</span>
                 </Link>
@@ -116,7 +110,7 @@ export function BubblesSidebarUserMenu({ user }: BubblesSidebarUserMenuProps) {
               <DropdownMenuItem variant="destructive" className="p-0">
                 <Link
                   href={user.logoutHref}
-                  className="flex w-full items-center gap-2 px-2 py-1">
+                  className="flex w-full items-center gap-2 px-2 py-1 text-inherit">
                   <HugeiconsIcon icon={DoorOpenIcon} strokeWidth={2} />
                   <span>Logout</span>
                 </Link>

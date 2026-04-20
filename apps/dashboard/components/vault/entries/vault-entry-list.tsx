@@ -145,9 +145,7 @@ export function VaultEntryList({
 
   if (entries.length === 0) {
     return (
-      <div className="border-b border-dashed border-border/60 py-12 text-base text-muted-foreground">
-        {emptyState}
-      </div>
+      <div className="py-12 text-base text-muted-foreground">{emptyState}</div>
     );
   }
 
@@ -155,14 +153,14 @@ export function VaultEntryList({
     <TooltipProvider>
       <div className="flex flex-col gap-5">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[52rem] border-collapse text-left text-base">
+          <table className="w-full min-w-208 border-collapse text-left text-base">
             <thead>
-              <tr className="border-y border-border/60 text-sm font-medium tracking-[0.16em] text-muted-foreground uppercase">
+              <tr className="border-b border-border/60 text-sm font-medium tracking-[0.16em] text-muted-foreground uppercase">
                 <th className="py-4 pr-4">Titel</th>
                 <th className="w-[18%] py-4 pr-4">Kategorie</th>
                 <th className="w-[12%] py-4 pr-4">Status</th>
                 <th className="w-[16%] py-4 pr-4">Zuletzt bearbeitet</th>
-                <th className="w-[10rem] py-4 text-right">Aktionen</th>
+                <th className="w-40 py-4 text-right">Aktionen</th>
               </tr>
             </thead>
             <tbody>

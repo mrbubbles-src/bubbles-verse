@@ -89,7 +89,7 @@ export function CategoryManager({
         />
       </div>
 
-      <div className="border-y border-border/60 py-4 sm:py-5">
+      <div className="py-4 sm:py-5">
         <FieldGroup className="grid gap-3 md:grid-cols-[minmax(0,1.2fr)_minmax(12rem,0.7fr)] md:items-end">
           <Field>
             <FieldLabel htmlFor="vault-category-query">Suche</FieldLabel>

@@ -2,15 +2,14 @@
 
 import { useState } from 'react';
 
-import { CheckIcon, CopyIcon } from 'lucide-react';
-
+import { cn } from '@bubbles/ui/lib/utils';
 import { Button } from '@bubbles/ui/shadcn/button';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@bubbles/ui/shadcn/tooltip';
-import { cn } from '@bubbles/ui/lib/utils';
+import { CheckIcon, CopyIcon } from 'lucide-react';
 
 type CopyCodeProps = {
   code: string;
@@ -57,39 +56,41 @@ export function CopyCode({ code, className }: CopyCodeProps) {
     <Tooltip>
       <TooltipTrigger
         render={
-          <span className={cn('inline-flex', className)}>
-            <Button
-              variant="outline"
-              size="icon"
-              className="text-foreground hover:text-secondary touch-hitbox relative disabled:opacity-80"
-              onClick={handleCopy}
-              disabled={copied}
-              aria-live="polite"
-              aria-label="Kopiere Code">
-              <span className="absolute inset-0 flex items-center justify-center opacity-100 transition-opacity duration-200 ease-in-out">
-                <CopyIcon
-                  className={cn(
-                    'transition-transform duration-200 ease-in-out',
-                    copied ? 'scale-0 opacity-0' : 'scale-100 opacity-100',
-                  )}
-                />
-                <span className="sr-only">Copy Code</span>
-              </span>
-              <span
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className={cn(
+              'touch-hitbox relative text-foreground hover:text-secondary disabled:opacity-80',
+              className
+            )}
+            onClick={handleCopy}
+            disabled={copied}
+            aria-live="polite"
+            aria-label="Kopiere Code">
+            <span className="absolute inset-0 flex items-center justify-center opacity-100 transition-opacity duration-200 ease-in-out">
+              <CopyIcon
                 className={cn(
-                  'absolute inset-0 flex items-center justify-center transition-opacity duration-200 ease-in-out',
-                  copied ? 'opacity-100' : 'opacity-0',
-                )}>
-                <CheckIcon
-                  className={cn(
-                    'stroke-green-600 transition-transform duration-200 ease-in-out dark:stroke-green-400',
-                    copied ? 'scale-100 opacity-100' : 'scale-0 opacity-0',
-                  )}
-                />
-                <span className="sr-only">Code copied</span>
-              </span>
-            </Button>
-          </span>
+                  'transition-transform duration-200 ease-in-out',
+                  copied ? 'scale-0 opacity-0' : 'scale-100 opacity-100'
+                )}
+              />
+              <span className="sr-only">Copy Code</span>
+            </span>
+            <span
+              className={cn(
+                'absolute inset-0 flex items-center justify-center transition-opacity duration-200 ease-in-out',
+                copied ? 'opacity-100' : 'opacity-0'
+              )}>
+              <CheckIcon
+                className={cn(
+                  'stroke-green-600 transition-transform duration-200 ease-in-out dark:stroke-green-400',
+                  copied ? 'scale-100 opacity-100' : 'scale-0 opacity-0'
+                )}
+              />
+              <span className="sr-only">Code copied</span>
+            </span>
+          </Button>
         }
       />
       <TooltipContent side="left">

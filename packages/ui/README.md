@@ -126,6 +126,14 @@ Shared shell entrypoints:
 - optional authenticated footer menu
 - icon-collapse mode without top-level text bleed
 
+Destructive dropdown items now keep their own destructive text treatment even
+when they render nested links or other child content, so footer actions like
+sidebar logout remain visibly dangerous.
+
+Normal dropdown hover and focus states now keep `foreground` text instead of
+switching to `accent-foreground`, which avoids low-contrast menu labels on the
+shared translucent hover background.
+
 App-specific top bars now belong in `BubblesAppHeader`, which apps inject into
 the layout through the `header` prop. That keeps package-level sidebar
 behavior opinionated while route metadata, timers, help affordances, theme

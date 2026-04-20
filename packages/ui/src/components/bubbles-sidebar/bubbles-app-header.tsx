@@ -27,7 +27,7 @@ export function BubblesAppHeader({
   return (
     <header
       className={cn(
-        'sticky top-0 z-30 shrink-0 border-b border-border/40 bg-background/90 backdrop-blur-sm supports-[backdrop-filter]:bg-background/75',
+        'sticky top-0 z-30 shrink-0 bg-background/90 backdrop-blur-sm supports-[backdrop-filter]:bg-background/75',
         classNames?.root
       )}>
       <div

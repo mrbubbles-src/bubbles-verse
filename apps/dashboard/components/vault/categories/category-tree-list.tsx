@@ -49,14 +49,12 @@ export function CategoryTreeList({
 }: CategoryTreeListProps) {
   if (categories.length === 0) {
     return (
-      <div className="border-b border-dashed border-border/60 py-12 text-base text-muted-foreground">
-        {emptyState}
-      </div>
+      <div className="py-12 text-base text-muted-foreground">{emptyState}</div>
     );
   }
 
   return (
-    <div className="border-t border-border/60">
+    <div>
       {categories.map((category) => (
         <CategoryTreeListItem
           key={category.id}
@@ -94,7 +92,7 @@ function CategoryTreeListItem({
   return (
     <>
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <div className="border-b border-border/50">
+        <div>
           <div
             className="flex items-start gap-3 py-5"
             style={{ paddingLeft: `${category.depth * 1.25}rem` }}>

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { Badge } from '@bubbles/ui/components/shadcn/badge';
 import { Separator } from '@bubbles/ui/shadcn/separator';
 
 type QuickAction = {
@@ -40,9 +41,11 @@ export function QuickActions({ actions }: QuickActionsProps) {
                   {action.description}
                 </span>
               </span>
-              <span className="rounded-full border border-border/60 px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors group-hover:border-foreground/20 group-hover:text-foreground">
+              <Badge
+                className="rounded-full px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors group-hover:border-foreground/20 group-hover:text-foreground"
+                variant="outline">
                 Öffnen
-              </span>
+              </Badge>
             </Link>
           </div>
         ))}
