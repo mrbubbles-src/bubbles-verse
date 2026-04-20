@@ -18,7 +18,7 @@ type DashboardErrorPageProps = {
   error: Error & {
     digest?: string;
   };
-  unstable_retry: () => void;
+  unstable_retry(): void;
 };
 
 /**

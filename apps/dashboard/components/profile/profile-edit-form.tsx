@@ -1,5 +1,3 @@
-'use client';
-
 import type { DashboardProfilePageModel } from '@/lib/profile/profile';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@bubbles/ui/shadcn/avatar';
