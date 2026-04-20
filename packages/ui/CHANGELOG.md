@@ -10,6 +10,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Shared `FormDialog` and `StagedConfirmDialog` components for reusable
   create/edit and staged destructive modal flows across apps.
+- Added the shadcn CLI `table` primitive plus a shared `ManagementTable`
+  wrapper for editorial admin-style list screens.
 - Shared `Pagination` component plus `getPaginationItems()` helper for classic
   paged lists with compact chips and optional page-size selection.
 
@@ -17,6 +19,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - `@bubbles/ui` README now documents the shared dialog shells and pagination
   entrypoint alongside the existing shell components.
+- `@bubbles/ui` README now also documents the shared `ManagementTable`
+  entrypoint and its relationship to the shadcn-installed base table
+  primitive.
+- `ManagementTable` now overrides the shadcn table primitive's default
+  `whitespace-nowrap` behavior so editorial content can wrap normally and only
+  opt specific columns back into no-wrap where it is actually needed.
 - Raised the shared desktop typography baseline for primary controls, menus,
   dialogs, cards, and sidebar navigation from extra-small defaults to a more
   readable `text-sm`/`text-base` scale.

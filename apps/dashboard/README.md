@@ -184,6 +184,9 @@ hooks.
 
 - `/vault` gives owners and editors one compact overview with entry counts, category counts, recent edits, and direct links into the main Vault workflows.
 - `/vault/entries` is available for `owner` and `editor` roles and now supports URL-based filters for title search, status, and category.
+- The `/account` and `/vault/entries` management lists now build on the shared
+  `@bubbles/ui/components/management-table` shell, which itself wraps the
+  shadcn CLI-installed `table` primitive from `@bubbles/ui/shadcn/table`.
 - The list footer now uses the shared `@bubbles/ui/components/pagination`
   shell, including the shared page-size selector and compact chip logic.
 - Row actions in the entry and category tables now use larger icon buttons so

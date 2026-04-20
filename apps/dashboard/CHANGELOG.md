@@ -108,6 +108,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   proxy so browsers no longer parse redirected HTML as a broken manifest.
 - Replaced repeated dashboard modal wiring with shared `@bubbles/ui`
   `FormDialog` and `StagedConfirmDialog` shells.
+- Replaced raw HTML table markup in the main dashboard management screens with
+  the shared `@bubbles/ui/components/management-table` shell built on the
+  shadcn CLI-installed table primitive.
 - Replaced the custom Vault entry list footer with the shared
   `@bubbles/ui/components/pagination` component.
 - Opened the dashboard shell width on desktop and aligned it with the larger
@@ -130,6 +133,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   again so expand, edit, preview, and delete controls are much easier to hit.
 - Replaced the sidebar draft discard browser alert with the shared staged
   destructive confirmation dialog pattern.
+- Removed a few low-signal dashboard wrappers and redundant layout classes in
+  the shell, category tree, and profile edit form while keeping broader
+  structural refactors out of scope.
+- Removed the unnecessary horizontal overflow in the Vault entry list on large
+  screens by dropping the forced table min-width and only keeping no-wrap on
+  the action and timestamp columns.
+- The Vault entry list now suppresses the shared table wrapper's horizontal
+  overflow rail on desktop locally, instead of trying to solve that macOS
+  scrollbar behavior through broader shared table changes.
 
 ### Documentation
 

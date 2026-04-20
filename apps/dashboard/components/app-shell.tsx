@@ -159,10 +159,7 @@ export default function AppShell({
           mobileTopActions={<ThemeToggle />}
           actions={
             <div className="hidden items-center gap-4 md:flex">
-              <Separator
-                orientation="vertical"
-                className="hidden md:block data-vertical:h-8"
-              />
+              <Separator orientation="vertical" className="data-vertical:h-8" />
               <ThemeToggle />
             </div>
           }

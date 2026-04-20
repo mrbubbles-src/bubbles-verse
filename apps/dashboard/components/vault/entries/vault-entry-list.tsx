@@ -11,6 +11,15 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
+import {
+  ManagementTable,
+  ManagementTableBody,
+  ManagementTableCell,
+  ManagementTableHead,
+  ManagementTableHeader,
+  ManagementTableHeaderRow,
+  ManagementTableRow,
+} from '@bubbles/ui/components/management-table';
 import { Pagination } from '@bubbles/ui/components/pagination';
 import { StagedConfirmDialog } from '@bubbles/ui/components/staged-confirm-dialog';
 import {
@@ -152,23 +161,31 @@ export function VaultEntryList({
   return (
     <TooltipProvider>
       <div className="flex flex-col gap-5">
-        <div>
-          <table className="w-full min-w-208 border-collapse text-left text-base">
-            <thead>
-              <tr className="border-b border-border/60 text-sm font-medium tracking-[0.16em] text-muted-foreground uppercase">
-                <th className="py-4 pr-4">Titel</th>
-                <th className="w-[18%] py-4 pr-4">Kategorie</th>
-                <th className="w-[12%] py-4 pr-4">Status</th>
-                <th className="w-[16%] py-4 pr-4">Zuletzt bearbeitet</th>
-                <th className="w-40 py-4 text-right">Aktionen</th>
-              </tr>
-            </thead>
-            <tbody>
+        <div className="md:[&>[data-slot=table-container]]:overflow-x-hidden">
+          <ManagementTable className="border-collapse">
+            <ManagementTableHeader>
+              <ManagementTableHeaderRow>
+                <ManagementTableHead className="px-0 py-4 pr-4">
+                  Titel
+                </ManagementTableHead>
+                <ManagementTableHead className="w-[18%] px-0 py-4 pr-4">
+                  Kategorie
+                </ManagementTableHead>
+                <ManagementTableHead className="w-[12%] px-0 py-4 pr-4">
+                  Status
+                </ManagementTableHead>
+                <ManagementTableHead className="w-[16%] px-0 py-4 pr-4">
+                  Zuletzt bearbeitet
+                </ManagementTableHead>
+                <ManagementTableHead className="w-40 px-0 py-4 text-right whitespace-nowrap">
+                  Aktionen
+                </ManagementTableHead>
+              </ManagementTableHeaderRow>
+            </ManagementTableHeader>
+            <ManagementTableBody>
               {entries.map((entry) => (
-                <tr
-                  key={entry.id}
-                  className="border-b border-border/50 align-top">
-                  <td className="py-5 pr-4">
+                <ManagementTableRow key={entry.id}>
+                  <ManagementTableCell className="px-0 py-5 pr-4">
                     <div className="min-w-0">
                       <Link
                         href={`/vault/entries/${entry.id}`}
@@ -194,11 +211,11 @@ export function VaultEntryList({
                         </p>
                       )}
                     </div>
-                  </td>
-                  <td className="py-5 pr-4 text-base text-muted-foreground">
+                  </ManagementTableCell>
+                  <ManagementTableCell className="px-0 py-5 pr-4 text-muted-foreground">
                     {entry.categoryLabel}
-                  </td>
-                  <td className="py-5 pr-4">
+                  </ManagementTableCell>
+                  <ManagementTableCell className="px-0 py-5 pr-4">
                     <Badge
                       variant={
                         entry.status === 'published' ? 'default' : 'secondary'
@@ -207,11 +224,11 @@ export function VaultEntryList({
                         ? 'Veröffentlicht'
                         : 'Entwurf'}
                     </Badge>
-                  </td>
-                  <td className="py-5 pr-4 text-base text-muted-foreground">
+                  </ManagementTableCell>
+                  <ManagementTableCell className="px-0 py-5 pr-4 whitespace-nowrap text-muted-foreground">
                     {entry.updatedAtLabel}
-                  </td>
-                  <td className="py-5">
+                  </ManagementTableCell>
+                  <ManagementTableCell className="px-0 py-5 whitespace-nowrap">
                     <div className="flex items-center justify-end gap-1">
                       <Tooltip>
                         <TooltipTrigger
@@ -349,11 +366,11 @@ export function VaultEntryList({
                         <TooltipContent>Löschen</TooltipContent>
                       </Tooltip>
                     </div>
-                  </td>
-                </tr>
+                  </ManagementTableCell>
+                </ManagementTableRow>
               ))}
-            </tbody>
-          </table>
+            </ManagementTableBody>
+          </ManagementTable>
         </div>
 
         {pagination.showPagination ? (

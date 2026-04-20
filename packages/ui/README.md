@@ -103,6 +103,7 @@ Shared shell entrypoints:
 - `@bubbles/ui/components/bubbles-breadcrumbs`
 - `@bubbles/ui/components/form-dialog`
 - `@bubbles/ui/components/staged-confirm-dialog`
+- `@bubbles/ui/components/management-table`
 - `@bubbles/ui/components/pagination`
 - `@bubbles/ui/lib/bubbles-sidebar`
 
@@ -117,6 +118,13 @@ Shared shell entrypoints:
 - condensed page chips with ellipsis
 - optional page-size selector
 - support for either `href` builders, callbacks, or both
+
+`ManagementTable` ships a shared editorial table shell built on top of the
+shadcn CLI-installed `table` primitive:
+
+- responsive overflow wrapper from the shared shadcn base
+- consistent header-label styling for management screens
+- shared row and cell spacing so app tables stop repeating raw `<table>` setup
 
 Sidebar trailing actions can optionally define a shared confirmation dialog via
 `action.confirm`, including staged two-step confirms, so apps do not need to
