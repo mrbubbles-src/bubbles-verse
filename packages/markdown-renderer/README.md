@@ -54,8 +54,9 @@ references, but only renders external anchors for safe schemes such as
 `https:`, `mailto:`, and `tel:`. `MarkdownCodeBlock` renders through Shiki with
 `catppuccin-latte` in light mode and `catppuccin-mocha` in dark mode so the
 syntax palette matches the rest of the repo. Its copy action now uses the
-button itself as the tooltip trigger, avoiding an extra wrapper span in
-client-side preview trees.
+button itself as the tooltip trigger, and the highlighted preview keeps the
+Shiki HTML as one subtree instead of rebuilding it line by line, avoiding
+fragile DOM cleanup in client-side editor previews.
 
 `MdxRenderer` is a client component. It therefore compiles with the
 client-safe `previewComponents` registry by default, so saved MDX strings can

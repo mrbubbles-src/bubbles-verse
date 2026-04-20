@@ -118,6 +118,10 @@ Shared shell entrypoints:
 - optional page-size selector
 - support for either `href` builders, callbacks, or both
 
+Sidebar trailing actions can optionally define a shared confirmation dialog via
+`action.confirm`, including staged two-step confirms, so apps do not need to
+fall back to `window.confirm` for destructive draft-discard flows.
+
 `BubblesSidebarLayout` now stays focused on the shell itself:
 
 - sidebar provider + inset layout

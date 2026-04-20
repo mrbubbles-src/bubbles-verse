@@ -37,6 +37,9 @@ a clean base.
 - `/vault/preview/new` and `/vault/preview/[id]` now open the current draft or
   saved entry as a fullscreen preview in a separate tab without being treated
   like another editor route in the sidebar.
+- The protected dashboard route group now ships matching loading, error, and
+  not-found surfaces so route transitions and missing pages stay on-brand
+  instead of falling back to generic Next.js states.
 - Shared fonts, globals, theme provider, and toast host are wired in.
 - Redirect-based success/error toasts for `/account`, `/profile`,
   `/vault/categories`, and `/vault/entries` now run through one shared
@@ -187,6 +190,9 @@ hooks.
   fast editorial actions are easier to hit and scan.
 - `/vault/entries/new` uses `@bubbles/markdown-editor` for shared authoring, metadata, draft handling, preview, and image uploads.
 - `/vault/entries/[id]` reuses the same editor in edit mode, including current category, tags, metadata, and saved editor content.
+- The dashboard route group now owns its own loading, error, and not-found
+  surfaces, while the app root also provides a small global 404 page for
+  unmatched URLs outside the authenticated shell.
 - The editor routes keep the shared package editor but now use a much flatter
   dashboard header with inline category selection plus a dedicated `Vorschau`
   action that opens the independent `/vault/preview/...` fullscreen preview
@@ -195,7 +201,8 @@ hooks.
   separate `Entwürfe` collapsible below `Einträge` instead of overloading the
   main `Einträge` item itself.
 - Temporary sidebar draft items can still be dismissed through the trailing
-  action, but now require a confirmation before local draft state is removed.
+  action, but now require the shared two-step destructive confirmation dialog
+  before local draft state is removed.
 - The sidebar only surfaces one temporary create draft plus one temporary edit
   draft at a time, keeping `Einträge` compact even if stale local draft keys
   still exist in the browser.

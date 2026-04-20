@@ -46,6 +46,30 @@ export type BubblesSidebarItemAction = {
   href?: string;
   navigateOnItemActiveOnly?: boolean;
   showOnHover?: boolean;
+  confirm?: BubblesSidebarItemActionConfirm;
+};
+
+/**
+ * Describes the optional confirmation dialog for one trailing sidebar action.
+ */
+export type BubblesSidebarItemActionConfirm = {
+  title: string;
+  description: ReactNode;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  variant?: 'default' | 'destructive';
+  size?: 'default' | 'sm';
+  secondStep?: BubblesSidebarItemActionConfirmSecondStep;
+};
+
+/**
+ * Describes the optional second confirmation step for one sidebar action.
+ */
+export type BubblesSidebarItemActionConfirmSecondStep = {
+  title: string;
+  description: ReactNode;
+  confirmLabel?: string;
+  cancelLabel?: string;
 };
 
 /**

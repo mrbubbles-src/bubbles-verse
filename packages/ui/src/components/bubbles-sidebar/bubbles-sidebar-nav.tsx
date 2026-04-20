@@ -10,6 +10,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
+import { StagedConfirmDialog } from '@bubbles/ui/components/staged-confirm-dialog';
 import {
   bubblesSidebarHasActiveDescendant,
   isBubblesSidebarItemActive,
@@ -17,6 +18,17 @@ import {
 } from '@bubbles/ui/lib/bubbles-sidebar';
 import { ArrowRight01Icon, HugeiconsIcon } from '@bubbles/ui/lib/hugeicons';
 import { cn } from '@bubbles/ui/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@bubbles/ui/shadcn/alert-dialog';
 import {
   Collapsible,
   CollapsibleContent,
@@ -44,6 +56,118 @@ type BubblesSidebarNavItemProps = {
   depth?: number;
   pathname: string;
 };
+
+type BubblesSidebarItemActionButtonProps = {
+  action: NonNullable<BubblesSidebarItem['action']>;
+  itemHref?: string;
+  pathname: string;
+  showOnHover?: boolean;
+};
+
+/**
+ * Renders one trailing sidebar action, with optional confirmation.
+ *
+ * @param props - Sidebar action metadata plus current route context.
+ * @returns Immediate action button or a dialog-wrapped destructive action.
+ */
+function BubblesSidebarItemActionButton({
+  action,
+  itemHref,
+  pathname,
+  showOnHover,
+}: BubblesSidebarItemActionButtonProps) {
+  const router = useRouter();
+
+  const runAction = (): boolean => {
+    if (action.onSelect?.() === false) {
+      return false;
+    }
+
+    if (!action.href) {
+      return true;
+    }
+
+    if (action.navigateOnItemActiveOnly && pathname !== itemHref) {
+      return false;
+    }
+
+    router.push(action.href);
+    return true;
+  };
+
+  const actionButton = (
+    <SidebarMenuAction
+      type="button"
+      aria-label={action.ariaLabel}
+      showOnHover={showOnHover}
+      onClick={action.confirm ? undefined : () => runAction()}>
+      <HugeiconsIcon icon={action.icon} strokeWidth={2} />
+    </SidebarMenuAction>
+  );
+
+  if (!action.confirm) {
+    return actionButton;
+  }
+
+  if (action.confirm.secondStep) {
+    return (
+      <StagedConfirmDialog
+        trigger={actionButton}
+        firstStep={{
+          alertSize: action.confirm.size ?? 'sm',
+          title: action.confirm.title,
+          description: action.confirm.description,
+          cancelLabel: action.confirm.cancelLabel ?? 'Abbrechen',
+          confirmLabel: action.confirm.confirmLabel ?? 'Bestätigen',
+          confirmVariant: action.confirm.variant ?? 'destructive',
+        }}
+        secondStep={{
+          alertSize: action.confirm.size ?? 'sm',
+          title: action.confirm.secondStep.title,
+          description: action.confirm.secondStep.description,
+          children: (
+            <AlertDialogFooter>
+              <AlertDialogCancel>
+                {action.confirm.secondStep.cancelLabel ?? 'Zurück'}
+              </AlertDialogCancel>
+              <AlertDialogAction
+                type="button"
+                variant={action.confirm.variant ?? 'destructive'}
+                onClick={() => runAction()}>
+                {action.confirm.secondStep.confirmLabel ?? 'Ja, bestätigen'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          ),
+        }}
+      />
+    );
+  }
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger render={actionButton} />
+      <AlertDialogContent size={action.confirm.size ?? 'sm'}>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{action.confirm.title}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {action.confirm.description}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>
+            {action.confirm.cancelLabel ?? 'Abbrechen'}
+          </AlertDialogCancel>
+          <AlertDialogAction
+            type="button"
+            variant={action.confirm.variant ?? 'destructive'}
+            onClick={() => runAction()}>
+            {action.confirm.confirmLabel ?? 'Bestätigen'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
 
 function BubblesSidebarLeaf({
   item,
@@ -200,31 +324,9 @@ function BubblesSidebarNavItem({
   depth = 0,
   pathname,
 }: BubblesSidebarNavItemProps) {
-  const router = useRouter();
   const hasChildren = (item.children?.length ?? 0) > 0;
   const isActive = isBubblesSidebarItemActive(pathname, item);
   const action = item.action;
-
-  const handleActionClick = (
-    event: React.MouseEvent<HTMLButtonElement>
-  ): void => {
-    event.preventDefault();
-    event.stopPropagation();
-
-    if (action?.onSelect?.() === false) {
-      return;
-    }
-
-    if (!action?.href) {
-      return;
-    }
-
-    if (action.navigateOnItemActiveOnly && pathname !== item.href) {
-      return;
-    }
-
-    router.push(action.href);
-  };
 
   if (hasChildren) {
     return (
@@ -241,13 +343,12 @@ function BubblesSidebarNavItem({
         )}>
         <BubblesSidebarLeaf item={item} depth={depth} isActive={isActive} />
         {action ? (
-          <SidebarMenuAction
-            type="button"
-            aria-label={action.ariaLabel}
+          <BubblesSidebarItemActionButton
+            action={action}
+            itemHref={item.href}
+            pathname={pathname}
             showOnHover={action.showOnHover}
-            onClick={handleActionClick}>
-            <HugeiconsIcon icon={action.icon} strokeWidth={2} />
-          </SidebarMenuAction>
+          />
         ) : null}
       </SidebarMenuItem>
     );
@@ -261,13 +362,12 @@ function BubblesSidebarNavItem({
       )}>
       <BubblesSidebarLeaf item={item} depth={depth} isActive={isActive} />
       {action ? (
-        <SidebarMenuAction
-          type="button"
-          aria-label={action.ariaLabel}
+        <BubblesSidebarItemActionButton
+          action={action}
+          itemHref={item.href}
+          pathname={pathname}
           showOnHover={action.showOnHover ?? true}
-          onClick={handleActionClick}>
-          <HugeiconsIcon icon={action.icon} strokeWidth={2} />
-        </SidebarMenuAction>
+        />
       ) : null}
     </SidebarMenuSubItem>
   );

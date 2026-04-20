@@ -68,7 +68,7 @@ export function DashboardAccessManagement({
           <DashboardAccessDialog mode="create" />
         </header>
 
-        <div className="overflow-x-auto border-y border-border/50">
+        <div className="overflow-x-auto">
           <table className="min-w-280 border-separate border-spacing-0 text-left text-base">
             <thead>
               <tr className="text-sm font-semibold tracking-[0.18em] text-muted-foreground uppercase">

@@ -71,21 +71,6 @@ export function clearVaultEntryDraft({
 }
 
 /**
- * Asks whether one local Vault draft should really be discarded.
- *
- * @returns `true` when the user confirmed the destructive action.
- */
-export function confirmDiscardVaultEntryDraft(): boolean {
-  if (typeof window === 'undefined') {
-    return true;
-  }
-
-  return window.confirm(
-    'Entwurf wirklich verwerfen? Nicht gespeicherte Änderungen gehen verloren.'
-  );
-}
-
-/**
  * Returns the temporary sidebar label for one open Vault draft session.
  *
  * @param mode Draft mode for the current editor session.

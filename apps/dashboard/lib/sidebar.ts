@@ -8,10 +8,7 @@ import {
   getDashboardRoutePath,
   ROUTE_PAGE_META_BY_PATH,
 } from '@/lib/page-meta';
-import {
-  clearVaultEntryDraft,
-  confirmDiscardVaultEntryDraft,
-} from '@/lib/vault/entry-drafts';
+import { clearVaultEntryDraft } from '@/lib/vault/entry-drafts';
 
 import {
   BookOpen01Icon,
@@ -62,11 +59,23 @@ function getDashboardDraftSidebarItems(
       href: '/vault/entries',
       icon: Cancel01Icon,
       navigateOnItemActiveOnly: true,
+      confirm: {
+        title: 'Entwurf verwerfen?',
+        description:
+          'Nicht gespeicherte Änderungen an diesem lokalen Entwurf gehen verloren.',
+        confirmLabel: 'Weiter',
+        cancelLabel: 'Behalten',
+        variant: 'destructive',
+        size: 'sm',
+        secondStep: {
+          title: 'Wirklich endgültig verwerfen?',
+          description:
+            'Der lokale Entwurf wird sofort entfernt und lässt sich nicht wiederherstellen.',
+          confirmLabel: 'Ja, verwerfen',
+          cancelLabel: 'Zurück',
+        },
+      },
       onSelect: () => {
-        if (!confirmDiscardVaultEntryDraft()) {
-          return false;
-        }
-
         clearVaultEntryDraft({
           id:
             draft.kind === 'edit'

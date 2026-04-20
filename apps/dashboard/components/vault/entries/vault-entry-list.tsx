@@ -152,7 +152,7 @@ export function VaultEntryList({
   return (
     <TooltipProvider>
       <div className="flex flex-col gap-5">
-        <div className="overflow-x-auto">
+        <div>
           <table className="w-full min-w-208 border-collapse text-left text-base">
             <thead>
               <tr className="border-b border-border/60 text-sm font-medium tracking-[0.16em] text-muted-foreground uppercase">

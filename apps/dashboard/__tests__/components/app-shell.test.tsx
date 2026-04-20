@@ -193,6 +193,14 @@ describe('AppShell', () => {
     await user.click(
       await screen.findByRole('button', { name: 'Draft verwerfen' })
     );
+    expect(screen.getByText('Entwurf verwerfen?')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Weiter' }));
+    expect(
+      screen.getByText('Wirklich endgültig verwerfen?')
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Ja, verwerfen' }));
 
     expect(
       window.localStorage.getItem(
@@ -204,7 +212,6 @@ describe('AppShell', () => {
 
   it('keeps the draft when the discard confirmation is cancelled', async () => {
     const user = userEvent.setup();
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
 
     usePathnameMock.mockReturnValue('/vault/entries/new');
     window.localStorage.setItem(
@@ -230,6 +237,14 @@ describe('AppShell', () => {
     await user.click(
       await screen.findByRole('button', { name: 'Draft verwerfen' })
     );
+    expect(screen.getByText('Entwurf verwerfen?')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Weiter' }));
+    expect(
+      screen.getByText('Wirklich endgültig verwerfen?')
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Zurück' }));
 
     expect(
       window.localStorage.getItem(
@@ -237,6 +252,5 @@ describe('AppShell', () => {
       )
     ).toBe('{}');
     expect(pushMock).not.toHaveBeenCalled();
-    expect(window.confirm).toHaveBeenCalled();
   });
 });

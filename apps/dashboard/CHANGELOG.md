@@ -54,6 +54,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   shared data without login.
 - Added a shared dashboard redirect-feedback bridge plus generic helper layer
   so server-first mutation toasts no longer need per-page wrapper components.
+- Added shared dashboard loading, error, and not-found route surfaces so
+  protected routes no longer drop back to generic Next.js fallback UI.
 
 ### Changed
 
@@ -126,6 +128,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   editor state.
 - Increased the row-action icon buttons in the Vault entry and category tables
   again so expand, edit, preview, and delete controls are much easier to hit.
+- Replaced the sidebar draft discard browser alert with the shared staged
+  destructive confirmation dialog pattern.
 
 ### Documentation
 
