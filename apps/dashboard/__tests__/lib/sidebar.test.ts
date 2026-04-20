@@ -18,7 +18,7 @@ describe('dashboard sidebar helpers', () => {
     ]);
   });
 
-  it('injects draft children below the Vault entries item', () => {
+  it('injects one separate draft group below the Vault entries item', () => {
     const sidebarData = getDashboardSidebarData([
       {
         key: 'create',
@@ -37,12 +37,17 @@ describe('dashboard sidebar helpers', () => {
     const entriesItem = vaultSection?.items.find(
       (item) => item.id === 'vault-entries'
     );
+    const draftsItem = vaultSection?.items.find(
+      (item) => item.id === 'vault-entry-drafts'
+    );
 
-    expect(entriesItem?.children?.map((item) => item.title)).toEqual([
+    expect(entriesItem?.children).toBeUndefined();
+    expect(draftsItem?.title).toBe('Entwürfe');
+    expect(draftsItem?.children?.map((item) => item.title)).toEqual([
       'Neuer Eintrag (Draft)',
       'Eintrag bearbeiten (Draft)',
     ]);
-    expect(entriesItem?.children?.every((item) => item.action)).toBe(true);
+    expect(draftsItem?.children?.every((item) => item.action)).toBe(true);
   });
 
   it('builds nested Vault breadcrumbs for entry routes', () => {
@@ -51,6 +56,15 @@ describe('dashboard sidebar helpers', () => {
       { label: 'Coding Vault', href: '/vault' },
       { label: 'Einträge', href: '/vault/entries' },
       { label: 'Neuer Eintrag' },
+    ]);
+  });
+
+  it('builds entry breadcrumbs for standalone preview routes', () => {
+    expect(getDashboardBreadcrumbs('/vault/preview/entry-id')).toEqual([
+      { label: 'Dashboard', href: '/' },
+      { label: 'Coding Vault', href: '/vault' },
+      { label: 'Einträge', href: '/vault/entries' },
+      { label: 'Vorschau' },
     ]);
   });
 });

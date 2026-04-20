@@ -28,6 +28,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Tuned shared `Badge` chips back down one step and switched them to
   `font-semibold` so they stay readable without visually overpowering nearby
   body text.
+- Sidebar actions can now cancel their follow-up navigation, which lets apps
+  gate destructive sidebar actions behind a confirmation step.
 
 ## [1.1.0] - 2026-04-17
 

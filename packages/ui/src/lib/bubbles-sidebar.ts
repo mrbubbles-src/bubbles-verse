@@ -42,7 +42,7 @@ export type BubblesSidebarItem = {
 export type BubblesSidebarItemAction = {
   ariaLabel: string;
   icon: IconSvgElement;
-  onSelect?: () => void;
+  onSelect?: () => boolean | void;
   href?: string;
   navigateOnItemActiveOnly?: boolean;
   showOnHover?: boolean;

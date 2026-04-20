@@ -114,6 +114,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Raised the dashboard screen-local typography, table density, and preview
   width so the larger desktop layout now reads visibly bigger instead of being
   pulled back down by local `text-xs` and `text-sm` overrides.
+- Limited the temporary `Einträge` sidebar draft affordance to one create item
+  plus one edit item, keeping the nav compact while preserving the current
+  active draft route.
+- Moved the fullscreen editor preview onto an independent `/vault/preview/...`
+  route so opening a preview tab no longer looks like another edit route in the
+  sidebar.
+- Changed the sidebar draft affordance so `Einträge` stays a plain link while
+  open draft links live inside a separate `Entwürfe` collapsible.
+- Added a confirmation step before the sidebar draft action discards local
+  editor state.
+- Increased the row-action icon buttons in the Vault entry and category tables
+  again so expand, edit, preview, and delete controls are much easier to hit.
 
 ### Documentation
 

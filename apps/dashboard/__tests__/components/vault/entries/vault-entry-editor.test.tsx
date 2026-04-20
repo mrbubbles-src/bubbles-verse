@@ -109,7 +109,7 @@ describe('VaultEntryEditor', () => {
     expect(screen.getByText('Basics / HTML')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Vorschau' })).toHaveAttribute(
       'href',
-      '/vault/entries/entry-id/preview'
+      '/vault/preview/entry-id'
     );
     expect(screen.queryByText('category-a')).not.toBeInTheDocument();
     expect(

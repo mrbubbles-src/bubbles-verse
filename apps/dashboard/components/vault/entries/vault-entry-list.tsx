@@ -224,7 +224,8 @@ export function VaultEntryList({
                               }
                               nativeButton={false}
                               variant="ghost"
-                              size="icon-sm"
+                              size="icon-lg"
+                              className="size-10 [&_svg:not([class*='size-'])]:size-5"
                               aria-label="Eintrag bearbeiten"
                             />
                           }>
@@ -250,7 +251,8 @@ export function VaultEntryList({
                                 }
                                 nativeButton={false}
                                 variant="ghost"
-                                size="icon-sm"
+                                size="icon-lg"
+                                className="size-10 [&_svg:not([class*='size-'])]:size-5"
                                 aria-label="Vorschau öffnen"
                               />
                             }>
@@ -265,7 +267,8 @@ export function VaultEntryList({
                               <Button
                                 type="button"
                                 variant="ghost"
-                                size="icon-sm"
+                                size="icon-lg"
+                                className="size-10 [&_svg:not([class*='size-'])]:size-5"
                                 aria-label="Vorschau öffnen"
                                 disabled
                               />
@@ -290,7 +293,8 @@ export function VaultEntryList({
                             trigger={
                               <Button
                                 variant="ghost"
-                                size="icon-sm"
+                                size="icon-lg"
+                                className="size-10 [&_svg:not([class*='size-'])]:size-5"
                                 type="button"
                                 aria-label="Eintrag löschen"
                                 title="Löschen"

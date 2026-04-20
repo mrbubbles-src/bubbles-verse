@@ -4,10 +4,10 @@ import { getVaultEntryDraftScope } from '@/lib/vault/entry-drafts';
 import { VaultEntryPreview } from '@/components/vault/entries/vault-entry-preview';
 
 /**
- * Renders the fullscreen preview for a new unsaved Vault draft.
+ * Renders the standalone fullscreen preview for a new unsaved Vault draft.
  *
- * The preview resolves the current draft from browser storage, so no server
- * payload is required beyond the authenticated dashboard shell.
+ * The preview lives outside the `/vault/entries/*` route tree so opening it
+ * does not create another temporary entry item in the sidebar.
  */
 export default async function NewVaultEntryPreviewPage() {
   await requireDashboardManagerSession();

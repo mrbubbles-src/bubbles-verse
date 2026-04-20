@@ -13,10 +13,10 @@ type EditVaultEntryPreviewPageProps = {
 };
 
 /**
- * Renders the fullscreen preview for an existing Vault entry.
+ * Renders the standalone fullscreen preview for one existing Vault entry.
  *
- * Persisted content seeds the page so direct opens still work, while the
- * client preview layer upgrades to the active local draft when one exists.
+ * The route stays independent from `/vault/entries/[id]` so editors can open a
+ * second tab without the sidebar treating preview work like another edit item.
  *
  * @param props Dynamic route params with the content item identifier.
  * @returns Standalone preview page for the current Vault entry.

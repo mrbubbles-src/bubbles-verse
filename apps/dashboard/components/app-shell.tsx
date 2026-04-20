@@ -43,24 +43,27 @@ function getDashboardDraftNavigationItems(
     return [];
   }
 
-  const draftItems = new Map<string, DashboardDraftNavigationItem>();
   const currentDraft = getDashboardCurrentDraftItem(pathname);
-
-  if (currentDraft) {
-    draftItems.set(currentDraft.href, currentDraft);
-  }
+  let createDraftItem: DashboardDraftNavigationItem | null =
+    currentDraft?.kind === 'create' ? currentDraft : null;
+  let editDraftItem: DashboardDraftNavigationItem | null =
+    currentDraft?.kind === 'edit' ? currentDraft : null;
 
   const createDraftKey = `${DASHBOARD_CREATE_DRAFT_STORAGE_KEY}:${DASHBOARD_CREATE_DRAFT_SCOPE}`;
 
-  if (window.localStorage.getItem(createDraftKey)) {
-    draftItems.set('/vault/entries/new', {
+  if (!createDraftItem && window.localStorage.getItem(createDraftKey)) {
+    createDraftItem = {
       key: createDraftKey,
       kind: 'create',
       href: '/vault/entries/new',
-    });
+    };
   }
 
   for (let index = 0; index < window.localStorage.length; index += 1) {
+    if (editDraftItem) {
+      break;
+    }
+
     const storageKey = window.localStorage.key(index);
 
     if (
@@ -82,20 +85,16 @@ function getDashboardDraftNavigationItems(
 
     const href = `/vault/entries/${entryId}` as const;
 
-    draftItems.set(href, {
+    editDraftItem = {
       key: storageKey,
       kind: 'edit',
       href,
-    });
+    };
   }
 
-  return [...draftItems.values()].sort((left, right) => {
-    if (left.kind !== right.kind) {
-      return left.kind === 'create' ? -1 : 1;
-    }
-
-    return left.href.localeCompare(right.href, 'de');
-  });
+  return [createDraftItem, editDraftItem].filter(
+    (draft): draft is DashboardDraftNavigationItem => draft !== null
+  );
 }
 
 /**

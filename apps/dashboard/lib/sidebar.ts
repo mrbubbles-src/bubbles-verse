@@ -8,7 +8,10 @@ import {
   getDashboardRoutePath,
   ROUTE_PAGE_META_BY_PATH,
 } from '@/lib/page-meta';
-import { clearVaultEntryDraft } from '@/lib/vault/entry-drafts';
+import {
+  clearVaultEntryDraft,
+  confirmDiscardVaultEntryDraft,
+} from '@/lib/vault/entry-drafts';
 
 import {
   BookOpen01Icon,
@@ -30,29 +33,15 @@ export type DashboardDraftNavigationItem = {
 /**
  * Returns the sidebar label for one temporary Vault draft entry.
  *
- * Create mode stays singular. Edit drafts stay compact as requested, but gain
- * a numeric suffix once more than one edit draft exists so the nav items do
- * not become indistinguishable.
- *
  * @param draft - Draft navigation item emitted by the shell.
- * @param index - Zero-based position among same-kind drafts.
- * @param total - Total amount of same-kind drafts.
  * @returns Human-readable sidebar label for the temporary draft item.
  */
-function getDashboardDraftLabel(
-  draft: DashboardDraftNavigationItem,
-  index: number,
-  total: number
-): string {
+function getDashboardDraftLabel(draft: DashboardDraftNavigationItem): string {
   if (draft.kind === 'create') {
     return 'Neuer Eintrag (Draft)';
   }
 
-  if (total <= 1) {
-    return 'Eintrag bearbeiten (Draft)';
-  }
-
-  return `Eintrag bearbeiten (Draft ${index + 1})`;
+  return 'Eintrag bearbeiten (Draft)';
 }
 
 /**
@@ -64,44 +53,31 @@ function getDashboardDraftLabel(
 function getDashboardDraftSidebarItems(
   drafts: DashboardDraftNavigationItem[]
 ): BubblesSidebarItem[] {
-  const createDrafts = drafts.filter((draft) => draft.kind === 'create');
-  const editDrafts = drafts.filter((draft) => draft.kind === 'edit');
+  return drafts.map((draft) => ({
+    id: `vault-entry-draft-${draft.key}`,
+    title: getDashboardDraftLabel(draft),
+    href: draft.href,
+    action: {
+      ariaLabel: 'Draft verwerfen',
+      href: '/vault/entries',
+      icon: Cancel01Icon,
+      navigateOnItemActiveOnly: true,
+      onSelect: () => {
+        if (!confirmDiscardVaultEntryDraft()) {
+          return false;
+        }
 
-  return [
-    ...createDrafts.map((draft, index) => ({
-      id: `vault-entry-draft-${draft.key}`,
-      title: getDashboardDraftLabel(draft, index, createDrafts.length),
-      href: draft.href,
-      action: {
-        ariaLabel: 'Draft verwerfen',
-        href: '/vault/entries',
-        icon: Cancel01Icon,
-        navigateOnItemActiveOnly: true,
-        onSelect: () =>
-          clearVaultEntryDraft({
-            mode: 'create',
-          }),
-        showOnHover: true,
+        clearVaultEntryDraft({
+          id:
+            draft.kind === 'edit'
+              ? draft.href.replace('/vault/entries/', '')
+              : undefined,
+          mode: draft.kind,
+        });
       },
-    })),
-    ...editDrafts.map((draft, index) => ({
-      id: `vault-entry-draft-${draft.key}`,
-      title: getDashboardDraftLabel(draft, index, editDrafts.length),
-      href: draft.href,
-      action: {
-        ariaLabel: 'Draft verwerfen',
-        href: '/vault/entries',
-        icon: Cancel01Icon,
-        navigateOnItemActiveOnly: true,
-        onSelect: () =>
-          clearVaultEntryDraft({
-            id: draft.href.replace('/vault/entries/', ''),
-            mode: 'edit',
-          }),
-        showOnHover: true,
-      },
-    })),
-  ];
+      showOnHover: true,
+    },
+  }));
 }
 
 /**
@@ -116,6 +92,8 @@ function getDashboardDraftSidebarItems(
 export function getDashboardSidebarData(
   drafts: DashboardDraftNavigationItem[] = []
 ): BubblesSidebarData {
+  const draftItems = getDashboardDraftSidebarItems(drafts);
+
   return {
     brand: {
       href: '/',
@@ -163,8 +141,16 @@ export function getDashboardSidebarData(
             href: '/vault/entries',
             match: 'prefix',
             icon: Folder01Icon,
-            children: getDashboardDraftSidebarItems(drafts),
           },
+          ...(draftItems.length > 0
+            ? [
+                {
+                  id: 'vault-entry-drafts',
+                  title: 'Entwürfe',
+                  children: draftItems,
+                } satisfies BubblesSidebarItem,
+              ]
+            : []),
           {
             id: 'vault-categories',
             title: 'Kategorien',
@@ -221,6 +207,13 @@ export function getDashboardBreadcrumbs(pathname: string): BubblesBreadcrumb[] {
 
   if (routePath === '/vault/entries') {
     return entryBreadcrumbs;
+  }
+
+  if (
+    routePath === '/vault/preview/new' ||
+    routePath === '/vault/preview/[id]'
+  ) {
+    return [...entryBreadcrumbs, { label: currentPage.title }];
   }
 
   return [...entryBreadcrumbs, { label: currentPage.title }];

@@ -32,8 +32,11 @@ a clean base.
 - `/vault` now acts as the real landing page for the Coding Vault area with editorial stats, recent activity, and direct shortcuts into authoring.
 - `/vault/categories` now ships the first real editorial CRUD screen for the Coding Vault category tree.
 - `/vault/entries` now shows the first real editorial list, `/vault/entries/new` creates entries through `@bubbles/markdown-editor`, and `/vault/entries/[id]` edits existing entries in the same flow.
-- `/vault/entries/new/preview` and `/vault/entries/[id]/preview` now open the
-  current draft or saved entry as a fullscreen preview in a separate tab.
+- The row-level icon actions in the Vault tables now use extra-large desktop
+  touch targets so edit, preview, expand, and delete affordances read clearly.
+- `/vault/preview/new` and `/vault/preview/[id]` now open the current draft or
+  saved entry as a fullscreen preview in a separate tab without being treated
+  like another editor route in the sidebar.
 - Shared fonts, globals, theme provider, and toast host are wired in.
 - Redirect-based success/error toasts for `/account`, `/profile`,
   `/vault/categories`, and `/vault/entries` now run through one shared
@@ -180,13 +183,22 @@ hooks.
 - `/vault/entries` is available for `owner` and `editor` roles and now supports URL-based filters for title search, status, and category.
 - The list footer now uses the shared `@bubbles/ui/components/pagination`
   shell, including the shared page-size selector and compact chip logic.
+- Row actions in the entry and category tables now use larger icon buttons so
+  fast editorial actions are easier to hit and scan.
 - `/vault/entries/new` uses `@bubbles/markdown-editor` for shared authoring, metadata, draft handling, preview, and image uploads.
 - `/vault/entries/[id]` reuses the same editor in edit mode, including current category, tags, metadata, and saved editor content.
 - The editor routes keep the shared package editor but now use a much flatter
   dashboard header with inline category selection plus a dedicated `Vorschau`
-  action that opens a fullscreen preview route in a new tab.
-- Temporary sidebar draft items under `Einträge` can now also be dismissed
-  directly through a small trailing action, which removes the local draft state.
+  action that opens the independent `/vault/preview/...` fullscreen preview
+  route in a new tab.
+- When temporary draft links exist, the sidebar now shows them inside a
+  separate `Entwürfe` collapsible below `Einträge` instead of overloading the
+  main `Einträge` item itself.
+- Temporary sidebar draft items can still be dismissed through the trailing
+  action, but now require a confirmation before local draft state is removed.
+- The sidebar only surfaces one temporary create draft plus one temporary edit
+  draft at a time, keeping `Einträge` compact even if stale local draft keys
+  still exist in the browser.
 - The Vault entry wrapper now scopes edit drafts per entry ID, so switching
   between two edit screens does not restore another entry's stale local draft.
 - New entry saves go through `/api/vault/entries`, which bootstraps the shared `vault` app module and the current author's `profiles` row on first save.

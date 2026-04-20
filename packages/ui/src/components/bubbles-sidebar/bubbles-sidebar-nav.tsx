@@ -211,7 +211,9 @@ function BubblesSidebarNavItem({
     event.preventDefault();
     event.stopPropagation();
 
-    action?.onSelect?.();
+    if (action?.onSelect?.() === false) {
+      return;
+    }
 
     if (!action?.href) {
       return;

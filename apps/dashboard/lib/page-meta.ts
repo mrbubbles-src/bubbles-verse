@@ -6,7 +6,9 @@ export type RoutePath =
   | '/vault/categories'
   | '/vault/entries'
   | '/vault/entries/new'
-  | '/vault/entries/[id]';
+  | '/vault/entries/[id]'
+  | '/vault/preview/new'
+  | '/vault/preview/[id]';
 
 export type DashboardPageInfo = {
   title: string;
@@ -23,6 +25,14 @@ export type DashboardPageInfo = {
  * @returns Matching typed route key used by the shell metadata helpers.
  */
 export function getDashboardRoutePath(pathname: string): RoutePath {
+  if (pathname === '/vault/preview/new') {
+    return '/vault/preview/new';
+  }
+
+  if (pathname.startsWith('/vault/preview/')) {
+    return '/vault/preview/[id]';
+  }
+
   if (pathname === '/vault/entries/new') {
     return '/vault/entries/new';
   }
@@ -73,6 +83,12 @@ export const ROUTE_PAGE_META_BY_PATH: Record<RoutePath, DashboardPageInfo> = {
   },
   '/vault/entries/[id]': {
     title: 'Eintrag bearbeiten',
+  },
+  '/vault/preview/new': {
+    title: 'Vorschau',
+  },
+  '/vault/preview/[id]': {
+    title: 'Vorschau',
   },
 };
 

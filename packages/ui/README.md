@@ -73,10 +73,9 @@ Via Turbo: `bunx turbo run lint typecheck --filter=@bubbles/ui`.
 
 - **Do:** Visual primitives, shared hooks, token tweaks, cross-app form controls.
 - **Don’t:** App routes, server-only data loading, or copy that belongs to a single marketing site — keep those in `apps/<name>`.
-
-`SelectContent` defaults to popper-style content-fit positioning. Pass
-`alignItemWithTrigger={true}` when a consumer needs the popup width/alignment to
-track the trigger exactly.
+  `SelectContent` defaults to popper-style content-fit positioning. Pass
+  `alignItemWithTrigger={true}` when a consumer needs the popup width/alignment to
+  track the trigger exactly.
 
 ## Typography baseline
 
