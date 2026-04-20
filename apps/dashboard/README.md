@@ -187,6 +187,12 @@ hooks.
 - The `/account` and `/vault/entries` management lists now build on the shared
   `@bubbles/ui/components/management-table` shell, which itself wraps the
   shadcn CLI-installed `table` primitive from `@bubbles/ui/shadcn/table`.
+- The entry list keeps horizontal table scrolling as a fallback through tablet
+  widths and only suppresses the scrollbar rail again on larger desktop
+  layouts where the table already fits comfortably.
+- Table and tree actions now prefer the shared tooltip component over browser
+  default `title` tooltips, so icon actions and disabled owner controls stay
+  consistent with the rest of the dashboard.
 - The list footer now uses the shared `@bubbles/ui/components/pagination`
   shell, including the shared page-size selector and compact chip logic.
 - Row actions in the entry and category tables now use larger icon buttons so

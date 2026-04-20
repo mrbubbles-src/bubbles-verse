@@ -161,7 +161,7 @@ export function VaultEntryList({
   return (
     <TooltipProvider>
       <div className="flex flex-col gap-5">
-        <div className="md:[&>[data-slot=table-container]]:overflow-x-hidden">
+        <div className="lg:[&>[data-slot=table-container]]:overflow-x-hidden">
           <ManagementTable className="border-collapse">
             <ManagementTableHeader>
               <ManagementTableHeaderRow>
@@ -312,7 +312,6 @@ export function VaultEntryList({
                                 className="size-10 [&_svg:not([class*='size-'])]:size-5"
                                 type="button"
                                 aria-label="Eintrag löschen"
-                                title="Löschen"
                                 disabled={deletingEntryId === entry.id}>
                                 <HugeiconsIcon
                                   icon={Delete02Icon}

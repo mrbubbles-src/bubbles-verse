@@ -122,6 +122,18 @@ describe('BubblesSidebarLayout', () => {
     expect(screen.getByText('Body content')).toBeInTheDocument();
   });
 
+  it('does not rely on a browser title tooltip for the sidebar rail', () => {
+    render(
+      <BubblesSidebarLayout sidebarData={sidebarData}>
+        <div>Body content</div>
+      </BubblesSidebarLayout>
+    );
+
+    expect(
+      document.querySelector('[data-slot="sidebar-rail"]')
+    ).not.toHaveAttribute('title');
+  });
+
   it('auto-expands recursive groups for an active descendant', () => {
     usePathnameMock.mockReturnValue('/docs/guides/intro');
 
@@ -213,5 +225,8 @@ describe('BubblesSidebarLayout', () => {
     ).toBeInTheDocument();
     expect(document.querySelector('.layout-sidebar-inset')).toBeInTheDocument();
     expect(document.querySelector('.layout-content')).toBeInTheDocument();
+    expect(document.querySelector('.layout-sidebar-inset')).toHaveClass(
+      'min-w-0'
+    );
   });
 });

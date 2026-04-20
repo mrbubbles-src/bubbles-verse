@@ -61,6 +61,12 @@ describe('VaultEntryList', () => {
     );
 
     expect(
+      screen
+        .getByRole('table')
+        .parentElement?.parentElement?.className.includes('overflow-x-hidden')
+    ).toBe(true);
+
+    expect(
       screen.getByRole('columnheader', { name: 'Titel' })
     ).toBeInTheDocument();
     expect(
@@ -75,6 +81,9 @@ describe('VaultEntryList', () => {
     expect(
       screen.getByRole('button', { name: 'Vorschau öffnen' })
     ).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'Eintrag löschen' })
+    ).not.toHaveAttribute('title');
   });
 
   it('shows classic pagination controls when multiple pages are available', () => {

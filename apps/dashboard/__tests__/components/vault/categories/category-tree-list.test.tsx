@@ -53,6 +53,19 @@ describe('CategoryTreeList', () => {
     expect(
       screen.getAllByRole('button', { name: 'Kategorie bearbeiten' })
     ).toHaveLength(2);
+    expect(
+      screen.getAllByRole('button', { name: 'Kategorie bearbeiten' })[0]
+    ).not.toHaveAttribute('title');
+    screen
+      .getAllByRole('button', { name: 'Unterkategorie anlegen' })
+      .forEach((button) => {
+        expect(button).not.toHaveAttribute('title');
+      });
+    screen
+      .getAllByRole('button', { name: 'Kategorie löschen' })
+      .forEach((button) => {
+        expect(button).not.toHaveAttribute('title');
+      });
   });
 
   it('allows collapsing one top-level category group', () => {

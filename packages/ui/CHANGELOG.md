@@ -45,6 +45,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   with the expected destructive treatment again.
 - Normal dropdown hover and focus states now keep `foreground` text so nested
   labels stay readable against the shared translucent hover background.
+- The shared sidebar inset now sets `min-w-0`, which prevents wide dashboard
+  content from forcing the whole inset shell into horizontal page scrolling
+  beside the desktop sidebar.
+- The shared sidebar rail no longer ships a browser-default `title` tooltip,
+  avoiding mixed native-vs-shared tooltip behavior inside apps.
 
 ## [1.1.0] - 2026-04-17
 

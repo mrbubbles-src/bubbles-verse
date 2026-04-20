@@ -25,6 +25,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@bubbles/ui/shadcn/collapsible';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@bubbles/ui/shadcn/tooltip';
 
 import {
   createVaultCategoryAction,
@@ -54,16 +60,18 @@ export function CategoryTreeList({
   }
 
   return (
-    <>
-      {categories.map((category) => (
-        <CategoryTreeListItem
-          key={category.id}
-          category={category}
-          parentOptions={parentOptions}
-          parentName={null}
-        />
-      ))}
-    </>
+    <TooltipProvider>
+      <>
+        {categories.map((category) => (
+          <CategoryTreeListItem
+            key={category.id}
+            category={category}
+            parentOptions={parentOptions}
+            parentName={null}
+          />
+        ))}
+      </>
+    </TooltipProvider>
   );
 }
 
@@ -163,15 +171,21 @@ function CategoryTreeListItem({
                 sortOrder: category.sortOrder,
               }}
               trigger={
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-lg"
-                  className="size-10 [&_svg:not([class*='size-'])]:size-5"
-                  aria-label="Kategorie bearbeiten"
-                  title="Bearbeiten">
-                  <HugeiconsIcon icon={PencilEdit01Icon} strokeWidth={2} />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-lg"
+                        className="size-10 [&_svg:not([class*='size-'])]:size-5"
+                        aria-label="Kategorie bearbeiten"
+                      />
+                    }>
+                    <HugeiconsIcon icon={PencilEdit01Icon} strokeWidth={2} />
+                  </TooltipTrigger>
+                  <TooltipContent>Bearbeiten</TooltipContent>
+                </Tooltip>
               }
             />
 
@@ -187,29 +201,41 @@ function CategoryTreeListItem({
                 name: category.name,
               }}
               trigger={
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-lg"
-                  className="size-10 [&_svg:not([class*='size-'])]:size-5"
-                  aria-label="Unterkategorie anlegen"
-                  title="Unterkategorie anlegen">
-                  <HugeiconsIcon icon={Add01Icon} strokeWidth={2} />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-lg"
+                        className="size-10 [&_svg:not([class*='size-'])]:size-5"
+                        aria-label="Unterkategorie anlegen"
+                      />
+                    }>
+                    <HugeiconsIcon icon={Add01Icon} strokeWidth={2} />
+                  </TooltipTrigger>
+                  <TooltipContent>Unterkategorie anlegen</TooltipContent>
+                </Tooltip>
               }
             />
 
             <StagedConfirmDialog
               trigger={
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-lg"
-                  className="size-10 [&_svg:not([class*='size-'])]:size-5"
-                  aria-label="Kategorie löschen"
-                  title="Löschen">
-                  <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-lg"
+                        className="size-10 [&_svg:not([class*='size-'])]:size-5"
+                        aria-label="Kategorie löschen"
+                      />
+                    }>
+                    <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} />
+                  </TooltipTrigger>
+                  <TooltipContent>Löschen</TooltipContent>
+                </Tooltip>
               }
               firstStep={{
                 title: 'Kategorie löschen?',

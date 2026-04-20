@@ -142,6 +142,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The Vault entry list now suppresses the shared table wrapper's horizontal
   overflow rail on desktop locally, instead of trying to solve that macOS
   scrollbar behavior through broader shared table changes.
+- The local entry-list overflow fallback now stays active through tablet widths
+  and only hides the rail again on larger desktop layouts.
+- Replaced remaining browser-default `title` tooltips in dashboard management
+  actions with the shared tooltip component, especially in category actions and
+  disabled owner-only account controls.
 
 ### Documentation
 

@@ -151,22 +151,38 @@ export function DashboardAccessManagement({
                     <div className="flex justify-end gap-2">
                       {isCurrentOwner ? (
                         <>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            disabled
-                            title="Deinen eigenen Owner-Zugang kannst du hier nicht ändern.">
-                            Bearbeiten
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            disabled
-                            title="Deinen eigenen Owner-Zugang kannst du hier nicht entziehen.">
-                            Zugang entziehen
-                          </Button>
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={<span className="inline-flex" />}>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                disabled>
+                                Bearbeiten
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Deinen eigenen Owner-Zugang kannst du hier nicht
+                              ändern.
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={<span className="inline-flex" />}>
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                disabled>
+                                Zugang entziehen
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Deinen eigenen Owner-Zugang kannst du hier nicht
+                              entziehen.
+                            </TooltipContent>
+                          </Tooltip>
                         </>
                       ) : (
                         <>

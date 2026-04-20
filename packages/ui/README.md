@@ -137,6 +137,10 @@ fall back to `window.confirm` for destructive draft-discard flows.
 - recursive navigation
 - optional authenticated footer menu
 - icon-collapse mode without top-level text bleed
+- `min-w-0` on the inset shell so wide inner content cannot force horizontal
+  page scrolling beside the desktop sidebar
+- no browser-default `title` tooltip on the sidebar rail; shell interactions
+  should rely on the shared tooltip primitives instead
 
 Destructive dropdown items now keep their own destructive text treatment even
 when they render nested links or other child content, so footer actions like
