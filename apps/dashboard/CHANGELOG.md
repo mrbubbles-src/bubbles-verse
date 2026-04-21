@@ -170,6 +170,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Let indented draft links use the full available subnav width and reserve
   space for the dismiss action, which removes the cramped overlapping draft
   chips inside the `Entwürfe` section.
+- Tightened the `Entwürfe` draft nav polish again so nested draft pills no
+  longer clip their right-side corners and the trailing dismiss `X` keeps a
+  neutral transparent surface with clearer text contrast instead of picking up
+  a mauve hover fill.
+- Reworked the nested `Entwürfe` dismiss action to follow the more stable
+  sub-item-scoped hover pattern already used in the Novari topic sidebar, so
+  moving around the item edge no longer bleeds the wrong `X` color into
+  neighboring drafts.
 - The create-draft sidebar link now resumes the existing draft explicitly,
   instead of accidentally triggering the "Neu beginnen" guard that should only
   belong to the normal `Neuer Eintrag` flow.

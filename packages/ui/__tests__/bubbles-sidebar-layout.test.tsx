@@ -156,6 +156,27 @@ describe('BubblesSidebarLayout', () => {
       'href',
       '/docs/guides/intro?draft=resume'
     );
+    expect(document.querySelector('[data-sidebar="menu-sub"]')).not.toHaveClass(
+      'w-full'
+    );
+    expect(screen.getByRole('link', { name: 'Intro' })).toHaveClass(
+      'group-has-data-[sidebar=menu-action]/menu-sub-item:pr-12'
+    );
+    expect(screen.getByRole('link', { name: 'Intro' })).toHaveClass(
+      'peer/menu-sub-button'
+    );
+    expect(screen.getByRole('link', { name: 'Intro' })).toHaveClass(
+      'group-hover/menu-sub-item:bg-sidebar-accent'
+    );
+    expect(screen.getByRole('link', { name: 'Intro' })).toHaveClass(
+      'duration-150'
+    );
+    expect(
+      screen.getByRole('button', { name: 'Dismiss intro' })
+    ).toHaveAttribute('data-sidebar', 'menu-action');
+    expect(screen.getByRole('button', { name: 'Dismiss intro' })).toHaveClass(
+      '-translate-y-1/2'
+    );
     expect(
       document.querySelector('[data-sidebar="menu-sub-item"]')
     ).toHaveClass('w-full');

@@ -48,6 +48,17 @@ describe('dashboard sidebar helpers', () => {
       'Eintrag bearbeiten (Draft)',
     ]);
     expect(draftsItem?.children?.every((item) => item.action)).toBe(true);
+    expect(draftsItem?.children?.[0]?.action?.className).toContain('ring-0');
+    expect(draftsItem?.children?.[0]?.action?.className).toContain(
+      'peer-data-active/menu-sub-button:text-sidebar-accent-foreground'
+    );
+    expect(draftsItem?.children?.[0]?.action?.className).toContain('ring-0');
+    expect(draftsItem?.children?.[0]?.action?.className).toContain(
+      'peer-hover/menu-sub-button:text-sidebar-accent-foreground'
+    );
+    expect(draftsItem?.children?.[0]?.action?.className).toContain(
+      'peer-data-active/menu-sub-button:text-sidebar-accent-foreground'
+    );
   });
 
   it('builds nested Vault breadcrumbs for entry routes', () => {

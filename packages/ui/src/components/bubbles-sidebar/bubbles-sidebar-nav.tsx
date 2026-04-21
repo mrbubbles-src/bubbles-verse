@@ -60,6 +60,7 @@ type BubblesSidebarNavItemProps = {
 type BubblesSidebarItemActionButtonProps = {
   action: NonNullable<BubblesSidebarItem['action']>;
   itemHref?: string;
+  nested?: boolean;
   pathname: string;
   showOnHover?: boolean;
 };
@@ -73,6 +74,7 @@ type BubblesSidebarItemActionButtonProps = {
 function BubblesSidebarItemActionButton({
   action,
   itemHref,
+  nested = false,
   pathname,
   showOnHover,
 }: BubblesSidebarItemActionButtonProps) {
@@ -95,14 +97,30 @@ function BubblesSidebarItemActionButton({
     return true;
   };
 
-  const actionButton = (
+  const actionButton = nested ? (
+    <button
+      type="button"
+      aria-label={action.ariaLabel}
+      data-slot="sidebar-menu-action"
+      data-sidebar="menu-action"
+      className={cn(
+        'absolute top-1/2 right-1 flex size-5 -translate-y-1/2 cursor-pointer items-center justify-center rounded-[calc(var(--radius-sm)-2px)] bg-transparent p-0 text-sidebar-foreground ring-sidebar-ring outline-hidden transition-[background-color,color,opacity,transform] duration-150 ease-out hover:bg-transparent hover:text-sidebar-accent-foreground focus-visible:bg-transparent focus-visible:text-sidebar-accent-foreground focus-visible:ring-2',
+        'peer-hover/menu-sub-button:text-sidebar-accent-foreground peer-data-active/menu-sub-button:text-sidebar-accent-foreground',
+        showOnHover &&
+          'group-focus-within/menu-sub-item:opacity-100 group-hover/menu-sub-item:opacity-100 md:opacity-0',
+        action.className
+      )}
+      onClick={action.confirm ? undefined : () => runAction()}>
+      <HugeiconsIcon icon={action.icon} strokeWidth={2.25} />
+    </button>
+  ) : (
     <SidebarMenuAction
       type="button"
       aria-label={action.ariaLabel}
       className={action.className}
       showOnHover={showOnHover}
       onClick={action.confirm ? undefined : () => runAction()}>
-      <HugeiconsIcon icon={action.icon} strokeWidth={2} />
+      <HugeiconsIcon icon={action.icon} strokeWidth={2.25} />
     </SidebarMenuAction>
   );
 
@@ -369,6 +387,7 @@ function BubblesSidebarNavItem({
           action={action}
           itemHref={item.href}
           pathname={pathname}
+          nested
           showOnHover={action.showOnHover ?? true}
         />
       ) : null}

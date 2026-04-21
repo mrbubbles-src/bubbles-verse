@@ -59,7 +59,7 @@ function getDashboardDraftSidebarItems(
     action: {
       ariaLabel: 'Draft verwerfen',
       className:
-        'cursor-pointer bg-transparent text-sidebar-accent-foreground ring-0 hover:bg-transparent hover:text-sidebar-accent-foreground focus-visible:bg-transparent focus-visible:text-sidebar-accent-foreground group-hover/menu-item:bg-transparent group-hover/menu-item:text-sidebar-accent-foreground peer-hover/menu-button:bg-transparent peer-hover/menu-button:text-sidebar-accent-foreground',
+        'ring-0 peer-hover/menu-sub-button:text-sidebar-accent-foreground peer-data-active/menu-sub-button:text-sidebar-accent-foreground aria-expanded:text-sidebar-accent-foreground',
       href: '/vault/entries',
       icon: Cancel01Icon,
       navigateOnItemActiveOnly: true,

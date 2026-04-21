@@ -56,6 +56,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Nested sidebar links now span the full available subnav width and reserve
   space for trailing actions, which prevents indented child items from
   collapsing into short overlapping pills.
+- Nested sidebar lists now avoid forcing `w-full` inside clipped collapsible
+  containers, so indented child pills keep their right-side corner radius
+  instead of getting visually cut off.
+- Nested sidebar draft actions now use their own sub-item-scoped button
+  treatment instead of the broader top-level action primitive, which keeps
+  hover, active color, and hitbox behavior stable around child-item dismiss
+  controls.
+- Nested sidebar draft pills now ease their hover/active color transitions more
+  smoothly and keep their dismiss icon vertically centered beside the label.
 - Sidebar items can now separate route matching (`href`) from actual link
   navigation (`navigateHref`), which lets apps reopen draft routes with query
   state without breaking active nav matching.
