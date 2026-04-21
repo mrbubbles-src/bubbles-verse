@@ -31,7 +31,7 @@ import {
 import { getVaultEntryFeedbackHref } from '@/lib/vault/entry-feedback';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import { toast } from '@bubbles/ui/lib/sonner';
 import {
@@ -159,6 +159,7 @@ export function VaultEntryEditor({
   mode = 'create',
 }: VaultEntryEditorProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [selectedCategoryId, setSelectedCategoryId] = useState(
     initialData?.primaryCategoryId ?? categories[0]?.id ?? ''
   );
@@ -199,6 +200,8 @@ export function VaultEntryEditor({
     []
   );
   const draftConflict = draftConflictState.conflict;
+  const shouldResumeCurrentCreateDraft =
+    mode === 'create' && searchParams.get('draft') === 'resume';
 
   useEffect(() => {
     const nextDraftConflict =
@@ -209,12 +212,14 @@ export function VaultEntryEditor({
     dispatchDraftConflict({
       type: 'sync',
       currentHref: currentDraftHref,
-      conflict:
-        nextDraftConflict && nextDraftConflict.href !== currentDraftHref
+      conflict: shouldResumeCurrentCreateDraft
+        ? null
+        : nextDraftConflict &&
+            (mode === 'create' || nextDraftConflict.href !== currentDraftHref)
           ? nextDraftConflict
           : null,
     });
-  }, [currentDraftHref, mode]);
+  }, [currentDraftHref, mode, shouldResumeCurrentCreateDraft]);
 
   /**
    * Returns the current category path as a short editorial label.
@@ -250,6 +255,14 @@ export function VaultEntryEditor({
    */
   function handleKeepExistingDraft() {
     if (!draftConflict) {
+      dispatchDraftConflict({
+        type: 'resolve',
+        currentHref: currentDraftHref,
+      });
+      return;
+    }
+
+    if (draftConflict.href === currentDraftHref) {
       dispatchDraftConflict({
         type: 'resolve',
         currentHref: currentDraftHref,
@@ -343,13 +356,13 @@ export function VaultEntryEditor({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={handleKeepExistingDraft}>
-              Zum Entwurf
+              {mode === 'create' ? 'Weiter bearbeiten' : 'Zum Entwurf'}
             </AlertDialogCancel>
             <AlertDialogAction
               type="button"
               variant="destructive"
               onClick={handleReplaceDraft}>
-              Ersetzen
+              {mode === 'create' ? 'Neu beginnen' : 'Ersetzen'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

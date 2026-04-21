@@ -30,6 +30,7 @@ export type BubblesSidebarItem = {
   id: string;
   title: string;
   href?: string;
+  navigateHref?: string;
   icon?: IconSvgElement;
   match?: BubblesSidebarMatch;
   action?: BubblesSidebarItemAction;

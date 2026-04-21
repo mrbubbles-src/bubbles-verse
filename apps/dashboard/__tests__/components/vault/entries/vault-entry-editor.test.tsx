@@ -14,6 +14,7 @@ const clearCreateDraftMock = vi.fn();
 const clearEditDraftMock = vi.fn();
 const peekCreateDraftMock = vi.fn();
 const peekEditDraftMock = vi.fn();
+const searchParamsMock = vi.fn(() => new URLSearchParams());
 const originalFetch = globalThis.fetch;
 
 vi.mock('next/navigation', () => ({
@@ -21,6 +22,7 @@ vi.mock('next/navigation', () => ({
     push: pushMock,
     refresh: refreshMock,
   }),
+  useSearchParams: () => searchParamsMock(),
 }));
 
 vi.mock('@bubbles/ui/lib/sonner', () => ({
@@ -75,8 +77,10 @@ describe('VaultEntryEditor', () => {
     clearEditDraftMock.mockReset();
     peekCreateDraftMock.mockReset();
     peekEditDraftMock.mockReset();
+    searchParamsMock.mockReset();
     peekCreateDraftMock.mockReturnValue(null);
     peekEditDraftMock.mockReturnValue(null);
+    searchParamsMock.mockReturnValue(new URLSearchParams());
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -233,6 +237,71 @@ describe('VaultEntryEditor', () => {
           },
         }}
         mode="edit"
+      />
+    );
+
+    expect(
+      screen.queryByText('Aktuellen Entwurf ersetzen?')
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Mock submit' })
+    ).toBeInTheDocument();
+  });
+
+  it('asks before replacing another active create draft session', () => {
+    peekCreateDraftMock.mockReturnValue({
+      scope: 'vault-entry:create',
+    });
+
+    render(
+      <VaultEntryEditor
+        categories={[
+          {
+            id: 'category-a',
+            label: 'Basics',
+            name: 'Basics',
+            topLevelSlug: 'basics',
+            childSlug: null,
+          },
+        ]}
+        mode="create"
+      />
+    );
+
+    expect(screen.getByText('Aktuellen Entwurf ersetzen?')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Weiter bearbeiten' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Neu beginnen' })
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Mock submit' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Weiter bearbeiten' }));
+
+    expect(
+      screen.getByRole('button', { name: 'Mock submit' })
+    ).toBeInTheDocument();
+  });
+
+  it('skips the replace dialog when reopening the current create draft item', () => {
+    peekCreateDraftMock.mockReturnValue({
+      scope: 'vault-entry:create',
+    });
+    searchParamsMock.mockReturnValue(new URLSearchParams('draft=resume'));
+
+    render(
+      <VaultEntryEditor
+        categories={[
+          {
+            id: 'category-a',
+            label: 'Basics',
+            name: 'Basics',
+            topLevelSlug: 'basics',
+            childSlug: null,
+          },
+        ]}
+        mode="create"
       />
     );
 

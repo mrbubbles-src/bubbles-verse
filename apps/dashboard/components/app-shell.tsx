@@ -58,6 +58,7 @@ function getDashboardDraftNavigationItems(
       key: DASHBOARD_CREATE_DRAFT_SCOPE,
       kind: 'create',
       href: '/vault/entries/new',
+      navigateHref: '/vault/entries/new?draft=resume',
     };
   }
 

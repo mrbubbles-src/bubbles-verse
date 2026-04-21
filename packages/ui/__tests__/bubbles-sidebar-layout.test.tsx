@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { BubblesSidebarData } from '../src/lib/bubbles-sidebar';
 import { BubblesSidebarLayout } from '../src/components/bubbles-sidebar/bubbles-sidebar-layout';
+import { Cancel01Icon } from '../src/lib/hugeicons';
 
 const usePathnameMock = vi.fn();
 const pushMock = vi.fn();
@@ -80,6 +81,12 @@ const sidebarData: BubblesSidebarData = {
                   id: 'intro',
                   title: 'Intro',
                   href: '/docs/guides/intro',
+                  navigateHref: '/docs/guides/intro?draft=resume',
+                  action: {
+                    ariaLabel: 'Dismiss intro',
+                    icon: Cancel01Icon,
+                    showOnHover: false,
+                  },
                 },
               ],
             },
@@ -144,6 +151,14 @@ describe('BubblesSidebarLayout', () => {
     );
 
     expect(screen.getByRole('link', { name: 'Intro' })).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Intro' })).toHaveClass('w-full');
+    expect(screen.getByRole('link', { name: 'Intro' })).toHaveAttribute(
+      'href',
+      '/docs/guides/intro?draft=resume'
+    );
+    expect(
+      document.querySelector('[data-sidebar="menu-sub-item"]')
+    ).toHaveClass('w-full');
   });
 
   it('supports prefix route matching for parent items', () => {

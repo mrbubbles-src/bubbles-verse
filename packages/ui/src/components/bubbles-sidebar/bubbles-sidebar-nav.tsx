@@ -179,12 +179,14 @@ function BubblesSidebarLeaf({
   depth: number;
   isActive: boolean;
 }) {
+  const navigateHref = item.navigateHref ?? item.href;
+
   if (depth === 0) {
     return (
       <SidebarMenuButton
         render={
-          item.href ? (
-            <Link href={item.href} />
+          navigateHref ? (
+            <Link href={navigateHref} />
           ) : (
             <button type="button" aria-disabled="true" />
           )
@@ -201,8 +203,8 @@ function BubblesSidebarLeaf({
   return (
     <SidebarMenuSubButton
       render={
-        item.href ? (
-          <Link href={item.href} />
+        navigateHref ? (
+          <Link href={navigateHref} />
         ) : (
           <button type="button" aria-disabled="true" />
         )

@@ -53,6 +53,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Shared sidebar trailing actions now keep a stronger parent-hover contrast and
   explicit pointer cursor, which makes compact affordances like draft-dismiss
   buttons easier to spot in both light and dark themes.
+- Nested sidebar links now span the full available subnav width and reserve
+  space for trailing actions, which prevents indented child items from
+  collapsing into short overlapping pills.
+- Sidebar items can now separate route matching (`href`) from actual link
+  navigation (`navigateHref`), which lets apps reopen draft routes with query
+  state without breaking active nav matching.
 - Shared select popovers now use a more solid surface plus stronger highlighted
   item contrast, so hovered options remain readable in both themes.
 

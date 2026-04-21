@@ -112,7 +112,7 @@ describe('AppShell', () => {
 
     expect(
       await screen.findByRole('link', { name: 'Neuer Eintrag (Draft)' })
-    ).toHaveAttribute('href', '/vault/entries/new');
+    ).toHaveAttribute('href', '/vault/entries/new?draft=resume');
     expect(
       screen.getByRole('link', { name: 'Eintrag bearbeiten (Draft)' })
     ).toHaveAttribute('href', '/vault/entries/entry-123');

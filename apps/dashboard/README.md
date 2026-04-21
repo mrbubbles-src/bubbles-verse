@@ -223,9 +223,19 @@ hooks.
 - The Vault entry editor now warns only before replacing another draft of the
   same mode, so one active `Neuer Eintrag` draft and one active
   `Eintrag bearbeiten` draft can coexist without overwriting each other.
+- Opening `Neuer Eintrag` again while a create draft already exists now also
+  asks whether that draft should be continued or replaced, instead of silently
+  dropping straight back into the existing draft state.
 - The trailing draft-dismiss action now stays visible with clearer contrast and
   pointer affordance instead of disappearing into a hover-only low-contrast
   icon state.
+- Draft links inside `Entwürfe` now keep the same readable trailing `X` color
+  as their surrounding label text, and the indented child row stretches across
+  the full available subnav width instead of collapsing into a narrow chip.
+- The create-draft sidebar item now reopens `/vault/entries/new` through a
+  small resume query flag, so clicking the existing draft item continues that
+  draft directly while the normal `Neuer Eintrag` affordances still ask whether
+  the open create draft should be replaced.
 - Dashboard selects now keep human-readable labels after selection instead of
   snapping back to raw UUIDs or internal filter values.
 - New entry saves go through `/api/vault/entries`, which bootstraps the shared `vault` app module and the current author's `profiles` row on first save.

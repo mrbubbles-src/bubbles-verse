@@ -133,6 +133,14 @@ fall back to `window.confirm` for destructive draft-discard flows.
 Sidebar trailing actions now also render with a clear pointer cursor and a
 shared hover-state background when their parent item is hovered, so small
 destructive affordances like draft-dismiss icons stay readable in both themes.
+Nested sidebar items now also stretch to the full available subnav width while
+reserving trailing-action space, so indented child links do not collapse into
+narrow pills when apps attach actions like draft-dismiss buttons.
+
+Sidebar items may optionally expose a separate `navigateHref` when the visible
+link target should differ from the active-route matching href, for example when
+an app wants one draft item to reopen a route with query-state while still
+matching the clean pathname in the sidebar.
 
 Shared `SelectContent` now uses a more opaque popover surface and stronger
 highlight contrast, so hovered select options stay readable instead of fading

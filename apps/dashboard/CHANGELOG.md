@@ -159,8 +159,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Narrowed the draft-replace warning to same-mode collisions only, so an
   active `Neuer Eintrag` draft no longer blocks opening an unrelated
   `Eintrag bearbeiten` route.
+- Restored the replace-or-continue prompt for repeated `Neuer Eintrag`
+  navigation when a create draft already exists, so the current draft is no
+  longer resumed silently.
 - Made the draft-dismiss action in the sidebar permanently visible with clearer
   contrast, instead of hiding it behind a hard-to-read hover-only icon state.
+- Switched the draft-dismiss `X` away from the destructive red tint and onto
+  the same readable text color as the surrounding draft label, so it stays
+  visible on mauve active states as well.
+- Let indented draft links use the full available subnav width and reserve
+  space for the dismiss action, which removes the cramped overlapping draft
+  chips inside the `Entwürfe` section.
+- The create-draft sidebar link now resumes the existing draft explicitly,
+  instead of accidentally triggering the "Neu beginnen" guard that should only
+  belong to the normal `Neuer Eintrag` flow.
 - Updated dashboard selects to keep showing editorial labels after selection,
   including category, access-role, and filter selects that previously fell
   back to raw IDs or internal values.

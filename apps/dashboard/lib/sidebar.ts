@@ -25,6 +25,7 @@ export type DashboardDraftNavigationItem = {
   key: string;
   kind: 'create' | 'edit';
   href: '/vault/entries/new' | `/vault/entries/${string}`;
+  navigateHref?: string;
 };
 
 /**
@@ -54,10 +55,11 @@ function getDashboardDraftSidebarItems(
     id: `vault-entry-draft-${draft.key}`,
     title: getDashboardDraftLabel(draft),
     href: draft.href,
+    navigateHref: draft.navigateHref,
     action: {
       ariaLabel: 'Draft verwerfen',
       className:
-        'cursor-pointer bg-destructive/10 text-destructive hover:bg-destructive/15 hover:text-destructive focus-visible:bg-destructive/15 focus-visible:text-destructive group-hover/menu-item:bg-destructive/10 group-hover/menu-item:text-destructive peer-hover/menu-button:bg-destructive/10 peer-hover/menu-button:text-destructive',
+        'cursor-pointer bg-transparent text-sidebar-accent-foreground ring-0 hover:bg-transparent hover:text-sidebar-accent-foreground focus-visible:bg-transparent focus-visible:text-sidebar-accent-foreground group-hover/menu-item:bg-transparent group-hover/menu-item:text-sidebar-accent-foreground peer-hover/menu-button:bg-transparent peer-hover/menu-button:text-sidebar-accent-foreground',
       href: '/vault/entries',
       icon: Cancel01Icon,
       navigateOnItemActiveOnly: true,
@@ -256,6 +258,7 @@ export function getDashboardCurrentDraftItem(
       key: 'current-create',
       kind: 'create',
       href: '/vault/entries/new',
+      navigateHref: '/vault/entries/new?draft=resume',
     };
   }
 
