@@ -474,9 +474,9 @@ describe('MarkdownEditor form surface', () => {
     ).toBeGreaterThanOrEqual(1);
   });
 
-  it('isolates edit-mode drafts by the provided storage scope', async () => {
+  it('only restores the active edit draft when the stored scope matches', async () => {
     window.localStorage.setItem(
-      `${EDIT_DRAFT_KEY}:vault-entry:a`,
+      EDIT_DRAFT_KEY,
       JSON.stringify({
         content: {
           blocks: [
@@ -495,33 +495,10 @@ describe('MarkdownEditor form surface', () => {
         description: 'Draft A description',
         slug: 'entry-a-draft',
         status: 'published',
+        scope: 'vault-entry:a',
         tags: ['a'],
         title: 'Entry A Draft',
-      } satisfies MarkdownEditorInitialData)
-    );
-    window.localStorage.setItem(
-      `${EDIT_DRAFT_KEY}:vault-entry:b`,
-      JSON.stringify({
-        content: {
-          blocks: [
-            {
-              id: 'draft-b-heading',
-              type: 'header',
-              data: {
-                level: 1,
-                text: 'Entry B Draft',
-              },
-            },
-          ],
-          time: 202,
-          version: '2.31.0',
-        },
-        description: 'Draft B description',
-        slug: 'entry-b-draft',
-        status: 'unpublished',
-        tags: ['b'],
-        title: 'Entry B Draft',
-      } satisfies MarkdownEditorInitialData)
+      } as MarkdownEditorInitialData & { scope: string })
     );
 
     const { unmount } = render(
@@ -551,11 +528,65 @@ describe('MarkdownEditor form surface', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Slug')).toHaveValue('entry-b-draft');
+      expect(screen.getByLabelText('Slug')).toHaveValue('story-driven-editor');
       expect(screen.getByLabelText('Description')).toHaveValue(
-        'Draft B description'
+        'Existing description'
       );
-      expect(screen.getByLabelText('Tags')).toHaveValue('b');
+      expect(screen.getByLabelText('Tags')).toHaveValue('ref, story');
+    });
+  });
+
+  it('overwrites the single edit draft slot when another scoped entry is edited', async () => {
+    const { unmount } = render(
+      <MarkdownEditor
+        draftStorageScope="vault-entry:a"
+        initialData={INITIAL_DATA}
+        isEditMode
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Description')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText('Description'), {
+      target: { value: 'Draft A description' },
+    });
+
+    await waitFor(() => {
+      const storedDraft = JSON.parse(
+        window.localStorage.getItem(EDIT_DRAFT_KEY) ?? 'null'
+      ) as (MarkdownEditorInitialData & { scope?: string }) | null;
+
+      expect(storedDraft?.description).toBe('Draft A description');
+      expect(storedDraft?.scope).toBe('vault-entry:a');
+    });
+
+    unmount();
+
+    render(
+      <MarkdownEditor
+        draftStorageScope="vault-entry:b"
+        initialData={INITIAL_DATA}
+        isEditMode
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Description')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText('Description'), {
+      target: { value: 'Draft B description' },
+    });
+
+    await waitFor(() => {
+      const storedDraft = JSON.parse(
+        window.localStorage.getItem(EDIT_DRAFT_KEY) ?? 'null'
+      ) as (MarkdownEditorInitialData & { scope?: string }) | null;
+
+      expect(storedDraft?.description).toBe('Draft B description');
+      expect(storedDraft?.scope).toBe('vault-entry:b');
     });
   });
 

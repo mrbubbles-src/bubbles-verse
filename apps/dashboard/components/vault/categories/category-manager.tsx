@@ -50,6 +50,12 @@ export function CategoryManager({
   const [query, setQuery] = useState('');
   const [levelFilter, setLevelFilter] =
     useState<VaultCategoryTreeLevelFilter>('all');
+  const levelFilterLabel =
+    levelFilter === 'top-level'
+      ? 'Nur Oberkategorien'
+      : levelFilter === 'children'
+        ? 'Nur Unterkategorien'
+        : 'Alle Ebenen';
   const summary = getVaultCategoryTreeSummary(categories);
   const filteredCategories = filterVaultCategoryTree(categories, {
     query,
@@ -117,7 +123,7 @@ export function CategoryManager({
                 <SelectTrigger
                   id="vault-category-level-filter"
                   className="w-full">
-                  <SelectValue />
+                  <SelectValue>{levelFilterLabel}</SelectValue>
                 </SelectTrigger>
                 <SelectContent align="start">
                   <SelectGroup>

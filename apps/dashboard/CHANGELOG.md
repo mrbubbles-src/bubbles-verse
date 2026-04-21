@@ -147,6 +147,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced remaining browser-default `title` tooltips in dashboard management
   actions with the shared tooltip component, especially in category actions and
   disabled owner-only account controls.
+- Switched the Vault entry list preview action onto the dashboard-local
+  `/vault/preview/[id]` route, so the middle row action no longer stays
+  disabled when no separate public Vault app URL is configured.
+- Tightened the Vault entry description tooltip trigger to the truncated text
+  itself, so the tooltip no longer appears anchored to the far edge of the
+  whole table cell.
+- Reworked Vault draft routing so create/edit screens now replace one shared
+  active draft slot per mode instead of leaving stale per-entry edit drafts in
+  localStorage, and warn before another unsaved authoring session is replaced.
+- Narrowed the draft-replace warning to same-mode collisions only, so an
+  active `Neuer Eintrag` draft no longer blocks opening an unrelated
+  `Eintrag bearbeiten` route.
+- Made the draft-dismiss action in the sidebar permanently visible with clearer
+  contrast, instead of hiding it behind a hard-to-read hover-only icon state.
+- Updated dashboard selects to keep showing editorial labels after selection,
+  including category, access-role, and filter selects that previously fell
+  back to raw IDs or internal values.
+- Restored the Vault entry description to its own line below the title while
+  keeping the tooltip anchored to the truncated description text itself.
 
 ### Documentation
 

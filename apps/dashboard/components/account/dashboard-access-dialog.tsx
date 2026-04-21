@@ -82,14 +82,26 @@ function DashboardAccessMutableFields({
   dashboardAccess: boolean;
   userRole: DashboardAccessRole;
 }) {
+  const [selectedRole, setSelectedRole] = useState(userRole);
+  const [selectedAccess, setSelectedAccess] = useState(
+    dashboardAccess ? 'true' : 'false'
+  );
+
   return (
     <FieldGroup className="grid gap-4 sm:grid-cols-2">
       <Field>
         <FieldLabel htmlFor={`${idPrefix}-role`}>Rolle</FieldLabel>
         <FieldContent>
-          <Select defaultValue={userRole} name="userRole">
+          <Select
+            defaultValue={userRole}
+            name="userRole"
+            onValueChange={(value) =>
+              setSelectedRole(toDashboardAccessRole(value ?? userRole))
+            }>
             <SelectTrigger id={`${idPrefix}-role`} className="w-full">
-              <SelectValue />
+              <SelectValue>
+                {formatDashboardAccessRoleLabel(selectedRole)}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent align="start">
               <SelectGroup>
@@ -109,9 +121,12 @@ function DashboardAccessMutableFields({
         <FieldContent>
           <Select
             defaultValue={dashboardAccess ? 'true' : 'false'}
-            name="dashboardAccess">
+            name="dashboardAccess"
+            onValueChange={(value) => setSelectedAccess(value ?? 'false')}>
             <SelectTrigger id={`${idPrefix}-status`} className="w-full">
-              <SelectValue />
+              <SelectValue>
+                {selectedAccess === 'true' ? 'Aktiv' : 'Gesperrt'}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent align="start">
               <SelectGroup>

@@ -99,6 +99,7 @@ function BubblesSidebarItemActionButton({
     <SidebarMenuAction
       type="button"
       aria-label={action.ariaLabel}
+      className={action.className}
       showOnHover={showOnHover}
       onClick={action.confirm ? undefined : () => runAction()}>
       <HugeiconsIcon icon={action.icon} strokeWidth={2} />

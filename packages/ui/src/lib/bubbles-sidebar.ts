@@ -41,6 +41,7 @@ export type BubblesSidebarItem = {
  */
 export type BubblesSidebarItemAction = {
   ariaLabel: string;
+  className?: string;
   icon: IconSvgElement;
   onSelect?: () => boolean | void;
   href?: string;

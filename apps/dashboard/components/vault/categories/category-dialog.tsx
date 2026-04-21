@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from '@bubbles/ui/shadcn/select';
 import { Textarea } from '@bubbles/ui/shadcn/textarea';
+import { useState } from 'react';
 
 type CategoryDialogProps = {
   action: (formData: FormData) => void | Promise<void>;
@@ -60,9 +61,17 @@ export function CategoryDialog({
   title,
   trigger,
 }: CategoryDialogProps) {
+  const [selectedParentId, setSelectedParentId] = useState(
+    fixedParent ? fixedParent.id : (initialValues?.parentId ?? 'root')
+  );
   const defaultParentId = fixedParent
     ? fixedParent.id
     : (initialValues?.parentId ?? 'root');
+  const selectedParentLabel =
+    selectedParentId === 'root'
+      ? 'Keine Oberkategorie'
+      : parentOptions.find((option) => option.id === selectedParentId)?.name ??
+        'Keine Oberkategorie';
 
   return (
     <FormDialog
@@ -137,9 +146,14 @@ export function CategoryDialog({
                 Übergeordnete Kategorie
               </FieldLabel>
               <FieldContent>
-                <Select defaultValue={defaultParentId} name="parentId">
+                <Select
+                  defaultValue={defaultParentId}
+                  name="parentId"
+                  onValueChange={(value) =>
+                    setSelectedParentId(value ?? 'root')
+                  }>
                   <SelectTrigger id={`${dialogId}-parent`} className="w-full">
-                    <SelectValue />
+                    <SelectValue>{selectedParentLabel}</SelectValue>
                   </SelectTrigger>
                   <SelectContent align="start">
                     <SelectGroup>

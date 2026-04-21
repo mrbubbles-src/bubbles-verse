@@ -56,6 +56,8 @@ function getDashboardDraftSidebarItems(
     href: draft.href,
     action: {
       ariaLabel: 'Draft verwerfen',
+      className:
+        'cursor-pointer bg-destructive/10 text-destructive hover:bg-destructive/15 hover:text-destructive focus-visible:bg-destructive/15 focus-visible:text-destructive group-hover/menu-item:bg-destructive/10 group-hover/menu-item:text-destructive peer-hover/menu-button:bg-destructive/10 peer-hover/menu-button:text-destructive',
       href: '/vault/entries',
       icon: Cancel01Icon,
       navigateOnItemActiveOnly: true,
@@ -84,7 +86,7 @@ function getDashboardDraftSidebarItems(
           mode: draft.kind,
         });
       },
-      showOnHover: true,
+      showOnHover: false,
     },
   }));
 }

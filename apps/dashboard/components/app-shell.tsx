@@ -15,6 +15,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
 import { Footer } from '@bubbles/footer';
+import { peekCreateDraft, peekEditDraft } from '@bubbles/markdown-editor';
 import { ThemeToggle } from '@bubbles/theme';
 import { BubblesAppHeader } from '@bubbles/ui/components/bubbles-app-header';
 import { BubblesSidebarLayout } from '@bubbles/ui/components/bubbles-sidebar-layout';
@@ -22,8 +23,6 @@ import { Separator } from '@bubbles/ui/shadcn/separator';
 
 const DASHBOARD_CREATE_DRAFT_SCOPE = 'vault-entry:create';
 const DASHBOARD_EDIT_DRAFT_SCOPE_PREFIX = 'vault-entry:';
-const DASHBOARD_CREATE_DRAFT_STORAGE_KEY = 'topic-editor-create-draft';
-const DASHBOARD_EDIT_DRAFT_STORAGE_KEY = 'topic-editor-edit-draft';
 const DASHBOARD_CREATE_DRAFT_UPDATED_EVENT = 'create-draft-updated';
 const DASHBOARD_EDIT_DRAFT_UPDATED_EVENT = 'edit-draft-updated';
 
@@ -48,47 +47,38 @@ function getDashboardDraftNavigationItems(
     currentDraft?.kind === 'create' ? currentDraft : null;
   let editDraftItem: DashboardDraftNavigationItem | null =
     currentDraft?.kind === 'edit' ? currentDraft : null;
+  const activeCreateDraft = peekCreateDraft();
+  const activeEditDraft = peekEditDraft();
 
-  const createDraftKey = `${DASHBOARD_CREATE_DRAFT_STORAGE_KEY}:${DASHBOARD_CREATE_DRAFT_SCOPE}`;
-
-  if (!createDraftItem && window.localStorage.getItem(createDraftKey)) {
+  if (
+    !createDraftItem &&
+    activeCreateDraft?.scope === DASHBOARD_CREATE_DRAFT_SCOPE
+  ) {
     createDraftItem = {
-      key: createDraftKey,
+      key: DASHBOARD_CREATE_DRAFT_SCOPE,
       kind: 'create',
       href: '/vault/entries/new',
     };
   }
 
-  for (let index = 0; index < window.localStorage.length; index += 1) {
-    if (editDraftItem) {
-      break;
-    }
-
-    const storageKey = window.localStorage.key(index);
-
-    if (
-      !storageKey?.startsWith(
-        `${DASHBOARD_EDIT_DRAFT_STORAGE_KEY}:${DASHBOARD_EDIT_DRAFT_SCOPE_PREFIX}`
-      )
-    ) {
-      continue;
-    }
-
-    const entryId = storageKey.slice(
-      `${DASHBOARD_EDIT_DRAFT_STORAGE_KEY}:${DASHBOARD_EDIT_DRAFT_SCOPE_PREFIX}`
-        .length
+  if (
+    !editDraftItem &&
+    activeEditDraft?.scope?.startsWith(DASHBOARD_EDIT_DRAFT_SCOPE_PREFIX)
+  ) {
+    const entryId = activeEditDraft.scope.slice(
+      DASHBOARD_EDIT_DRAFT_SCOPE_PREFIX.length
     );
 
     if (!entryId) {
-      continue;
+      return [createDraftItem].filter(
+        (draft): draft is DashboardDraftNavigationItem => draft !== null
+      );
     }
 
-    const href = `/vault/entries/${entryId}` as const;
-
     editDraftItem = {
-      key: storageKey,
+      key: activeEditDraft.scope,
       kind: 'edit',
-      href,
+      href: `/vault/entries/${entryId}`,
     };
   }
 

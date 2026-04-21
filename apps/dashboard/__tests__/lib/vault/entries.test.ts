@@ -239,7 +239,7 @@ describe('vault entry helpers', () => {
         categoryLabel: 'React / Rendering',
         updatedAt: '2026-04-18T18:00:00.000Z',
         updatedAtLabel: expectedUpdatedAtLabel,
-        previewHref: null,
+        previewHref: '/vault/preview/entry-id',
       },
     ]);
 

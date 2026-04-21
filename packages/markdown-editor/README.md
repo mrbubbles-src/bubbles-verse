@@ -32,6 +32,8 @@ import {
   loadEditDraft,
   MarkdownEditor,
   normalizeSlugPath,
+  peekCreateDraft,
+  peekEditDraft,
   serializeToMdx,
   slugifySegment,
 } from '@bubbles/markdown-editor';
@@ -63,8 +65,10 @@ Shared client wrapper around the reference EditorJS setup from
 - enables the full 15-tool surface by default
 - accepts `plugins` to subset the toolbar without changing the canonical order
 - restores mode-specific drafts from localStorage on mount
-- autosaves create/edit drafts to the reference storage keys while authors type
-- accepts optional `draftStorageScope` so apps can isolate drafts per record
+- autosaves create/edit drafts into one active local slot per mode while
+  storing the owning route scope inside the payload
+- accepts optional `draftStorageScope` so apps can detect whether the active
+  slot belongs to the current entity before replacing it
 - exports the draft load/clear helpers plus the base storage keys for shells or
   fullscreen preview routes that need to react to the current local draft state
 - imports `.md`, `.mdx`, and `.markdown` files through the portal-ref modal flow
@@ -136,9 +140,9 @@ provided.
 - slugs are normalized as paths, so app strategies can safely return
   `section/title`-style values
 - description, tags, and status (`published` | `unpublished`) stay package-level
-- create mode uses `topic-editor-create-draft`; edit mode uses `topic-editor-edit-draft`
-- `draftStorageScope` appends a stable suffix like `vault-entry:<id>` when one
-  app needs isolated local drafts per entity
+- create mode uses `editor-create-draft`; edit mode uses `editor-edit-draft`
+- `draftStorageScope` is stored alongside the active draft payload so apps can
+  detect foreign drafts and warn before replacing them
 - successful submits clear the active draft and stop stale post-submit rewrites
 - loading a new `initialData` session resets form-local overrides instead of relying on a remount key
 - apps can shape the default-form slug through `slugStrategy` and optional
@@ -391,6 +395,11 @@ Type-check and lint the package directly:
 bun run --cwd packages/markdown-editor typecheck
 bun run --cwd packages/markdown-editor lint src tests --max-warnings=0
 ```
+
+Draft persistence now keeps exactly one active create draft and one active edit
+draft. The package stores those in the simplified localStorage keys
+`editor-create-draft` and `editor-edit-draft`, while preserving legacy key
+cleanup during migration.
 
 Or from the monorepo root:
 

@@ -10,6 +10,10 @@ const refreshMock = vi.fn();
 const toastErrorMock = vi.fn<(message: string) => void>();
 const createEditorImageUploaderMock = vi.fn(() => ({ uploadByFile: vi.fn() }));
 const markdownEditorPropsMock = vi.fn<(props: MarkdownEditorProps) => void>();
+const clearCreateDraftMock = vi.fn();
+const clearEditDraftMock = vi.fn();
+const peekCreateDraftMock = vi.fn();
+const peekEditDraftMock = vi.fn();
 const originalFetch = globalThis.fetch;
 
 vi.mock('next/navigation', () => ({
@@ -27,6 +31,8 @@ vi.mock('@bubbles/ui/lib/sonner', () => ({
 }));
 
 vi.mock('@bubbles/markdown-editor', () => ({
+  clearCreateDraft: () => clearCreateDraftMock(),
+  clearEditDraft: () => clearEditDraftMock(),
   createEditorImageUploader: () => createEditorImageUploaderMock(),
   MarkdownEditor: (props: MarkdownEditorProps) => {
     markdownEditorPropsMock(props);
@@ -54,6 +60,8 @@ vi.mock('@bubbles/markdown-editor', () => ({
       </button>
     );
   },
+  peekCreateDraft: () => peekCreateDraftMock(),
+  peekEditDraft: () => peekEditDraftMock(),
 }));
 
 describe('VaultEntryEditor', () => {
@@ -63,6 +71,12 @@ describe('VaultEntryEditor', () => {
     toastErrorMock.mockReset();
     createEditorImageUploaderMock.mockClear();
     markdownEditorPropsMock.mockClear();
+    clearCreateDraftMock.mockReset();
+    clearEditDraftMock.mockReset();
+    peekCreateDraftMock.mockReset();
+    peekEditDraftMock.mockReset();
+    peekCreateDraftMock.mockReturnValue(null);
+    peekEditDraftMock.mockReturnValue(null);
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -186,5 +200,96 @@ describe('VaultEntryEditor', () => {
     });
     expect(pushMock).toHaveBeenCalledWith('/vault/entries?entry=updated');
     expect(refreshMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('allows an existing create draft while editing another entry', () => {
+    peekCreateDraftMock.mockReturnValue({
+      scope: 'vault-entry:create',
+    });
+
+    render(
+      <VaultEntryEditor
+        categories={[
+          {
+            id: 'category-a',
+            label: 'Basics',
+            name: 'Basics',
+            topLevelSlug: 'basics',
+            childSlug: null,
+          },
+        ]}
+        initialData={{
+          id: 'entry-id',
+          title: 'Git Basics',
+          slug: 'basics/git',
+          description: 'Existing meta',
+          tags: ['git'],
+          status: 'published',
+          primaryCategoryId: 'category-a',
+          editorContent: {
+            blocks: [],
+            time: 1,
+            version: '2.31.0',
+          },
+        }}
+        mode="edit"
+      />
+    );
+
+    expect(
+      screen.queryByText('Aktuellen Entwurf ersetzen?')
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Mock submit' })
+    ).toBeInTheDocument();
+  });
+
+  it('asks before replacing another active edit draft session', () => {
+    peekEditDraftMock.mockReturnValue({
+      scope: 'vault-entry:other-entry',
+    });
+
+    render(
+      <VaultEntryEditor
+        categories={[
+          {
+            id: 'category-a',
+            label: 'Basics',
+            name: 'Basics',
+            topLevelSlug: 'basics',
+            childSlug: null,
+          },
+        ]}
+        initialData={{
+          id: 'entry-id',
+          title: 'Git Basics',
+          slug: 'basics/git',
+          description: 'Existing meta',
+          tags: ['git'],
+          status: 'published',
+          primaryCategoryId: 'category-a',
+          editorContent: {
+            blocks: [],
+            time: 1,
+            version: '2.31.0',
+          },
+        }}
+        mode="edit"
+      />
+    );
+
+    expect(screen.getByText('Aktuellen Entwurf ersetzen?')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Mock submit' })).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Zum Entwurf' })
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ersetzen' }));
+
+    expect(clearEditDraftMock).toHaveBeenCalledTimes(1);
+    expect(clearCreateDraftMock).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole('button', { name: 'Mock submit' })
+    ).toBeInTheDocument();
   });
 });

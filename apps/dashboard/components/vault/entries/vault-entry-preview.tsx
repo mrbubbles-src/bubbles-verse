@@ -41,9 +41,8 @@ export function VaultEntryPreview({
 }: VaultEntryPreviewProps) {
   const [draft, setDraft] = useState<MarkdownEditorDraft | null>(null);
   const storageKey = useMemo(
-    () =>
-      `${mode === 'edit' ? EDIT_DRAFT_KEY : CREATE_DRAFT_KEY}:${draftScope}`,
-    [draftScope, mode]
+    () => (mode === 'edit' ? EDIT_DRAFT_KEY : CREATE_DRAFT_KEY),
+    [mode]
   );
 
   useEffect(() => {

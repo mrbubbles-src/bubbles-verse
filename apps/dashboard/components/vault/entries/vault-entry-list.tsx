@@ -193,18 +193,20 @@ export function VaultEntryList({
                         {entry.title}
                       </Link>
                       {entry.description ? (
-                        <Tooltip>
-                          <TooltipTrigger
-                            render={
-                              <p className="mt-1.5 truncate text-base text-muted-foreground">
-                                {entry.description}
-                              </p>
-                            }
-                          />
-                          <TooltipContent className="max-w-sm text-pretty">
-                            {entry.description}
-                          </TooltipContent>
-                        </Tooltip>
+                        <div className="mt-1.5">
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={
+                                <span className="inline-block max-w-full truncate align-top text-base text-muted-foreground">
+                                  {entry.description}
+                                </span>
+                              }
+                            />
+                            <TooltipContent className="max-w-sm text-pretty">
+                              {entry.description}
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
                       ) : (
                         <p className="mt-1.5 text-base text-muted-foreground">
                           Keine Beschreibung.

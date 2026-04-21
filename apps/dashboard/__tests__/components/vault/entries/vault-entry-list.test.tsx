@@ -39,7 +39,7 @@ describe('VaultEntryList', () => {
             categoryLabel: 'React / Rendering',
             updatedAt: '2026-04-18T18:00:00.000Z',
             updatedAtLabel: '18.04.2026, 18:00',
-            previewHref: null,
+            previewHref: '/vault/preview/entry-1',
           },
         ]}
         filters={{
@@ -73,14 +73,16 @@ describe('VaultEntryList', () => {
       screen.getByRole('columnheader', { name: 'Kategorie' })
     ).toBeInTheDocument();
     expect(screen.getByText('React Rendering')).toBeInTheDocument();
-    expect(
-      screen.getByText('Alles rund um Rendering und Streaming.')
-    ).toBeInTheDocument();
+    const descriptionTrigger = screen.getByText(
+      'Alles rund um Rendering und Streaming.'
+    );
+
+    expect(descriptionTrigger.tagName).toBe('SPAN');
     expect(screen.getByText('React / Rendering')).toBeInTheDocument();
     expect(screen.getByText('Veröffentlicht')).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'Vorschau öffnen' })
-    ).toBeDisabled();
+    ).toHaveAttribute('href', '/vault/preview/entry-1');
     expect(
       screen.getByRole('button', { name: 'Eintrag löschen' })
     ).not.toHaveAttribute('title');
@@ -100,7 +102,7 @@ describe('VaultEntryList', () => {
             categoryLabel: 'React / Rendering',
             updatedAt: '2026-04-18T18:00:00.000Z',
             updatedAtLabel: '18.04.2026, 18:00',
-            previewHref: 'https://vault.example/vault/react/rendering',
+            previewHref: '/vault/preview/entry-1',
           },
         ]}
         filters={{

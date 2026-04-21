@@ -9,6 +9,7 @@ import type { User } from '@supabase/supabase-js';
 import { ensureDashboardProfile } from '@/lib/profile/profile';
 import { listVaultCategories } from '@/lib/vault/categories';
 import { buildVaultCategoryTree } from '@/lib/vault/category-tree';
+import { getVaultEntryPreviewHref as getVaultEntryDashboardPreviewHref } from '@/lib/vault/entry-drafts';
 
 import { and, count, desc, eq, ilike } from 'drizzle-orm';
 import * as z from 'zod';
@@ -405,7 +406,10 @@ async function queryVaultEntryRows(
       dateStyle: 'medium',
       timeStyle: 'short',
     }).format(new Date(row.updatedAt)),
-    previewHref: getVaultEntryPreviewHref(row.slug),
+    previewHref: getVaultEntryDashboardPreviewHref({
+      id: row.id,
+      mode: 'edit',
+    }),
   }));
 }
 

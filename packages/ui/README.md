@@ -130,6 +130,14 @@ Sidebar trailing actions can optionally define a shared confirmation dialog via
 `action.confirm`, including staged two-step confirms, so apps do not need to
 fall back to `window.confirm` for destructive draft-discard flows.
 
+Sidebar trailing actions now also render with a clear pointer cursor and a
+shared hover-state background when their parent item is hovered, so small
+destructive affordances like draft-dismiss icons stay readable in both themes.
+
+Shared `SelectContent` now uses a more opaque popover surface and stronger
+highlight contrast, so hovered select options stay readable instead of fading
+into translucent backgrounds.
+
 `BubblesSidebarLayout` now stays focused on the shell itself:
 
 - sidebar provider + inset layout

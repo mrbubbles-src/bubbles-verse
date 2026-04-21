@@ -10,8 +10,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   transitions tear down the live holder before React disconnects it, avoiding
   intermittent browser `removeChild` errors when apps navigate into entry
   editor pages.
-- Add optional `draftStorageScope` support so consuming apps can isolate
-  create/edit drafts per record instead of sharing one global edit draft key.
+- Rework draft storage onto one active create slot and one active edit slot,
+  store `draftStorageScope` inside the payload, and expose lightweight
+  `peek*Draft()` helpers so consuming apps can guard route switches before a
+  local draft gets replaced.
 - Export the draft load/clear helpers and base storage keys so consuming apps
   can build fullscreen previews or shell-level draft affordances on top of the
   same local draft state as `MarkdownEditor`.
@@ -93,3 +95,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Expand the package README with concrete slug-strategy patterns plus explicit
   guidance for when the shared `EditorForm` is sufficient and when apps should
   switch to `renderForm`.
+- Replace the old `topic-*` draft keys with one active create slot plus one
+  active edit slot (`editor-create-draft` / `editor-edit-draft`), while
+  keeping legacy draft cleanup in place during the migration.

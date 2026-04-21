@@ -87,12 +87,12 @@ describe('AppShell', () => {
   it('renders temporary Vault draft links below Einträge from local storage', async () => {
     usePathnameMock.mockReturnValue('/vault/entries/new');
     window.localStorage.setItem(
-      'topic-editor-create-draft:vault-entry:create',
-      '{}'
+      'editor-create-draft',
+      JSON.stringify({ scope: 'vault-entry:create' })
     );
     window.localStorage.setItem(
-      'topic-editor-edit-draft:vault-entry:entry-123',
-      '{}'
+      'editor-edit-draft',
+      JSON.stringify({ scope: 'vault-entry:entry-123' })
     );
 
     render(
@@ -122,19 +122,11 @@ describe('AppShell', () => {
     );
   });
 
-  it('limits draft links to one create draft and one edit draft', async () => {
+  it('prefers the active edit route over an older stored edit draft', async () => {
     usePathnameMock.mockReturnValue('/vault/entries/entry-999');
     window.localStorage.setItem(
-      'topic-editor-create-draft:vault-entry:create',
-      '{}'
-    );
-    window.localStorage.setItem(
-      'topic-editor-edit-draft:vault-entry:entry-123',
-      '{}'
-    );
-    window.localStorage.setItem(
-      'topic-editor-edit-draft:vault-entry:entry-456',
-      '{}'
+      'editor-edit-draft',
+      JSON.stringify({ scope: 'vault-entry:entry-123' })
     );
 
     render(
@@ -153,16 +145,10 @@ describe('AppShell', () => {
     );
 
     expect(
-      await screen.findByRole('link', { name: 'Neuer Eintrag (Draft)' })
-    ).toHaveAttribute('href', '/vault/entries/new');
-    expect(
       screen.getByRole('link', { name: 'Eintrag bearbeiten (Draft)' })
     ).toHaveAttribute('href', '/vault/entries/entry-999');
     expect(
       document.querySelector('a[href="/vault/entries/entry-123"]')
-    ).not.toBeInTheDocument();
-    expect(
-      document.querySelector('a[href="/vault/entries/entry-456"]')
     ).not.toBeInTheDocument();
   });
 
@@ -171,8 +157,8 @@ describe('AppShell', () => {
 
     usePathnameMock.mockReturnValue('/vault/entries/new');
     window.localStorage.setItem(
-      'topic-editor-create-draft:vault-entry:create',
-      '{}'
+      'editor-create-draft',
+      JSON.stringify({ scope: 'vault-entry:create' })
     );
 
     render(
@@ -202,11 +188,7 @@ describe('AppShell', () => {
 
     await user.click(screen.getByRole('button', { name: 'Ja, verwerfen' }));
 
-    expect(
-      window.localStorage.getItem(
-        'topic-editor-create-draft:vault-entry:create'
-      )
-    ).toBeNull();
+    expect(window.localStorage.getItem('editor-create-draft')).toBeNull();
     expect(pushMock).toHaveBeenCalledWith('/vault/entries');
   });
 
@@ -215,8 +197,8 @@ describe('AppShell', () => {
 
     usePathnameMock.mockReturnValue('/vault/entries/new');
     window.localStorage.setItem(
-      'topic-editor-create-draft:vault-entry:create',
-      '{}'
+      'editor-create-draft',
+      JSON.stringify({ scope: 'vault-entry:create' })
     );
 
     render(
@@ -246,11 +228,9 @@ describe('AppShell', () => {
 
     await user.click(screen.getByRole('button', { name: 'Zurück' }));
 
-    expect(
-      window.localStorage.getItem(
-        'topic-editor-create-draft:vault-entry:create'
-      )
-    ).toBe('{}');
+    expect(window.localStorage.getItem('editor-create-draft')).toBe(
+      JSON.stringify({ scope: 'vault-entry:create' })
+    );
     expect(pushMock).not.toHaveBeenCalled();
   });
 });

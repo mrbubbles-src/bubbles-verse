@@ -8,8 +8,13 @@ export {
   EDIT_DRAFT_KEY,
   loadCreateDraft,
   loadEditDraft,
+  peekCreateDraft,
+  peekEditDraft,
 } from './lib/draft-storage';
-export type { MarkdownEditorDraft } from './lib/draft-storage';
+export type {
+  MarkdownEditorDraft,
+  MarkdownEditorStoredDraft,
+} from './lib/draft-storage';
 export {
   generateSlug,
   joinSlugSegments,

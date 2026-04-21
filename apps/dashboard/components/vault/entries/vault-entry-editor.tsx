@@ -6,14 +6,19 @@ import type {
 } from '@/lib/vault/entries';
 import type {
   MarkdownEditorStatus,
+  MarkdownEditorStoredDraft,
   MarkdownEditorSubmitData,
 } from '@bubbles/markdown-editor';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useReducer, useState } from 'react';
 
 import {
+  clearCreateDraft,
+  clearEditDraft,
   createEditorImageUploader,
   MarkdownEditor,
+  peekCreateDraft,
+  peekEditDraft,
 } from '@bubbles/markdown-editor';
 
 import '@bubbles/markdown-editor/styles/editor';
@@ -29,6 +34,16 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { toast } from '@bubbles/ui/lib/sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@bubbles/ui/shadcn/alert-dialog';
 import { Badge } from '@bubbles/ui/shadcn/badge';
 import { Button } from '@bubbles/ui/shadcn/button';
 import {
@@ -46,6 +61,91 @@ type VaultEntryEditorProps = {
   mode?: 'create' | 'edit';
 };
 
+type VaultEntryDraftConflict = {
+  href: '/vault/entries/new' | `/vault/entries/${string}`;
+  label: 'Neuer Eintrag' | 'Eintrag bearbeiten';
+};
+
+type VaultEntryDraftConflictState = {
+  checked: boolean;
+  conflict: VaultEntryDraftConflict | null;
+  resolvedHref: string | null;
+};
+
+type VaultEntryDraftConflictAction =
+  | {
+      type: 'sync';
+      currentHref: string;
+      conflict: VaultEntryDraftConflict | null;
+    }
+  | {
+      type: 'resolve';
+      currentHref: string;
+    };
+
+/**
+ * Tracks whether the current route may mount the editor or still needs a
+ * draft-replacement decision from the author.
+ *
+ * @param state Current draft-guard state for the active route.
+ * @param action Sync or resolve action for the current href.
+ * @returns Updated draft-guard state.
+ */
+function reduceVaultEntryDraftConflict(
+  state: VaultEntryDraftConflictState,
+  action: VaultEntryDraftConflictAction
+): VaultEntryDraftConflictState {
+  if (action.type === 'resolve') {
+    return {
+      ...state,
+      conflict: null,
+      resolvedHref: action.currentHref,
+    };
+  }
+
+  return {
+    checked: true,
+    conflict: action.conflict,
+    resolvedHref: action.conflict === null ? action.currentHref : null,
+  };
+}
+
+/**
+ * Resolves one dashboard route href from a stored Vault draft record.
+ *
+ * @param draft Stored draft record from the markdown-editor package.
+ * @param mode Draft mode that owns the slot.
+ * @returns Matching dashboard route or `null` when the draft is unrelated.
+ */
+function getVaultEntryDraftConflict(
+  draft: MarkdownEditorStoredDraft | null,
+  mode: 'create' | 'edit'
+): VaultEntryDraftConflict | null {
+  if (!draft?.scope?.startsWith('vault-entry:')) {
+    return null;
+  }
+
+  if (mode === 'create') {
+    return draft.scope === 'vault-entry:create'
+      ? {
+          href: '/vault/entries/new',
+          label: 'Neuer Eintrag',
+        }
+      : null;
+  }
+
+  const entryId = draft.scope.slice('vault-entry:'.length);
+
+  if (!entryId || entryId === 'create') {
+    return null;
+  }
+
+  return {
+    href: `/vault/entries/${entryId}`,
+    label: 'Eintrag bearbeiten',
+  };
+}
+
 /**
  * Renders the first real Vault entry authoring flow.
  *
@@ -62,10 +162,22 @@ export function VaultEntryEditor({
   const [selectedCategoryId, setSelectedCategoryId] = useState(
     initialData?.primaryCategoryId ?? categories[0]?.id ?? ''
   );
+  const [draftConflictState, dispatchDraftConflict] = useReducer(
+    reduceVaultEntryDraftConflict,
+    {
+      checked: false,
+      conflict: null,
+      resolvedHref: null,
+    }
+  );
   const draftStorageScope = getVaultEntryDraftScope({
     id: initialData?.id,
     mode,
   });
+  const currentDraftHref =
+    mode === 'edit' && initialData
+      ? (`/vault/entries/${initialData.id}` as const)
+      : '/vault/entries/new';
   const selectedCategory = useMemo(
     () =>
       categories.find((category) => category.id === selectedCategoryId) ?? null,
@@ -86,6 +198,23 @@ export function VaultEntryEditor({
       }),
     []
   );
+  const draftConflict = draftConflictState.conflict;
+
+  useEffect(() => {
+    const nextDraftConflict =
+      mode === 'create'
+        ? getVaultEntryDraftConflict(peekCreateDraft(), 'create')
+        : getVaultEntryDraftConflict(peekEditDraft(), 'edit');
+
+    dispatchDraftConflict({
+      type: 'sync',
+      currentHref: currentDraftHref,
+      conflict:
+        nextDraftConflict && nextDraftConflict.href !== currentDraftHref
+          ? nextDraftConflict
+          : null,
+    });
+  }, [currentDraftHref, mode]);
 
   /**
    * Returns the current category path as a short editorial label.
@@ -94,6 +223,41 @@ export function VaultEntryEditor({
    */
   function getSelectedCategoryLabel() {
     return selectedCategory?.label ?? 'Kategorie wählen';
+  }
+
+  /**
+   * Clears stale draft slots from another authoring route before continuing.
+   *
+   * @returns Nothing. The current route keeps rendering after cleanup.
+   */
+  function handleReplaceDraft() {
+    if (mode === 'create') {
+      clearCreateDraft();
+    } else {
+      clearEditDraft();
+    }
+
+    dispatchDraftConflict({
+      type: 'resolve',
+      currentHref: currentDraftHref,
+    });
+  }
+
+  /**
+   * Returns to the already-open authoring route instead of replacing it.
+   *
+   * @returns Nothing. Navigation stays inside the current dashboard shell.
+   */
+  function handleKeepExistingDraft() {
+    if (!draftConflict) {
+      dispatchDraftConflict({
+        type: 'resolve',
+        currentHref: currentDraftHref,
+      });
+      return;
+    }
+
+    router.push(draftConflict.href);
   }
 
   async function handleSuccess(payload: MarkdownEditorSubmitData) {
@@ -161,6 +325,36 @@ export function VaultEntryEditor({
 
   return (
     <div className="flex flex-col gap-8">
+      <AlertDialog
+        open={
+          draftConflictState.checked &&
+          draftConflict !== null &&
+          draftConflictState.resolvedHref !== currentDraftHref
+        }>
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Aktuellen Entwurf ersetzen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Du hast gerade noch einen lokalen Entwurf für{' '}
+              <strong>{draftConflict?.label}</strong> offen. Wenn du hier
+              weitermachst, wird dieser Entwurf verworfen und durch die neue
+              Bearbeitung ersetzt.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleKeepExistingDraft}>
+              Zum Entwurf
+            </AlertDialogCancel>
+            <AlertDialogAction
+              type="button"
+              variant="destructive"
+              onClick={handleReplaceDraft}>
+              Ersetzen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <header className="flex flex-col gap-5 pb-6 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 space-y-4">
           <div className="space-y-2">
@@ -228,30 +422,34 @@ export function VaultEntryEditor({
         </div>
       </header>
 
-      <MarkdownEditor
-        key={mode === 'edit' && initialData ? initialData.id : 'create'}
-        draftStorageScope={draftStorageScope}
-        imageUploader={imageUploader}
-        initialData={
-          initialData
-            ? {
-                content: initialData.editorContent,
-                title: initialData.title,
-                slug: initialData.slug,
-                description: initialData.description,
-                tags: initialData.tags,
-                status: initialData.status,
-              }
-            : undefined
-        }
-        isEditMode={mode === 'edit'}
-        onSuccess={handleSuccess}
-        slugStrategy={({ title }) => [
-          selectedCategory?.topLevelSlug ?? '',
-          selectedCategory?.childSlug ?? '',
-          title,
-        ]}
-      />
+      {!draftConflictState.checked ||
+      (draftConflict &&
+        draftConflictState.resolvedHref !== currentDraftHref) ? null : (
+        <MarkdownEditor
+          key={mode === 'edit' && initialData ? initialData.id : 'create'}
+          draftStorageScope={draftStorageScope}
+          imageUploader={imageUploader}
+          initialData={
+            initialData
+              ? {
+                  content: initialData.editorContent,
+                  title: initialData.title,
+                  slug: initialData.slug,
+                  description: initialData.description,
+                  tags: initialData.tags,
+                  status: initialData.status,
+                }
+              : undefined
+          }
+          isEditMode={mode === 'edit'}
+          onSuccess={handleSuccess}
+          slugStrategy={({ title }) => [
+            selectedCategory?.topLevelSlug ?? '',
+            selectedCategory?.childSlug ?? '',
+            title,
+          ]}
+        />
+      )}
     </div>
   );
 }

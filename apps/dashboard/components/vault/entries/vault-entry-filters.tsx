@@ -1,7 +1,11 @@
+'use client';
+
 import type {
   VaultEntryCategoryOption,
   VaultEntryListFilters,
 } from '@/lib/vault/entries';
+
+import { useMemo, useState } from 'react';
 
 import Link from 'next/link';
 
@@ -37,6 +41,30 @@ export function VaultEntryFilters({
   categories,
   filters,
 }: VaultEntryFiltersProps) {
+  const [selectedStatus, setSelectedStatus] = useState(filters.status);
+  const [selectedCategoryId, setSelectedCategoryId] = useState(
+    filters.categoryId ?? 'all'
+  );
+  const selectedStatusLabel = useMemo(
+    () =>
+      ({
+        all: 'Alle Status',
+        draft: 'Nur Entwürfe',
+        published: 'Nur veröffentlicht',
+      })[selectedStatus],
+    [selectedStatus]
+  );
+  const selectedCategoryLabel = useMemo(() => {
+    if (selectedCategoryId === 'all') {
+      return 'Alle Kategorien';
+    }
+
+    return (
+      categories.find((category) => category.id === selectedCategoryId)
+        ?.label ?? 'Alle Kategorien'
+    );
+  }, [categories, selectedCategoryId]);
+
   return (
     <form action="/vault/entries" className="py-4 sm:py-5">
       <input type="hidden" name="page" value="1" />
@@ -58,9 +86,16 @@ export function VaultEntryFilters({
         <Field>
           <FieldLabel htmlFor="vault-entry-status">Status</FieldLabel>
           <FieldContent>
-            <Select defaultValue={filters.status} name="status">
+            <Select
+              defaultValue={filters.status}
+              name="status"
+              onValueChange={(value) =>
+                setSelectedStatus(
+                  (value as VaultEntryListFilters['status']) ?? 'all'
+                )
+              }>
               <SelectTrigger id="vault-entry-status" className="w-full">
-                <SelectValue />
+                <SelectValue>{selectedStatusLabel}</SelectValue>
               </SelectTrigger>
               <SelectContent align="start">
                 <SelectGroup>
@@ -80,11 +115,12 @@ export function VaultEntryFilters({
           <FieldContent>
             <Select
               defaultValue={filters.categoryId ?? 'all'}
-              name="categoryId">
+              name="categoryId"
+              onValueChange={(value) => setSelectedCategoryId(value ?? 'all')}>
               <SelectTrigger
                 id="vault-entry-category-filter"
                 className="w-full">
-                <SelectValue />
+                <SelectValue>{selectedCategoryLabel}</SelectValue>
               </SelectTrigger>
               <SelectContent align="start">
                 <SelectGroup>

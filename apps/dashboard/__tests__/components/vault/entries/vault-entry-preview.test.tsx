@@ -13,8 +13,8 @@ const serializeToMdxMock =
   vi.fn<(draft: MarkdownEditorDraft['content']) => string>();
 
 vi.mock('@bubbles/markdown-editor', () => ({
-  CREATE_DRAFT_KEY: 'topic-editor-create-draft',
-  EDIT_DRAFT_KEY: 'topic-editor-edit-draft',
+  CREATE_DRAFT_KEY: 'editor-create-draft',
+  EDIT_DRAFT_KEY: 'editor-edit-draft',
   loadCreateDraft: (scope?: string) => loadCreateDraftMock(scope),
   loadEditDraft: (scope?: string) => loadEditDraftMock(scope),
   serializeToMdx: (content: MarkdownEditorDraft['content']) =>

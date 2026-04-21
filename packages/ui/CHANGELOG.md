@@ -50,6 +50,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   beside the desktop sidebar.
 - The shared sidebar rail no longer ships a browser-default `title` tooltip,
   avoiding mixed native-vs-shared tooltip behavior inside apps.
+- Shared sidebar trailing actions now keep a stronger parent-hover contrast and
+  explicit pointer cursor, which makes compact affordances like draft-dismiss
+  buttons easier to spot in both light and dark themes.
+- Shared select popovers now use a more solid surface plus stronger highlighted
+  item contrast, so hovered options remain readable in both themes.
 
 ## [1.1.0] - 2026-04-17
 
