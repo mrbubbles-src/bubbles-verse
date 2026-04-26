@@ -1,7 +1,15 @@
 import Link from 'next/link';
 
 import { Badge } from '@bubbles/ui/components/shadcn/badge';
-import { ArrowRight01Icon, HugeiconsIcon } from '@bubbles/ui/lib/hugeicons';
+import {
+  ArrowRight01Icon,
+  File01Icon,
+  Folder01Icon,
+  HugeiconsIcon,
+  PencilEdit01Icon,
+  Upload01Icon,
+  UserAdd01Icon,
+} from '@bubbles/ui/lib/hugeicons';
 import { Separator } from '@bubbles/ui/shadcn/separator';
 
 type QuickAction = {
@@ -14,6 +22,32 @@ type QuickActionsProps = {
   actions: QuickAction[];
   variant?: 'rail' | 'strip';
 };
+
+/**
+ * Picks the closest available icon for a dashboard quick action.
+ *
+ * @param action Quick action containing the target path and label.
+ * @returns Hugeicons glyph used in the mockup-like action strip.
+ */
+function getQuickActionIcon(action: QuickAction) {
+  if (action.href.includes('/entries/new')) {
+    return PencilEdit01Icon;
+  }
+
+  if (action.href.includes('/entries')) {
+    return File01Icon;
+  }
+
+  if (action.href.includes('/categories')) {
+    return Folder01Icon;
+  }
+
+  if (action.href.includes('/account')) {
+    return UserAdd01Icon;
+  }
+
+  return Upload01Icon;
+}
 
 /**
  * Renders quick links either as a rail list or a horizontal action strip.
@@ -33,11 +67,12 @@ export function QuickActions({ actions, variant = 'rail' }: QuickActionsProps) {
             key={action.href}
             href={action.href}
             className="dashboard-action-tile group">
-            <Badge
-              className="mt-0.5 rounded-lg px-2.5 py-2 text-muted-foreground transition-colors group-hover:border-foreground/20 group-hover:text-foreground"
-              variant="outline">
-              <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} />
-            </Badge>
+            <span className="dashboard-action-icon">
+              <HugeiconsIcon
+                icon={getQuickActionIcon(action)}
+                strokeWidth={2}
+              />
+            </span>
             <span className="flex min-w-0 flex-col gap-1">
               <span className="text-base font-semibold tracking-normal text-foreground">
                 {action.label}

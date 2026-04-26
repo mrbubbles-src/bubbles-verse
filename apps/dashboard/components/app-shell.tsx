@@ -19,12 +19,50 @@ import { peekCreateDraft, peekEditDraft } from '@bubbles/markdown-editor';
 import { ThemeToggle } from '@bubbles/theme';
 import { BubblesAppHeader } from '@bubbles/ui/components/bubbles-app-header';
 import { BubblesSidebarLayout } from '@bubbles/ui/components/bubbles-sidebar-layout';
+import { HugeiconsIcon, SparklesIcon } from '@bubbles/ui/lib/hugeicons';
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from '@bubbles/ui/shadcn/input-group';
 import { Separator } from '@bubbles/ui/shadcn/separator';
+import { SidebarTrigger } from '@bubbles/ui/shadcn/sidebar';
 
 const DASHBOARD_CREATE_DRAFT_SCOPE = 'vault-entry:create';
 const DASHBOARD_EDIT_DRAFT_SCOPE_PREFIX = 'vault-entry:';
 const DASHBOARD_CREATE_DRAFT_UPDATED_EVENT = 'create-draft-updated';
 const DASHBOARD_EDIT_DRAFT_UPDATED_EVENT = 'edit-draft-updated';
+
+/**
+ * Renders the dashboard landing topbar from the command-center mockup.
+ *
+ * Use this only on `/` so the dashboard home can center the command input while
+ * deeper routes keep breadcrumbs and contextual subtitles.
+ */
+function DashboardHomeHeader() {
+  return (
+    <header className="sticky top-0 z-30 shrink-0 border-b border-border/35 bg-background/80 shadow-sm shadow-black/5 backdrop-blur-sm dark:shadow-black/20">
+      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 sm:px-5 lg:px-7 xl:px-9 2xl:px-10">
+        <SidebarTrigger
+          size="icon"
+          className="-ml-1 size-11 rounded-full [&>svg]:size-6"
+        />
+        <InputGroup className="mx-auto hidden min-h-10 w-full max-w-xl rounded-lg border-border/45 bg-background/70 shadow-sm shadow-black/5 md:flex dark:bg-background/40 dark:shadow-black/20">
+          <InputGroupAddon>
+            <HugeiconsIcon icon={SparklesIcon} strokeWidth={2} />
+          </InputGroupAddon>
+          <InputGroupInput
+            readOnly
+            aria-label="Dashboard suchen oder erstellen"
+            value="Suchen oder erstellen"
+            className="cursor-default text-base"
+          />
+        </InputGroup>
+        <ThemeToggle />
+      </div>
+    </header>
+  );
+}
 
 /**
  * Reads temporary Vault draft routes from localStorage for sidebar navigation.
@@ -107,6 +145,7 @@ export default function AppShell({
   );
   const pageInfo = getDashboardPageInfoByPath(pathname);
   const breadcrumbs = getDashboardBreadcrumbs(pathname);
+  const isDashboardHome = pathname === '/';
   const sidebarData = useMemo(
     () => getDashboardSidebarData(draftItems),
     [draftItems]
@@ -154,22 +193,29 @@ export default function AppShell({
         content: 'dashboard-shell-content',
       }}
       header={
-        <BubblesAppHeader
-          breadcrumbs={breadcrumbs}
-          subtitle={pageInfo.description}
-          classNames={{
-            root: 'border-b border-border/35 bg-background/80 shadow-sm shadow-black/5 dark:shadow-black/20',
-            inner: 'px-4 py-3 sm:px-5 lg:px-7 xl:px-9 2xl:px-10',
-            subtitle: 'dashboard-meta',
-          }}
-          mobileTopActions={<ThemeToggle />}
-          actions={
-            <div className="hidden items-center gap-4 md:flex">
-              <Separator orientation="vertical" className="data-vertical:h-8" />
-              <ThemeToggle />
-            </div>
-          }
-        />
+        isDashboardHome ? (
+          <DashboardHomeHeader />
+        ) : (
+          <BubblesAppHeader
+            breadcrumbs={breadcrumbs}
+            subtitle={pageInfo.description}
+            classNames={{
+              root: 'border-b border-border/35 bg-background/80 shadow-sm shadow-black/5 dark:shadow-black/20',
+              inner: 'px-4 py-3 sm:px-5 lg:px-7 xl:px-9 2xl:px-10',
+              subtitle: 'dashboard-meta',
+            }}
+            mobileTopActions={<ThemeToggle />}
+            actions={
+              <div className="hidden items-center gap-4 md:flex">
+                <Separator
+                  orientation="vertical"
+                  className="data-vertical:h-8"
+                />
+                <ThemeToggle />
+              </div>
+            }
+          />
+        )
       }>
       <div className="flex min-h-dvh flex-1 flex-col">
         <main className="dashboard-main">{children}</main>

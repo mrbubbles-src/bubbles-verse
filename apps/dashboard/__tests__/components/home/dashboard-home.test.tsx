@@ -53,18 +53,18 @@ describe('DashboardHome', () => {
     render(<DashboardHome model={model} />);
 
     expect(
-      screen.getByRole('heading', { name: 'Hallo, Manuel' })
+      screen.getByRole('heading', { name: 'Dashboard' })
     ).toBeInTheDocument();
     expect(
       screen.getAllByRole('link', { name: /Neuer Eintrag/i })[0]
     ).toHaveAttribute('href', '/vault/entries/new');
     expect(
-      screen.getByRole('tab', { name: 'Offene Entwürfe' })
+      screen.getByRole('heading', { name: 'Weiterarbeiten' })
     ).toBeInTheDocument();
     expect(
       screen.queryByText('Profil noch nicht vollständig')
     ).not.toBeInTheDocument();
     expect(screen.getAllByText('Coding Vault')).toHaveLength(2);
-    expect(screen.getByText(/4 veröffentlicht/)).toBeInTheDocument();
+    expect(screen.getAllByText('Veröffentlicht').length).toBeGreaterThan(1);
   });
 });
