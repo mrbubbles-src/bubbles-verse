@@ -1,0 +1,2 @@
+CREATE INDEX "content_items_updated_at_idx" ON "content_items" USING btree ("updatedAt");--> statement-breakpoint
+CREATE INDEX "content_items_status_updated_at_idx" ON "content_items" USING btree ("status","updatedAt");

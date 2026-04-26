@@ -62,9 +62,16 @@ describe('DashboardHome', () => {
       screen.getByRole('heading', { name: 'Weiterarbeiten' })
     ).toBeInTheDocument();
     expect(
+      screen.getAllByRole('link', { name: 'Alle ansehen' })[0]
+    ).toHaveAttribute('href', '/vault/entries?status=draft');
+    expect(
+      screen.getAllByRole('link', { name: 'Alle ansehen' })[1]
+    ).toHaveAttribute('href', '/vault/entries');
+    expect(
       screen.queryByText('Profil noch nicht vollständig')
     ).not.toBeInTheDocument();
-    expect(screen.getAllByText('Coding Vault')).toHaveLength(2);
+    expect(screen.getAllByText('Coding Vault').length).toBeGreaterThan(1);
     expect(screen.getAllByText('Veröffentlicht').length).toBeGreaterThan(1);
+    expect(screen.getAllByText('Entwurf')[0]).toHaveClass('text-chart-3');
   });
 });

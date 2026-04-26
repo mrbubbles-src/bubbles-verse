@@ -50,7 +50,13 @@
   }
 
   .dashboard-action-strip {
-    @apply grid gap-4 sm:grid-cols-2 2xl:grid-cols-4;
+    @apply grid gap-4 sm:grid-cols-2;
+  }
+
+  @media (min-width: 112rem) {
+    .dashboard-action-strip {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
   }
 
   .dashboard-action-tile {
@@ -58,7 +64,11 @@
   }
 
   .dashboard-action-icon {
-    @apply flex size-14 shrink-0 items-center justify-center rounded-lg bg-muted/60 text-primary shadow-sm shadow-black/5 dark:bg-muted/35 dark:shadow-black/20;
+    @apply flex size-14 shrink-0 items-center justify-center rounded-lg bg-muted/60 text-primary shadow-sm shadow-black/5 dark:bg-muted/35 dark:shadow-black/20 [&>svg]:size-6;
+  }
+
+  .dashboard-content-icon {
+    @apply flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted/45 text-primary shadow-sm shadow-black/5 dark:bg-muted/30 dark:shadow-black/20 [&>svg]:size-4;
   }
 
   .dashboard-kicker {
@@ -85,8 +95,62 @@
     @apply rounded-lg px-3 py-4 transition-colors hover:bg-muted/35 focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none sm:px-4;
   }
 
+  .dashboard-work-row {
+    @apply grid items-center gap-x-3 gap-y-1 sm:grid-cols-[auto_minmax(0,1fr)];
+  }
+
+  .dashboard-work-date {
+    @apply whitespace-nowrap;
+  }
+
+  @media (min-width: 92rem) {
+    .dashboard-work-row {
+      @apply grid-cols-[auto_minmax(0,1fr)_minmax(8rem,auto)_max-content];
+    }
+
+    .dashboard-work-content,
+    .dashboard-work-meta {
+      display: contents !important;
+    }
+
+    .dashboard-work-app {
+      @apply whitespace-nowrap;
+    }
+
+    .dashboard-work-date {
+      @apply justify-self-end text-right;
+    }
+  }
+
   .dashboard-content-table-row {
-    @apply grid gap-3 rounded-lg px-3 py-3 transition-colors hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none sm:grid-cols-[minmax(0,1fr)_7rem_7rem_5rem] sm:items-center sm:px-4;
+    @apply grid gap-2 rounded-lg px-3 py-3 transition-colors hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none sm:px-4;
+  }
+
+  .dashboard-table-desktop-cell,
+  .dashboard-table-desktop-badge {
+    display: none !important;
+  }
+
+  .dashboard-table-compact-meta {
+    display: flex !important;
+  }
+
+  @media (min-width: 112rem) {
+    .dashboard-content-table-row {
+      @apply grid-cols-[minmax(14rem,1fr)_9rem_7rem_8rem_8.75rem] items-center gap-3;
+    }
+
+    .dashboard-table-desktop-cell {
+      display: block !important;
+    }
+
+    .dashboard-table-desktop-badge {
+      display: inline-flex !important;
+    }
+
+    .dashboard-table-compact-meta {
+      display: none !important;
+    }
   }
 
   .dashboard-preview-strip {

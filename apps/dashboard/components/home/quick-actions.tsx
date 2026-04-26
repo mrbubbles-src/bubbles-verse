@@ -50,6 +50,32 @@ function getQuickActionIcon(action: QuickAction) {
 }
 
 /**
+ * Shortens action copy for the compact dashboard strip.
+ *
+ * @param action Quick action containing the target path and original text.
+ * @returns One-line description that keeps icon tiles visually balanced.
+ */
+function getQuickActionStripDescription(action: QuickAction) {
+  if (action.href.includes('/entries/new')) {
+    return 'Neuen Inhalt schreiben.';
+  }
+
+  if (action.href.includes('/entries')) {
+    return 'Entwürfe prüfen.';
+  }
+
+  if (action.href.includes('/categories')) {
+    return 'Struktur pflegen.';
+  }
+
+  if (action.href.includes('/account')) {
+    return 'Rollen verwalten.';
+  }
+
+  return action.description;
+}
+
+/**
  * Renders quick links either as a rail list or a horizontal action strip.
  *
  * Use `strip` near the dashboard title for primary creation paths and `rail`
@@ -74,11 +100,11 @@ export function QuickActions({ actions, variant = 'rail' }: QuickActionsProps) {
               />
             </span>
             <span className="flex min-w-0 flex-col gap-1">
-              <span className="text-base font-semibold tracking-normal text-foreground">
+              <span className="truncate text-base font-semibold tracking-normal text-foreground">
                 {action.label}
               </span>
-              <span className="line-clamp-2 text-sm/relaxed text-muted-foreground">
-                {action.description}
+              <span className="truncate text-sm/relaxed text-muted-foreground">
+                {getQuickActionStripDescription(action)}
               </span>
             </span>
           </Link>

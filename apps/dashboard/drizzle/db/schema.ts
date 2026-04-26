@@ -3,6 +3,7 @@ import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import {
   boolean,
+  index,
   integer,
   jsonb,
   pgEnum,
@@ -155,6 +156,11 @@ export const contentItems = pgTable(
       table.appModuleId,
       table.contentType,
       table.slug
+    ),
+    updatedAtIdx: index('content_items_updated_at_idx').on(table.updatedAt),
+    statusUpdatedAtIdx: index('content_items_status_updated_at_idx').on(
+      table.status,
+      table.updatedAt
     ),
   })
 );

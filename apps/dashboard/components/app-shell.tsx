@@ -2,6 +2,7 @@
 
 import type { DashboardDraftNavigationItem } from '@/lib/sidebar';
 import type { BubblesSidebarUser } from '@bubbles/ui/lib/bubbles-sidebar';
+import type { FormEvent } from 'react';
 
 import { getDashboardPageInfoByPath } from '@/lib/page-meta';
 import {
@@ -12,7 +13,7 @@ import {
 
 import { useEffect, useMemo, useState } from 'react';
 
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 import { Footer } from '@bubbles/footer';
 import { peekCreateDraft, peekEditDraft } from '@bubbles/markdown-editor';
@@ -40,6 +41,26 @@ const DASHBOARD_EDIT_DRAFT_UPDATED_EVENT = 'edit-draft-updated';
  * deeper routes keep breadcrumbs and contextual subtitles.
  */
 function DashboardHomeHeader() {
+  const router = useRouter();
+  const [query, setQuery] = useState('');
+
+  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const normalizedQuery = query.trim();
+    const params = new URLSearchParams();
+
+    if (normalizedQuery) {
+      params.set('query', normalizedQuery);
+    }
+
+    const nextHref = params.toString()
+      ? `/vault/entries?${params.toString()}`
+      : '/vault/entries';
+
+    router.push(nextHref);
+  };
+
   return (
     <header className="sticky top-0 z-30 shrink-0 border-b border-border/35 bg-background/80 shadow-sm shadow-black/5 backdrop-blur-sm dark:shadow-black/20">
       <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 sm:px-5 lg:px-7 xl:px-9 2xl:px-10">
@@ -47,17 +68,24 @@ function DashboardHomeHeader() {
           size="icon"
           className="-ml-1 size-11 rounded-full [&>svg]:size-6"
         />
-        <InputGroup className="mx-auto hidden min-h-10 w-full max-w-xl rounded-lg border-border/45 bg-background/70 shadow-sm shadow-black/5 md:flex dark:bg-background/40 dark:shadow-black/20">
-          <InputGroupAddon>
-            <HugeiconsIcon icon={SparklesIcon} strokeWidth={2} />
-          </InputGroupAddon>
-          <InputGroupInput
-            readOnly
-            aria-label="Dashboard suchen oder erstellen"
-            value="Suchen oder erstellen"
-            className="cursor-default text-base"
-          />
-        </InputGroup>
+        <form
+          role="search"
+          className="mx-auto w-full max-w-xl"
+          onSubmit={handleSearchSubmit}>
+          <InputGroup className="min-h-10 rounded-lg border-border/45 bg-background/70 shadow-sm shadow-black/5 dark:bg-background/40 dark:shadow-black/20">
+            <InputGroupAddon>
+              <HugeiconsIcon icon={SparklesIcon} strokeWidth={2} />
+            </InputGroupAddon>
+            <InputGroupInput
+              type="search"
+              aria-label="Dashboard suchen oder erstellen"
+              placeholder="Suchen oder erstellen"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              className="text-base"
+            />
+          </InputGroup>
+        </form>
         <ThemeToggle />
       </div>
     </header>
@@ -185,10 +213,13 @@ export default function AppShell({
       classNames={{
         root: 'dashboard-shell-root',
         sidebar:
-          'border-sidebar-border/50 bg-sidebar/95 shadow-xl shadow-black/5 dark:shadow-black/20',
-        sidebarHeader: 'px-2 pt-3',
-        sidebarContent: 'px-2',
-        sidebarFooter: 'px-2 pb-3',
+          'border-sidebar-border/50 bg-sidebar/95 shadow-xl shadow-black/5 dark:shadow-black/20 [&_[data-sidebar=separator]]:hidden',
+        sidebarHeader:
+          'px-2 pt-3 group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:[&_[data-slot=sidebar-menu-button]]:mx-auto group-data-[collapsible=icon]:[&_[data-slot=sidebar-menu-button]]:size-10',
+        sidebarContent:
+          'px-2 group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:[&_[data-slot=sidebar-group]]:px-0 group-data-[collapsible=icon]:[&_[data-slot=sidebar-menu]]:items-center group-data-[collapsible=icon]:[&_[data-slot=sidebar-menu-button]]:mx-auto group-data-[collapsible=icon]:[&_[data-slot=sidebar-menu-button]]:size-10',
+        sidebarFooter:
+          'px-2 pb-3 group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:[&_[data-slot=sidebar-menu]]:items-center group-data-[collapsible=icon]:[&_[data-slot=sidebar-menu-button]]:mx-auto group-data-[collapsible=icon]:[&_[data-slot=sidebar-menu-button]]:size-10 group-data-[collapsible=icon]:[&_[data-slot=avatar]]:size-8',
         sidebarInset: 'dashboard-shell-inset',
         content: 'dashboard-shell-content',
       }}

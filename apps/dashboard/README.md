@@ -34,6 +34,11 @@ a clean base.
 - The dashboard shell, home, and Vault overview now use the first calm creative
   visual slice: app-local studio panels, command-center spacing, token-based
   typography recipes, and flatter work queues.
+- The dashboard home now has a functional topbar search into `/vault/entries`,
+  linked `Alle ansehen` affordances, and token-colored recent-content status
+  badges.
+- Future app selection for the home quick-start actions is tracked in
+  `documentation/dashboard-todo.md`.
 - Protected routes exist for `/profile`, `/account`, `/vault`, `/vault/categories`, `/vault/entries`, and `/vault/entries/new`.
 - `/profile` now gives every legit dashboard user a dedicated author-profile screen for display data, slug, avatar, bio, and the first fixed social links.
 - `/account` now lets Owners manage the private dashboard allowlist, including `dashboard_access` and `user_role`.

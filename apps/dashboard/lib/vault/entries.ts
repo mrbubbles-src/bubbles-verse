@@ -467,7 +467,7 @@ export function parseVaultEntryListFilters(searchParams: {
  * @returns Recently updated Vault entries with category labels.
  */
 export async function getVaultEntries(
-  filters: VaultEntryListFilters = {
+  filters: Omit<VaultEntryListFilters, 'pageSize'> & { pageSize: number } = {
     query: '',
     status: 'all',
     categoryId: null,
@@ -475,11 +475,17 @@ export async function getVaultEntries(
     pageSize: 20,
   }
 ): Promise<VaultEntryListItem[]> {
-  return queryVaultEntryRows({
-    query: filters.query,
-    status: filters.status,
-    categoryId: filters.categoryId,
-  });
+  return queryVaultEntryRows(
+    {
+      query: filters.query,
+      status: filters.status,
+      categoryId: filters.categoryId,
+    },
+    {
+      limit: filters.pageSize,
+      offset: (filters.page - 1) * filters.pageSize,
+    }
+  );
 }
 
 /**

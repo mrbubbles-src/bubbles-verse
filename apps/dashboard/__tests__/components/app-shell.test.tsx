@@ -84,6 +84,33 @@ describe('AppShell', () => {
     expect(screen.getByText('Dashboard content')).toBeInTheDocument();
   });
 
+  it('submits the dashboard home search to the Vault entry list', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <ThemeProvider attribute="class" defaultTheme="dark">
+        <AppShell
+          user={{
+            name: 'Mr Bubbles',
+            email: 'dashboard@mrbubbles.test',
+            dashboardHref: '/',
+            settingsHref: '/profile',
+            logoutHref: '/auth/logout',
+          }}>
+          <div>Dashboard content</div>
+        </AppShell>
+      </ThemeProvider>
+    );
+
+    const searchInput = screen.getByRole('searchbox', {
+      name: 'Dashboard suchen oder erstellen',
+    });
+
+    await user.type(searchInput, 'tables{enter}');
+
+    expect(pushMock).toHaveBeenCalledWith('/vault/entries?query=tables');
+  });
+
   it('renders temporary Vault draft links below Einträge from local storage', async () => {
     usePathnameMock.mockReturnValue('/vault/entries/new');
     window.localStorage.setItem(

@@ -289,7 +289,13 @@ export async function getDashboardHomeModel(
   const [profile, recentItems, categories, draftCount, publishedCount] =
     await Promise.all([
       getDashboardProfileByAuthUserId(session.user.id),
-      getVaultEntries(),
+      getVaultEntries({
+        query: '',
+        status: 'all',
+        categoryId: null,
+        page: 1,
+        pageSize: 5,
+      }),
       listVaultCategories(),
       countVaultEntries('draft'),
       countVaultEntries('published'),

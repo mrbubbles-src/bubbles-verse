@@ -192,7 +192,7 @@ describe('vault entry helpers', () => {
       dateStyle: 'medium',
       timeStyle: 'short',
     }).format(new Date('2026-04-18T18:00:00.000Z'));
-    const orderByMock = vi.fn().mockResolvedValue([
+    const queryRows = [
       {
         id: 'entry-id',
         title: 'React Rendering',
@@ -203,7 +203,11 @@ describe('vault entry helpers', () => {
         categoryId: 'category-id',
         categoryName: 'React / Rendering',
       },
-    ]);
+    ];
+    const limitMock = vi.fn().mockResolvedValue(queryRows);
+    const orderByMock = vi.fn().mockReturnValue({
+      limit: limitMock,
+    });
     const whereMock = vi.fn().mockReturnValue({
       orderBy: orderByMock,
     });
@@ -244,6 +248,7 @@ describe('vault entry helpers', () => {
     ]);
 
     expect(whereMock).toHaveBeenCalledTimes(1);
+    expect(limitMock).toHaveBeenCalledWith(20);
   });
 
   it('loads one vault entry with category and tag metadata for edit mode', async () => {

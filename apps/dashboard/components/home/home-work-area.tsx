@@ -1,5 +1,7 @@
 import type { DashboardHomeRecentItem } from '@/lib/dashboard/home';
 
+import Link from 'next/link';
+
 import { RecentContentList } from '@/components/home/recent-content-list';
 
 type HomeWorkAreaProps = {
@@ -25,7 +27,11 @@ export function HomeWorkArea({
       <section className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-4">
           <h2 className="dashboard-section-title">Weiterarbeiten</h2>
-          <span className="dashboard-meta">Alle ansehen</span>
+          <Link
+            href="/vault/entries?status=draft"
+            className="dashboard-meta transition-colors hover:text-foreground">
+            Alle ansehen
+          </Link>
         </div>
         <div className="dashboard-studio-panel px-3 py-2 sm:px-4">
           <RecentContentList
@@ -39,7 +45,11 @@ export function HomeWorkArea({
       <section className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-4">
           <h2 className="dashboard-section-title">Letzte Inhalte</h2>
-          <span className="dashboard-meta">Alle ansehen</span>
+          <Link
+            href="/vault/entries"
+            className="dashboard-meta transition-colors hover:text-foreground">
+            Alle ansehen
+          </Link>
         </div>
         <div className="dashboard-studio-panel px-3 py-2 sm:px-4">
           <RecentContentList

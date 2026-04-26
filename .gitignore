@@ -40,3 +40,4 @@ portal-ref
 lms-ref
 backend-ref
 .superpowers/
+.playwright-mcp/

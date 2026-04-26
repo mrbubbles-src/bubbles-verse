@@ -14,7 +14,8 @@ import {
   BookOpen01Icon,
   Cancel01Icon,
   DashboardSquare01Icon,
-  Folder01Icon,
+  Files02Icon,
+  TagsIcon,
   UserGroupIcon,
 } from '@bubbles/ui/lib/hugeicons';
 
@@ -153,7 +154,7 @@ export function getDashboardSidebarData(
             title: 'Einträge',
             href: '/vault/entries',
             match: 'prefix',
-            icon: Folder01Icon,
+            icon: Files02Icon,
           },
           ...(draftItems.length > 0
             ? [
@@ -168,7 +169,7 @@ export function getDashboardSidebarData(
             id: 'vault-categories',
             title: 'Kategorien',
             href: '/vault/categories',
-            icon: Folder01Icon,
+            icon: TagsIcon,
           },
         ],
       },

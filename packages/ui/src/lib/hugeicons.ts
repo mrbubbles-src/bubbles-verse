@@ -20,6 +20,7 @@ export { default as DoorOpenIcon } from '@hugeicons/core-free-icons/DoorOpenIcon
 export { default as FavouriteIcon } from '@hugeicons/core-free-icons/FavouriteIcon';
 export { default as File01Icon } from '@hugeicons/core-free-icons/File01Icon';
 export { default as FileDownIcon } from '@hugeicons/core-free-icons/FileDownIcon';
+export { default as Files02Icon } from '@hugeicons/core-free-icons/Files02Icon';
 export { default as Flag01Icon } from '@hugeicons/core-free-icons/Flag01Icon';
 export { default as FlashIcon } from '@hugeicons/core-free-icons/FlashIcon';
 export { default as Folder01Icon } from '@hugeicons/core-free-icons/Folder01Icon';
@@ -42,6 +43,7 @@ export { default as SmileIcon } from '@hugeicons/core-free-icons/SmileIcon';
 export { default as SparklesIcon } from '@hugeicons/core-free-icons/SparklesIcon';
 export { default as SunIcon } from '@hugeicons/core-free-icons/Sun01Icon';
 export { default as Target01Icon } from '@hugeicons/core-free-icons/Target01Icon';
+export { default as TagsIcon } from '@hugeicons/core-free-icons/TagsIcon';
 export { default as Tick02Icon } from '@hugeicons/core-free-icons/Tick02Icon';
 export { default as TriangleIcon } from '@hugeicons/core-free-icons/TriangleIcon';
 export { default as Upload01Icon } from '@hugeicons/core-free-icons/Upload01Icon';

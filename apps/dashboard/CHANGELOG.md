@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added a dashboard TODO note for future app selection in the home quick-start
+  actions once more content apps are managed from the dashboard.
 - Added a calm creative dashboard visual spec with checked-in mockup references,
   shadcn-first component rules, and global `@bubbles/ui` colors and fonts as
   the source of truth while scoping the first redesign slice to
@@ -63,6 +65,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Refined the command-center dashboard home with an active topbar search,
+  linked overview affordances, token-colored status badges, and denser
+  one-line content rows.
 - Applied the first calm creative visual slice to the dashboard shell, home,
   and Vault overview using app-local layout recipes over the existing
   `@bubbles/ui` tokens.

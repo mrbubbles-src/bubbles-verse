@@ -15,6 +15,13 @@
       "when": 1776524129231,
       "tag": "0001_sloppy_rogue",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777171480586,
+      "tag": "0002_boring_leader",
+      "breakpoints": true
     }
   ]
 }
