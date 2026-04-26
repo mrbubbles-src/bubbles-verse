@@ -23,13 +23,14 @@ describe('MarkdownCodeBlock', () => {
           dark: 'catppuccin-mocha',
           light: 'catppuccin-latte',
         },
+        defaultColor: 'light-dark()',
       });
     });
 
     expect(screen.getByText('const')).toBeInTheDocument();
   });
 
-  it('renders the highlighted Shiki subtree without rebuilding line spans', async () => {
+  it('renders highlighted lines with line numbers', async () => {
     const { container } = render(
       <MarkdownCodeBlock code={'const value = 1;'} language="ts" />
     );
@@ -38,6 +39,8 @@ describe('MarkdownCodeBlock', () => {
       expect(container.querySelector('.token.keyword')).not.toBeNull();
     });
 
-    expect(container.querySelector('.line')).toBeNull();
+    expect(container.querySelectorAll('.line')).toHaveLength(2);
+    expect(screen.getByText('1')).toBeInTheDocument();
+    expect(screen.getByText('2')).toBeInTheDocument();
   });
 });

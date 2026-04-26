@@ -9,9 +9,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Render the `MarkdownCodeBlock` copy action as a direct button trigger instead
   of an outer wrapper span, avoiding intermittent browser `removeChild` errors
   in client-rendered edit previews with many code blocks.
-- Keep Shiki-highlighted code blocks as one rendered HTML subtree instead of
-  splitting them into line-level React spans, avoiding another intermittent
-  `removeChild` cleanup failure in client-side edit previews.
+- Add visible line numbers to `MarkdownCodeBlock` while preserving Shiki token
+  markup and the repo-standard Catppuccin light/dark themes.
 
 ## [1.0.0] - 2026-04-17
 
