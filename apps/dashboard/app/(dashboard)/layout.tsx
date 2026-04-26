@@ -4,8 +4,13 @@ import { Suspense } from 'react';
 
 import { connection } from 'next/server';
 
+import { ThemeProvider } from '@bubbles/theme';
+import { HugeiconsIcon, Rotate01Icon } from '@bubbles/ui/lib/hugeicons';
+
 import AppShell from '@/components/app-shell';
 import { LoginSuccessToast } from '@/components/auth/login-success-toast';
+import { DashboardRouteLoadingDetails } from '@/components/dashboard-route-loading-details';
+import { DashboardRouteState } from '@/components/dashboard-route-state';
 import { DashboardRedirectFeedbackToast } from '@/components/feedback/dashboard-redirect-feedback-toast';
 
 /**
@@ -25,10 +30,38 @@ export default function DashboardLayout({
       <Suspense fallback={null}>
         <DashboardRedirectFeedbackToast />
       </Suspense>
-      <Suspense fallback={null}>
+      <Suspense fallback={<DashboardShellFallback />}>
         <AuthenticatedDashboardShell>{children}</AuthenticatedDashboardShell>
       </Suspense>
     </>
+  );
+}
+
+/**
+ * Renders a visible fallback while the request-scoped dashboard shell resolves.
+ *
+ * @returns Loading state for session and navigation metadata checks.
+ */
+function DashboardShellFallback() {
+  return (
+    <ThemeProvider attribute="class" defaultTheme="dark">
+      <main className="dashboard-page">
+        <DashboardRouteState
+          eyebrow="Dashboard prüft"
+          title="Wir prüfen deine Sitzung."
+          description="Session, Rolle und Navigation werden vorbereitet. Sobald die Prüfung abgeschlossen ist, öffnet sich dein Dashboard."
+          tone="loading"
+          visual={
+            <HugeiconsIcon
+              icon={Rotate01Icon}
+              strokeWidth={2}
+              className="size-8 animate-spin sm:size-10"
+            />
+          }
+          details={<DashboardRouteLoadingDetails />}
+        />
+      </main>
+    </ThemeProvider>
   );
 }
 
@@ -63,5 +96,9 @@ async function AuthenticatedDashboardShell({
     logoutHref: '/auth/logout',
   };
 
-  return <AppShell user={metadata}>{children}</AppShell>;
+  return (
+    <ThemeProvider attribute="class" defaultTheme="dark">
+      <AppShell user={metadata}>{children}</AppShell>
+    </ThemeProvider>
+  );
 }

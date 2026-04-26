@@ -68,6 +68,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Reduced the dashboard proxy to explicit page-route matching plus
+  cookie-presence routing so API, asset, and Next.js development requests no
+  longer perform proxy-level Supabase auth work.
+- Added a visible dashboard shell fallback while request-time session and role
+  checks resolve.
+- Added development timing logs and one retry for transient Postgres statement
+  timeouts during the request-time dashboard allowlist read.
 - Refined the command-center dashboard home with an active topbar search,
   linked overview affordances, token-colored status badges, and denser
   one-line content rows.

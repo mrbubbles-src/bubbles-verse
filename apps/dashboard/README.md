@@ -159,7 +159,13 @@ hooks.
 
 ## Auth flow
 
-- `proxy.ts` handles the fast, optimistic redirect between `/login` and the protected dashboard routes.
+- `proxy.ts` handles the fast, optimistic redirect between `/login` and the
+  protected dashboard page routes. Keep the matcher explicit and page-only so
+  API, asset, and `_next` development requests never trigger auth work.
+- Proxy auth only checks for Supabase auth-cookie presence. The secure
+  Supabase user and allowlist validation remains in request-time server code.
+- The request-time allowlist read logs slow development timings and retries one
+  transient Postgres statement timeout before surfacing the auth error.
 - GitHub OAuth returns to `/auth/callback`, where the PKCE auth code is exchanged for the dashboard session cookie before redirecting to `/`.
 - `requireDashboardSession()` remains the authoritative secure check and logs out stale or unauthorized sessions on the server.
 - `requireOwnerSession()` builds on top of that DB-backed session check and protects owner-only routes like `/account`.

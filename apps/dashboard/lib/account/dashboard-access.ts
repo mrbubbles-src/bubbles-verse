@@ -38,6 +38,90 @@ const dashboardAccessRoleOrder: Record<DashboardAccessRole, number> = {
   guest_author: 2,
 };
 
+const DASHBOARD_ACCESS_READ_RETRY_DELAY_MS = 200;
+const DASHBOARD_ACCESS_SLOW_READ_MS = 500;
+const POSTGRES_STATEMENT_TIMEOUT_CODE = '57014';
+
+/**
+ * Waits before retrying one transient dashboard access read.
+ *
+ * @param delayMs Number of milliseconds to wait.
+ * @returns Promise that resolves after the delay.
+ */
+function waitForRetry(delayMs: number) {
+  return new Promise<void>((resolve) => {
+    setTimeout(resolve, delayMs);
+  });
+}
+
+/**
+ * Checks whether a database error is a canceled statement timeout.
+ *
+ * @param error Error thrown by Postgres.js or Drizzle.
+ * @returns `true` when the error code matches Postgres statement timeout.
+ */
+function isStatementTimeoutError(error: Error) {
+  return (
+    (error as { code?: string; cause?: { code?: string } }).code ===
+      POSTGRES_STATEMENT_TIMEOUT_CODE ||
+    (error as { code?: string; cause?: { code?: string } }).cause?.code ===
+      POSTGRES_STATEMENT_TIMEOUT_CODE
+  );
+}
+
+/**
+ * Logs slow dashboard access reads during local development.
+ *
+ * @param event Short event label for the timing log.
+ * @param elapsedMs Query duration in milliseconds.
+ * @param attempt Current read attempt number.
+ */
+function logDashboardAccessReadTiming(
+  event: 'retry' | 'slow' | 'failed',
+  elapsedMs: number,
+  attempt: number
+) {
+  if (process.env.NODE_ENV !== 'development') {
+    return;
+  }
+
+  const message =
+    event === 'retry'
+      ? 'Dashboard access read timed out; retrying once.'
+      : event === 'failed'
+        ? 'Dashboard access read failed.'
+        : 'Dashboard access read was slow.';
+
+  console.warn(`[dashboard-auth] ${message}`, {
+    attempt,
+    elapsedMs,
+  });
+}
+
+/**
+ * Reads one dashboard access row without persistent caching.
+ *
+ * @param identity The normalized username and email to look up.
+ * @returns The matching access row or `null`.
+ */
+async function readDashboardAccessEntryByIdentity(identity: {
+  githubUsername: string;
+  email: string;
+}): Promise<DashboardAccessEntry | null> {
+  const [entry] = await db
+    .select()
+    .from(dashboardGithubAllowlist)
+    .where(
+      and(
+        eq(dashboardGithubAllowlist.githubUsername, identity.githubUsername),
+        eq(dashboardGithubAllowlist.email, identity.email)
+      )
+    )
+    .limit(1);
+
+  return entry ?? null;
+}
+
 /**
  * Lists all dashboard access rows in owner-first order.
  *
@@ -89,18 +173,37 @@ export async function getDashboardAccessEntryByIdentity(identity: {
   githubUsername: string;
   email: string;
 }): Promise<DashboardAccessEntry | null> {
-  const [entry] = await db
-    .select()
-    .from(dashboardGithubAllowlist)
-    .where(
-      and(
-        eq(dashboardGithubAllowlist.githubUsername, identity.githubUsername),
-        eq(dashboardGithubAllowlist.email, identity.email)
-      )
-    )
-    .limit(1);
+  const startedAt = Date.now();
 
-  return entry ?? null;
+  try {
+    const entry = await readDashboardAccessEntryByIdentity(identity);
+    const elapsedMs = Date.now() - startedAt;
+
+    if (elapsedMs >= DASHBOARD_ACCESS_SLOW_READ_MS) {
+      logDashboardAccessReadTiming('slow', elapsedMs, 1);
+    }
+
+    return entry;
+  } catch (error) {
+    if (!(error instanceof Error) || !isStatementTimeoutError(error)) {
+      throw error;
+    }
+
+    logDashboardAccessReadTiming('retry', Date.now() - startedAt, 1);
+    await waitForRetry(DASHBOARD_ACCESS_READ_RETRY_DELAY_MS);
+
+    const retryStartedAt = Date.now();
+
+    try {
+      return await readDashboardAccessEntryByIdentity(identity);
+    } catch (retryError) {
+      if (retryError instanceof Error) {
+        logDashboardAccessReadTiming('failed', Date.now() - retryStartedAt, 2);
+      }
+
+      throw retryError;
+    }
+  }
 }
 
 /**
