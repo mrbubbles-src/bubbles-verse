@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added a calm creative dashboard visual spec with checked-in mockup references,
+  shadcn-first component rules, and global `@bubbles/ui` colors and fonts as
+  the source of truth while scoping the first redesign slice to
+  `apps/dashboard`.
 - Added shared dashboard auth cookie configuration so Supabase sessions can be
   scoped to a parent domain like `.mrbubbles.test` or `.mrbubbles-src.dev`.
 - Added the first protected dashboard shell with shared sidebar, header, footer,
