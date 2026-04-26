@@ -18,19 +18,43 @@
   }
 
   .dashboard-main {
-    @apply mx-auto flex w-full max-w-[112rem] flex-1 flex-col px-4 py-5 sm:px-5 sm:py-6 lg:px-7 xl:px-9 2xl:px-10;
+    @apply flex w-full flex-1 flex-col px-4 py-5 sm:px-5 sm:py-6 lg:px-7 xl:px-8 2xl:px-9;
+  }
+
+  .dashboard-console {
+    @apply flex flex-col gap-4 rounded-2xl bg-background/25 p-3 sm:gap-5 sm:p-4 lg:gap-6 lg:p-5 dark:bg-background/20;
+  }
+
+  .dashboard-console-header {
+    @apply grid gap-4 px-1 py-2 sm:px-2 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,32rem)] lg:items-center;
+  }
+
+  .dashboard-console-grid {
+    @apply grid items-start gap-4 lg:gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(21rem,28rem)];
+  }
+
+  .dashboard-workbench-grid {
+    @apply grid items-start gap-4 lg:gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)];
   }
 
   .dashboard-studio-panel {
-    @apply rounded-2xl border border-border/40 bg-card/60 shadow-sm shadow-black/5 backdrop-blur-sm dark:bg-card/55 dark:shadow-black/20;
+    @apply rounded-2xl border border-border/40 bg-card/70 shadow-sm shadow-black/5 backdrop-blur-sm dark:bg-card/60 dark:shadow-black/20;
   }
 
   .dashboard-studio-panel-flat {
-    @apply rounded-2xl bg-card/45 shadow-sm shadow-black/5 backdrop-blur-sm dark:bg-card/45 dark:shadow-black/20;
+    @apply rounded-2xl bg-card/55 shadow-sm shadow-black/5 backdrop-blur-sm dark:bg-card/45 dark:shadow-black/20;
   }
 
   .dashboard-command-bar {
     @apply min-h-12 rounded-2xl border-border/45 bg-background/70 text-base shadow-sm shadow-black/5 dark:bg-background/40 dark:shadow-black/20;
+  }
+
+  .dashboard-action-strip {
+    @apply grid gap-3 sm:grid-cols-2 lg:grid-cols-4;
+  }
+
+  .dashboard-action-tile {
+    @apply flex min-w-0 items-start gap-3 rounded-xl bg-card/55 px-4 py-4 shadow-sm shadow-black/5 transition-colors hover:bg-card/80 focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none dark:bg-card/45 dark:shadow-black/20 dark:hover:bg-card/65;
   }
 
   .dashboard-kicker {
@@ -38,7 +62,7 @@
   }
 
   .dashboard-title {
-    @apply font-heading text-3xl leading-tight font-semibold tracking-normal text-balance sm:text-4xl lg:text-5xl;
+    @apply font-heading text-2xl leading-tight font-semibold tracking-normal text-balance sm:text-3xl lg:text-4xl;
   }
 
   .dashboard-section-title {
@@ -55,5 +79,13 @@
 
   .dashboard-soft-row {
     @apply rounded-xl px-3 py-4 transition-colors hover:bg-muted/35 focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none sm:px-4;
+  }
+
+  .dashboard-preview-strip {
+    @apply grid gap-3 sm:grid-cols-3;
+  }
+
+  .dashboard-preview-tile {
+    @apply rounded-xl bg-muted/30 px-4 py-4 dark:bg-muted/20;
   }
 }

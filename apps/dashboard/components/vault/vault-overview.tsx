@@ -94,8 +94,8 @@ function VaultOverviewEntryList({
  */
 export function VaultOverview({ model }: { model: VaultOverviewModel }) {
   return (
-    <div className="flex flex-col gap-6 lg:gap-8">
-      <header className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+    <div className="dashboard-console">
+      <header className="dashboard-console-header">
         <div className="space-y-3">
           <p className="dashboard-kicker">Coding Vault</p>
           <h1 className="dashboard-title">Editor-Werkbank</h1>
@@ -110,7 +110,7 @@ export function VaultOverview({ model }: { model: VaultOverviewModel }) {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap justify-start gap-2 lg:justify-end">
           {model.quickActions.map((action) => (
             <Button
               key={action.href}
@@ -126,43 +126,75 @@ export function VaultOverview({ model }: { model: VaultOverviewModel }) {
         </div>
       </header>
 
-      <section className="dashboard-studio-panel flex flex-col gap-5 px-4 py-4 sm:px-6 sm:py-6 lg:px-7">
-        <Tabs defaultValue="drafts" className="gap-5">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="dashboard-kicker">Arbeitsliste</p>
-              <h2 className="dashboard-section-title mt-2">Weiterschreiben</h2>
+      <div className="dashboard-workbench-grid">
+        <section className="dashboard-studio-panel flex flex-col gap-5 px-4 py-4 sm:px-6 sm:py-6 lg:px-7">
+          <Tabs defaultValue="drafts" className="gap-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="dashboard-kicker">Arbeitsliste</p>
+                <h2 className="dashboard-section-title mt-2">
+                  Weiterschreiben
+                </h2>
+              </div>
+
+              <TabsList
+                variant="line"
+                aria-label="Vault Arbeitslisten"
+                className="h-auto w-full justify-start gap-5 p-0 sm:w-auto">
+                <TabsTrigger value="drafts" className="px-0 py-2 text-base">
+                  Offene Entwürfe
+                </TabsTrigger>
+                <TabsTrigger value="updates" className="px-0 py-2 text-base">
+                  Zuletzt bearbeitet
+                </TabsTrigger>
+              </TabsList>
             </div>
 
-            <TabsList
-              variant="line"
-              aria-label="Vault Arbeitslisten"
-              className="h-auto w-full justify-start gap-5 p-0 sm:w-auto">
-              <TabsTrigger value="drafts" className="px-0 py-2 text-base">
-                Offene Entwürfe
-              </TabsTrigger>
-              <TabsTrigger value="updates" className="px-0 py-2 text-base">
-                Zuletzt bearbeitet
-              </TabsTrigger>
-            </TabsList>
+            <TabsContent value="drafts" className="mt-0">
+              <VaultOverviewEntryList
+                entries={model.recentDrafts}
+                emptyState="Gerade liegen keine offenen Entwürfe im Coding Vault."
+              />
+            </TabsContent>
+
+            <TabsContent value="updates" className="mt-0">
+              <VaultOverviewEntryList
+                entries={model.recentUpdates}
+                emptyState="Sobald du Einträge bearbeitest, tauchen sie hier auf."
+                showStatus
+              />
+            </TabsContent>
+          </Tabs>
+        </section>
+
+        <aside className="dashboard-studio-panel-flat flex flex-col gap-5 px-4 py-5 sm:px-5">
+          <div>
+            <p className="dashboard-kicker">Status</p>
+            <h2 className="dashboard-section-title mt-2 text-lg sm:text-xl">
+              Veröffentlichungen
+            </h2>
           </div>
-
-          <TabsContent value="drafts" className="mt-0">
-            <VaultOverviewEntryList
-              entries={model.recentDrafts}
-              emptyState="Gerade liegen keine offenen Entwürfe im Coding Vault."
-            />
-          </TabsContent>
-
-          <TabsContent value="updates" className="mt-0">
-            <VaultOverviewEntryList
-              entries={model.recentUpdates}
-              emptyState="Sobald du Einträge bearbeitest, tauchen sie hier auf."
-              showStatus
-            />
-          </TabsContent>
-        </Tabs>
-      </section>
+          <div className="flex flex-col">
+            {model.statusItems.map((item, index) => (
+              <div
+                key={item.label}
+                className="border-t border-border/50 py-4 first:border-t-0">
+                <p className="font-heading text-3xl leading-none font-semibold tracking-normal">
+                  {item.value}
+                </p>
+                <p className="mt-1.5 text-base text-muted-foreground">
+                  {item.label}
+                </p>
+                {index === 0 ? (
+                  <p className="dashboard-meta mt-2">
+                    Vorrangig weiterführen, bevor neue Inhalte entstehen.
+                  </p>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }

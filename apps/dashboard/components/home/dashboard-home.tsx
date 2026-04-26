@@ -21,12 +21,12 @@ import { WorkspaceStats } from '@/components/home/workspace-stats';
  */
 export function DashboardHome({ model }: { model: DashboardHomeModel }) {
   return (
-    <div className="flex flex-col gap-6 lg:gap-8">
-      <header className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,32rem)] lg:items-end">
+    <div className="dashboard-console">
+      <header className="dashboard-console-header">
         <div className="space-y-3">
           <p className="dashboard-kicker">Content-Studio</p>
           <h1 className="dashboard-title">Hallo, {model.greetingName}</h1>
-          <p className="dashboard-body max-w-3xl">
+          <p className="dashboard-body max-w-4xl">
             Inhalte weiterführen, neue Arbeiten starten und die wichtigsten
             App-Bereiche im Blick behalten.
           </p>
@@ -45,24 +45,29 @@ export function DashboardHome({ model }: { model: DashboardHomeModel }) {
         </InputGroup>
       </header>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,28rem)] xl:items-start">
+      <div className="dashboard-console-grid">
         <div className="flex min-w-0 flex-col gap-6">
+          <QuickActions actions={model.quickActions} variant="strip" />
+
           <HomeWorkArea
             recentDrafts={model.recentDrafts}
             recentUpdates={model.recentUpdates}
           />
 
-          <div className="flex flex-col gap-6 xl:hidden">
-            <QuickActions actions={model.quickActions} />
+          <div className="grid gap-4 xl:hidden">
             <ProfileStatus profileStatus={model.profileStatus} />
             <WorkspaceStats stats={model.workspaceStats} />
           </div>
 
-          <ModuleStatusLine summaries={model.appSummaries} />
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]">
+            <ModuleStatusLine summaries={model.appSummaries} />
+            <div className="hidden lg:block xl:hidden">
+              <WorkspaceStats stats={model.workspaceStats} />
+            </div>
+          </div>
         </div>
 
-        <aside className="hidden xl:sticky xl:top-24 xl:flex xl:flex-col xl:gap-6">
-          <QuickActions actions={model.quickActions} />
+        <aside className="hidden xl:sticky xl:top-24 xl:flex xl:flex-col xl:gap-5">
           <ProfileStatus profileStatus={model.profileStatus} />
           <WorkspaceStats stats={model.workspaceStats} />
         </aside>

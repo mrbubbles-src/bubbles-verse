@@ -39,7 +39,7 @@ describe('VaultOverview', () => {
     expect(
       screen.getByRole('tab', { name: 'Offene Entwürfe' })
     ).toBeInTheDocument();
-    expect(screen.getByText('1')).toBeInTheDocument();
+    expect(screen.getAllByText('1').length).toBeGreaterThan(1);
     expect(screen.getByText('entwürfe')).toBeInTheDocument();
     expect(screen.getByText('Editor hints')).toBeInTheDocument();
     expect(screen.getByText('Guides')).toBeInTheDocument();

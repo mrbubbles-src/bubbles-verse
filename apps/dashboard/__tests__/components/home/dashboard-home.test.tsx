@@ -65,6 +65,6 @@ describe('DashboardHome', () => {
       screen.queryByText('Profil noch nicht vollständig')
     ).not.toBeInTheDocument();
     expect(screen.getAllByText('Coding Vault')).toHaveLength(2);
-    expect(screen.getByText('4 veröffentlicht')).toBeInTheDocument();
+    expect(screen.getByText(/4 veröffentlicht/)).toBeInTheDocument();
   });
 });

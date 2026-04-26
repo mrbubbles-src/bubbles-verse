@@ -20,20 +20,27 @@ export function ModuleStatusLine({ summaries }: ModuleStatusLineProps) {
 
   return (
     <section className="dashboard-studio-panel-flat px-4 py-4 sm:px-5">
-      <p className="dashboard-kicker mb-3">Apps</p>
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-base text-muted-foreground">
-        {summaries.map((summary, index) => (
-          <span
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <p className="dashboard-kicker">Apps</p>
+        <span className="dashboard-meta">{summaries.length} aktiv</span>
+      </div>
+      <div className="dashboard-preview-strip">
+        {summaries.map((summary) => (
+          <article
             key={summary.appSlug}
-            className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            {index > 0 ? <span aria-hidden="true">•</span> : null}
+            className="dashboard-preview-tile flex flex-col gap-2">
             <span className="font-medium text-foreground">
               {summary.appName}
             </span>
-            <span>{summary.draftCount} Entwürfe</span>
-            <span aria-hidden="true">•</span>
-            <span>{summary.publishedCount} veröffentlicht</span>
-          </span>
+            <span className="dashboard-meta">
+              {summary.draftCount} Entwürfe · {summary.publishedCount}{' '}
+              veröffentlicht
+            </span>
+            <span
+              aria-hidden="true"
+              className="mt-1 h-1.5 w-full rounded-full bg-primary/50"
+            />
+          </article>
         ))}
       </div>
     </section>
