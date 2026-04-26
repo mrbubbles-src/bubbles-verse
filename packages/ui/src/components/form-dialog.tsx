@@ -60,7 +60,7 @@ export function FormDialog({
       {trigger ? <DialogTrigger render={trigger} /> : null}
       <DialogContent
         className={cn(
-          'max-w-[calc(100%-1.5rem)] gap-6 p-5',
+          'max-w-[calc(100%-1.5rem)] gap-6 p-5 text-lg',
           FORM_DIALOG_SIZE_CLASSES[size],
           className
         )}>

@@ -106,7 +106,7 @@ export function StagedConfirmDialog({
           <DialogTrigger render={trigger} />
           <DialogContent
             className={cn(
-              'max-w-[calc(100%-1.5rem)] gap-5 p-5',
+              'max-w-[calc(100%-1.5rem)] gap-5 p-5 text-lg',
               DIALOG_SIZE_CLASSES[firstStep.dialogSize ?? 'sm'],
               firstStep.className
             )}>
@@ -148,7 +148,7 @@ export function StagedConfirmDialog({
           <AlertDialogTrigger render={trigger} />
           <AlertDialogContent
             size={firstStep.alertSize ?? 'sm'}
-            className={firstStep.className}>
+            className={cn('text-lg', firstStep.className)}>
             <AlertDialogHeader>
               <AlertDialogTitle>{firstStep.title}</AlertDialogTitle>
               {firstStep.description ? (
@@ -190,7 +190,7 @@ export function StagedConfirmDialog({
           }}>
           <DialogContent
             className={cn(
-              'max-w-[calc(100%-1.5rem)] gap-5 p-5',
+              'max-w-[calc(100%-1.5rem)] gap-5 p-5 text-lg',
               DIALOG_SIZE_CLASSES[secondStep.dialogSize ?? 'sm'],
               secondStep.className
             )}>
@@ -216,7 +216,7 @@ export function StagedConfirmDialog({
           }}>
           <AlertDialogContent
             size={secondStep.alertSize ?? 'default'}
-            className={secondStep.className}>
+            className={cn('text-lg', secondStep.className)}>
             <AlertDialogHeader>
               <AlertDialogTitle>{secondStep.title}</AlertDialogTitle>
               {secondStep.description ? (

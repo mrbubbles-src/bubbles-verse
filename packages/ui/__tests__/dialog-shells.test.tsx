@@ -21,6 +21,7 @@ describe('FormDialog', () => {
     await user.click(screen.getByRole('button', { name: 'Open' }));
 
     expect(screen.getByText('Kategorie bearbeiten')).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toHaveClass('text-lg');
     expect(screen.getByText('Dialogbeschreibung')).toBeInTheDocument();
     expect(screen.getByText('Form body')).toBeInTheDocument();
   });

@@ -68,6 +68,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Updated dashboard management dialogs, Vault status badges, and row action
+  icons to use the shared larger dialog typography plus token-colored
+  `@bubbles/ui` status/action variants.
+- Aligned dashboard home `Entwurf` and `Veröffentlicht` badges with the same
+  shared status variants used across Vault screens.
 - Reduced the dashboard proxy to explicit page-route matching plus
   cookie-presence routing so API, asset, and Next.js development requests no
   longer perform proxy-level Supabase auth work.

@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
+import { ManagementActionButton } from '../src/components/management-action-button';
 import {
   ManagementTable,
   ManagementTableBody,
@@ -10,6 +11,7 @@ import {
   ManagementTableHeaderRow,
   ManagementTableRow,
 } from '../src/components/management-table';
+import { Badge } from '../src/components/shadcn/badge';
 
 describe('ManagementTable', () => {
   it('renders the shared shadcn table primitive with management defaults', () => {
@@ -38,6 +40,24 @@ describe('ManagementTable', () => {
     expect(screen.getByRole('cell', { name: 'Eintrag A' })).toHaveClass(
       'align-top',
       'whitespace-normal'
+    );
+  });
+
+  it('renders semantic management action and status styles', () => {
+    render(
+      <div>
+        <ManagementActionButton tone="delete" aria-label="Löschen" />
+        <Badge variant="draft">Entwurf</Badge>
+        <Badge variant="published">Veröffentlicht</Badge>
+      </div>
+    );
+
+    expect(screen.getByRole('button', { name: 'Löschen' })).toHaveClass(
+      'text-ctp-latte-red'
+    );
+    expect(screen.getByText('Entwurf')).toHaveClass('bg-ctp-latte-yellow/35');
+    expect(screen.getByText('Veröffentlicht')).toHaveClass(
+      'bg-ctp-latte-green/25'
     );
   });
 });

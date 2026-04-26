@@ -20,6 +20,7 @@ import {
   ManagementTableHeaderRow,
   ManagementTableRow,
 } from '@bubbles/ui/components/management-table';
+import { ManagementActionButton } from '@bubbles/ui/components/management-action-button';
 import { Pagination } from '@bubbles/ui/components/pagination';
 import { StagedConfirmDialog } from '@bubbles/ui/components/staged-confirm-dialog';
 import {
@@ -220,7 +221,7 @@ export function VaultEntryList({
                   <ManagementTableCell className="px-0 py-5 pr-4">
                     <Badge
                       variant={
-                        entry.status === 'published' ? 'default' : 'secondary'
+                        entry.status === 'published' ? 'published' : 'draft'
                       }>
                       {entry.status === 'published'
                         ? 'Veröffentlicht'
@@ -235,14 +236,12 @@ export function VaultEntryList({
                       <Tooltip>
                         <TooltipTrigger
                           render={
-                            <Button
+                            <ManagementActionButton
                               render={
                                 <Link href={`/vault/entries/${entry.id}`} />
                               }
                               nativeButton={false}
-                              variant="ghost"
-                              size="icon-lg"
-                              className="size-10 [&_svg:not([class*='size-'])]:size-5"
+                              tone="edit"
                               aria-label="Eintrag bearbeiten"
                             />
                           }>
@@ -258,7 +257,7 @@ export function VaultEntryList({
                         {entry.previewHref ? (
                           <TooltipTrigger
                             render={
-                              <Button
+                              <ManagementActionButton
                                 render={
                                   <a
                                     href={entry.previewHref}
@@ -267,9 +266,7 @@ export function VaultEntryList({
                                   />
                                 }
                                 nativeButton={false}
-                                variant="ghost"
-                                size="icon-lg"
-                                className="size-10 [&_svg:not([class*='size-'])]:size-5"
+                                tone="preview"
                                 aria-label="Vorschau öffnen"
                               />
                             }>
@@ -281,11 +278,9 @@ export function VaultEntryList({
                         ) : (
                           <TooltipTrigger
                             render={
-                              <Button
+                              <ManagementActionButton
                                 type="button"
-                                variant="ghost"
-                                size="icon-lg"
-                                className="size-10 [&_svg:not([class*='size-'])]:size-5"
+                                tone="preview"
                                 aria-label="Vorschau öffnen"
                                 disabled
                               />
@@ -308,10 +303,8 @@ export function VaultEntryList({
                           render={<span className="inline-flex" />}>
                           <StagedConfirmDialog
                             trigger={
-                              <Button
-                                variant="ghost"
-                                size="icon-lg"
-                                className="size-10 [&_svg:not([class*='size-'])]:size-5"
+                              <ManagementActionButton
+                                tone="delete"
                                 type="button"
                                 aria-label="Eintrag löschen"
                                 disabled={deletingEntryId === entry.id}>
@@ -319,7 +312,7 @@ export function VaultEntryList({
                                   icon={Delete02Icon}
                                   strokeWidth={2}
                                 />
-                              </Button>
+                              </ManagementActionButton>
                             }
                             firstStep={{
                               alertSize: 'sm',

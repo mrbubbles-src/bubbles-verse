@@ -72,6 +72,8 @@ describe('DashboardHome', () => {
     ).not.toBeInTheDocument();
     expect(screen.getAllByText('Coding Vault').length).toBeGreaterThan(1);
     expect(screen.getAllByText('Veröffentlicht').length).toBeGreaterThan(1);
-    expect(screen.getAllByText('Entwurf')[0]).toHaveClass('text-chart-3');
+    expect(screen.getAllByText('Entwurf')[0]).toHaveClass(
+      'bg-ctp-latte-yellow/35'
+    );
   });
 });

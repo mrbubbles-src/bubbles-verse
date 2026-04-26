@@ -46,7 +46,10 @@ a clean base.
 - `/vault/categories` now ships the first real editorial CRUD screen for the Coding Vault category tree.
 - `/vault/entries` now shows the first real editorial list, `/vault/entries/new` creates entries through `@bubbles/markdown-editor`, and `/vault/entries/[id]` edits existing entries in the same flow.
 - The row-level icon actions in the Vault tables now use extra-large desktop
-  touch targets so edit, preview, expand, and delete affordances read clearly.
+  touch targets and shared token colors so edit, preview, expand, and delete
+  affordances read clearly.
+- Vault editorial statuses use shared yellow `Entwurf` and green
+  `Veröffentlicht` badge variants from `@bubbles/ui`.
 - `/vault/preview/new` and `/vault/preview/[id]` now open the current draft or
   saved entry as a fullscreen preview in a separate tab without being treated
   like another editor route in the sidebar.

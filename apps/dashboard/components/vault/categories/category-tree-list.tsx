@@ -4,6 +4,7 @@ import type { VaultCategoryTreeNode } from '@/lib/vault/category-tree';
 
 import { useState } from 'react';
 
+import { ManagementActionButton } from '@bubbles/ui/components/management-action-button';
 import { StagedConfirmDialog } from '@bubbles/ui/components/staged-confirm-dialog';
 import {
   Add01Icon,
@@ -174,11 +175,9 @@ function CategoryTreeListItem({
                 <Tooltip>
                   <TooltipTrigger
                     render={
-                      <Button
+                      <ManagementActionButton
                         type="button"
-                        variant="ghost"
-                        size="icon-lg"
-                        className="size-10 [&_svg:not([class*='size-'])]:size-5"
+                        tone="edit"
                         aria-label="Kategorie bearbeiten"
                       />
                     }>
@@ -204,11 +203,9 @@ function CategoryTreeListItem({
                 <Tooltip>
                   <TooltipTrigger
                     render={
-                      <Button
+                      <ManagementActionButton
                         type="button"
-                        variant="ghost"
-                        size="icon-lg"
-                        className="size-10 [&_svg:not([class*='size-'])]:size-5"
+                        tone="create"
                         aria-label="Unterkategorie anlegen"
                       />
                     }>
@@ -224,11 +221,9 @@ function CategoryTreeListItem({
                 <Tooltip>
                   <TooltipTrigger
                     render={
-                      <Button
+                      <ManagementActionButton
                         type="button"
-                        variant="ghost"
-                        size="icon-lg"
-                        className="size-10 [&_svg:not([class*='size-'])]:size-5"
+                        tone="delete"
                         aria-label="Kategorie löschen"
                       />
                     }>

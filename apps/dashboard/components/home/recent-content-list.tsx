@@ -86,24 +86,22 @@ function getRecentContentIcon(item: RecentContentItem) {
 }
 
 /**
- * Resolves token-based status styling for dashboard content rows.
+ * Resolves the shared status badge variant for dashboard content rows.
  *
  * @param status Shared content status from the row model.
- * @returns Badge label and Catppuccin token classes for the current status.
+ * @returns Badge label and shared semantic variant for the current status.
  */
 function getRecentStatusMeta(status: RecentContentItem['status']) {
   if (status === 'draft') {
     return {
       label: 'Entwurf',
-      className:
-        'border-chart-3/35 bg-chart-3/15 text-chart-3 hover:bg-chart-3/20',
+      variant: 'draft' as const,
     };
   }
 
   return {
     label: 'Veröffentlicht',
-    className:
-      'border-chart-2/35 bg-chart-2/15 text-chart-2 hover:bg-chart-2/20',
+    variant: 'published' as const,
   };
 }
 
@@ -166,9 +164,7 @@ export function RecentContentList({
                   {formatEntryTimestamp(item.updatedAt)}
                 </span>
                 {showStatus ? (
-                  <Badge
-                    variant="outline"
-                    className={getRecentStatusMeta(item.status).className}>
+                  <Badge variant={getRecentStatusMeta(item.status).variant}>
                     {getRecentStatusMeta(item.status).label}
                   </Badge>
                 ) : null}
@@ -224,8 +220,8 @@ function RecentContentTableRow({
         </span>
         {showStatus ? (
           <Badge
-            variant="outline"
-            className={`dashboard-table-desktop-badge ${statusMeta.className}`}>
+            variant={statusMeta.variant}
+            className="dashboard-table-desktop-badge">
             {statusMeta.label}
           </Badge>
         ) : (
@@ -241,9 +237,7 @@ function RecentContentTableRow({
           <span className="dashboard-meta">{appLabel}</span>
           <span className="dashboard-meta">{typeLabel}</span>
           {showStatus ? (
-            <Badge variant="outline" className={statusMeta.className}>
-              {statusMeta.label}
-            </Badge>
+            <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
           ) : (
             <span className="dashboard-meta">Aktiv</span>
           )}

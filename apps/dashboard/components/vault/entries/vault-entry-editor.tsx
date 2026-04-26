@@ -390,7 +390,7 @@ export function VaultEntryEditor({
           <div className="flex flex-wrap items-center gap-3">
             <Badge
               variant={
-                statusLabel === 'Veröffentlicht' ? 'default' : 'secondary'
+                statusLabel === 'Veröffentlicht' ? 'published' : 'draft'
               }>
               {statusLabel}
             </Badge>

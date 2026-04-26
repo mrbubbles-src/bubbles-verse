@@ -13,6 +13,10 @@ const badgeVariants = cva(
         default: 'bg-primary text-primary-foreground [a]:hover:bg-primary/80',
         secondary:
           'bg-secondary text-secondary-foreground [a]:hover:bg-secondary/80',
+        draft:
+          'bg-ctp-latte-yellow/35 text-ctp-latte-text ring-1 ring-ctp-latte-yellow/45 dark:bg-ctp-mocha-yellow/20 dark:text-ctp-mocha-yellow dark:ring-ctp-mocha-yellow/35',
+        published:
+          'bg-ctp-latte-green/25 text-ctp-latte-text ring-1 ring-ctp-latte-green/45 dark:bg-ctp-mocha-green/20 dark:text-ctp-mocha-green dark:ring-ctp-mocha-green/35',
         destructive:
           'bg-destructive/10 text-destructive focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:focus-visible:ring-destructive/40 [a]:hover:bg-destructive/20',
         outline:

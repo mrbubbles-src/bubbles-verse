@@ -61,7 +61,7 @@ function VaultOverviewEntryList({
                       <span aria-hidden="true">•</span>
                       <Badge
                         variant={
-                          entry.status === 'published' ? 'default' : 'secondary'
+                          entry.status === 'published' ? 'published' : 'draft'
                         }>
                         {entry.status === 'draft'
                           ? 'Entwurf'

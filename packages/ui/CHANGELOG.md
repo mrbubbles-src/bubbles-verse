@@ -8,6 +8,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Shared `ManagementActionButton` component for token-colored management row
+  icon actions.
 - Shared `FormDialog` and `StagedConfirmDialog` components for reusable
   create/edit and staged destructive modal flows across apps.
 - Added the shadcn CLI `table` primitive plus a shared `ManagementTable`
@@ -22,6 +24,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `@bubbles/ui` README now also documents the shared `ManagementTable`
   entrypoint and its relationship to the shadcn-installed base table
   primitive.
+- `Badge` now has explicit `draft` and `published` variants backed by
+  Catppuccin yellow and green tokens from `globals.css`.
+- Shared form and staged confirmation dialogs now use a larger `text-lg`
+  readable text baseline by default.
 - `ManagementTable` now overrides the shadcn table primitive's default
   `whitespace-nowrap` behavior so editorial content can wrap normally and only
   opt specific columns back into no-wrap where it is actually needed.

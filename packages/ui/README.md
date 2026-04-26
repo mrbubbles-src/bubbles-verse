@@ -103,6 +103,7 @@ Shared shell entrypoints:
 - `@bubbles/ui/components/bubbles-breadcrumbs`
 - `@bubbles/ui/components/form-dialog`
 - `@bubbles/ui/components/staged-confirm-dialog`
+- `@bubbles/ui/components/management-action-button`
 - `@bubbles/ui/components/management-table`
 - `@bubbles/ui/components/pagination`
 - `@bubbles/ui/lib/bubbles-sidebar`
@@ -125,6 +126,16 @@ shadcn CLI-installed `table` primitive:
 - responsive overflow wrapper from the shared shadcn base
 - consistent header-label styling for management screens
 - shared row and cell spacing so app tables stop repeating raw `<table>` setup
+
+`ManagementActionButton` ships the standard icon affordance for management
+table action columns. Use `tone="edit"`, `tone="create"`, `tone="preview"`, or
+`tone="delete"` so row actions stay color-coded through shared Catppuccin
+tokens.
+
+`Badge` includes status variants for editorial states:
+
+- `variant="draft"` uses the shared yellow token family.
+- `variant="published"` uses the shared green token family.
 
 Sidebar trailing actions can optionally define a shared confirmation dialog via
 `action.confirm`, including staged two-step confirms, so apps do not need to
