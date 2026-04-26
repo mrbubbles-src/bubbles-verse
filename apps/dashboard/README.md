@@ -31,6 +31,9 @@ a clean base.
   redesign with checked-in visual references that keeps global `@bubbles/ui`
   colors and fonts as the source of truth while allowing dashboard-specific
   layout recipes.
+- The dashboard shell, home, and Vault overview now use the first calm creative
+  visual slice: app-local studio panels, command-center spacing, token-based
+  typography recipes, and flatter work queues.
 - Protected routes exist for `/profile`, `/account`, `/vault`, `/vault/categories`, `/vault/entries`, and `/vault/entries/new`.
 - `/profile` now gives every legit dashboard user a dedicated author-profile screen for display data, slug, avatar, bio, and the first fixed social links.
 - `/account` now lets Owners manage the private dashboard allowlist, including `dashboard_access` and `user_role`.

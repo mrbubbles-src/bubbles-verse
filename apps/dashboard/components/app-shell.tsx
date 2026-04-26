@@ -143,10 +143,25 @@ export default function AppShell({
     <BubblesSidebarLayout
       sidebarData={sidebarData}
       user={user}
+      classNames={{
+        root: 'dashboard-shell-root',
+        sidebar:
+          'border-sidebar-border/50 bg-sidebar/95 shadow-xl shadow-black/5 dark:shadow-black/20',
+        sidebarHeader: 'px-2 pt-3',
+        sidebarContent: 'px-2',
+        sidebarFooter: 'px-2 pb-3',
+        sidebarInset: 'dashboard-shell-inset',
+        content: 'dashboard-shell-content',
+      }}
       header={
         <BubblesAppHeader
           breadcrumbs={breadcrumbs}
           subtitle={pageInfo.description}
+          classNames={{
+            root: 'border-b border-border/35 bg-background/80 shadow-sm shadow-black/5 dark:shadow-black/20',
+            inner: 'px-4 py-3 sm:px-5 lg:px-7 xl:px-9 2xl:px-10',
+            subtitle: 'dashboard-meta',
+          }}
           mobileTopActions={<ThemeToggle />}
           actions={
             <div className="hidden items-center gap-4 md:flex">
@@ -157,14 +172,12 @@ export default function AppShell({
         />
       }>
       <div className="flex min-h-dvh flex-1 flex-col">
-        <main className="flex w-full flex-1 flex-col px-5 py-6 sm:px-6 sm:py-7 xl:px-8 2xl:px-10">
-          {children}
-        </main>
+        <main className="dashboard-main">{children}</main>
         <Footer
           author="mrbubbles-src"
           authorHref="https://mrbubbles-src.dev"
           hideCatppuccinCredit
-          className="w-full px-5 sm:px-6 xl:px-8 2xl:px-10"
+          className="mx-auto w-full max-w-[112rem] px-4 sm:px-5 lg:px-7 xl:px-9 2xl:px-10"
         />
       </div>
     </BubblesSidebarLayout>

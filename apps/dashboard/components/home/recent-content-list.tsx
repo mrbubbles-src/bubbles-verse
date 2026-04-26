@@ -45,13 +45,13 @@ export function RecentContentList({
             {index > 0 ? <Separator /> : null}
             <Link
               href={`/vault/entries/${item.id}`}
-              className="group flex flex-col gap-4 rounded-[1.5rem] px-2 py-5 transition-colors hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none">
+              className="dashboard-soft-row group flex flex-col gap-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0 space-y-1.5">
-                  <p className="text-lg font-semibold tracking-tight text-balance text-foreground sm:text-xl">
+                  <p className="text-lg leading-tight font-semibold tracking-normal text-balance text-foreground sm:text-xl">
                     {item.title}
                   </p>
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-base text-muted-foreground">
+                  <div className="dashboard-meta flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span>
                       {item.appSlug === 'vault' ? 'Coding Vault' : item.appSlug}
                     </span>

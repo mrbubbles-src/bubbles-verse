@@ -15,7 +15,7 @@ type HomeWorkAreaProps = {
 };
 
 /**
- * Renders the central home work area with the two agreed queue views.
+ * Renders the central home work area with the two editorial queue views.
  *
  * Use this as the primary dashboard surface so people land on work first and
  * can switch between drafts and recent updates without another page hop.
@@ -28,12 +28,13 @@ export function HomeWorkArea({
   recentUpdates,
 }: HomeWorkAreaProps) {
   return (
-    <section className="flex flex-col gap-5 rounded-[2rem] bg-background/80 px-5 py-5 shadow-sm shadow-black/5 sm:px-7 sm:py-6">
+    <section className="dashboard-studio-panel flex flex-col gap-5 px-4 py-4 sm:px-6 sm:py-6 lg:px-7">
       <Tabs defaultValue="drafts" className="gap-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Weiterschreiben
-          </h2>
+          <div>
+            <p className="dashboard-kicker">Weiterarbeiten</p>
+            <h2 className="dashboard-section-title mt-2">Weiterschreiben</h2>
+          </div>
 
           <TabsList
             variant="line"

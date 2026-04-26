@@ -1,1 +1,59 @@
-@import '@bubbles/ui/globals.css';
+@reference '@bubbles/ui/globals.css';
+
+@layer components {
+  .dashboard-shell-root {
+    @apply bg-background text-foreground;
+  }
+
+  .dashboard-shell-inset {
+    @apply bg-background;
+  }
+
+  .dashboard-shell-content {
+    background: linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--muted) 52%, transparent),
+      transparent 24rem
+    );
+  }
+
+  .dashboard-main {
+    @apply mx-auto flex w-full max-w-[112rem] flex-1 flex-col px-4 py-5 sm:px-5 sm:py-6 lg:px-7 xl:px-9 2xl:px-10;
+  }
+
+  .dashboard-studio-panel {
+    @apply rounded-2xl border border-border/40 bg-card/60 shadow-sm shadow-black/5 backdrop-blur-sm dark:bg-card/55 dark:shadow-black/20;
+  }
+
+  .dashboard-studio-panel-flat {
+    @apply rounded-2xl bg-card/45 shadow-sm shadow-black/5 backdrop-blur-sm dark:bg-card/45 dark:shadow-black/20;
+  }
+
+  .dashboard-command-bar {
+    @apply min-h-12 rounded-2xl border-border/45 bg-background/70 text-base shadow-sm shadow-black/5 dark:bg-background/40 dark:shadow-black/20;
+  }
+
+  .dashboard-kicker {
+    @apply text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase;
+  }
+
+  .dashboard-title {
+    @apply font-heading text-3xl leading-tight font-semibold tracking-normal text-balance sm:text-4xl lg:text-5xl;
+  }
+
+  .dashboard-section-title {
+    @apply font-heading text-xl leading-tight font-semibold tracking-normal text-balance sm:text-2xl;
+  }
+
+  .dashboard-body {
+    @apply text-base/relaxed text-muted-foreground;
+  }
+
+  .dashboard-meta {
+    @apply text-sm/relaxed text-muted-foreground;
+  }
+
+  .dashboard-soft-row {
+    @apply rounded-xl px-3 py-4 transition-colors hover:bg-muted/35 focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none sm:px-4;
+  }
+}

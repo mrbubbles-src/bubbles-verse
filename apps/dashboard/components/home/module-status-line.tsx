@@ -19,7 +19,8 @@ export function ModuleStatusLine({ summaries }: ModuleStatusLineProps) {
   }
 
   return (
-    <section className="border-t border-border/60 pt-5">
+    <section className="dashboard-studio-panel-flat px-4 py-4 sm:px-5">
+      <p className="dashboard-kicker mb-3">Apps</p>
       <div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-base text-muted-foreground">
         {summaries.map((summary, index) => (
           <span

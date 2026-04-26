@@ -48,13 +48,13 @@ function VaultOverviewEntryList({
           {index > 0 ? <Separator /> : null}
           <Link
             href={`/vault/entries/${entry.id}`}
-            className="group flex flex-col gap-4 rounded-[1.5rem] px-2 py-5 transition-colors hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none">
+            className="dashboard-soft-row group flex flex-col gap-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0 space-y-1.5">
-                <p className="text-lg font-semibold tracking-tight text-balance text-foreground sm:text-xl">
+                <p className="text-lg leading-tight font-semibold tracking-normal text-balance text-foreground sm:text-xl">
                   {entry.title}
                 </p>
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-base text-muted-foreground">
+                <div className="dashboard-meta flex flex-wrap items-center gap-x-2 gap-y-1">
                   <Badge variant="secondary">{entry.categoryLabel}</Badge>
                   {showStatus ? (
                     <>
@@ -94,16 +94,20 @@ function VaultOverviewEntryList({
  */
 export function VaultOverview({ model }: { model: VaultOverviewModel }) {
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-base text-muted-foreground">
-          {model.statusItems.map((item, index) => (
-            <span key={item.label} className="flex items-center gap-2">
-              {index > 0 ? <span aria-hidden="true">•</span> : null}
-              <span>{item.value}</span>
-              <span>{item.label.toLowerCase()}</span>
-            </span>
-          ))}
+    <div className="flex flex-col gap-6 lg:gap-8">
+      <header className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+        <div className="space-y-3">
+          <p className="dashboard-kicker">Coding Vault</p>
+          <h1 className="dashboard-title">Editor-Werkbank</h1>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-base text-muted-foreground">
+            {model.statusItems.map((item, index) => (
+              <span key={item.label} className="flex items-center gap-2">
+                {index > 0 ? <span aria-hidden="true">•</span> : null}
+                <span>{item.value}</span>
+                <span>{item.label.toLowerCase()}</span>
+              </span>
+            ))}
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -120,14 +124,15 @@ export function VaultOverview({ model }: { model: VaultOverviewModel }) {
             </Button>
           ))}
         </div>
-      </div>
+      </header>
 
-      <section className="flex flex-col gap-5 rounded-[2rem] bg-background/80 px-5 py-5 shadow-sm shadow-black/5 sm:px-7 sm:py-6">
+      <section className="dashboard-studio-panel flex flex-col gap-5 px-4 py-4 sm:px-6 sm:py-6 lg:px-7">
         <Tabs defaultValue="drafts" className="gap-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              Weiterschreiben
-            </h1>
+            <div>
+              <p className="dashboard-kicker">Arbeitsliste</p>
+              <h2 className="dashboard-section-title mt-2">Weiterschreiben</h2>
+            </div>
 
             <TabsList
               variant="line"

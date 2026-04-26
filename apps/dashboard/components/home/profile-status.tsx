@@ -20,7 +20,7 @@ export function ProfileStatus({ profileStatus }: ProfileStatusProps) {
   }
 
   return (
-    <section className="border-t border-border/60 pt-5">
+    <section className="dashboard-studio-panel-flat px-4 py-5 sm:px-5">
       <div className="flex items-center justify-between gap-3">
         <p className="text-base font-semibold tracking-tight sm:text-lg">
           Profil noch nicht vollständig

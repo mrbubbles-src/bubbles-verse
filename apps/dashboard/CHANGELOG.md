@@ -63,6 +63,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Applied the first calm creative visual slice to the dashboard shell, home,
+  and Vault overview using app-local layout recipes over the existing
+  `@bubbles/ui` tokens.
 - Split shared dashboard-access helpers from the server-only DB module so the
   `/account` client bundle no longer pulls in the Postgres driver during
   Next.js development.
