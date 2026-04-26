@@ -2,6 +2,8 @@ import { requireDashboardSession } from '@/lib/auth/session';
 
 import { Suspense } from 'react';
 
+import { connection } from 'next/server';
+
 import AppShell from '@/components/app-shell';
 import { LoginSuccessToast } from '@/components/auth/login-success-toast';
 import { DashboardRedirectFeedbackToast } from '@/components/feedback/dashboard-redirect-feedback-toast';
@@ -12,11 +14,37 @@ import { DashboardRedirectFeedbackToast } from '@/components/feedback/dashboard-
  * Any route placed inside the `(dashboard)` group must have an authenticated
  * GitHub identity with `dashboard_access` enabled before its UI is rendered.
  */
-export default async function DashboardLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  return (
+    <>
+      <LoginSuccessToast />
+      <Suspense fallback={null}>
+        <DashboardRedirectFeedbackToast />
+      </Suspense>
+      <Suspense fallback={null}>
+        <AuthenticatedDashboardShell>{children}</AuthenticatedDashboardShell>
+      </Suspense>
+    </>
+  );
+}
+
+/**
+ * Renders the authenticated dashboard shell after the incoming request exists.
+ *
+ * @param props Protected dashboard route content rendered inside the app shell.
+ * @returns App shell with the signed-in user's navigation metadata.
+ */
+async function AuthenticatedDashboardShell({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  await connection();
+
   const { user } = await requireDashboardSession();
   const metadata = {
     name:
@@ -35,13 +63,5 @@ export default async function DashboardLayout({
     logoutHref: '/auth/logout',
   };
 
-  return (
-    <>
-      <LoginSuccessToast />
-      <Suspense fallback={null}>
-        <DashboardRedirectFeedbackToast />
-      </Suspense>
-      <AppShell user={metadata}>{children}</AppShell>
-    </>
-  );
+  return <AppShell user={metadata}>{children}</AppShell>;
 }

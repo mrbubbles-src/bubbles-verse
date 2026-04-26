@@ -7,8 +7,6 @@ import {
   uploadEditorImageToCloudinary,
 } from '@bubbles/markdown-editor/cloudinary-upload';
 
-export const runtime = 'nodejs';
-
 /**
  * Accepts editor image uploads and stores them in the dashboard Cloudinary
  * folder configured by the shared markdown-editor helpers.

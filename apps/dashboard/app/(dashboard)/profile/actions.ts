@@ -3,13 +3,14 @@
 import type { DashboardProfileFeedbackStatus } from '@/lib/profile/profile-feedback';
 
 import { requireDashboardSession } from '@/lib/auth/session';
+import { DASHBOARD_CACHE_TAGS } from '@/lib/cache/tags';
 import {
   parseUpdateDashboardProfile,
   updateDashboardProfile,
 } from '@/lib/profile/profile';
 import { getDashboardProfileFeedbackHref } from '@/lib/profile/profile-feedback';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, updateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 /**
@@ -18,8 +19,15 @@ import { redirect } from 'next/navigation';
  * @param status Short result code for the profile feedback toast.
  */
 function redirectToProfileFeedback(
-  status: DashboardProfileFeedbackStatus
+  status: DashboardProfileFeedbackStatus,
+  userId?: string
 ): never {
+  updateTag(DASHBOARD_CACHE_TAGS.home);
+
+  if (userId) {
+    updateTag(DASHBOARD_CACHE_TAGS.profile(userId));
+  }
+
   revalidatePath('/profile');
   redirect(getDashboardProfileFeedbackHref(status));
 }
@@ -51,7 +59,7 @@ export async function updateDashboardProfileAction(formData: FormData) {
   const parsedProfile = parseUpdateDashboardProfile(formData);
 
   if (!parsedProfile.success) {
-    redirectToProfileFeedback('invalid');
+    redirectToProfileFeedback('invalid', session.user.id);
   }
 
   try {
@@ -63,12 +71,12 @@ export async function updateDashboardProfileAction(formData: FormData) {
     });
   } catch (error) {
     if (hasPostgresErrorCode(error, '23505')) {
-      redirectToProfileFeedback('duplicate');
+      redirectToProfileFeedback('duplicate', session.user.id);
     }
 
     console.error('Failed to update dashboard profile.', error);
-    redirectToProfileFeedback('error');
+    redirectToProfileFeedback('error', session.user.id);
   }
 
-  redirectToProfileFeedback('updated');
+  redirectToProfileFeedback('updated', session.user.id);
 }

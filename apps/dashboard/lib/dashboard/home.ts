@@ -1,9 +1,15 @@
 import type { DashboardAccessRole } from '@/lib/account/dashboard-access';
 import type { DashboardSession } from '@/lib/auth/session';
 
+import {
+  DASHBOARD_CACHE_PROFILE,
+  DASHBOARD_CACHE_TAGS,
+} from '@/lib/cache/tags';
 import { getDashboardProfileByAuthUserId } from '@/lib/profile/profile';
 import { listVaultCategories } from '@/lib/vault/categories';
 import { getVaultEntries } from '@/lib/vault/entries';
+
+import { cacheLife, cacheTag } from 'next/cache';
 
 import { count, eq } from 'drizzle-orm';
 
@@ -121,6 +127,11 @@ export function getDashboardRoleLabel(role: DashboardAccessRole) {
  * @returns Number of matching Vault entries.
  */
 async function countVaultEntries(status?: 'draft' | 'published') {
+  'use cache';
+
+  cacheLife(DASHBOARD_CACHE_PROFILE);
+  cacheTag(DASHBOARD_CACHE_TAGS.home, DASHBOARD_CACHE_TAGS.vaultEntries);
+
   const baseQuery = db
     .select({ total: count() })
     .from(vaultEntries)
@@ -140,6 +151,11 @@ async function countVaultEntries(status?: 'draft' | 'published') {
  * @returns Number of stored social links.
  */
 async function countProfileSocialLinks(profileId: string) {
+  'use cache';
+
+  cacheLife(DASHBOARD_CACHE_PROFILE);
+  cacheTag(DASHBOARD_CACHE_TAGS.home);
+
   const [result] = await db
     .select({ total: count() })
     .from(profileSocialLinks)

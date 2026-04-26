@@ -94,6 +94,18 @@ The Drizzle/Postgres client is cached process-wide so local Next.js HMR does
 not open fresh Supabase connections on every reload. That keeps simple
 allowlist checks from timing out during `next dev`.
 
+## Caching
+
+- Next.js Cache Components are enabled for the dashboard.
+- Auth and allowlist checks stay outside `use cache`; `requireDashboardSession()`
+  uses React `cache()` only to dedupe work inside a single request.
+- Stable dashboard reads use the shared `dashboard` cache profile and explicit
+  tags from `lib/cache/tags.ts`.
+- Server Actions invalidate fresh reads with `updateTag(...)`; Route Handlers
+  use `revalidateTag(..., { expire: 0 })`.
+- Cached dashboard data currently targets short-lived freshness: 1 minute stale,
+  5 minutes revalidate, and 1 hour expire.
+
 ## Shared packages
 
 - `@bubbles/ui` - shared globals, fonts, shadcn-style primitives, utilities

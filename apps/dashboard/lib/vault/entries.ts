@@ -6,10 +6,16 @@ import type {
 } from '@bubbles/markdown-editor';
 import type { User } from '@supabase/supabase-js';
 
+import {
+  DASHBOARD_CACHE_PROFILE,
+  DASHBOARD_CACHE_TAGS,
+} from '@/lib/cache/tags';
 import { ensureDashboardProfile } from '@/lib/profile/profile';
 import { listVaultCategories } from '@/lib/vault/categories';
 import { buildVaultCategoryTree } from '@/lib/vault/category-tree';
 import { getVaultEntryPreviewHref as getVaultEntryDashboardPreviewHref } from '@/lib/vault/entry-drafts';
+
+import { cacheLife, cacheTag } from 'next/cache';
 
 import { and, count, desc, eq, ilike } from 'drizzle-orm';
 import * as z from 'zod';
@@ -197,6 +203,11 @@ function toContentStatus(status: MarkdownEditorStatus) {
 export async function listVaultEntryCategoryOptions(): Promise<
   VaultEntryCategoryOption[]
 > {
+  'use cache';
+
+  cacheLife(DASHBOARD_CACHE_PROFILE);
+  cacheTag(DASHBOARD_CACHE_TAGS.vaultCategories);
+
   const categories = await listVaultCategories();
   const tree = buildVaultCategoryTree(
     categories.map((category) => ({
@@ -235,6 +246,11 @@ export async function listVaultEntryCategoryOptions(): Promise<
  * @returns Category options plus slug context for the editor wrapper.
  */
 export async function getVaultEntryCreationModel() {
+  'use cache';
+
+  cacheLife(DASHBOARD_CACHE_PROFILE);
+  cacheTag(DASHBOARD_CACHE_TAGS.vaultCategories);
+
   return {
     categories: await listVaultEntryCategoryOptions(),
   };
@@ -475,6 +491,14 @@ export async function getVaultEntries(
     pageSize: 20,
   }
 ): Promise<VaultEntryListItem[]> {
+  'use cache';
+
+  cacheLife(DASHBOARD_CACHE_PROFILE);
+  cacheTag(
+    DASHBOARD_CACHE_TAGS.vaultEntries,
+    DASHBOARD_CACHE_TAGS.vaultCategories
+  );
+
   return queryVaultEntryRows(
     {
       query: filters.query,
@@ -497,6 +521,14 @@ export async function getVaultEntries(
 export async function getVaultEntryListPageModel(
   filters: VaultEntryListFilters
 ) {
+  'use cache';
+
+  cacheLife(DASHBOARD_CACHE_PROFILE);
+  cacheTag(
+    DASHBOARD_CACHE_TAGS.vaultEntries,
+    DASHBOARD_CACHE_TAGS.vaultCategories
+  );
+
   const queryFilters = {
     query: filters.query,
     status: filters.status,
@@ -571,6 +603,14 @@ export function parseUpdateVaultEntryRequest(value: Record<string, unknown>) {
 export async function getVaultEntryInitialData(
   id: string
 ): Promise<VaultEntryInitialData | null> {
+  'use cache';
+
+  cacheLife(DASHBOARD_CACHE_PROFILE);
+  cacheTag(
+    DASHBOARD_CACHE_TAGS.vaultEntries,
+    DASHBOARD_CACHE_TAGS.vaultEntry(id)
+  );
+
   const [entry] = await db
     .select({
       id: contentItems.id,
@@ -621,6 +661,15 @@ export async function getVaultEntryInitialData(
  * @returns Category options plus the current entry state, or `null`.
  */
 export async function getVaultEntryEditModel(id: string) {
+  'use cache';
+
+  cacheLife(DASHBOARD_CACHE_PROFILE);
+  cacheTag(
+    DASHBOARD_CACHE_TAGS.vaultEntries,
+    DASHBOARD_CACHE_TAGS.vaultEntry(id),
+    DASHBOARD_CACHE_TAGS.vaultCategories
+  );
+
   const [categories, initialData] = await Promise.all([
     listVaultEntryCategoryOptions(),
     getVaultEntryInitialData(id),
@@ -648,6 +697,14 @@ export async function getVaultEntryEditModel(id: string) {
 export async function getVaultEntryPreviewData(
   id: string
 ): Promise<VaultEntryPreviewData | null> {
+  'use cache';
+
+  cacheLife(DASHBOARD_CACHE_PROFILE);
+  cacheTag(
+    DASHBOARD_CACHE_TAGS.vaultEntries,
+    DASHBOARD_CACHE_TAGS.vaultEntry(id)
+  );
+
   const [entry] = await db
     .select({
       id: contentItems.id,

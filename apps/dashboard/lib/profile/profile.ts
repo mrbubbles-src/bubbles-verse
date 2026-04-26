@@ -2,6 +2,12 @@ import type { DashboardAccessEntry } from '@/lib/account/dashboard-access';
 import type { User } from '@supabase/supabase-js';
 
 import { getGithubIdentityUsername } from '@/lib/auth/allowed-identities';
+import {
+  DASHBOARD_CACHE_PROFILE,
+  DASHBOARD_CACHE_TAGS,
+} from '@/lib/cache/tags';
+
+import { cacheLife, cacheTag } from 'next/cache';
 
 import { asc, eq } from 'drizzle-orm';
 import * as z from 'zod';
@@ -133,6 +139,11 @@ function resolveDashboardProfileSlug(githubUsername: string, user: User) {
  * @returns Matching profile or `null`.
  */
 export async function getDashboardProfileByAuthUserId(authUserId: string) {
+  'use cache';
+
+  cacheLife(DASHBOARD_CACHE_PROFILE);
+  cacheTag(DASHBOARD_CACHE_TAGS.profile(authUserId));
+
   const [profile] = await db
     .select()
     .from(profiles)

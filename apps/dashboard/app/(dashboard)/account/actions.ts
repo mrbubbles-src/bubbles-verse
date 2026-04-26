@@ -11,8 +11,9 @@ import {
   toDashboardAccessInsertValues,
 } from '@/lib/account/dashboard-access';
 import { requireOwnerSession } from '@/lib/auth/session';
+import { DASHBOARD_CACHE_TAGS } from '@/lib/cache/tags';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, updateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import { and, eq } from 'drizzle-orm';
@@ -31,6 +32,7 @@ import { dashboardGithubAllowlist } from '@/drizzle/db/schema';
 function redirectToAccountFeedback(
   status: DashboardAccessFeedbackStatus
 ): never {
+  updateTag(DASHBOARD_CACHE_TAGS.access);
   revalidatePath('/account');
   redirect(getDashboardAccessFeedbackHref(status));
 }

@@ -9,6 +9,8 @@ import {
 import { getGithubIdentityUsername } from '@/lib/auth/allowed-identities';
 import { createDashboardServerSupabaseClient } from '@/lib/supabase/server';
 
+import { cache } from 'react';
+
 import { redirect } from 'next/navigation';
 
 export type DashboardSession = {
@@ -71,6 +73,8 @@ async function loadDashboardSession(): Promise<DashboardSession> {
   };
 }
 
+const getDashboardSession = cache(loadDashboardSession);
+
 /**
  * Returns the signed-in dashboard user plus the matching access row.
  *
@@ -79,7 +83,7 @@ async function loadDashboardSession(): Promise<DashboardSession> {
  * dashboard role.
  */
 export async function requireDashboardSession() {
-  return loadDashboardSession();
+  return getDashboardSession();
 }
 
 /**
@@ -89,7 +93,7 @@ export async function requireDashboardSession() {
  * categories, while more limited roles should be redirected away.
  */
 export async function requireDashboardManagerSession() {
-  const session = await loadDashboardSession();
+  const session = await getDashboardSession();
 
   if (
     session.accessEntry.userRole !== 'owner' &&
@@ -109,7 +113,7 @@ export async function requireDashboardManagerSession() {
  * Guest Authors can use the dashboard without inheriting owner-only controls.
  */
 export async function requireOwnerSession() {
-  const session = await loadDashboardSession();
+  const session = await getDashboardSession();
 
   if (session.accessEntry.userRole !== 'owner') {
     redirect('/');

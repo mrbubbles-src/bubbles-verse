@@ -39,6 +39,16 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Update or add tests with every functional change.
 - Keep test files in their own directory; do not mix them with the source code.
 
+## Caching
+
+- Follow the dashboard caching pattern for Next.js data reads: auth/session
+  checks use request-scoped React `cache()`, stable database reads use Cache
+  Components with `use cache`, `cacheLife`, and `cacheTag`.
+- Mutations must invalidate the matching dashboard tags with `updateTag` in
+  Server Actions or `revalidateTag(..., { expire: 0 })` in Route Handlers.
+- Never put `cookies()`, `headers()`, session checks, or authorization checks
+  inside `use cache`.
+
 ## TypeScript
 
 - Do not use `any`, `unknown` or `never` unless there's absolutely no other way.

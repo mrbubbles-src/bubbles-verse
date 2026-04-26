@@ -62,6 +62,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   so server-first mutation toasts no longer need per-page wrapper components.
 - Added shared dashboard loading, error, and not-found route surfaces so
   protected routes no longer drop back to generic Next.js fallback UI.
+- Added Cache Components support for stable dashboard reads, including shared
+  cache tags and explicit mutation invalidation for account, profile, Vault
+  category, and Vault entry data.
 
 ### Changed
 
@@ -109,6 +112,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cached the dashboard Drizzle/Postgres client across local HMR reloads so
   simple Supabase allowlist queries no longer churn connections and hit
   statement timeouts during `next dev`.
+- Dedupe dashboard session resolution per request with React `cache()` while
+  keeping the DB-backed authorization check outside the persistent Next.js
+  cache.
 - Reworked the dashboard home so quick actions are role-aware and the start
   page surfaces profile completeness plus current Vault activity.
 - Isolated Vault edit drafts per entry so reopening one entry no longer leaks

@@ -3,6 +3,7 @@
 import type { VaultCategoryFeedbackStatus } from '@/lib/vault/category-feedback';
 
 import { requireDashboardManagerSession } from '@/lib/auth/session';
+import { DASHBOARD_CACHE_TAGS } from '@/lib/cache/tags';
 import {
   canAssignVaultCategoryParent,
   countVaultCategoryChildren,
@@ -13,7 +14,7 @@ import {
 } from '@/lib/vault/categories';
 import { getVaultCategoryFeedbackHref } from '@/lib/vault/category-feedback';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, updateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import { eq } from 'drizzle-orm';
@@ -29,6 +30,10 @@ import { vaultCategories } from '@/drizzle/db/schema';
 function redirectToVaultCategoryFeedback(
   status: VaultCategoryFeedbackStatus
 ): never {
+  updateTag(DASHBOARD_CACHE_TAGS.home);
+  updateTag(DASHBOARD_CACHE_TAGS.vaultCategories);
+  updateTag(DASHBOARD_CACHE_TAGS.vaultEntries);
+  updateTag(DASHBOARD_CACHE_TAGS.vaultOverview);
   revalidatePath('/vault/categories');
   redirect(getVaultCategoryFeedbackHref(status));
 }

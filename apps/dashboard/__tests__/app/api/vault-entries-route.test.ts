@@ -9,9 +9,12 @@ const getDashboardAccessEntryByIdentityMock = vi.fn();
 const parseCreateVaultEntryRequestMock = vi.fn();
 const createVaultEntryMock = vi.fn();
 const revalidatePathMock = vi.fn();
+const revalidateTagMock = vi.fn();
 
 vi.mock('next/cache', () => ({
   revalidatePath: (path: string) => revalidatePathMock(path),
+  revalidateTag: (tag: string, profile: { expire: number }) =>
+    revalidateTagMock(tag, profile),
 }));
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -80,6 +83,7 @@ describe('POST /api/vault/entries', () => {
     parseCreateVaultEntryRequestMock.mockReset();
     createVaultEntryMock.mockReset();
     revalidatePathMock.mockReset();
+    revalidateTagMock.mockReset();
   });
 
   it('rejects anonymous requests', async () => {
@@ -152,5 +156,15 @@ describe('POST /api/vault/entries', () => {
     expect(createVaultEntryMock).toHaveBeenCalled();
     expect(revalidatePathMock).toHaveBeenCalledWith('/vault/entries');
     expect(revalidatePathMock).toHaveBeenCalledWith('/vault/entries/new');
+    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard:home', {
+      expire: 0,
+    });
+    expect(revalidateTagMock).toHaveBeenCalledWith(
+      'dashboard:profile:user-id',
+      { expire: 0 }
+    );
+    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard:vault:entries', {
+      expire: 0,
+    });
   });
 });

@@ -1,9 +1,15 @@
 import type { VaultCategoryTreeNode } from '@/lib/vault/category-tree';
 
 import {
+  DASHBOARD_CACHE_PROFILE,
+  DASHBOARD_CACHE_TAGS,
+} from '@/lib/cache/tags';
+import {
   buildVaultCategoryTree,
   canReparentCategory,
 } from '@/lib/vault/category-tree';
+
+import { cacheLife, cacheTag } from 'next/cache';
 
 import { asc, count, eq, inArray, isNull } from 'drizzle-orm';
 import * as z from 'zod';
@@ -165,6 +171,11 @@ export async function getVaultCategoryById(id: string) {
  * @returns Flat category rows from the database.
  */
 export async function listVaultCategories() {
+  'use cache';
+
+  cacheLife(DASHBOARD_CACHE_PROFILE);
+  cacheTag(DASHBOARD_CACHE_TAGS.vaultCategories);
+
   return db
     .select()
     .from(vaultCategories)
@@ -181,6 +192,11 @@ export async function listVaultCategories() {
  * @returns Top-level parent options for the category form.
  */
 export async function listVaultCategoryParentOptions() {
+  'use cache';
+
+  cacheLife(DASHBOARD_CACHE_PROFILE);
+  cacheTag(DASHBOARD_CACHE_TAGS.vaultCategories);
+
   return db
     .select({
       id: vaultCategories.id,
@@ -233,6 +249,14 @@ export async function getVaultCategoryPageModel(): Promise<{
   tree: VaultCategoryTreeNode[];
   parentOptions: Array<{ id: string; name: string }>;
 }> {
+  'use cache';
+
+  cacheLife(DASHBOARD_CACHE_PROFILE);
+  cacheTag(
+    DASHBOARD_CACHE_TAGS.vaultCategories,
+    DASHBOARD_CACHE_TAGS.vaultEntries
+  );
+
   const categories = await listVaultCategories();
   const categoryIds = categories.map((category) => category.id);
   const entryCounts =

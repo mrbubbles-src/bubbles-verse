@@ -8,9 +8,12 @@ const getUserMock = vi.fn();
 const getDashboardAccessEntryByIdentityMock = vi.fn();
 const duplicateVaultEntryMock = vi.fn();
 const revalidatePathMock = vi.fn();
+const revalidateTagMock = vi.fn();
 
 vi.mock('next/cache', () => ({
   revalidatePath: (path: string) => revalidatePathMock(path),
+  revalidateTag: (tag: string, profile: { expire: number }) =>
+    revalidateTagMock(tag, profile),
 }));
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -76,6 +79,7 @@ describe('POST /api/vault/entries/[id]/duplicate', () => {
     getDashboardAccessEntryByIdentityMock.mockReset();
     duplicateVaultEntryMock.mockReset();
     revalidatePathMock.mockReset();
+    revalidateTagMock.mockReset();
   });
 
   it('creates a draft duplicate for an active editor session', async () => {
@@ -118,6 +122,17 @@ describe('POST /api/vault/entries/[id]/duplicate', () => {
     expect(revalidatePathMock).toHaveBeenCalledWith('/vault/entries/entry-id');
     expect(revalidatePathMock).toHaveBeenCalledWith(
       '/vault/entries/duplicate-id'
+    );
+    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard:home', {
+      expire: 0,
+    });
+    expect(revalidateTagMock).toHaveBeenCalledWith(
+      'dashboard:profile:user-id',
+      { expire: 0 }
+    );
+    expect(revalidateTagMock).toHaveBeenCalledWith(
+      'dashboard:vault:entry:duplicate-id',
+      { expire: 0 }
     );
   });
 });

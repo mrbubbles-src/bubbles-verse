@@ -10,9 +10,12 @@ const deleteVaultEntryMock = vi.fn();
 const parseUpdateVaultEntryRequestMock = vi.fn();
 const updateVaultEntryMock = vi.fn();
 const revalidatePathMock = vi.fn();
+const revalidateTagMock = vi.fn();
 
 vi.mock('next/cache', () => ({
   revalidatePath: (path: string) => revalidatePathMock(path),
+  revalidateTag: (tag: string, profile: { expire: number }) =>
+    revalidateTagMock(tag, profile),
 }));
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -83,6 +86,7 @@ describe('PATCH /api/vault/entries/[id]', () => {
     parseUpdateVaultEntryRequestMock.mockReset();
     updateVaultEntryMock.mockReset();
     revalidatePathMock.mockReset();
+    revalidateTagMock.mockReset();
   });
 
   it('updates a vault entry for an active editor session', async () => {
@@ -140,6 +144,17 @@ describe('PATCH /api/vault/entries/[id]', () => {
     expect(updateVaultEntryMock).toHaveBeenCalled();
     expect(revalidatePathMock).toHaveBeenCalledWith('/vault/entries');
     expect(revalidatePathMock).toHaveBeenCalledWith('/vault/entries/entry-id');
+    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard:home', {
+      expire: 0,
+    });
+    expect(revalidateTagMock).toHaveBeenCalledWith(
+      'dashboard:profile:user-id',
+      { expire: 0 }
+    );
+    expect(revalidateTagMock).toHaveBeenCalledWith(
+      'dashboard:vault:entry:entry-id',
+      { expire: 0 }
+    );
   });
 
   it('deletes a vault entry for an active editor session', async () => {
@@ -177,5 +192,12 @@ describe('PATCH /api/vault/entries/[id]', () => {
     expect(revalidatePathMock).toHaveBeenCalledWith('/vault');
     expect(revalidatePathMock).toHaveBeenCalledWith('/vault/entries');
     expect(revalidatePathMock).toHaveBeenCalledWith('/vault/entries/entry-id');
+    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard:home', {
+      expire: 0,
+    });
+    expect(revalidateTagMock).toHaveBeenCalledWith(
+      'dashboard:vault:entry:entry-id',
+      { expire: 0 }
+    );
   });
 });

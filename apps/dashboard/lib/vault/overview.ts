@@ -1,5 +1,11 @@
+import {
+  DASHBOARD_CACHE_PROFILE,
+  DASHBOARD_CACHE_TAGS,
+} from '@/lib/cache/tags';
 import { listVaultCategories } from '@/lib/vault/categories';
 import { getVaultEntries } from '@/lib/vault/entries';
+
+import { cacheLife, cacheTag } from 'next/cache';
 
 import { count, eq } from 'drizzle-orm';
 
@@ -92,6 +98,14 @@ export function buildVaultOverviewModel(
  * @returns Number of matching Vault entries.
  */
 async function countVaultEntries(status?: 'draft' | 'published') {
+  'use cache';
+
+  cacheLife(DASHBOARD_CACHE_PROFILE);
+  cacheTag(
+    DASHBOARD_CACHE_TAGS.vaultOverview,
+    DASHBOARD_CACHE_TAGS.vaultEntries
+  );
+
   const baseQuery = db
     .select({ total: count() })
     .from(vaultEntries)
@@ -111,10 +125,25 @@ async function countVaultEntries(status?: 'draft' | 'published') {
  * @returns Quick actions, editorial stats, and the latest Vault activity.
  */
 export async function getVaultOverviewModel(): Promise<VaultOverviewModel> {
+  'use cache';
+
+  cacheLife(DASHBOARD_CACHE_PROFILE);
+  cacheTag(
+    DASHBOARD_CACHE_TAGS.vaultOverview,
+    DASHBOARD_CACHE_TAGS.vaultEntries,
+    DASHBOARD_CACHE_TAGS.vaultCategories
+  );
+
   const [categories, recentEntries, draftEntries, publishedEntries] =
     await Promise.all([
       listVaultCategories(),
-      getVaultEntries(),
+      getVaultEntries({
+        query: '',
+        status: 'all',
+        categoryId: null,
+        page: 1,
+        pageSize: 5,
+      }),
       countVaultEntries('draft'),
       countVaultEntries('published'),
     ]);

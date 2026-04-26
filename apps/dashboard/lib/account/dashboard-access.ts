@@ -5,6 +5,13 @@ import type {
   DashboardAccessRole,
 } from '@/lib/account/dashboard-access.shared';
 
+import {
+  DASHBOARD_CACHE_PROFILE,
+  DASHBOARD_CACHE_TAGS,
+} from '@/lib/cache/tags';
+
+import { cacheLife, cacheTag } from 'next/cache';
+
 import { and, asc, count, desc, eq } from 'drizzle-orm';
 
 import { db } from '@/drizzle/db';
@@ -42,6 +49,11 @@ const dashboardAccessRoleOrder: Record<DashboardAccessRole, number> = {
 export async function listDashboardAccessEntries(): Promise<
   DashboardAccessEntry[]
 > {
+  'use cache';
+
+  cacheLife(DASHBOARD_CACHE_PROFILE);
+  cacheTag(DASHBOARD_CACHE_TAGS.access);
+
   const entries = await db
     .select()
     .from(dashboardGithubAllowlist)

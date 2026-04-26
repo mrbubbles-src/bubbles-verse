@@ -4,6 +4,7 @@ import {
   normalizeGithubUsername,
 } from '@/lib/account/dashboard-access';
 import { getGithubIdentityUsername } from '@/lib/auth/allowed-identities';
+import { DASHBOARD_CACHE_TAGS } from '@/lib/cache/tags';
 import { createDashboardServerSupabaseClient } from '@/lib/supabase/server';
 import {
   deleteVaultEntry,
@@ -11,7 +12,7 @@ import {
   updateVaultEntry,
 } from '@/lib/vault/entries';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { NextResponse } from 'next/server';
 
 type UpdateVaultEntryRouteProps = {
@@ -106,6 +107,11 @@ export async function PATCH(
 
     revalidatePath('/vault/entries');
     revalidatePath(`/vault/entries/${id}`);
+    revalidateTag(DASHBOARD_CACHE_TAGS.home, { expire: 0 });
+    revalidateTag(DASHBOARD_CACHE_TAGS.profile(user.id), { expire: 0 });
+    revalidateTag(DASHBOARD_CACHE_TAGS.vaultEntries, { expire: 0 });
+    revalidateTag(DASHBOARD_CACHE_TAGS.vaultOverview, { expire: 0 });
+    revalidateTag(DASHBOARD_CACHE_TAGS.vaultEntry(id), { expire: 0 });
 
     return NextResponse.json(
       {
@@ -205,6 +211,10 @@ export async function DELETE(
   revalidatePath('/vault');
   revalidatePath('/vault/entries');
   revalidatePath(`/vault/entries/${id}`);
+  revalidateTag(DASHBOARD_CACHE_TAGS.home, { expire: 0 });
+  revalidateTag(DASHBOARD_CACHE_TAGS.vaultEntries, { expire: 0 });
+  revalidateTag(DASHBOARD_CACHE_TAGS.vaultOverview, { expire: 0 });
+  revalidateTag(DASHBOARD_CACHE_TAGS.vaultEntry(id), { expire: 0 });
 
   return new NextResponse(null, { status: 204 });
 }
