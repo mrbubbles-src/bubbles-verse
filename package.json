@@ -24,6 +24,7 @@
     "@ianvs/prettier-plugin-sort-imports": "^4.7.1",
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
+    "tailwindcss": "^4.1.18",
     "turbo": "^2.9.6",
     "typescript": "5.9.3"
   }

@@ -54,8 +54,16 @@ references, but only renders external anchors for safe schemes such as
 `https:`, `mailto:`, and `tel:`. `MarkdownCodeBlock` renders through Shiki with
 `catppuccin-latte` in light mode and `catppuccin-mocha` in dark mode so the
 syntax palette matches the rest of the repo. Its copy action uses the button
-itself as the tooltip trigger, and highlighted blocks render one numbered row
-per code line while preserving Shiki token markup.
+itself as the tooltip trigger. Highlighted blocks render one numbered row per
+code line, show the detected language in a compact header, and can display an
+optional `filename` such as `app/layout.tsx`. Markdown links, alerts, toggles,
+and copy actions use the shared Hugeicons exports from `@bubbles/ui`.
+Nested markdown lists add extra inline spacing per level so bullets, ordered
+markers, and inline-code chips remain readable in dense technical content.
+`MarkdownToggle` is backed by the shared Base UI collapsible wrapper and styles
+its open state from Base UI `data-open` attributes. Its panel height transitions
+from Base UI's `--collapsible-panel-height` CSS variable so closed toggles do
+not leave invisible layout space behind.
 
 `MdxRenderer` is a client component. It therefore compiles with the
 client-safe `previewComponents` registry by default, so saved MDX strings can

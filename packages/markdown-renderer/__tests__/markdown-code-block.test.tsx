@@ -43,4 +43,21 @@ describe('MarkdownCodeBlock', () => {
     expect(screen.getByText('1')).toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();
   });
+
+  it('shows the language and optional filename in the header', async () => {
+    render(
+      <MarkdownCodeBlock
+        code={'const value = 1;'}
+        filename="app/layout.tsx"
+        language="tsx"
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('const')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('TSX')).toBeInTheDocument();
+    expect(screen.getByText('app/layout.tsx')).toBeInTheDocument();
+  });
 });

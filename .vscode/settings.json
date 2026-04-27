@@ -1,3 +1,6 @@
 {
-  "typescript.tsdk": "node_modules/typescript/lib"
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "tailwindCSS.experimental.configFile": {
+    "packages/ui/src/styles/globals.css": ["apps/**", "packages/**"]
+  }
 }

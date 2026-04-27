@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 const rendererStylesheetPath = path.resolve(
   import.meta.dirname,
-  '../src/styles/renderer.css',
+  '../src/styles/renderer.css'
 );
 const rendererStylesheet = readFileSync(rendererStylesheetPath, 'utf8');
 
@@ -19,7 +19,20 @@ describe('renderer.css', () => {
 
   it('styles inline code without pulling in editor chrome selectors', () => {
     expect(rendererStylesheet).toContain('code:not(pre code)');
-    expect(rendererStylesheet).not.toMatch(/\.ce-|\.cdx-|editorjs|split-pane|toolbar/i);
+    expect(rendererStylesheet).not.toMatch(
+      /\.ce-|\.cdx-|editorjs|split-pane|toolbar/i
+    );
+  });
+
+  it('uses shared UI tokens directly for inline code shape', () => {
+    expect(rendererStylesheet).toContain('background-color: var(--code-bg)');
+    expect(rendererStylesheet).toContain('border-radius: var(--radius-md)');
+    expect(rendererStylesheet).toContain('box-shadow: var(--bubbles-shadow)');
+    expect(rendererStylesheet).not.toContain(
+      'background-color: var(--ctp-latte'
+    );
+    expect(rendererStylesheet).not.toContain('--renderer-inline-code-border');
+    expect(rendererStylesheet).not.toContain('--renderer-inline-code-radius');
   });
 
   it('maps renderer colors through shared custom properties instead of raw values', () => {

@@ -11,7 +11,7 @@
   --sh-null: oklch(var(--ctp-latte-peach));
   --sh-break: oklch(var(--ctp-latte-mauve));
   --sh-comment: oklch(var(--ctp-latte-subtext-0));
-  --code-bg: oklch(var(--ctp-latte-base));
+  --code-bg: oklch(var(--ctp-latte-crust));
 
   --color-sh-class: var(--sh-class);
   --color-sh-identifier: var(--sh-identifier);
@@ -41,15 +41,27 @@
   --sh-null: oklch(var(--ctp-mocha-peach));
   --sh-break: oklch(var(--ctp-mocha-mauve));
   --sh-comment: oklch(var(--ctp-mocha-subtext-0));
-  --code-bg: oklch(var(--ctp-mocha-base));
+  --code-bg: oklch(var(--ctp-mocha-crust));
 }
 
 code:not(pre code) {
+  display: inline;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+
   font-family: var(--font-code);
   font-weight: 700;
   font-style: italic;
+  font-size: 0.92em;
+  line-height: 1;
+
   background-color: var(--code-bg);
-  padding: 0.2rem 0.4rem;
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--inset-shadow-bubbles), var(--shadow-bubbles);
+
+  padding: 0.08em 0.32em;
+  margin-inline: 0.08em;
+
+  white-space: break-spaces;
+  overflow-wrap: anywhere;
 }

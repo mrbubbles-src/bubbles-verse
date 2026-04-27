@@ -64,6 +64,7 @@ type MarkdownListNode = {
 type MarkdownCodeNode = {
   type: 'code';
   lang?: string | null;
+  meta?: string | null;
   value: string;
 };
 
@@ -167,6 +168,22 @@ function escapeHtmlForCode(text: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+/**
+ * Read optional filename metadata from fenced code blocks.
+ *
+ * @param meta - Raw mdast code metadata, e.g. `filename="app/layout.tsx"`.
+ * @returns Filename value when present.
+ */
+function extractCodeFilename(meta?: string | null): string | undefined {
+  if (!meta) {
+    return undefined;
+  }
+
+  const filenameMatch = meta.match(/(?:^|\s)filename=(?:"([^"]+)"|(\S+))/);
+
+  return filenameMatch?.[1] ?? filenameMatch?.[2];
 }
 
 /**
@@ -359,11 +376,14 @@ export function convertMarkdownToEditorJs(markdown: string): ConversionResult {
 
       case 'code': {
         const code = node as MarkdownCodeNode;
+        const filename = extractCodeFilename(code.meta);
+
         blocks.push({
           id: generateBlockId(),
           type: 'code',
           data: {
             code: code.value,
+            filename,
             language: code.lang || 'plaintext',
           },
         });

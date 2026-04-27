@@ -6,11 +6,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- Increase nested markdown list indentation so deeper `ul` and `ol` levels stay
+  visually separated from inline code chips.
+- Fix `MarkdownToggle` open and close styling for Base UI collapsibles by using
+  `data-open` selectors and height transitions from
+  `--collapsible-panel-height`.
 - Render the `MarkdownCodeBlock` copy action as a direct button trigger instead
   of an outer wrapper span, avoiding intermittent browser `removeChild` errors
   in client-rendered edit previews with many code blocks.
 - Add visible line numbers to `MarkdownCodeBlock` while preserving Shiki token
   markup and the repo-standard Catppuccin light/dark themes.
+- Add a code block header with language metadata and optional `filename`
+  display.
+- Replace the remaining markdown icon dependency with shared Hugeicons.
 
 ## [1.0.0] - 2026-04-17
 

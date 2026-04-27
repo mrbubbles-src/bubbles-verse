@@ -26,4 +26,18 @@ describe('convertMarkdownToEditorJs', () => {
     expect(result.data.blocks[0]?.type).toBe('image');
     expect(result.warnings[0]).toContain('placeholder');
   });
+
+  it('keeps fenced code filename metadata when present', () => {
+    const result = convertMarkdownToEditorJs(
+      '```tsx filename="app/layout.tsx"\nexport default function Layout() {}\n```'
+    );
+
+    expect(result.data.blocks[0]).toMatchObject({
+      type: 'code',
+      data: {
+        filename: 'app/layout.tsx',
+        language: 'tsx',
+      },
+    });
+  });
 });

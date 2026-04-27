@@ -19,6 +19,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   same local draft state as `MarkdownEditor`.
 - Fix MDX serialization so heading wrappers and inline HTML fragments no longer
   emit React `class`/`className` DOM warnings in previews or rendered entries.
+- Preserve optional code block filenames during markdown import and MDX
+  serialization.
+- Support first-line code metadata like `// @filename app/layout.tsx` for
+  EditorJS code blocks.
 
 ## [1.0.0] - 2026-04-17
 

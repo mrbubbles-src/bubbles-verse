@@ -59,6 +59,7 @@ type CodeBlock = {
   type: 'code' | 'codeBox';
   data: {
     code: string;
+    filename?: string;
     language?: string;
   };
 };

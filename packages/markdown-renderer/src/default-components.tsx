@@ -2,16 +2,15 @@ import type { ComponentPropsWithoutRef } from 'react';
 
 import { Suspense } from 'react';
 
+import type { MarkdownImageProps } from './components/markdown-image/markdown-image';
+import type { MarkdownLinkProps } from './components/markdown-link';
 import { MarkdownAlerts } from './components/markdown-alerts';
 import { MarkdownChecklist } from './components/markdown-checklist';
 import { MarkdownCodeBlock } from './components/markdown-code/markdown-code-block';
 import { MarkdownEmbed } from './components/markdown-embed';
-import {
-  MarkdownImage,
-  type MarkdownImageProps,
-} from './components/markdown-image/markdown-image';
+import { MarkdownImage } from './components/markdown-image/markdown-image';
 import { MarkdownPreviewImage } from './components/markdown-image/markdown-preview-image';
-import { MarkdownLink, type MarkdownLinkProps } from './components/markdown-link';
+import { MarkdownLink } from './components/markdown-link';
 import { MarkdownToggle } from './components/markdown-toggle';
 
 type HeadingProps = ComponentPropsWithoutRef<'h1'>;
@@ -46,26 +45,26 @@ function MdxAnchor({ href, children, ...props }: MarkdownLinkProps) {
  */
 export const defaultComponents = {
   h1: (props: HeadingProps) => (
-    <h1 className="text-4xl leading-tight text-pretty" {...props} />
+    <h1 className="mb-4 text-4xl leading-tight text-pretty" {...props} />
   ),
   h2: (props: HeadingProps) => (
-    <h2 className="text-2xl leading-tight text-pretty" {...props} />
+    <h2 className="my-4 text-2xl leading-tight text-pretty" {...props} />
   ),
   h3: (props: HeadingProps) => (
-    <h3 className="text-xl leading-tight text-pretty" {...props} />
+    <h3 className="my-4 text-xl leading-tight text-pretty" {...props} />
   ),
   p: (props: ParagraphProps) => (
-    <p className="text-lg leading-relaxed" {...props} />
+    <p className="my-4 text-lg leading-relaxed text-pretty" {...props} />
   ),
   ol: (props: ListProps) => (
     <ol
-      className="list-decimal space-y-1 pl-5 [&_ol]:list-[lower-alpha] [&_ol_ol]:list-[lower-roman] [&_ol_ol_ol]:list-[lower-greek] [&_ul]:list-[circle] [&_ul_ul]:list-disc [&_ul_ul_ul]:list-[square]"
+      className="ml-2 list-decimal space-y-1 pl-5 [&_ol]:mt-1.5 [&_ol]:list-[lower-alpha] [&_ol_ol]:list-[lower-roman] [&_ol_ol_ol]:list-[lower-greek] [&_ul]:mt-1.5 [&_ul]:list-[circle] [&_ul_ul]:list-disc [&_ul_ul_ul]:list-[square]"
       {...props}
     />
   ),
   ul: (props: ListProps) => (
     <ul
-      className="list-disc space-y-1 pl-5 [&_ol]:list-[lower-alpha] [&_ol_ol]:list-[lower-roman] [&_ol_ol_ol]:list-[lower-greek] [&_ul]:list-[circle] [&_ul_ul]:list-disc [&_ul_ul_ul]:list-[square]"
+      className="ml-2 list-disc space-y-1 pl-5 [&_ol]:mt-1.5 [&_ol]:list-[lower-alpha] [&_ol_ol]:list-[lower-roman] [&_ol_ol_ol]:list-[lower-greek] [&_ul]:mt-1.5 [&_ul]:list-[circle] [&_ul_ul]:list-disc [&_ul_ul_ul]:list-[square]"
       {...props}
     />
   ),
@@ -79,18 +78,18 @@ export const defaultComponents = {
     <strong className="font-bold" {...props} />
   ),
   hr: (props: DividerProps) => (
-    <hr className="border-muted m-4 border-2" {...props} />
+    <hr className="m-4 border-2 border-muted" {...props} />
   ),
   a: MdxAnchor,
   table: (props: ComponentPropsWithoutRef<'table'>) => (
     <table
-      className="[&_th]:bg-sidebar [&_tr:nth-child(even)]:bg-sidebar/80 w-full place-self-center text-sm lg:w-[58.95rem] lg:text-lg [&_td]:border-b [&_td]:px-4 [&_td]:py-2 [&_th]:border-b [&_th]:px-4 [&_th]:py-2 [&_tr]:text-center"
+      className="w-full place-self-center text-sm lg:w-[58.95rem] lg:text-lg [&_td]:border-b [&_td]:px-4 [&_td]:py-2 [&_th]:border-b [&_th]:bg-sidebar [&_th]:px-4 [&_th]:py-2 [&_tr]:text-center [&_tr:nth-child(even)]:bg-sidebar/80"
       {...props}
     />
   ),
   blockquote: (props: BlockquoteProps) => (
     <blockquote
-      className="text-muted-foreground dark:border-primary my-4 border-l-4 pl-5 italic"
+      className="my-4 border-l-4 pl-5 text-muted-foreground italic dark:border-primary"
       {...props}
     />
   ),

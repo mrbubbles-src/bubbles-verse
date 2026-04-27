@@ -22,7 +22,6 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarRail,
-  SidebarSeparator,
 } from '@bubbles/ui/shadcn/sidebar';
 
 import { BubblesSidebarNav } from './bubbles-sidebar-nav';
@@ -88,13 +87,11 @@ export function BubblesSidebarLayout({
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarHeader>
-        {/* <SidebarSeparator /> */}
         <SidebarContent className={classNames?.sidebarContent}>
           <BubblesSidebarNav sections={sidebarData.sections} />
         </SidebarContent>
         {user ? (
           <>
-            <SidebarSeparator />
             <SidebarFooter className={classNames?.sidebarFooter}>
               <BubblesSidebarUserMenu user={user} />
             </SidebarFooter>

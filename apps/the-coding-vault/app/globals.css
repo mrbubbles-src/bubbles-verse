@@ -98,6 +98,7 @@
   --sidebar-accent-foreground: oklch(var(--ctp-latte-base));
   --sidebar-border: oklch(var(--ctp-latte-surface-0));
   --sidebar-ring: oklch(var(--ctp-latte-mauve));
+  --shadow-color: oklch(0 0 0);
 }
 
 .dark {
@@ -171,6 +172,7 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-shadow-color: var(--shadow-color);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -178,6 +180,7 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+  --bubbles-shadow: 0px 0px 5px 1px var(--color-shadow-color);
 
   --color-ctp-latte-rosewater: oklch(var(--ctp-latte-rosewater));
   --color-ctp-latte-flamingo: oklch(var(--ctp-latte-flamingo));
@@ -261,15 +264,6 @@ h6 {
   font-family: var(--font-headings);
   font-weight: 600;
 }
-code:not(pre code) {
-  font-family: var(--font-code);
-  font-weight: bold;
-  font-style: italic;
-  background-color: var(--code-bg);
-  padding: 0.2rem 0.4rem;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-}
 .dark .ce-popover,
 .dark .ce-popover-item,
 .dark .ce-popover-item__icon,
@@ -331,7 +325,7 @@ code:not(pre code) {
 .dark .tc-popover {
   background-color: var(--popover);
   border-color: var(--border);
-  box-shadow: 0 3px 15px -3px var(--border) / 0.2;
+  box-shadow: var(--bubbles-shadow);
 }
 
 .dark .ce-inline-tool {
@@ -358,34 +352,34 @@ code:not(pre code) {
 
 @layer components {
   .ce-block {
-    @apply bg-sidebar text-sidebar-foreground my-4 p-4;
+    @apply my-4 bg-sidebar p-4 text-sidebar-foreground;
   }
   .ce-delimiter span {
     @apply text-muted-foreground;
   }
   .ce-block__content:has(.cdx-quote) {
-    @apply border-primary bg-card text-muted-foreground rounded border-l-4 pl-4 italic;
+    @apply rounded border-l-4 border-primary bg-card pl-4 text-muted-foreground italic;
   }
   h1.ce-header {
-    @apply text-foreground text-4xl font-bold;
+    @apply text-4xl font-bold text-foreground;
   }
   h2.ce-header {
-    @apply text-foreground text-3xl font-semibold;
+    @apply text-3xl font-semibold text-foreground;
   }
   h3.ce-header {
-    @apply text-foreground text-2xl font-semibold;
+    @apply text-2xl font-semibold text-foreground;
   }
   h4.ce-header {
-    @apply text-foreground text-xl font-semibold;
+    @apply text-xl font-semibold text-foreground;
   }
   h5.ce-header {
-    @apply text-foreground text-lg font-semibold;
+    @apply text-lg font-semibold text-foreground;
   }
   h6.ce-header {
-    @apply text-foreground text-base font-semibold;
+    @apply text-base font-semibold text-foreground;
   }
   .ce-block {
-    @apply outline-accent outline-1 outline-dashed;
+    @apply outline-1 outline-accent outline-dashed;
   }
 }
 .ce-toolbar__plus,
@@ -412,7 +406,7 @@ code:not(pre code) {
 }
 .ce-popover .ce-popover__container .cdx-search-field {
   background-color: var(--background);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--bubbles-shadow);
 }
 .ce-popover .ce-popover__container .cdx-search-field .cdx-search-field__icon {
   color: var(--muted-foreground);

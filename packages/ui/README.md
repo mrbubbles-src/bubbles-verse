@@ -27,8 +27,13 @@ From [`package.json`](package.json) `exports` (wildcard = any file under that tr
 | `@bubbles/ui/fonts`          | Shared `next/font/google` objects for Montserrat, Poppins, and Fira Code.  |
 | `@bubbles/ui/shadcn/*`       | Low-level primitives (buttons, forms, dialog, …).                          |
 | `@bubbles/ui/components/*`   | Higher-level composed components shipped with the package.                 |
-| `@bubbles/ui/lib/*`          | Utilities (`cn`, helpers).                                                 |
+| `@bubbles/ui/lib/*`          | Utilities (`cn`, helpers, shared Hugeicons exports).                       |
 | `@bubbles/ui/hooks/*`        | Hooks intended for reuse (forms, theme, etc.).                             |
+
+The global stylesheet also exposes runtime CSS tokens such as
+`--shadow-color`, `--bubbles-shadow`, and `--bubbles-inset-shadow` for package
+CSS that cannot use Tailwind utilities directly. Tailwind consumers can use the
+matching `shadow-bubbles` and `inset-shadow-bubbles` utilities.
 
 ### Example
 

@@ -1,3 +1,4 @@
+import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { defaultComponents, previewComponents, useMDXComponents } from '../src';
@@ -21,8 +22,17 @@ describe('defaultComponents', () => {
   it('exports a preview registry for client-side MDX rendering', () => {
     expect(previewComponents.MarkdownImage).toBeDefined();
     expect(previewComponents.MarkdownImage).not.toBe(
-      defaultComponents.MarkdownImage,
+      defaultComponents.MarkdownImage
     );
     expect(previewComponents.MarkdownLink).toBe(defaultComponents.MarkdownLink);
+  });
+
+  it('adds vertical spacing before nested list levels', () => {
+    render(<defaultComponents.ul data-testid="list" />);
+
+    expect(screen.getByTestId('list')).toHaveClass(
+      '[&_ul]:mt-2',
+      '[&_ol]:mt-2'
+    );
   });
 });

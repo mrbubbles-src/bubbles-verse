@@ -50,12 +50,7 @@ export function BubblesAppHeader({
                 size="icon"
                 className="-ml-1 size-11 rounded-full [&>svg]:size-6"
               />
-              {hasBreadcrumbs ? (
-                <Separator
-                  orientation="vertical"
-                  className="data-vertical:h-8"
-                />
-              ) : null}
+              {hasBreadcrumbs ? <Separator orientation="vertical" /> : null}
             </div>
 
             <div className={cn('min-w-0 flex-1 space-y-1.5', classNames?.meta)}>

@@ -111,12 +111,13 @@ export function createListBlock(
 /**
  * Create a code or codeBox block fixture.
  *
- * @param overrides - Optional id/code/language/type overrides.
+ * @param overrides - Optional id/code/filename/language/type overrides.
  * @returns Typed code-family block for serializer tests.
  */
 export function createCodeBlock(
   overrides: {
     code?: string;
+    filename?: string;
     id?: string;
     language?: string;
     type?: 'code' | 'codeBox';
@@ -127,6 +128,7 @@ export function createCodeBlock(
     type: overrides.type ?? 'code',
     data: {
       code: overrides.code ?? 'const answer = 42;',
+      filename: overrides.filename,
       language: overrides.language,
     },
   };

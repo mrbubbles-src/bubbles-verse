@@ -57,6 +57,9 @@ a clean base.
   not-found surfaces so route transitions and missing pages stay on-brand
   instead of falling back to generic Next.js states.
 - Shared fonts, globals, theme provider, and toast host are wired in.
+- Dashboard styles import `@bubbles/markdown-renderer/styles/renderer` so Vault
+  previews receive shared markdown renderer CSS such as inline-code styling and
+  code color variables.
 - Redirect-based success/error toasts for `/account`, `/profile`,
   `/vault/categories`, and `/vault/entries` now run through one shared
   dashboard bridge in the `(dashboard)` layout instead of per-page wrappers.

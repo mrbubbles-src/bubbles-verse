@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added the shared markdown renderer stylesheet to dashboard styles so
+  fullscreen Vault previews receive inline-code and renderer token styles.
 - Added a dashboard TODO note for future app selection in the home quick-start
   actions once more content apps are managed from the dashboard.
 - Added a calm creative dashboard visual spec with checked-in mockup references,

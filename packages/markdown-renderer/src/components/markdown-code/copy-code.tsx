@@ -2,6 +2,11 @@
 
 import { useState } from 'react';
 
+import {
+  Copy01Icon,
+  HugeiconsIcon,
+  Tick02Icon,
+} from '@bubbles/ui/lib/hugeicons';
 import { cn } from '@bubbles/ui/lib/utils';
 import { Button } from '@bubbles/ui/shadcn/button';
 import {
@@ -9,7 +14,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@bubbles/ui/shadcn/tooltip';
-import { CheckIcon, CopyIcon } from 'lucide-react';
 
 type CopyCodeProps = {
   code: string;
@@ -69,7 +73,9 @@ export function CopyCode({ code, className }: CopyCodeProps) {
             aria-live="polite"
             aria-label="Kopiere Code">
             <span className="absolute inset-0 flex items-center justify-center opacity-100 transition-opacity duration-200 ease-in-out">
-              <CopyIcon
+              <HugeiconsIcon
+                icon={Copy01Icon}
+                strokeWidth={2}
                 className={cn(
                   'transition-transform duration-200 ease-in-out',
                   copied ? 'scale-0 opacity-0' : 'scale-100 opacity-100'
@@ -82,7 +88,9 @@ export function CopyCode({ code, className }: CopyCodeProps) {
                 'absolute inset-0 flex items-center justify-center transition-opacity duration-200 ease-in-out',
                 copied ? 'opacity-100' : 'opacity-0'
               )}>
-              <CheckIcon
+              <HugeiconsIcon
+                icon={Tick02Icon}
+                strokeWidth={2}
                 className={cn(
                   'stroke-green-600 transition-transform duration-200 ease-in-out dark:stroke-green-400',
                   copied ? 'scale-100 opacity-100' : 'scale-0 opacity-0'

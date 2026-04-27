@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from 'react';
 
+import { Separator } from '@bubbles/ui/components/shadcn/separator';
+import { Badge } from '@bubbles/ui/shadcn/badge';
 import { codeToHtml } from 'shiki';
 
 import { CopyCode } from './copy-code';
 
 export type MarkdownCodeBlockProps = {
   code: string;
+  filename?: string;
   language?: string;
 };
 
@@ -27,13 +30,28 @@ function getHighlightedLines(html: string) {
 }
 
 /**
+ * Normalize the language label shown in the code block header.
+ *
+ * @param language - Optional language id from EditorJS or MDX.
+ * @returns Human-readable label for the header badge.
+ */
+function formatLanguageLabel(language: string) {
+  if (language === 'plaintext') {
+    return 'Plain text';
+  }
+
+  return language.toUpperCase();
+}
+
+/**
  * Render syntax-highlighted code with line numbers and the shared copy action.
  *
- * @param props - Raw code plus optional language hint.
+ * @param props - Raw code plus optional language hint and file name.
  * @returns Highlighted Shiki block aligned with the repo Catppuccin themes.
  */
 export function MarkdownCodeBlock({
   code,
+  filename,
   language = 'plaintext',
 }: MarkdownCodeBlockProps) {
   const [highlightedLines, setHighlightedLines] = useState<string[] | null>(
@@ -63,30 +81,50 @@ export function MarkdownCodeBlock({
     };
   }, [code, language]);
 
+  const languageLabel = formatLanguageLabel(language);
+
   return (
-    <pre className="group relative my-4 overflow-x-auto rounded-md border-1 border-border/40 p-4 pr-14 text-lg leading-relaxed shadow-md">
-      <CopyCode
-        code={code}
-        className="absolute top-2 right-2 z-10 opacity-50 hover:opacity-100"
-      />
-      <code className={`language-${language} font-code`}>
-        {(highlightedLines ?? code.split('\n')).map((line, index) => (
-          <span key={`${index}-${line}`} className="line flex">
-            <span className="w-10 shrink-0 pr-4 text-right text-muted-foreground/70 select-none">
-              {index + 1}
-            </span>
-            {highlightedLines ? (
-              <span
-                dangerouslySetInnerHTML={{
-                  __html: line || '&nbsp;',
-                }}
-              />
-            ) : (
-              <span>{line || '\u00a0'}</span>
-            )}
-          </span>
-        ))}
-      </code>
-    </pre>
+    <figure className="group corner-tb-squircle my-4 overflow-hidden rounded-t-[30px] rounded-b-md border border-border/30 bg-ctp-latte-crust shadow-bubbles inset-shadow-bubbles dark:bg-ctp-mocha-crust">
+      <figcaption className="flex min-h-13 items-center justify-between gap-3 px-5 py-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <Badge
+            variant="default"
+            className="bg-primary/7 font-code text-primary uppercase">
+            {languageLabel}
+          </Badge>
+          {filename ? (
+            <>
+              <Separator orientation="vertical" />
+              <span className="truncate font-code text-sm text-primary">
+                {filename}
+              </span>
+            </>
+          ) : null}
+        </div>
+        <CopyCode code={code} className="opacity-70 hover:opacity-100" />
+      </figcaption>
+      <div className="px-1.5 pb-1.5">
+        <pre className="overflow-x-auto rounded-t-none rounded-b-md border border-border/30 bg-ctp-latte-base text-lg leading-relaxed shadow-bubbles inset-shadow-bubbles dark:bg-ctp-mocha-base">
+          <code className={`language-${language} block py-4 pr-4 font-code`}>
+            {(highlightedLines ?? code.split('\n')).map((line, index) => (
+              <span key={`${index}-${line}`} className="line flex">
+                <span className="mr-4 w-12 shrink-0 border-r border-border/30 pr-4 text-right text-primary/80 select-none">
+                  {index + 1}
+                </span>
+                {highlightedLines ? (
+                  <span
+                    dangerouslySetInnerHTML={{
+                      __html: line || '&nbsp;',
+                    }}
+                  />
+                ) : (
+                  <span>{line || '\u00a0'}</span>
+                )}
+              </span>
+            ))}
+          </code>
+        </pre>
+      </div>
+    </figure>
   );
 }

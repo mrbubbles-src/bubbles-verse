@@ -112,6 +112,45 @@ describe('serializeToMdx', () => {
     expect(result).toContain('language={"ts"}');
   });
 
+  it('serializes code blocks with optional filename metadata', () => {
+    const result = serializeToMdx({
+      blocks: [
+        createCodeBlock({ filename: 'app/layout.tsx', language: 'tsx' }),
+      ],
+    });
+
+    expect(result).toContain('filename={"app/layout.tsx"}');
+  });
+
+  it('extracts optional filename metadata from the first code line', () => {
+    const result = serializeToMdx({
+      blocks: [
+        createCodeBlock({
+          code: '// @filename app/layout.tsx\nexport default function Layout() {}',
+          language: 'tsx',
+        }),
+      ],
+    });
+
+    expect(result).toContain('filename={"app/layout.tsx"}');
+    expect(result).toContain('code={"export default function Layout() {}"}');
+    expect(result).not.toContain('@filename');
+  });
+
+  it('supports html-style filename metadata for markup code blocks', () => {
+    const result = serializeToMdx({
+      blocks: [
+        createCodeBlock({
+          code: '<!-- @filename app/page.tsx -->\n<main>Hello</main>',
+          language: 'html',
+        }),
+      ],
+    });
+
+    expect(result).toContain('filename={"app/page.tsx"}');
+    expect(result).toContain('code={"<main>Hello</main>"}');
+  });
+
   it('serializes codeBox blocks with plaintext fallback', () => {
     const result = serializeToMdx({
       blocks: [createCodeBlock({ id: 'codebox-1', type: 'codeBox' })],

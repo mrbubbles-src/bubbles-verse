@@ -338,6 +338,9 @@ implementation:
   so the compiled MDX does not emit React DOM warnings
 - optionally accepts `headingAnchorIdsByBlockId` so heading wrapper elements
   expose stable hash targets for TOC links
+- forwards optional code block `filename` metadata to `MarkdownCodeBlock`
+- extracts first-line code metadata such as `// @filename app/layout.tsx`
+  before rendering the code block
 
 Legacy demo shortcodes such as `FormBeispiel` are intentionally not part of the
 shared package contract.

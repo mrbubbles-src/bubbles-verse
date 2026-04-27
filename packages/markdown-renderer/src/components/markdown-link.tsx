@@ -1,27 +1,23 @@
 'use client';
 
-import type {
-  ComponentPropsWithoutRef,
-  ReactElement,
-  ReactNode,
-} from 'react';
 import type { Route } from 'next';
+import type { ComponentPropsWithoutRef, ReactElement, ReactNode } from 'react';
 
-import {
-  Children,
-  cloneElement,
-  isValidElement,
-} from 'react';
+import { Children, cloneElement, isValidElement } from 'react';
 
 import Link from 'next/link';
-import { ExternalLink, SquareArrowOutUpRight } from 'lucide-react';
 
+import {
+  ArrowUpRight01Icon,
+  HugeiconsIcon,
+  SquareArrowUpRightIcon,
+} from '@bubbles/ui/lib/hugeicons';
+import { cn } from '@bubbles/ui/lib/utils';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@bubbles/ui/shadcn/tooltip';
-import { cn } from '@bubbles/ui/lib/utils';
 
 export type MarkdownLinkProps = ComponentPropsWithoutRef<'a'>;
 
@@ -29,12 +25,7 @@ type ElementWithChildrenProps = {
   children?: ReactNode;
 };
 
-const SAFE_EXTERNAL_PROTOCOLS = new Set([
-  'http:',
-  'https:',
-  'mailto:',
-  'tel:',
-]);
+const SAFE_EXTERNAL_PROTOCOLS = new Set(['http:', 'https:', 'mailto:', 'tel:']);
 
 /**
  * Resolve whether an href is safe to render as an external link.
@@ -68,7 +59,7 @@ function getSafeExternalHref(href: string): string | null {
  * @returns Whether the node is a literal anchor element.
  */
 function isAnchorElement(
-  node: ReactNode,
+  node: ReactNode
 ): node is ReactElement<ElementWithChildrenProps, 'a'> {
   return isValidElement(node) && node.type === 'a';
 }
@@ -96,7 +87,7 @@ function stripNestedAnchors(node: ReactNode): ReactNode {
   return cloneElement(
     node,
     node.props,
-    Children.map(node.props.children, stripNestedAnchors),
+    Children.map(node.props.children, stripNestedAnchors)
   );
 }
 
@@ -107,11 +98,7 @@ function stripNestedAnchors(node: ReactNode): ReactNode {
  * @param props - Native anchor props with optional href and rich children.
  * @returns Styled link or plain children when no href is provided.
  */
-export function MarkdownLink({
-  href,
-  children,
-  ...props
-}: MarkdownLinkProps) {
+export function MarkdownLink({ href, children, ...props }: MarkdownLinkProps) {
   const className =
     'text-primary hover:text-primary/80 inline-block cursor-pointer font-bold underline underline-offset-4 transition-all duration-300 ease-in-out active:scale-95';
   const sanitizedChildren = Children.map(children, stripNestedAnchors);
@@ -130,7 +117,11 @@ export function MarkdownLink({
               className={cn(className, 'touch-hitbox')}
               {...props}>
               {sanitizedChildren}
-              <SquareArrowOutUpRight className="ml-0.5 inline-block size-4" />
+              <HugeiconsIcon
+                icon={SquareArrowUpRightIcon}
+                strokeWidth={2}
+                className="ml-0.5 inline-block size-4"
+              />
             </Link>
           }
         />
@@ -175,12 +166,16 @@ export function MarkdownLink({
             className={cn(className, 'touch-hitbox')}
             {...props}>
             {sanitizedChildren}
-            <ExternalLink className="ml-0.5 inline-block size-4" />
+            <HugeiconsIcon
+              icon={ArrowUpRight01Icon}
+              strokeWidth={2}
+              className="ml-0.5 inline-block size-4"
+            />
           </a>
         }
       />
       <TooltipContent className="TooltipContent z-1001 max-w-[20rem] font-bold text-pretty md:max-w-full">
-        {`Oeffne '${safeExternalHref}' in einem neuen Tab`}
+        {`Öffne '${safeExternalHref}' in einem neuen Tab`}
       </TooltipContent>
     </Tooltip>
   );

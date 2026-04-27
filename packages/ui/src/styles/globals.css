@@ -7,6 +7,7 @@
 @source '../../../../packages/**/*.{ts,tsx}';
 @source '../../../../components/**/*.{ts,tsx}';
 
+@plugin '@toolwind/corner-shape';
 html {
   scrollbar-gutter: stable;
 }
@@ -88,6 +89,10 @@ html {
   --border: oklch(var(--ctp-latte-surface-0));
   --input: oklch(var(--ctp-latte-surface-0));
   --ring: oklch(var(--ctp-latte-mauve));
+  --shadow-color: oklch(var(--ctp-latte-text) / 0.14);
+  --bubbles-shadow: 0 1px 2px 0 var(--shadow-color), 0 0 0 1px var(--border);
+  --bubbles-inset-shadow:
+    inset 0 1px 2px 0 var(--shadow-color), inset 0 0 0 1px var(--border);
   --chart-1: oklch(var(--ctp-latte-blue));
   --chart-2: oklch(var(--ctp-latte-green));
   --chart-3: oklch(var(--ctp-latte-yellow));
@@ -123,6 +128,10 @@ html {
   --border: oklch(var(--ctp-mocha-surface-0));
   --input: oklch(var(--ctp-mocha-surface-0));
   --ring: oklch(var(--ctp-mocha-mauve));
+  --shadow-color: oklch(var(--ctp-mocha-crust) / 0.55);
+  --bubbles-shadow: 0 1px 2px 0 var(--shadow-color), 0 0 0 1px var(--border);
+  --bubbles-inset-shadow:
+    inset 0 1px 2px 0 var(--shadow-color), inset 0 0 0 1px var(--border);
   --chart-1: oklch(var(--ctp-mocha-blue));
   --chart-2: oklch(var(--ctp-mocha-green));
   --chart-3: oklch(var(--ctp-mocha-yellow));
@@ -196,6 +205,8 @@ html {
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
+  --shadow-bubbles: var(--bubbles-shadow);
+  --inset-shadow-bubbles: var(--bubbles-inset-shadow);
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);

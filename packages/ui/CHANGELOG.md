@@ -8,6 +8,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Added shared `--shadow-color`, `--bubbles-shadow`, and
+  `--bubbles-inset-shadow` CSS tokens for theme-aware plain CSS shadows.
 - Shared `ManagementActionButton` component for token-colored management row
   icon actions.
 - Shared `FormDialog` and `StagedConfirmDialog` components for reusable
@@ -16,6 +18,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   wrapper for editorial admin-style list screens.
 - Shared `Pagination` component plus `getPaginationItems()` helper for classic
   paged lists with compact chips and optional page-size selection.
+- Shared Hugeicons exports for arrow-up-right link indicators used by markdown
+  rendering.
 
 ### Changed
 

@@ -40,6 +40,36 @@ function serializeMdxStringProp(name: string, value: string): string {
 }
 
 /**
+ * Extract optional code block metadata typed into the first code line.
+ *
+ * @param code - Raw EditorJS code block content.
+ * @returns Code without the meta line plus the extracted filename.
+ */
+function extractCodeBlockMeta(code: string): {
+  code: string;
+  filename?: string;
+} {
+  const [firstLine, ...remainingLines] = code.split(/\r?\n/);
+
+  if (!firstLine) {
+    return { code };
+  }
+
+  const metaMatch = firstLine.match(
+    /^\s*(?:(?:\/\/|#|--|;)\s*|<!--\s*)@filename\s+(.+?)(?:\s*-->)?\s*$/
+  );
+
+  if (!metaMatch?.[1]) {
+    return { code };
+  }
+
+  return {
+    code: remainingLines.join('\n'),
+    filename: metaMatch[1].trim(),
+  };
+}
+
+/**
  * Serialize a numeric prop when the value is finite.
  *
  * @param name - Prop name written into the MDX tag.
@@ -155,12 +185,16 @@ export function serializeToMdx(
       case 'codeBox': {
         const data = block.data as {
           code: string;
+          filename?: string;
           language?: string;
         };
-        const safeCode = JSON.stringify(data.code);
+        const meta = extractCodeBlockMeta(data.code);
+        const filename = data.filename ?? meta.filename;
+        const safeCode = JSON.stringify(meta.code);
         content = `<MarkdownCodeBlock
       code={${safeCode}}
       ${serializeMdxStringProp('language', data.language || 'plaintext')}
+      ${filename ? serializeMdxStringProp('filename', filename) : ''}
     />`;
         break;
       }

@@ -52,7 +52,7 @@ export default function AppShell({
           }
           mobileTopActions={
             <>
-              <Separator orientation="vertical" className="data-vertical:h-8" />
+              <Separator orientation="vertical" />
               <ThemeToggle />
             </>
           }
