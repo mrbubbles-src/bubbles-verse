@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-05T08:53:03Z",
+  "title": "Design System: bubbles-verse",
+  "extensions": {
+    "colorMeta": {
+      "latte-base": {
+        "role": "neutral",
+        "displayName": "Latte Paper",
+        "canonical": "oklch(0.9578 0.0058 264.53)",
+        "tonalRamp": [
+          "oklch(0.9578 0.0058 264.53)",
+          "oklch(0.9335 0.0087 264.52)",
+          "oklch(0.906 0.0117 264.51)"
+        ]
+      },
+      "mocha-base": {
+        "role": "neutral",
+        "displayName": "Mocha Desk",
+        "canonical": "oklch(0.2429 0.0304 283.91)",
+        "tonalRamp": [
+          "oklch(0.2429 0.0304 283.91)",
+          "oklch(0.2155 0.0254 284.06)",
+          "oklch(0.1828 0.0204 284.2)"
+        ]
+      },
+      "mauve": {
+        "role": "primary",
+        "displayName": "Lab Mauve",
+        "canonical": "oklch(0.7871 0.1187 304.77)",
+        "tonalRamp": [
+          "oklch(0.5547 0.2503 297.02)",
+          "oklch(0.7871 0.1187 304.77)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Dominant numbers, rare hero moments, and high-emphasis app states."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Page titles and major sections."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Readable app copy and form descriptions."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Metadata, table headers, status context, and compact UI labels."
+      }
+    },
+    "elevationMeta": {
+      "philosophy": "Flexible mix of tonal layering, quiet rings, and tactile shadows based on app need.",
+      "shadows": {
+        "bubbles": "0 1px 2px 0 var(--shadow-color), 0 0 0 1px var(--border)",
+        "bubblesInset": "inset 0 1px 2px 0 var(--shadow-color), inset 0 0 0 1px var(--border)"
+      }
+    },
+    "motionMeta": {
+      "themeTransition": "View-transition circle reveal around --vt-x and --vt-y, disabled under prefers-reduced-motion.",
+      "defaultDuration": "150ms-300ms for component state, 1000ms for theme view transition.",
+      "principle": "Animate opacity, transform, and clip-path. Avoid layout-property animation."
+    },
+    "componentMeta": {
+      "button": {
+        "base": "Base UI button plus cva variants, touch-hitbox, rounded-md, compact heights, focus ring.",
+        "variants": [
+          "default",
+          "outline",
+          "secondary",
+          "ghost",
+          "destructive",
+          "link"
+        ],
+        "sizes": [
+          "xs",
+          "sm",
+          "default",
+          "lg",
+          "icon",
+          "icon-xs",
+          "icon-sm",
+          "icon-lg"
+        ]
+      },
+      "card": {
+        "base": "Rounded-lg bg-card surface with ring separation and default 1rem vertical rhythm.",
+        "rule": "Use for grouped objects and framed tools, not as the default page layout."
+      },
+      "input": {
+        "base": "Compact rounded-md field with border-input, subtle fill, focus ring, disabled and invalid states."
+      },
+      "sidebar": {
+        "base": "Inset shadcn sidebar with collapsible icon mode, mobile sheet behavior, and app-provided brand/header composition."
+      },
+      "managementTable": {
+        "base": "Responsive overflow table with editorial labels and generous row spacing."
+      }
+    },
+    "rules": {
+      "do": [
+        "Build reusable components on top of @bubbles/ui shadcn primitives.",
+        "Keep Catppuccin Latte and Mocha as the default theme spine.",
+        "Let individual apps vary density, playfulness, and elevation based on their workflow.",
+        "Respect WCAG AA, keyboard access, responsive behavior, and reduced motion."
+      ],
+      "dont": [
+        "Do not create card-heavy layouts where every piece of content becomes the same rounded box.",
+        "Do not rewrite shadcn primitive files directly unless the reason has been discussed.",
+        "Do not drift into generic SaaS dashboards, corporate blue defaults, overdesigned marketing gloss, or decorative complexity.",
+        "Do not use side-stripe borders, gradient text, decorative glassmorphism, hero-metric templates, identical card grids, or modal-first interaction design."
+      ]
+    }
+  }
+}
