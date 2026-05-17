@@ -57,6 +57,21 @@
       "@testing-library/react": "^16.3.2",
       "@testing-library/user-event": "^14.6.1",
       "@vitejs/plugin-react": "^5.2.0"
+    },
+    "database": {
+      "drizzle-orm": "^0.45.2",
+      "drizzle-kit": "^0.31.10",
+      "postgres": "^3.4.9"
+    },
+    "icons": {
+      "@fortawesome/fontawesome-svg-core": "^7.2.0",
+      "@fortawesome/free-brands-svg-icons": "^7.2.0",
+      "@fortawesome/free-solid-svg-icons": "^7.2.0",
+      "@fortawesome/react-fontawesome": "^3.3.1"
+    },
+    "editorjs": {
+      "@editorjs/editorjs": "^2.31.6",
+      "@editorjs/header": "^2.8.9"
     }
   }
 }
