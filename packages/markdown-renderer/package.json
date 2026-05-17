@@ -13,13 +13,13 @@
     "./styles/renderer": "./src/styles/renderer.css"
   },
   "dependencies": {
-    "@mdx-js/mdx": "^3.1.1",
+    "@mdx-js/mdx": "catalog:markdown",
     "@bubbles/ui": "workspace:*",
     "next": "catalog:",
     "next-cloudinary": "^6.17.5",
     "react": "catalog:",
-    "remark-gfm": "^4.0.1",
-    "shiki": "^3.19.0"
+    "remark-gfm": "catalog:markdown",
+    "shiki": "catalog:markdown"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "catalog:testing",

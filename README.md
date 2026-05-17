@@ -36,6 +36,7 @@ Shared tooling and test runner versions live in named `tooling` and `testing`
 catalogs and should be referenced with `catalog:tooling` or `catalog:testing`.
 Shared database, icon, and Editor.js package groups live in the `database`,
 `icons`, and `editorjs` catalogs.
+Shared Markdown and syntax-highlighting packages live in the `markdown` catalog.
 
 For Next.js maintenance updates, run the official Next codemod in each Next app
 workspace, then run one root install so Bun can consolidate the lockfile:

@@ -15,6 +15,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Added named Bun catalogs for shared tooling and testing dependencies.
 - Added named Bun catalogs for shared database, icon, and Editor.js
   dependencies.
+- Added a named Bun catalog for shared Markdown and syntax-highlighting
+  dependencies.
 
 ### Changed
 
