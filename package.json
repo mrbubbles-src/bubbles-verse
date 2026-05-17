@@ -32,10 +32,31 @@
     "@bubbles/eslint-config": "workspace:*",
     "@bubbles/typescript-config": "workspace:*",
     "@ianvs/prettier-plugin-sort-imports": "^4.7.1",
-    "prettier": "^3.8.1",
-    "prettier-plugin-tailwindcss": "^0.7.2",
-    "tailwindcss": "^4.1.18",
-    "turbo": "^2.9.6",
-    "typescript": "5.9.3"
+    "prettier": "catalog:tooling",
+    "prettier-plugin-tailwindcss": "catalog:tooling",
+    "tailwindcss": "catalog:tooling",
+    "turbo": "catalog:tooling",
+    "typescript": "catalog:tooling"
+  },
+  "catalogs": {
+    "tooling": {
+      "typescript": "5.9.3",
+      "eslint": "^9.39.4",
+      "tailwindcss": "^4.3.0",
+      "@tailwindcss/postcss": "^4.3.0",
+      "prettier": "^3.8.3",
+      "prettier-plugin-tailwindcss": "^0.7.4",
+      "turbo": "^2.9.14"
+    },
+    "testing": {
+      "vitest": "^4.1.6",
+      "@vitest/coverage-v8": "^4.1.6",
+      "@vitest/ui": "^4.1.6",
+      "jsdom": "^28.1.0",
+      "@testing-library/jest-dom": "^6.9.1",
+      "@testing-library/react": "^16.3.2",
+      "@testing-library/user-event": "^14.6.1",
+      "@vitejs/plugin-react": "^5.2.0"
+    }
   }
 }

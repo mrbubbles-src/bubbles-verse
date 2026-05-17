@@ -19,7 +19,7 @@
     "@bubbles/eslint-config": "workspace:*",
     "@bubbles/typescript-config": "workspace:*",
     "@types/react": "catalog:",
-    "eslint": "^9.39.2",
-    "typescript": "^5.9.3"
+    "eslint": "catalog:tooling",
+    "typescript": "catalog:tooling"
   }
 }

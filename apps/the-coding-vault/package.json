@@ -65,7 +65,7 @@
     "@bubbles/eslint-config": "workspace:^",
     "@bubbles/typescript-config": "workspace:*",
     "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/postcss": "catalog:tooling",
     "@types/bcryptjs": "^3.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25",
@@ -74,13 +74,13 @@
     "@types/react-dom": "catalog:",
     "drizzle-kit": "^0.31.8",
     "editorjs-toggle-block": "^0.3.16",
-    "eslint": "^9",
+    "eslint": "catalog:tooling",
     "eslint-config-next": "catalog:",
-    "prettier": "^3.7.4",
-    "prettier-plugin-tailwindcss": "^0.7.2",
+    "prettier": "catalog:tooling",
+    "prettier-plugin-tailwindcss": "catalog:tooling",
     "shiki": "^3.19.0",
-    "tailwindcss": "^4",
-    "typescript": "^5.9.3"
+    "tailwindcss": "catalog:tooling",
+    "typescript": "catalog:tooling"
   },
   "ignoreScripts": [
     "sharp",

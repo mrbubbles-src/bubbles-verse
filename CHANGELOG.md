@@ -12,6 +12,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Documented the root-only dependency workflow with Bun workspace filters.
 - Documented the per-app Next.js codemod workflow for Bun workspaces.
 - Added a root Bun catalog for shared Next.js and React framework versions.
+- Added named Bun catalogs for shared tooling and testing dependencies.
 
 ### Changed
 

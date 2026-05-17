@@ -36,15 +36,15 @@
   "devDependencies": {
     "@bubbles/eslint-config": "workspace:^",
     "@bubbles/typescript-config": "workspace:*",
-    "@tailwindcss/postcss": "^4.1.18",
+    "@tailwindcss/postcss": "catalog:tooling",
     "@types/negotiator": "^0.6.4",
     "@types/node": "^25.2.3",
     "@types/nodemailer": "^7.0.4",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "eslint": "^9.39.2",
+    "eslint": "catalog:tooling",
     "eslint-plugin-jsx-a11y": "^6.10.2",
-    "typescript": "^5.9.3"
+    "typescript": "catalog:tooling"
   },
   "ignoreScripts": [
     "sharp",
