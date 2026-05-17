@@ -17,8 +17,8 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "next-themes": "^0.4.6",
-    "react": "19.2.6",
-    "react-dom": "19.2.6",
+    "react": "catalog:",
+    "react-dom": "catalog:",
     "react-hook-form": "^7.68.0",
     "shadcn": "^4.1.0",
     "sonner": "^2.0.7",
@@ -33,14 +33,14 @@
     "@testing-library/user-event": "^14.6.1",
     "@turbo/gen": "^2.8.1",
     "@types/node": "^25.1.0",
-    "@types/react": "19.2.14",
-    "@types/react-dom": "19.2.3",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "^5.1.3",
     "@bubbles/eslint-config": "workspace:*",
     "@bubbles/typescript-config": "workspace:*",
     "eslint": "^9.39.2",
     "jsdom": "^28.0.0",
-    "next": "16.2.6",
+    "next": "catalog:",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
@@ -56,9 +56,5 @@
     "./components/bubbles-sidebar-layout": "./src/components/bubbles-sidebar/bubbles-sidebar-layout.tsx",
     "./shadcn/*": "./src/components/shadcn/*.tsx",
     "./hooks/*": "./src/hooks/*.ts"
-  },
-  "overrides": {
-    "@types/react": "19.2.14",
-    "@types/react-dom": "19.2.3"
   }
 }

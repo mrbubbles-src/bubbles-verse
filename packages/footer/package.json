@@ -12,13 +12,13 @@
   },
   "dependencies": {
     "@bubbles/ui": "workspace:*",
-    "next": "16.2.6",
-    "react": "19.2.6"
+    "next": "catalog:",
+    "react": "catalog:"
   },
   "devDependencies": {
     "@bubbles/eslint-config": "workspace:*",
     "@bubbles/typescript-config": "workspace:*",
-    "@types/react": "19.2.14",
+    "@types/react": "catalog:",
     "eslint": "^9.39.2",
     "typescript": "^5.9.3"
   }

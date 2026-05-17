@@ -28,6 +28,11 @@ bun add <dependency> --filter=<workspace-name>
 bun add -d <dependency> --filter=<workspace-name>
 ```
 
+Shared framework versions live in the root `catalog` field. Workspaces should
+reference `next`, React, React DOM, React types, `eslint-config-next`,
+`@next/mdx`, and the React Compiler with `catalog:` so patch/security updates
+only require one root version change plus `bun install`.
+
 For Next.js maintenance updates, run the official Next codemod in each Next app
 workspace, then run one root install so Bun can consolidate the lockfile:
 
