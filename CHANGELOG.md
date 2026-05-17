@@ -6,6 +6,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Added root Bun install hardening with a 3-day minimum package release age.
+- Documented the root-only dependency workflow with Bun workspace filters.
+- Documented the per-app Next.js codemod workflow for Bun workspaces.
+
+### Changed
+
+- Updated Next.js workspace dependencies to `16.2.6` and React workspace
+  dependencies to `19.2.6`.
+
 ## [1.0.1] - 2026-04-17
 
 ### Changed

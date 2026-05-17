@@ -27,7 +27,9 @@ describe('renderer.css', () => {
   it('uses shared UI tokens directly for inline code shape', () => {
     expect(rendererStylesheet).toContain('background-color: var(--code-bg)');
     expect(rendererStylesheet).toContain('border-radius: var(--radius-md)');
-    expect(rendererStylesheet).toContain('box-shadow: var(--bubbles-shadow)');
+    expect(rendererStylesheet).toContain(
+      'box-shadow: var(--inset-shadow-bubbles), var(--shadow-bubbles)'
+    );
     expect(rendererStylesheet).not.toContain(
       'background-color: var(--ctp-latte'
     );

@@ -16,6 +16,28 @@ nvm use
 bun install
 ```
 
+Root installs use [`bunfig.toml`](bunfig.toml) to require a 3-day minimum
+package release age.
+
+Run dependency installs and adds from the repository root only. For workspace
+dependencies, prefer Bun's root-level filter syntax instead of changing into an
+app or package folder first:
+
+```bash
+bun add <dependency> --filter=<workspace-name>
+bun add -d <dependency> --filter=<workspace-name>
+```
+
+For Next.js maintenance updates, run the official Next codemod in each Next app
+workspace, then run one root install so Bun can consolidate the lockfile:
+
+```bash
+cd apps/<next-app>
+bunx @next/codemod@canary upgrade latest
+cd ../..
+bun install
+```
+
 Sanity check one workspace:
 
 ```bash

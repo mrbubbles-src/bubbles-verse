@@ -31,8 +31,8 @@ describe('defaultComponents', () => {
     render(<defaultComponents.ul data-testid="list" />);
 
     expect(screen.getByTestId('list')).toHaveClass(
-      '[&_ul]:mt-2',
-      '[&_ol]:mt-2'
+      '[&_ul]:mt-1.5',
+      '[&_ol]:mt-1.5'
     );
   });
 });

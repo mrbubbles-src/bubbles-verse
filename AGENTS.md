@@ -20,6 +20,9 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Use the `init` command first once in a new NextDevTools session to initialize the MCP.
 - When writing german text, always use umlauts instead of "ae", "oe", "ue".
 - When creating new components, libraries, hooks, etc., think about grouping it into a folder structure that makes sense; don't just throw it into the respective resources folder.
+- Always run `bun install` and `bun add` from the repository root. For workspace
+  dependencies, use `bun add <dependency> --filter=<workspace-name>` or
+  `bun add -d <dependency> --filter=<workspace-name>`.
 
 ## UI/UX
 
