@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@bubbles/ui": "workspace:*",
-    "next-themes": "^0.4.6",
+    "next-themes": "catalog:ui-runtime",
     "react": "catalog:"
   },
   "devDependencies": {

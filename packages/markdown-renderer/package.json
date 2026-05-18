@@ -16,7 +16,7 @@
     "@mdx-js/mdx": "catalog:markdown",
     "@bubbles/ui": "workspace:*",
     "next": "catalog:",
-    "next-cloudinary": "^6.17.5",
+    "next-cloudinary": "catalog:cloudinary",
     "react": "catalog:",
     "remark-gfm": "catalog:markdown",
     "shiki": "catalog:markdown"
@@ -24,7 +24,7 @@
   "devDependencies": {
     "@testing-library/jest-dom": "catalog:testing",
     "@testing-library/react": "catalog:testing",
-    "@types/node": "^25.1.0",
+    "@types/node": "catalog:node-types",
     "@bubbles/eslint-config": "workspace:*",
     "@bubbles/typescript-config": "workspace:*",
     "@types/react": "catalog:",

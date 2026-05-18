@@ -17,9 +17,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   dependencies.
 - Added a named Bun catalog for shared Markdown and syntax-highlighting
   dependencies.
+- Added named Bun catalogs for forms, validation, UI runtime, Supabase,
+  Cloudinary, email, PDF, Node types, and app-runtime dependencies.
 
 ### Changed
 
+- Updated Bun package manager metadata to `1.3.14`.
 - Updated Next.js workspace dependencies to `16.2.6` and React workspace
   dependencies to `19.2.6`.
 

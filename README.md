@@ -7,7 +7,7 @@ Monorepo for personal web apps and shared frontend packages. Installs run throug
 | Tool    | Version    | Notes                                               |
 | ------- | ---------- | --------------------------------------------------- |
 | Node.js | `>=22 <25` | [`.nvmrc`](.nvmrc) pins `24.14.1` for local parity. |
-| Bun     | `1.3.11`   | Declared as the root `packageManager`.              |
+| Bun     | `1.3.14`   | Declared as the root `packageManager`.              |
 
 ## First-time setup
 
@@ -37,6 +37,8 @@ catalogs and should be referenced with `catalog:tooling` or `catalog:testing`.
 Shared database, icon, and Editor.js package groups live in the `database`,
 `icons`, and `editorjs` catalogs.
 Shared Markdown and syntax-highlighting packages live in the `markdown` catalog.
+Shared forms, validation, UI runtime, Supabase, Cloudinary, email, PDF,
+Node-type, and app-runtime package groups live in their matching named catalogs.
 
 For Next.js maintenance updates, run the official Next codemod in each Next app
 workspace, then run one root install so Bun can consolidate the lockfile:
