@@ -270,6 +270,66 @@ describe('BubblophyDashboard interactions', () => {
     ).toBeInTheDocument();
   });
 
+  it('selects an issue when its table row is clicked', () => {
+    render(<BubblophyDashboard snapshot={dashboardSnapshot} />);
+
+    const issueButton = screen.getByRole('button', {
+      name: 'Novari-Projekte für externe Mitarbeit freigeben',
+    });
+    const issueRow = issueButton.closest('tr');
+
+    expect(issueRow).toBeInstanceOf(HTMLTableRowElement);
+
+    if (!(issueRow instanceof HTMLTableRowElement)) {
+      throw new Error('Expected issue row to render.');
+    }
+
+    fireEvent.click(issueRow);
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    expect(issueRow).toHaveAttribute('aria-selected', 'true');
+    expect(within(detailPanel).getByText('NO-08')).toBeInTheDocument();
+    expect(
+      within(detailPanel).getByText('Projekt NO · Owner Martin')
+    ).toBeInTheDocument();
+  });
+
+  it('selects an issue from the keyboard-focused table row', () => {
+    render(<BubblophyDashboard snapshot={dashboardSnapshot} />);
+
+    const issueButton = screen.getByRole('button', {
+      name: 'Novari-Projekte für externe Mitarbeit freigeben',
+    });
+    const issueRow = issueButton.closest('tr');
+
+    expect(issueRow).toBeInstanceOf(HTMLTableRowElement);
+
+    if (!(issueRow instanceof HTMLTableRowElement)) {
+      throw new Error('Expected issue row to render.');
+    }
+
+    expect(
+      screen.getByRole('row', {
+        name: 'Issue NO-08: Novari-Projekte für externe Mitarbeit freigeben auswählen',
+      })
+    ).toBe(issueRow);
+
+    fireEvent.keyDown(issueRow, { key: 'Enter' });
+
+    expect(issueRow).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('NO-08');
+
+    const firstIssueRow = screen.getByRole('row', {
+      name: 'Issue BV-14: Agent-Zugriff mit projektbezogenen Tokens auswählen',
+    });
+
+    fireEvent.keyDown(firstIssueRow, { key: ' ' });
+
+    expect(firstIssueRow).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('BV-14');
+  });
+
   it('does not expose fake plan persistence for sample snapshots', () => {
     render(<BubblophyDashboard snapshot={dashboardSnapshot} />);
 
@@ -766,6 +826,9 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       screen.getByText('Noch keine Issues für diesen Filter.')
     ).toBeInTheDocument();
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent(
+      'Kein Issue ausgewählt.'
+    );
   });
 
   it('keeps the project dialog open and shows duplicate errors', async () => {

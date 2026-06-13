@@ -69,3 +69,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   read DTOs so detail panels survive reloads without client-only overlays.
 - Hardened the human issue plan dialog so saved plans send normalized steps,
   update the visible plan counter, and keep denied saves in the dialog.
+- Made issue rows directly clickable and keyboard-selectable, with a clearer
+  empty detail state when no issue is selected.

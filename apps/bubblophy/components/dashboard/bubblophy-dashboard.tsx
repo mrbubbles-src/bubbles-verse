@@ -26,6 +26,7 @@ import type {
   ProjectHealth,
   ProjectSummary,
 } from '@/lib/dashboard/types';
+import type { KeyboardEvent } from 'react';
 
 import {
   agentRunStateLabels,
@@ -1182,6 +1183,17 @@ function IssueQueue({
           token.state === 'aktiv'
       )
     : [];
+  const handleIssueRowKeyDown = (
+    event: KeyboardEvent<HTMLTableRowElement>,
+    issueId: string
+  ) => {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+      return;
+    }
+
+    event.preventDefault();
+    onIssueSelect(issueId);
+  };
 
   return (
     <Card id="issues" className="scroll-mt-24">
@@ -1256,8 +1268,13 @@ function IssueQueue({
               {issues.map((issue) => (
                 <TableRow
                   key={issue.id}
+                  tabIndex={0}
+                  aria-selected={selectedIssue?.id === issue.id}
+                  aria-label={`Issue ${issue.id}: ${issue.title} auswählen`}
                   data-state={selectedIssue?.id === issue.id ? 'selected' : ''}
-                  className="data-[state=selected]:bg-muted/40">
+                  className="cursor-pointer transition-colors hover:bg-muted/30 focus-visible:bg-muted/30 focus-visible:outline-2 focus-visible:outline-ring/40 data-[state=selected]:bg-muted/40"
+                  onClick={() => onIssueSelect(issue.id)}
+                  onKeyDown={(event) => handleIssueRowKeyDown(event, issue.id)}>
                   <TableCell className="font-mono text-muted-foreground">
                     <button
                       type="button"
@@ -1371,8 +1388,14 @@ function IssueDetailPanel({
 
   if (!issue) {
     return (
-      <aside className="rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
-        Keine Issues für diesen Filter.
+      <aside
+        aria-label="Issue-Details"
+        className="grid content-start gap-2 rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
+        <p className="font-medium text-foreground">Kein Issue ausgewählt.</p>
+        <p>
+          Wähle ein Issue in der Queue aus oder lege im aktuellen Projekt das
+          erste Issue an.
+        </p>
       </aside>
     );
   }

@@ -36,7 +36,8 @@ einem bewusst human-gesteuerten Kontrollzentrum.
 - In einer leeren Datenbank führt der UI-Flow von `Neues Projekt` direkt in
   den ausgewählten Projektkontext und bietet dort das erste persistierte Issue
   für dieses Projekt an.
-- Projektkarten und Issues sind auswählbare Controls mit sichtbarem Zustand.
+- Projektkarten und Issue-Zeilen sind auswählbare Controls mit sichtbarem
+  Zustand. Issue-Zeilen reagieren auf Klick, Enter und Leertaste;
   Projektfilter können gelöst werden; Sidebar-Links führen auf echte
   Dashboard-Sections statt auf Platzhalter.
 - Der Issue-Dialog bietet bei aktiver Datenbankquelle zusätzlich
