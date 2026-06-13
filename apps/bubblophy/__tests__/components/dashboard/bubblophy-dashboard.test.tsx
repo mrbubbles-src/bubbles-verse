@@ -179,6 +179,36 @@ const databaseSnapshotWithRunUpdateToken = {
   ],
 } satisfies DashboardSnapshot;
 
+const databaseSnapshotWithIssueReadToken = {
+  ...databaseSnapshot,
+  agentTokens: [
+    {
+      id: 'token_reader',
+      label: 'Claude Reader',
+      projectKey: 'BV',
+      scopes: ['issues:read'],
+      state: 'aktiv',
+      lastUsedAt: 'noch nie verwendet',
+      expiresAt: 'läuft nicht automatisch ab',
+    },
+  ],
+} satisfies DashboardSnapshot;
+
+const databaseSnapshotWithWriteOnlyToken = {
+  ...databaseSnapshot,
+  agentTokens: [
+    {
+      id: 'token_writer',
+      label: 'Writer ohne Handoff',
+      projectKey: 'BV',
+      scopes: ['issues:write'],
+      state: 'aktiv',
+      lastUsedAt: 'noch nie verwendet',
+      expiresAt: 'läuft nicht automatisch ab',
+    },
+  ],
+} satisfies DashboardSnapshot;
+
 vi.mock('next/navigation', () => ({
   usePathname: () => '/',
   useRouter: () => ({
@@ -2084,7 +2114,7 @@ describe('BubblophyDashboard interactions', () => {
       );
     });
     fireEvent.click(
-      within(dialog).getByRole('button', { name: 'Curl-Beispiel kopieren' })
+      within(dialog).getByRole('button', { name: 'PATCH-Beispiel kopieren' })
     );
     await waitFor(() => {
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
@@ -2104,7 +2134,7 @@ describe('BubblophyDashboard interactions', () => {
     expect(within(agentSection).getByText('Codex lokal')).toBeInTheDocument();
   });
 
-  it('shows local agent handoff only for active runs:update tokens', () => {
+  it('shows PATCH handoff only for active runs:update tokens', () => {
     render(
       <BubblophyDashboard snapshot={databaseSnapshotWithRunUpdateToken} />
     );
@@ -2121,21 +2151,57 @@ describe('BubblophyDashboard interactions', () => {
       within(agentSection).getByText('Lokaler Agent-Handoff')
     ).toBeInTheDocument();
     expect(
-      within(agentSection).getByText('/api/agent-runs/<run-id>')
-    ).toBeInTheDocument();
+      within(agentSection).getAllByText('/api/agent-runs/<run-id>').length
+    ).toBeGreaterThan(1);
     expect(
       within(agentSection).getByText(/Authorization: Bearer <agent-token>/)
     ).toBeInTheDocument();
     expect(
+      within(agentSection).getByRole('button', {
+        name: 'PATCH-Beispiel kopieren',
+      })
+    ).toBeInTheDocument();
+    expect(
+      within(agentSection).queryByRole('button', {
+        name: 'GET-Beispiel kopieren',
+      })
+    ).not.toBeInTheDocument();
+    expect(
       within(agentSection).queryByText(/test_plaintext_token/)
     ).not.toBeInTheDocument();
     expect(
-      within(agentSection).getByText(/Lesen, Planen, Run-Erstellen/)
+      within(agentSection).getByText(/Kontextlesen für einen freigegebenen Run/)
     ).toBeInTheDocument();
   });
 
-  it('does not offer the curl handoff for tokens without runs:update', () => {
-    render(<BubblophyDashboard snapshot={databaseSnapshot} />);
+  it('shows GET context handoff only for active issues:read tokens', () => {
+    render(<BubblophyDashboard snapshot={databaseSnapshotWithIssueReadToken} />);
+
+    const agentSection = document.getElementById('agents');
+
+    expect(agentSection).toBeInstanceOf(HTMLElement);
+
+    if (!agentSection) {
+      throw new Error('Expected the agent token section to render.');
+    }
+
+    expect(
+      within(agentSection).getByRole('button', {
+        name: 'GET-Beispiel kopieren',
+      })
+    ).toBeInTheDocument();
+    expect(
+      within(agentSection).queryByRole('button', {
+        name: 'PATCH-Beispiel kopieren',
+      })
+    ).not.toBeInTheDocument();
+    expect(
+      within(agentSection).getByText(/kann keine Agent-Run-Statusupdates/)
+    ).toBeInTheDocument();
+  });
+
+  it('does not offer examples for tokens without operative read or update scopes', () => {
+    render(<BubblophyDashboard snapshot={databaseSnapshotWithWriteOnlyToken} />);
 
     const agentSection = document.getElementById('agents');
 
@@ -2150,6 +2216,10 @@ describe('BubblophyDashboard interactions', () => {
     ).toBeGreaterThan(0);
     expect(
       within(agentSection).getAllByText(/kann keine Agent-Run-Statusupdates/)
+        .length
+    ).toBeGreaterThan(0);
+    expect(
+      within(agentSection).getAllByText(/kann keinen Agent-Run-Kontext lesen/)
         .length
     ).toBeGreaterThan(0);
     expect(

@@ -1,5 +1,6 @@
 import type { JsonValue } from '@/drizzle/db/schema';
 
+import { readBubblophyAgentRunContext } from '@/lib/agent-runs/agent-context';
 import { updateBubblophyAgentRunFromAgent } from '@/lib/agent-runs/agent-update';
 
 import { NextResponse } from 'next/server';
@@ -8,6 +9,37 @@ interface AgentRunUpdateRouteBody {
   state?: JsonValue;
   message?: JsonValue;
   result?: JsonValue;
+}
+
+/**
+ * Reads the minimal context for an agent-approved run.
+ *
+ * Agents authenticate with `Authorization: Bearer <token>`. The endpoint only
+ * returns project, issue, run, and latest-plan context; it does not expose
+ * token metadata, users, member lists, or audit logs.
+ *
+ * @param request Incoming GET request with bearer token auth.
+ * @param context Dynamic route params containing the run ID.
+ * @returns JSON response for the local agent process.
+ */
+export async function GET(
+  request: Request,
+  context: { params: Promise<{ runId: string }> }
+) {
+  const { runId } = await context.params;
+  const bearerToken = parseBearerToken(request.headers.get('authorization'));
+  const result = await readBubblophyAgentRunContext({
+    runId,
+    bearerToken,
+  });
+
+  if (result.status === 'found') {
+    return NextResponse.json(result, { status: 200 });
+  }
+
+  return NextResponse.json(result, {
+    status: getAgentRunHttpStatus(result.status),
+  });
 }
 
 /**
@@ -49,7 +81,7 @@ export async function PATCH(
   }
 
   return NextResponse.json(result, {
-    status: getAgentRunUpdateHttpStatus(result.status),
+    status: getAgentRunHttpStatus(result.status),
   });
 }
 
@@ -91,10 +123,11 @@ function parseBearerToken(authorization: string | null) {
  * @param status Service result status.
  * @returns HTTP status for the route response.
  */
-function getAgentRunUpdateHttpStatus(
+function getAgentRunHttpStatus(
   status: Exclude<
-    Awaited<ReturnType<typeof updateBubblophyAgentRunFromAgent>>['status'],
-    'updated'
+    | Awaited<ReturnType<typeof readBubblophyAgentRunContext>>['status']
+    | Awaited<ReturnType<typeof updateBubblophyAgentRunFromAgent>>['status'],
+    'found' | 'updated'
   >
 ) {
   if (status === 'invalid') {

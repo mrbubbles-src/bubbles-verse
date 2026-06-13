@@ -67,14 +67,19 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   wenn die echte Server-Action verfügbar ist. Die Entscheidung prüft
   Projektmitgliedschaft, schreibt einen Statuswechsel plus Audit-Event und
   startet weiterhin keinen Agenten.
+- `GET /api/agent-runs/[runId]` liefert lokalen Agenten mit
+  `Authorization: Bearer <agent-token>` und Scope `issues:read` einen kleinen
+  read-only Kontext für freigegebene oder laufende Runs aus Run, Projekt,
+  Issue und latest Plan. Der Endpoint prüft Token-Hash, Projektbindung,
+  Token-Status/Ablauf und aktualisiert `last_used_at`.
 - `PATCH /api/agent-runs/[runId]` nimmt Agent-Statusupdates mit
   `Authorization: Bearer <agent-token>` entgegen. Der Endpoint akzeptiert nur
   `running`, `needs_review`, `completed` und `failed`, prüft Token-Hash,
   Scope `runs:update`, Projektbindung, Token-Status/Ablauf und schreibt
   `last_used_at` plus Audit-Event.
 - Der Agent-Token-Bereich zeigt einen lokalen Handoff für diesen bestehenden
-  Statusupdate-Pfad. Andere Scope-Werte im Schema sind reserviert, bis eigene
-  sichere Agent-API-Endpunkte existieren.
+  Kontext- und Statusupdate-Pfad. Andere Scope-Werte im Schema sind reserviert,
+  bis eigene sichere Agent-API-Endpunkte existieren.
 - Im Issue-Detailpanel können Menschen bei aktiver Datenbankquelle einen
   Plan-Entwurf speichern. Der server-only Plan-Service schreibt eine neue
   Planversion plus `plan_updated`-Event, normalisiert leere Schritte weg und
@@ -155,6 +160,10 @@ bun run build
   Toolcall, Polling-Loop oder Autopilot.
 - Persistierte Agent-Run-Freigaben und -Abbrüche laufen serverseitig über
   Projektmitgliedschaft und erlauben nur den Übergang aus `requested`.
+- Agent-Kontextreads laufen über gehashte Bearer-Tokens mit Scope
+  `issues:read`, Projektbindung und aktivem/nicht abgelaufenem Token. Der
+  Endpoint gibt nur Run, Projekt, Issue und latest Plan zurück, aktualisiert
+  `last_used_at` und liest keine Token-, Member-, User- oder Audit-DTOs aus.
 - Agent-Statusupdates laufen über gehashte Bearer-Tokens mit Scope
   `runs:update`, Projektbindung, aktivem/nicht abgelaufenem Token und enger
   State-Machine. Der Endpoint speichert nur Status, Message, Result-JSON,
@@ -198,8 +207,10 @@ bun run build
   Projektgrenze, Status und Ablaufdatum.
 - Agenten erhalten keine Mensch-Logins und keinen Supabase-Service-Role-Key.
 - Der aktuell nutzbare Agent-API-Vertrag ist eng: Lokale Agenten können mit
-  Scope `runs:update` Status, Message und Result-JSON für freigegebene Runs an
-  `PATCH /api/agent-runs/[runId]` melden. Lesen, Planen, Issue-Schreiben und
+  Scope `issues:read` minimalen Run-/Issue-/Plan-Kontext über
+  `GET /api/agent-runs/[runId]` für freigegebene oder laufende Runs lesen und
+  mit Scope `runs:update` Status, Message und Result-JSON für freigegebene Runs an
+  `PATCH /api/agent-runs/[runId]` melden. Planen, Issue-Schreiben und
   Run-Erstellen haben noch keinen Agent-Endpoint und bleiben human-in-the-loop.
 - Alles bleibt human-in-the-loop; Agent-Runs brauchen explizite Freigabe.
 - Datenzugriff auf `DATABASE_URL` ist in `drizzle/db/index.ts` durch

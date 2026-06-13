@@ -105,3 +105,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added local agent handoff guidance for active `runs:update` tokens, including
   one-time token copy UX and placeholder curl examples for the existing agent
   run update endpoint without introducing read APIs or automation.
+- Added a read-only local agent context endpoint for approved run handoff:
+  `GET /api/agent-runs/[runId]` uses active same-project Bearer tokens with
+  `issues:read`, returns only minimal Run/Project/Issue/latest-plan context,
+  and updates `last_used_at` without starting automation.

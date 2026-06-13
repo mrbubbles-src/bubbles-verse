@@ -54,10 +54,15 @@ dauerhaften Autopilot-Rechte.
 - Jedes Token ist auf genau ein Projekt begrenzt.
 - Scopes sind explizit und klein: `projects:read`, `issues:read`,
   `issues:write`, `plans:write`, `runs:create`, `runs:update`. Im aktuellen
-  MVP hat nur `runs:update` einen operativen Agent-API-Pfad:
-  `PATCH /api/agent-runs/[runId]`. Die übrigen Scope-Werte sind reserviert,
-  bis es eigene sichere Read-/Write-Endpunkte gibt.
+  MVP haben `issues:read` und `runs:update` operative Agent-API-Pfade:
+  `GET /api/agent-runs/[runId]` liest nur minimalen Run-/Issue-/Plan-Kontext
+  für freigegebene oder laufende Runs, `PATCH /api/agent-runs/[runId]`
+  schreibt nur Status, Message und Result-JSON.
+  Die übrigen Scope-Werte sind reserviert, bis es eigene sichere Endpunkte
+  gibt.
 - Tokens können pausiert, widerrufen und mit Ablaufdatum versehen werden.
+- Erfolgreiche `GET`- und `PATCH`-Zugriffe aktualisieren `last_used_at`; beim
+  `GET` ist das die einzige Mutation.
 - Lokale Handoff-Beispiele nutzen Platzhalter wie `<agent-token>` und sollen
   keine echten Tokens in Shell-History, Logs, README oder Snapshots schreiben.
 

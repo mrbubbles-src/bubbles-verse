@@ -269,6 +269,10 @@ const agentTokenScopeOptions = [
 ];
 
 const agentRunUpdateEndpointExample = '/api/agent-runs/<run-id>';
+const agentRunContextEndpointExample = '/api/agent-runs/<run-id>';
+
+const agentRunContextCurlExample = `curl -X GET "$BUBBLOPHY_BASE_URL/api/agent-runs/<run-id>" \\
+  -H "Authorization: Bearer <agent-token>"`;
 
 const agentRunUpdateCurlExample = `curl -X PATCH "$BUBBLOPHY_BASE_URL/api/agent-runs/<run-id>" \\
   -H "Authorization: Bearer <agent-token>" \\
@@ -3262,6 +3266,8 @@ function AgentAccess({
  * @returns Narrow handoff guide for the existing agent run update endpoint.
  */
 function AgentTokenHandoff({ token }: { token: AgentTokenSummary }) {
+  const canReadIssueContext =
+    token.state === 'aktiv' && token.scopes.includes('issues:read');
   const canUpdateRuns =
     token.state === 'aktiv' && token.scopes.includes('runs:update');
 
@@ -3270,37 +3276,70 @@ function AgentTokenHandoff({ token }: { token: AgentTokenSummary }) {
       <div className="grid gap-1">
         <p className="text-sm font-medium">Lokaler Agent-Handoff</p>
         <p className="text-xs text-muted-foreground">
-          Der nutzbare Agent-API-Pfad ist aktuell nur Status-Update für
-          freigegebene Runs. Lesen, Planen, Run-Erstellen und Issue-Schreiben
-          bleiben bis zu eigenen Endpunkten in der App beim Menschen.
+          Die nutzbaren Agent-API-Pfade sind aktuell Kontextlesen für einen
+          freigegebenen Run und Status-Update. Planen, Run-Erstellen und
+          Issue-Schreiben bleiben bis zu eigenen Endpunkten in der App beim
+          Menschen.
         </p>
       </div>
 
-      <dl className="grid gap-2 text-xs sm:grid-cols-2">
-        <div>
-          <dt className="text-muted-foreground">Endpoint</dt>
-          <dd className="font-mono break-all">
-            {agentRunUpdateEndpointExample}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-muted-foreground">Benötigter Scope</dt>
-          <dd className="font-mono">runs:update</dd>
-        </div>
-      </dl>
+      <div className="grid gap-3">
+        <div className="grid gap-2 rounded-md border border-border bg-background/60 p-3">
+          <dl className="grid gap-2 text-xs sm:grid-cols-2">
+            <div>
+              <dt className="text-muted-foreground">GET Kontext</dt>
+              <dd className="font-mono break-all">
+                {agentRunContextEndpointExample}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Benötigter Scope</dt>
+              <dd className="font-mono">issues:read</dd>
+            </div>
+          </dl>
 
-      {canUpdateRuns ? (
-        <CopyableCommandBlock
-          label="Curl-Beispiel kopieren"
-          value={agentRunUpdateCurlExample}
-        />
-      ) : (
-        <p className="text-xs text-muted-foreground">
-          Dieses Token kann keine Agent-Run-Statusupdates schreiben, weil es
-          nicht aktiv ist oder der Scope{' '}
-          <span className="font-mono">runs:update</span> fehlt.
-        </p>
-      )}
+          {canReadIssueContext ? (
+            <CopyableCommandBlock
+              label="GET-Beispiel kopieren"
+              value={agentRunContextCurlExample}
+            />
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Dieses Token kann keinen Agent-Run-Kontext lesen, weil es nicht
+              aktiv ist oder der Scope{' '}
+              <span className="font-mono">issues:read</span> fehlt.
+            </p>
+          )}
+        </div>
+
+        <div className="grid gap-2 rounded-md border border-border bg-background/60 p-3">
+          <dl className="grid gap-2 text-xs sm:grid-cols-2">
+            <div>
+              <dt className="text-muted-foreground">PATCH Status</dt>
+              <dd className="font-mono break-all">
+                {agentRunUpdateEndpointExample}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Benötigter Scope</dt>
+              <dd className="font-mono">runs:update</dd>
+            </div>
+          </dl>
+
+          {canUpdateRuns ? (
+            <CopyableCommandBlock
+              label="PATCH-Beispiel kopieren"
+              value={agentRunUpdateCurlExample}
+            />
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Dieses Token kann keine Agent-Run-Statusupdates schreiben, weil
+              es nicht aktiv ist oder der Scope{' '}
+              <span className="font-mono">runs:update</span> fehlt.
+            </p>
+          )}
+        </div>
+      </div>
 
       <p className="text-xs text-muted-foreground">
         <span className="font-mono">running</span>,{' '}
@@ -3593,7 +3632,7 @@ function NewAgentTokenDialog({
               </p>
               <div className="mt-3">
                 <CopyableCommandBlock
-                  label="Curl-Beispiel kopieren"
+                  label="PATCH-Beispiel kopieren"
                   value={agentRunUpdateCurlExample}
                 />
               </div>
