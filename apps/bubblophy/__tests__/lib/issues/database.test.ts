@@ -71,6 +71,8 @@ const tableRows = {
       actorAuthUserId: null,
       actorAgentTokenLabel: 'Codex lokal',
       createdAt: '2026-06-13T16:05:00.000Z',
+      projectKey: 'BV',
+      issueNumber: 7,
     },
   ],
   memberCounts: [
@@ -102,6 +104,8 @@ const tableRows = {
       actorAuthUserId: 'user_owner',
       actorAgentTokenLabel: null,
       createdAt: '2026-06-13T16:00:00.000Z',
+      projectKey: 'BV',
+      issueNumber: null,
     },
   ],
   projects: [
@@ -251,6 +255,8 @@ describe('selectBubblophyDashboardRowsForUser', () => {
         actorAuthUserId: null,
         actorAgentTokenLabel: 'Codex lokal',
         createdAt: '2026-06-13T16:05:00.000Z',
+        projectKey: 'BV',
+        issueNumber: 7,
       },
       {
         id: 'event_project_token_created',
@@ -258,6 +264,8 @@ describe('selectBubblophyDashboardRowsForUser', () => {
         actorAuthUserId: 'user_owner',
         actorAgentTokenLabel: null,
         createdAt: '2026-06-13T16:00:00.000Z',
+        projectKey: 'BV',
+        issueNumber: null,
       },
     ]);
     expect(rows.projectIssueRows).toEqual([

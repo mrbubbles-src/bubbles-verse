@@ -71,6 +71,8 @@ export interface BubblophyActivityPersistenceRow {
   actorAuthUserId: string | null;
   actorAgentTokenLabel: string | null;
   createdAt: string;
+  projectKey: string | null;
+  issueNumber: number | null;
 }
 
 export interface BubblophyProjectIssueRepositorySnapshot {
@@ -94,7 +96,8 @@ const issueStatusLabels = {
   in_progress: 'in_arbeit',
   review: 'review',
   blocked: 'blockiert',
-} satisfies Record<Exclude<BubblophyIssueStatus, 'done'>, IssueStatus>;
+  done: 'erledigt',
+} satisfies Record<BubblophyIssueStatus, IssueStatus>;
 
 const issuePriorityLabels = {
   low: 'niedrig',
@@ -132,19 +135,12 @@ interface MutableProjectSummary {
 /**
  * Maps the database issue status into the dashboard status vocabulary.
  *
- * Closed issues are intentionally not represented in the current dashboard
- * issue list because the MVP only surfaces work that may still need action.
- *
  * @param status Status value from the Bubblophy Drizzle enum.
- * @returns Dashboard status label, or `null` for closed work.
+ * @returns Dashboard status label.
  */
 export function mapBubblophyIssueStatus(
   status: BubblophyIssueStatus
-): IssueStatus | null {
-  if (status === 'done') {
-    return null;
-  }
-
+): IssueStatus {
   return issueStatusLabels[status];
 }
 
@@ -259,12 +255,6 @@ export function buildBubblophyProjectIssueSnapshot(
       continue;
     }
 
-    const status = mapBubblophyIssueStatus(row.issueStatus);
-
-    if (status === null) {
-      continue;
-    }
-
     project.openIssues += openIssueStatuses.has(row.issueStatus) ? 1 : 0;
     project.readyIssues += row.issueStatus === 'ready' ? 1 : 0;
     project.blockedIssues += row.issueStatus === 'blocked' ? 1 : 0;
@@ -274,7 +264,7 @@ export function buildBubblophyProjectIssueSnapshot(
       title: row.issueTitle,
       description: row.issueDescription ?? undefined,
       projectKey: row.projectKey,
-      status,
+      status: mapBubblophyIssueStatus(row.issueStatus),
       priority: mapBubblophyIssuePriority(row.issuePriority),
       owner: formatIssueOwner(row.issueAssignedAuthUserId),
       planSteps: getIssuePlanStepCount(row),
@@ -455,6 +445,11 @@ export function buildBubblophyActivityEvents(
     label: row.summary,
     actor: formatActivityActor(row),
     occurredAt: row.createdAt,
+    projectKey: row.projectKey ?? undefined,
+    issueId:
+      row.projectKey && row.issueNumber
+        ? formatBubblophyIssueKey(row.projectKey, row.issueNumber)
+        : undefined,
   }));
 }
 

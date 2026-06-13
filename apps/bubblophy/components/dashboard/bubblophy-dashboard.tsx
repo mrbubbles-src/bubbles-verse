@@ -42,6 +42,8 @@ import { bubblophySidebarData, getBubblophyBreadcrumbs } from '@/lib/sidebar';
 
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+
 import { BubblesAppHeader } from '@bubbles/ui/components/bubbles-app-header';
 import { BubblesSidebarLayout } from '@bubbles/ui/components/bubbles-sidebar-layout';
 import {
@@ -115,6 +117,7 @@ const issueStatusVariant = {
   in_arbeit: 'default',
   review: 'draft',
   blockiert: 'destructive',
+  erledigt: 'secondary',
 } satisfies Record<IssueStatus, React.ComponentProps<typeof Badge>['variant']>;
 
 const issuePriorityVariant = {
@@ -221,15 +224,14 @@ function isLocalDraftIssue(issue: DashboardIssue): issue is LocalDraftIssue {
 /**
  * Returns the project metric contribution for one issue status.
  *
- * All current Bubblophy issue statuses are open work states; completed work
- * gets a separate rule once a closed status exists.
+ * Completed issues remain visible but do not contribute to open-work metrics.
  *
  * @param status Dashboard issue status.
  * @returns Counter contribution for project issue metrics.
  */
 function getIssueStatusMetricContribution(status: IssueStatus) {
   return {
-    openIssues: 1,
+    openIssues: status === 'erledigt' ? 0 : 1,
     readyIssues: status === 'bereit' ? 1 : 0,
     blockedIssues: status === 'blockiert' ? 1 : 0,
   };
@@ -254,6 +256,90 @@ function getPersistedIssuePlanDraft(
     summary: issue.latestPlan.summary,
     steps: issue.latestPlan.steps,
   };
+}
+
+/**
+ * Normalizes the project query parameter against visible projects.
+ *
+ * @param projectKey Raw query parameter value.
+ * @param projects Visible project summaries.
+ * @returns A safe project filter key.
+ */
+function getInitialProjectFilterKey(
+  projectKey: string | null,
+  projects: ProjectSummary[]
+): ProjectFilterKey {
+  if (!projectKey || projectKey === 'all') {
+    return 'all';
+  }
+
+  const normalizedProjectKey = projectKey.trim().toUpperCase();
+
+  return projects.some((project) => project.key === normalizedProjectKey)
+    ? normalizedProjectKey
+    : 'all';
+}
+
+/**
+ * Resolves the initial issue selection from query parameters and data.
+ *
+ * @param input Query issue ID, project filter, and current issues.
+ * @returns A visible issue ID, or an empty string when none exists.
+ */
+function getInitialIssueSelection(input: {
+  issueId: string | null;
+  projectKey: ProjectFilterKey;
+  issues: IssueSummary[];
+}) {
+  const normalizedIssueId = input.issueId?.trim().toUpperCase() ?? '';
+  const visibleIssues =
+    input.projectKey === 'all'
+      ? input.issues
+      : input.issues.filter((issue) => issue.projectKey === input.projectKey);
+  const queriedIssue = visibleIssues.find(
+    (issue) => issue.id === normalizedIssueId
+  );
+
+  return queriedIssue?.id ?? visibleIssues[0]?.id ?? '';
+}
+
+/**
+ * Builds the dashboard href for persisted project and issue selection.
+ *
+ * @param pathname Current route path.
+ * @param searchParams Current query parameters.
+ * @param projectKey Selected project filter.
+ * @param issueId Selected issue ID.
+ * @returns Route href with selection encoded as query parameters.
+ */
+function buildSelectionHref({
+  pathname,
+  searchParams,
+  projectKey,
+  issueId,
+}: {
+  pathname: string;
+  searchParams: URLSearchParams;
+  projectKey: ProjectFilterKey;
+  issueId: string;
+}) {
+  const nextParams = new URLSearchParams(searchParams.toString());
+
+  if (projectKey === 'all') {
+    nextParams.delete('project');
+  } else {
+    nextParams.set('project', projectKey);
+  }
+
+  if (issueId) {
+    nextParams.set('issue', issueId);
+  } else {
+    nextParams.delete('issue');
+  }
+
+  const query = nextParams.toString();
+
+  return query ? `${pathname}?${query}` : pathname;
 }
 
 /**
@@ -345,10 +431,21 @@ export function BubblophyDashboard({
   createProjectAction,
   createAgentTokenAction,
 }: BubblophyDashboardProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialProjectKey = getInitialProjectFilterKey(
+    searchParams.get('project'),
+    snapshot.projects
+  );
   const [selectedProjectKey, setSelectedProjectKey] =
-    useState<ProjectFilterKey>('all');
-  const [selectedIssueId, setSelectedIssueId] = useState(
-    snapshot.issues[0]?.id ?? ''
+    useState<ProjectFilterKey>(initialProjectKey);
+  const [selectedIssueId, setSelectedIssueId] = useState(() =>
+    getInitialIssueSelection({
+      issueId: searchParams.get('issue'),
+      projectKey: initialProjectKey,
+      issues: snapshot.issues,
+    })
   );
   const [isDraftDialogOpen, setIsDraftDialogOpen] = useState(false);
   const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
@@ -397,6 +494,33 @@ export function BubblophyDashboard({
       ),
     [persistedAgentRuns, snapshot.agentRuns, updatedAgentRunsById]
   );
+  const displayedAgentTokens = useMemo(() => {
+    if (selectedProjectKey === 'all') {
+      return allAgentTokens;
+    }
+
+    return allAgentTokens.filter(
+      (token) => token.projectKey === selectedProjectKey
+    );
+  }, [allAgentTokens, selectedProjectKey]);
+  const displayedAgentRuns = useMemo(() => {
+    if (selectedProjectKey === 'all') {
+      return allAgentRuns;
+    }
+
+    return allAgentRuns.filter((run) =>
+      run.issueId.startsWith(`${selectedProjectKey}-`)
+    );
+  }, [allAgentRuns, selectedProjectKey]);
+  const displayedActivity = useMemo(() => {
+    if (selectedProjectKey === 'all') {
+      return snapshot.activity;
+    }
+
+    return snapshot.activity.filter(
+      (event) => event.projectKey === selectedProjectKey
+    );
+  }, [selectedProjectKey, snapshot.activity]);
 
   const allIssues = useMemo<DashboardIssue[]>(
     () =>
@@ -442,6 +566,9 @@ export function BubblophyDashboard({
     filteredIssues.find((issue) => issue.id === selectedIssueId) ??
     filteredIssues[0] ??
     null;
+  const selectedIssueRuns = selectedIssue
+    ? allAgentRuns.filter((run) => run.issueId === selectedIssue.id)
+    : [];
   const selectedIssuePlan = selectedIssue
     ? (issuePlansById[selectedIssue.id] ??
       getPersistedIssuePlanDraft(selectedIssue))
@@ -465,13 +592,35 @@ export function BubblophyDashboard({
   });
   const canOpenIssueDialog = allProjects.length > 0;
 
+  const updateSelectionUrl = (
+    projectKey: ProjectFilterKey,
+    issueId: string
+  ) => {
+    router.push(
+      buildSelectionHref({
+        pathname,
+        searchParams: new URLSearchParams(searchParams.toString()),
+        projectKey,
+        issueId,
+      })
+    );
+  };
+
   const handleProjectSelect = (projectKey: ProjectFilterKey) => {
-    setSelectedProjectKey(projectKey);
-    setSelectedIssueId(
+    const nextIssueId =
       projectKey === 'all'
         ? (allIssues[0]?.id ?? '')
-        : (allIssues.find((issue) => issue.projectKey === projectKey)?.id ?? '')
-    );
+        : (allIssues.find((issue) => issue.projectKey === projectKey)?.id ??
+          '');
+
+    setSelectedProjectKey(projectKey);
+    setSelectedIssueId(nextIssueId);
+    updateSelectionUrl(projectKey, nextIssueId);
+  };
+
+  const handleIssueSelect = (issueId: string) => {
+    setSelectedIssueId(issueId);
+    updateSelectionUrl(selectedProjectKey, issueId);
   };
 
   const handleCreateDraft = (input: LocalDraftIssueInput) => {
@@ -497,6 +646,7 @@ export function BubblophyDashboard({
     setLocalDrafts((currentDrafts) => [draft, ...currentDrafts]);
     setSelectedProjectKey(input.projectKey);
     setSelectedIssueId(draftId);
+    updateSelectionUrl(input.projectKey, draftId);
     setIsDraftDialogOpen(false);
   };
 
@@ -504,6 +654,7 @@ export function BubblophyDashboard({
     setPersistedIssues((currentIssues) => [issue, ...currentIssues]);
     setSelectedProjectKey(issue.projectKey);
     setSelectedIssueId(issue.id);
+    updateSelectionUrl(issue.projectKey, issue.id);
     setIsDraftDialogOpen(false);
   };
 
@@ -511,6 +662,7 @@ export function BubblophyDashboard({
     setPersistedProjects((currentProjects) => [project, ...currentProjects]);
     setSelectedProjectKey(project.key);
     setSelectedIssueId('');
+    updateSelectionUrl(project.key, '');
     setIsProjectDialogOpen(false);
   };
 
@@ -558,6 +710,7 @@ export function BubblophyDashboard({
     );
     setSelectedProjectKey('all');
     setSelectedIssueId(snapshot.issues[0]?.id ?? '');
+    updateSelectionUrl('all', snapshot.issues[0]?.id ?? '');
   };
 
   return (
@@ -651,13 +804,14 @@ export function BubblophyDashboard({
                 createIssuePlanAction={createIssuePlanAction}
                 updateIssueStatusAction={updateIssueStatusAction}
                 requestAgentRunAction={requestAgentRunAction}
-                agentTokens={allAgentTokens}
+                agentTokens={displayedAgentTokens}
+                agentRuns={selectedIssueRuns}
                 onProjectSelect={handleProjectSelect}
                 onDraftDelete={handleDeleteDraft}
                 onIssuePlanSaved={handleIssuePlanSaved}
                 onIssueStatusUpdated={handleIssueStatusUpdated}
                 onAgentRunRequested={handleAgentRunRequested}
-                onIssueSelect={setSelectedIssueId}
+                onIssueSelect={handleIssueSelect}
                 canCreateIssue={canOpenIssueDialog}
                 onCreateIssue={() => setIsDraftDialogOpen(true)}
               />
@@ -666,7 +820,7 @@ export function BubblophyDashboard({
             <aside className="grid content-start gap-5">
               <AgentAccess
                 dataSource={snapshot.meta.dataSource}
-                agentTokens={allAgentTokens}
+                agentTokens={displayedAgentTokens}
                 canCreateAgentToken={
                   canUseDatabase &&
                   allProjects.length > 0 &&
@@ -676,11 +830,14 @@ export function BubblophyDashboard({
               />
               <RunQueue
                 dataSource={snapshot.meta.dataSource}
-                agentRuns={allAgentRuns}
+                agentRuns={displayedAgentRuns}
                 transitionAgentRunAction={transitionAgentRunAction}
                 onAgentRunTransitioned={handleAgentRunTransitioned}
               />
-              <ActivityFeed snapshot={snapshot} />
+              <ActivityFeed
+                activity={displayedActivity}
+                dataSource={snapshot.meta.dataSource}
+              />
             </aside>
           </div>
         </section>
@@ -1208,6 +1365,7 @@ function IssueQueue({
   updateIssueStatusAction,
   requestAgentRunAction,
   agentTokens,
+  agentRuns,
   onProjectSelect,
   onDraftDelete,
   onIssuePlanSaved,
@@ -1234,6 +1392,7 @@ function IssueQueue({
     input: RequestBubblophyAgentRunActionInput
   ) => Promise<RequestBubblophyAgentRunActionResult>;
   agentTokens: AgentTokenSummary[];
+  agentRuns: AgentRunSummary[];
   onProjectSelect: (projectKey: ProjectFilterKey) => void;
   onDraftDelete: (issueId: string) => void;
   onIssuePlanSaved: (plan: IssuePlanDraft) => void;
@@ -1400,6 +1559,7 @@ function IssueQueue({
           updateIssueStatusAction={updateIssueStatusAction}
           requestAgentRunAction={requestAgentRunAction}
           activeAgentTokens={activeProjectAgentTokens}
+          agentRuns={agentRuns}
           onDraftDelete={onDraftDelete}
           onIssuePlanSaved={onIssuePlanSaved}
           onIssueStatusUpdated={onIssueStatusUpdated}
@@ -1426,6 +1586,7 @@ function IssueDetailPanel({
   updateIssueStatusAction,
   requestAgentRunAction,
   activeAgentTokens,
+  agentRuns,
   onDraftDelete,
   onIssuePlanSaved,
   onIssueStatusUpdated,
@@ -1446,6 +1607,7 @@ function IssueDetailPanel({
     input: RequestBubblophyAgentRunActionInput
   ) => Promise<RequestBubblophyAgentRunActionResult>;
   activeAgentTokens: AgentTokenSummary[];
+  agentRuns: AgentRunSummary[];
   onDraftDelete: (issueId: string) => void;
   onIssuePlanSaved: (plan: IssuePlanDraft) => void;
   onIssueStatusUpdated: (issue: IssueSummary) => void;
@@ -1540,6 +1702,31 @@ function IssueDetailPanel({
       />
 
       <div className="grid gap-2 rounded-md border border-border bg-background p-3">
+        <h4 className="text-sm font-medium">Runs für dieses Issue</h4>
+        {agentRuns.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Für dieses Issue gibt es noch keine angefragten Runs.
+          </p>
+        ) : (
+          <ol className="grid gap-2">
+            {agentRuns.map((run) => (
+              <li
+                key={run.id}
+                className="grid gap-1 rounded-md border border-border p-2 text-sm">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="font-medium">{run.agentLabel}</span>
+                  <Badge variant={runVariant[run.state]}>
+                    {agentRunStateLabels[run.state]}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">{run.lastEvent}</p>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+
+      <div className="grid gap-2 rounded-md border border-border bg-background p-3">
         <div className="flex items-start justify-between gap-3">
           <h4 className="text-sm font-medium">Plan und Notiz</h4>
           {canPersistIssuePlans && !isLocalDraftIssue(issue) ? (
@@ -1622,6 +1809,7 @@ const issueStatusOptions = [
   'in_arbeit',
   'review',
   'blockiert',
+  'erledigt',
 ] satisfies IssueStatus[];
 
 /**
@@ -2482,10 +2670,15 @@ function RunDecisionControls({
  * @param props Dashboard snapshot with activity events.
  * @returns Activity timeline panel.
  */
-function ActivityFeed({ snapshot }: BubblophyDashboardProps) {
+function ActivityFeed({
+  activity,
+  dataSource,
+}: {
+  activity: DashboardSnapshot['activity'];
+  dataSource: DashboardSnapshot['meta']['dataSource'];
+}) {
   const isDatabaseSource =
-    snapshot.meta.dataSource === 'database' ||
-    snapshot.meta.dataSource === 'empty_database';
+    dataSource === 'database' || dataSource === 'empty_database';
 
   return (
     <Card id="activity" className="scroll-mt-24">
@@ -2501,19 +2694,19 @@ function ActivityFeed({ snapshot }: BubblophyDashboardProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3">
-        {!isDatabaseSource && snapshot.activity.length > 0 ? (
+        {!isDatabaseSource && activity.length > 0 ? (
           <p className="rounded-md border border-dashed border-border bg-muted/30 p-3 text-sm text-muted-foreground">
             Beispielhafte Audit-Vorschau aus Sample/Fallback-Daten. Echte
             Projekt-Events werden nur im Datenbankmodus geladen.
           </p>
         ) : null}
-        {snapshot.activity.length === 0 ? (
+        {activity.length === 0 ? (
           <p className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
             Noch keine Audit-Aktivität für diese Datenquelle.
           </p>
         ) : null}
         <ol className="grid gap-3">
-          {snapshot.activity.map((event) => (
+          {activity.map((event) => (
             <li
               key={event.id}
               className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-3 text-sm">

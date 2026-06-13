@@ -13,6 +13,7 @@ export const issueStatusLabels = {
   in_arbeit: 'In Arbeit',
   review: 'Review',
   blockiert: 'Blockiert',
+  erledigt: 'Erledigt',
 } satisfies Record<IssueStatus, string>;
 
 export const issuePriorityLabels = {

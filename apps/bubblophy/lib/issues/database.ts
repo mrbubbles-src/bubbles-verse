@@ -353,8 +353,14 @@ async function selectBubblophyProjectEventActivityRowsForProjectIds(
       actorAuthUserId: bubblophyProjectEvents.actorAuthUserId,
       actorAgentTokenLabel: bubblophyAgentTokens.label,
       createdAt: bubblophyProjectEvents.createdAt,
+      projectKey: bubblophyProjects.key,
+      issueNumber: sql<number | null>`null`,
     })
     .from(bubblophyProjectEvents)
+    .innerJoin(
+      bubblophyProjects,
+      eq(bubblophyProjects.id, bubblophyProjectEvents.projectId)
+    )
     .leftJoin(
       bubblophyAgentTokens,
       and(
@@ -383,11 +389,17 @@ async function selectBubblophyIssueEventActivityRowsForProjectIds(
       actorAuthUserId: bubblophyIssueEvents.actorAuthUserId,
       actorAgentTokenLabel: bubblophyAgentTokens.label,
       createdAt: bubblophyIssueEvents.createdAt,
+      projectKey: bubblophyProjects.key,
+      issueNumber: bubblophyIssues.issueNumber,
     })
     .from(bubblophyIssueEvents)
     .innerJoin(
       bubblophyIssues,
       eq(bubblophyIssues.id, bubblophyIssueEvents.issueId)
+    )
+    .innerJoin(
+      bubblophyProjects,
+      eq(bubblophyProjects.id, bubblophyIssues.projectId)
     )
     .leftJoin(
       bubblophyAgentTokens,

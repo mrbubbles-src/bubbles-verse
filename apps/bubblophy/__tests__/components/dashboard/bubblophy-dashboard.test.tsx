@@ -30,6 +30,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BubblophyDashboard } from '@/components/dashboard/bubblophy-dashboard';
 
+const navigationMocks = {
+  routerPush: vi.fn(),
+  searchParams: vi.fn(() => new URLSearchParams()),
+};
+
 const databaseSnapshot = {
   ...dashboardSnapshot,
   meta: {
@@ -111,8 +116,9 @@ const databaseSnapshotWithoutAgentTokens = {
 vi.mock('next/navigation', () => ({
   usePathname: () => '/',
   useRouter: () => ({
-    push: vi.fn(),
+    push: navigationMocks.routerPush,
   }),
+  useSearchParams: () => navigationMocks.searchParams(),
 }));
 
 vi.mock('@bubbles/ui/shadcn/badge', () => ({
@@ -241,6 +247,9 @@ function getMetricCaption(label: string) {
 describe('BubblophyDashboard interactions', () => {
   beforeEach(() => {
     window.HTMLElement.prototype.scrollIntoView = vi.fn();
+    navigationMocks.routerPush.mockClear();
+    navigationMocks.searchParams.mockReset();
+    navigationMocks.searchParams.mockReturnValue(new URLSearchParams());
   });
 
   it('filters the issue queue when a project is selected', () => {
@@ -261,6 +270,9 @@ describe('BubblophyDashboard interactions', () => {
     fireEvent.click(novariProjectButton);
 
     expect(screen.getByText('Gefiltert auf Projekt NO.')).toBeInTheDocument();
+    expect(navigationMocks.routerPush).toHaveBeenCalledWith(
+      '/?project=NO&issue=NO-08'
+    );
     expect(novariProjectButton).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('NO-08');
     expect(
@@ -272,6 +284,40 @@ describe('BubblophyDashboard interactions', () => {
       screen.queryByRole('button', {
         name: 'Agent-Zugriff mit projektbezogenen Tokens',
       })
+    ).not.toBeInTheDocument();
+  });
+
+  it('restores project and issue selection from query parameters', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=NO&issue=NO-08')
+    );
+
+    render(<BubblophyDashboard snapshot={databaseSnapshot} />);
+
+    const projectsSection = document.getElementById('projects');
+
+    expect(projectsSection).toBeInstanceOf(HTMLElement);
+
+    if (!projectsSection) {
+      throw new Error('Expected the projects section to render.');
+    }
+
+    expect(
+      within(projectsSection).getByRole('button', {
+        name: 'Projekt Novari (NO) auswählen',
+      })
+    ).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Gefiltert auf Projekt NO.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('NO-08');
+    expect(screen.getAllByText('claude-code-martin').length).toBeGreaterThan(0);
+    expect(screen.queryByText('codex-local-lio')).not.toBeInTheDocument();
+    expect(screen.getAllByText('NO-08').length).toBeGreaterThan(0);
+    expect(screen.queryByText('BV-14')).not.toBeInTheDocument();
+    expect(
+      screen.getByText('Novari-Run in Review verschoben')
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('Plan für BV-12 aktualisiert')
     ).not.toBeInTheDocument();
   });
 
@@ -551,6 +597,60 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       screen.getByRole('progressbar', { name: '4 bereit, 12 offen' })
     ).toBeInTheDocument();
+  });
+
+  it('closes an issue through the persisted status action', async () => {
+    const updateIssueStatusAction = vi.fn<
+      (
+        input: UpdateBubblophyIssueStatusActionInput
+      ) => Promise<UpdateBubblophyIssueStatusActionResult>
+    >(async () => ({
+      status: 'updated',
+      issue: {
+        id: 'BV-12',
+        title: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+        projectKey: 'BV',
+        status: 'erledigt',
+        priority: 'hoch',
+        owner: 'mrbubbles',
+        planSteps: 3,
+        approvalRequired: true,
+      },
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        updateIssueStatusAction={updateIssueStatusAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    fireEvent.change(within(detailPanel).getByLabelText('Neuer Status'), {
+      target: { value: 'erledigt' },
+    });
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Status speichern' })
+    );
+
+    await waitFor(() => {
+      expect(updateIssueStatusAction).toHaveBeenCalledWith({
+        issueId: 'BV-12',
+        status: 'erledigt',
+        reason: '',
+      });
+    });
+    await waitFor(() => {
+      expect(within(detailPanel).getByText('Erledigt')).toBeInTheDocument();
+    });
+    expect(getMetricValue('Offene Issues')).toHaveTextContent('23');
   });
 
   it('persists a human issue plan and renders it in the detail panel', async () => {
@@ -1088,6 +1188,9 @@ describe('BubblophyDashboard interactions', () => {
     await waitFor(() => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
+    expect(navigationMocks.routerPush).toHaveBeenLastCalledWith(
+      '/?project=ZEN&issue=ZEN-1'
+    );
     expect(
       screen.getByRole('button', { name: 'Erstes echtes Issue' })
     ).toHaveAttribute('aria-pressed', 'true');
@@ -1298,6 +1401,9 @@ describe('BubblophyDashboard interactions', () => {
     await waitFor(() => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
+    expect(navigationMocks.routerPush).toHaveBeenCalledWith(
+      '/?project=BV&issue=BV-15'
+    );
     expect(
       screen.getByRole('button', { name: 'Persistiertes Test-Issue' })
     ).toBeInTheDocument();

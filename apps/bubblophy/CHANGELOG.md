@@ -80,3 +80,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   snapshot so plan details survive page reloads.
 - Made issue rows directly clickable and keyboard-selectable, with a clearer
   empty detail state when no issue is selected.
+- Added reload-aware project/issue selection, project-scoped tokens/runs/activity
+  panels, visible persisted issue creation, and close/reopen status handling for
+  completed issues without hiding them from the dashboard.

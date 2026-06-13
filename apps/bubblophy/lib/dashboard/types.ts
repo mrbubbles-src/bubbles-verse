@@ -6,7 +6,8 @@ export type IssueStatus =
   | 'bereit'
   | 'in_arbeit'
   | 'review'
-  | 'blockiert';
+  | 'blockiert'
+  | 'erledigt';
 
 export type IssuePriority = 'niedrig' | 'mittel' | 'hoch';
 
@@ -80,6 +81,8 @@ export interface ActivityEvent {
   label: string;
   actor: string;
   occurredAt: string;
+  projectKey?: string;
+  issueId?: string;
 }
 
 export type DashboardDataSource =

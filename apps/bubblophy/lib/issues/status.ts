@@ -96,6 +96,7 @@ const statusByDashboardStatus = {
   in_arbeit: 'in_progress',
   review: 'review',
   blockiert: 'blocked',
+  erledigt: 'done',
 } satisfies Record<IssueStatus, BubblophyIssueStatus>;
 
 /**
@@ -151,7 +152,7 @@ export function mapUpdatedIssueStatusToSummary(
     id: formatBubblophyIssueKey(updated.project.key, updated.issue.issueNumber),
     title: updated.issue.title,
     projectKey: updated.project.key,
-    status: status ?? 'triage',
+    status,
     priority: mapBubblophyIssuePriority(updated.issue.priority),
     owner: updated.issue.assignedAuthUserId ?? 'Nicht zugewiesen',
     planSteps: Math.max(0, updated.issue.planStepCount),

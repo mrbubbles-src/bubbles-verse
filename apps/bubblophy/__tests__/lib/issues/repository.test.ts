@@ -62,7 +62,7 @@ describe('Bubblophy issue repository mapping', () => {
     expect(mapBubblophyIssueStatus('in_progress')).toBe('in_arbeit');
     expect(mapBubblophyIssueStatus('review')).toBe('review');
     expect(mapBubblophyIssueStatus('blocked')).toBe('blockiert');
-    expect(mapBubblophyIssueStatus('done')).toBeNull();
+    expect(mapBubblophyIssueStatus('done')).toBe('erledigt');
 
     expect(mapBubblophyIssuePriority('low')).toBe('niedrig');
     expect(mapBubblophyIssuePriority('medium')).toBe('mittel');
@@ -148,6 +148,17 @@ describe('Bubblophy issue repository mapping', () => {
         priority: 'mittel',
         owner: 'Nicht zugewiesen',
         planSteps: 0,
+        approvalRequired: true,
+      },
+      {
+        id: 'BV-16',
+        title: 'Projekt-Issue vorbereiten',
+        description: 'Beschreibung aus der Datenbank.',
+        projectKey: 'BV',
+        status: 'erledigt',
+        priority: 'hoch',
+        owner: 'mrbubbles',
+        planSteps: 3,
         approvalRequired: true,
       },
     ]);
@@ -363,6 +374,8 @@ describe('Bubblophy issue repository mapping', () => {
           actorAuthUserId: 'user_123',
           actorAgentTokenLabel: null,
           createdAt: '2026-06-13T10:00:00.000Z',
+          projectKey: 'BV',
+          issueNumber: null,
         },
         {
           id: 'event_agent',
@@ -370,6 +383,8 @@ describe('Bubblophy issue repository mapping', () => {
           actorAuthUserId: null,
           actorAgentTokenLabel: 'Codex lokal',
           createdAt: '2026-06-13T11:00:00.000Z',
+          projectKey: 'BV',
+          issueNumber: 7,
         },
       ])
     ).toEqual([
@@ -378,12 +393,15 @@ describe('Bubblophy issue repository mapping', () => {
         label: 'Agent-Token erstellt.',
         actor: 'Mensch',
         occurredAt: '2026-06-13T10:00:00.000Z',
+        projectKey: 'BV',
       },
       {
         id: 'event_agent',
         label: 'Run angefragt.',
         actor: 'Agent-Token Codex lokal',
         occurredAt: '2026-06-13T11:00:00.000Z',
+        projectKey: 'BV',
+        issueId: 'BV-07',
       },
     ]);
   });

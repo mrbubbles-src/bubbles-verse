@@ -124,6 +124,53 @@ describe('updateBubblophyIssueStatus', () => {
     });
   });
 
+  it('maps a human close transition to the done status', async () => {
+    const store = createStore(async (input) => ({
+      status: 'updated',
+      issue: {
+        project: {
+          id: 'project_bubblesverse',
+          key: 'BV',
+          name: 'Bubblesverse',
+        },
+        issue: {
+          id: 'issue_bv_12',
+          issueNumber: 12,
+          title: 'Issue schließen',
+          status: input.status,
+          priority: 'medium',
+          assignedAuthUserId: null,
+          requiresHumanApproval: true,
+          planStepCount: 0,
+        },
+      },
+    }));
+
+    await expect(
+      updateBubblophyIssueStatus(
+        {
+          authUserId: 'user_owner',
+          issueId: 'BV-12',
+          status: 'erledigt',
+        },
+        { store }
+      )
+    ).resolves.toMatchObject({
+      status: 'updated',
+      issue: {
+        id: 'BV-12',
+        status: 'erledigt',
+      },
+    });
+
+    expect(store.updateIssueStatusWithEvent).toHaveBeenCalledWith({
+      authUserId: 'user_owner',
+      issueId: 'BV-12',
+      status: 'done',
+      reason: '',
+    });
+  });
+
   it('returns store not_found, forbidden, and unchanged results unchanged', async () => {
     await expect(
       updateBubblophyIssueStatus(
