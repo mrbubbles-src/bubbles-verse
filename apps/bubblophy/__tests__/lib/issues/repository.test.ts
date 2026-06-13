@@ -148,6 +148,34 @@ describe('Bubblophy issue repository mapping', () => {
     ]);
   });
 
+  it('masks raw auth identifiers in issue owner UI labels', () => {
+    const snapshot = buildBubblophyProjectIssueSnapshot([
+      makeIssueRow({
+        issueAssignedAuthUserId: 'user_owner',
+      }),
+      makeIssueRow({
+        issueDatabaseId: 'issue_bv_2',
+        issueNumber: 2,
+        issueAssignedAuthUserId: '2e3f7004-3065-449f-84f8-0ecb68c1cb46',
+      }),
+    ]);
+
+    expect(snapshot.issues).toEqual([
+      expect.objectContaining({
+        id: 'BV-01',
+        owner: 'Mensch',
+      }),
+      expect.objectContaining({
+        id: 'BV-02',
+        owner: 'Mensch',
+      }),
+    ]);
+    expect(JSON.stringify(snapshot)).not.toContain('user_owner');
+    expect(JSON.stringify(snapshot)).not.toContain(
+      '2e3f7004-3065-449f-84f8-0ecb68c1cb46'
+    );
+  });
+
   it('keeps empty and archived projects out of unsafe states', () => {
     const snapshot = buildBubblophyProjectIssueSnapshot([
       makeIssueRow({

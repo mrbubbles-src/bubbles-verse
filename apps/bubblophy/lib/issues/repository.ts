@@ -270,7 +270,7 @@ export function buildBubblophyProjectIssueSnapshot(
       projectKey: row.projectKey,
       status,
       priority: mapBubblophyIssuePriority(row.issuePriority),
-      owner: row.issueAssignedAuthUserId ?? 'Nicht zugewiesen',
+      owner: formatIssueOwner(row.issueAssignedAuthUserId),
       planSteps: Math.max(0, row.issuePlanStepCount ?? 0),
       approvalRequired: row.issueRequiresHumanApproval ?? true,
     });
@@ -411,4 +411,37 @@ function formatActivityActor(row: BubblophyActivityPersistenceRow) {
   }
 
   return 'System';
+}
+
+/**
+ * Formats the assignee for UI DTOs without exposing raw Auth identifiers.
+ *
+ * @param assignedAuthUserId Optional stored assignee identifier or display key.
+ * @returns A quiet public owner label for the dashboard.
+ */
+function formatIssueOwner(assignedAuthUserId: string | null) {
+  if (!assignedAuthUserId) {
+    return 'Nicht zugewiesen';
+  }
+
+  if (isRawAuthIdentifier(assignedAuthUserId)) {
+    return 'Mensch';
+  }
+
+  return assignedAuthUserId;
+}
+
+/**
+ * Detects common raw Supabase/Auth ID shapes before data reaches UI DTOs.
+ *
+ * @param value Stored assignee value.
+ * @returns Whether the value looks like an internal auth identifier.
+ */
+function isRawAuthIdentifier(value: string) {
+  return (
+    value.startsWith('user_') ||
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value
+    )
+  );
 }

@@ -70,6 +70,13 @@ function makeDatabaseRows(
         actorAgentTokenLabel: null,
         createdAt: '2026-06-13T16:00:00.000Z',
       },
+      {
+        id: 'event_issue_ready',
+        summary: 'Issue BV-07 auf bereit gesetzt.',
+        actorAuthUserId: null,
+        actorAgentTokenLabel: 'Codex lokal',
+        createdAt: '2026-06-13T16:05:00.000Z',
+      },
     ],
     ...rows,
   };
@@ -123,6 +130,12 @@ describe('getBubblophyDashboardSnapshot', () => {
           actor: 'Mensch',
           occurredAt: '2026-06-13T16:00:00.000Z',
         },
+        {
+          id: 'event_issue_ready',
+          label: 'Issue BV-07 auf bereit gesetzt.',
+          actor: 'Agent-Token Codex lokal',
+          occurredAt: '2026-06-13T16:05:00.000Z',
+        },
       ],
       agentRuns: [
         {
@@ -131,8 +144,7 @@ describe('getBubblophyDashboardSnapshot', () => {
           agentLabel: 'Codex lokal',
           state: 'wartet',
           requestedBy: 'Mensch',
-          lastEvent:
-            'Status wartet · zuletzt 2026-06-13T16:10:00.000Z',
+          lastEvent: 'Status wartet · zuletzt 2026-06-13T16:10:00.000Z',
         },
       ],
     });
@@ -142,13 +154,22 @@ describe('getBubblophyDashboardSnapshot', () => {
   it('does not expose token secrets in database snapshots', async () => {
     const snapshot = await getBubblophyDashboardSnapshot({
       session,
-      loadRows: async () => makeDatabaseRows(),
+      loadRows: async () =>
+        makeDatabaseRows({
+          projectIssueRows: [
+            makeRow({
+              issueAssignedAuthUserId: 'user_owner',
+            }),
+          ],
+        }),
     });
     const serializedSnapshot = JSON.stringify(snapshot);
 
     expect(serializedSnapshot).not.toContain('tokenHash');
     expect(serializedSnapshot).not.toContain('plaintextToken');
     expect(serializedSnapshot).not.toContain('requestedByAuthUserId');
+    expect(serializedSnapshot).not.toContain('actorAuthUserId');
+    expect(serializedSnapshot).not.toContain('user_owner');
   });
 
   it('marks an available but empty database without using sample data', async () => {

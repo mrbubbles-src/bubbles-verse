@@ -18,6 +18,7 @@ import { db } from '@/drizzle/db';
 import {
   bubblophyAgentRuns,
   bubblophyAgentTokens,
+  bubblophyIssueEvents,
   bubblophyIssuePlans,
   bubblophyIssues,
   bubblophyProjectEvents,
@@ -307,6 +308,29 @@ async function selectBubblophyAgentRunRowsForProjectIds(
 async function selectBubblophyProjectActivityRowsForProjectIds(
   projectIds: string[]
 ): Promise<BubblophyActivityPersistenceRow[]> {
+  const [projectEvents, issueEvents] = await Promise.all([
+    selectBubblophyProjectEventActivityRowsForProjectIds(projectIds),
+    selectBubblophyIssueEventActivityRowsForProjectIds(projectIds),
+  ]);
+
+  return [...projectEvents, ...issueEvents]
+    .sort(
+      (left, right) =>
+        right.createdAt.localeCompare(left.createdAt) ||
+        right.id.localeCompare(left.id)
+    )
+    .slice(0, 20);
+}
+
+/**
+ * Selects project-level audit rows for visible projects.
+ *
+ * @param projectIds Project IDs already constrained by membership.
+ * @returns Project event activity rows.
+ */
+async function selectBubblophyProjectEventActivityRowsForProjectIds(
+  projectIds: string[]
+): Promise<BubblophyActivityPersistenceRow[]> {
   return db
     .select({
       id: bubblophyProjectEvents.id,
@@ -325,6 +349,40 @@ async function selectBubblophyProjectActivityRowsForProjectIds(
     )
     .where(inArray(bubblophyProjectEvents.projectId, projectIds))
     .orderBy(desc(bubblophyProjectEvents.createdAt))
+    .limit(20);
+}
+
+/**
+ * Selects issue-level audit rows for visible projects.
+ *
+ * @param projectIds Project IDs already constrained by membership.
+ * @returns Issue event activity rows.
+ */
+async function selectBubblophyIssueEventActivityRowsForProjectIds(
+  projectIds: string[]
+): Promise<BubblophyActivityPersistenceRow[]> {
+  return db
+    .select({
+      id: bubblophyIssueEvents.id,
+      summary: bubblophyIssueEvents.summary,
+      actorAuthUserId: bubblophyIssueEvents.actorAuthUserId,
+      actorAgentTokenLabel: bubblophyAgentTokens.label,
+      createdAt: bubblophyIssueEvents.createdAt,
+    })
+    .from(bubblophyIssueEvents)
+    .innerJoin(
+      bubblophyIssues,
+      eq(bubblophyIssues.id, bubblophyIssueEvents.issueId)
+    )
+    .leftJoin(
+      bubblophyAgentTokens,
+      and(
+        eq(bubblophyAgentTokens.id, bubblophyIssueEvents.actorAgentTokenId),
+        eq(bubblophyAgentTokens.projectId, bubblophyIssues.projectId)
+      )
+    )
+    .where(inArray(bubblophyIssues.projectId, projectIds))
+    .orderBy(desc(bubblophyIssueEvents.createdAt))
     .limit(20);
 }
 
