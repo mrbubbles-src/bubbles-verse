@@ -52,3 +52,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added explicit dashboard data-source states for real database data, an empty
   but reachable database, and unavailable database/schema setup without silently
   replacing authenticated work with sample projects.
+- Added human-controlled issue status transitions for database-backed issues,
+  including membership-checked server actions, `status_changed` audit events,
+  same-status no-op protection, and no agent run side effects.

@@ -10,6 +10,7 @@ import {
   createBubblophyIssueAction,
   createBubblophyIssuePlanAction,
   createBubblophyProjectAction,
+  updateBubblophyIssueStatusAction,
 } from '@/app/actions';
 import { BubblophyDashboard } from '@/components/dashboard/bubblophy-dashboard';
 
@@ -67,6 +68,7 @@ export async function ProtectedBubblophyDashboard() {
       snapshot={dashboardSnapshot}
       createIssueAction={createBubblophyIssueAction}
       createIssuePlanAction={createBubblophyIssuePlanAction}
+      updateIssueStatusAction={updateBubblophyIssueStatusAction}
       createProjectAction={createBubblophyProjectAction}
       createAgentTokenAction={createBubblophyAgentTokenAction}
     />

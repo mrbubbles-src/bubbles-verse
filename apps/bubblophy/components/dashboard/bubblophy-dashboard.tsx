@@ -9,6 +9,8 @@ import type {
   CreateBubblophyIssuePlanActionResult,
   CreateBubblophyProjectActionInput,
   CreateBubblophyProjectActionResult,
+  UpdateBubblophyIssueStatusActionInput,
+  UpdateBubblophyIssueStatusActionResult,
 } from '@/app/actions';
 import type {
   AgentRunState,
@@ -83,6 +85,9 @@ interface BubblophyDashboardProps {
   createIssuePlanAction?: (
     input: CreateBubblophyIssuePlanActionInput
   ) => Promise<CreateBubblophyIssuePlanActionResult>;
+  updateIssueStatusAction?: (
+    input: UpdateBubblophyIssueStatusActionInput
+  ) => Promise<UpdateBubblophyIssueStatusActionResult>;
   createProjectAction?: (
     input: CreateBubblophyProjectActionInput
   ) => Promise<CreateBubblophyProjectActionResult>;
@@ -211,6 +216,7 @@ export function BubblophyDashboard({
   snapshot,
   createIssueAction,
   createIssuePlanAction,
+  updateIssueStatusAction,
   createProjectAction,
   createAgentTokenAction,
 }: BubblophyDashboardProps) {
@@ -226,6 +232,9 @@ export function BubblophyDashboard({
   const [persistedIssues, setPersistedIssues] = useState<IssueSummary[]>([]);
   const [issuePlansById, setIssuePlansById] = useState<
     Record<string, IssuePlanDraft>
+  >({});
+  const [issueStatusById, setIssueStatusById] = useState<
+    Record<string, IssueStatus>
   >({});
   const [persistedProjects, setPersistedProjects] = useState<ProjectSummary[]>(
     []
@@ -251,17 +260,25 @@ export function BubblophyDashboard({
     () =>
       [...localDrafts, ...persistedIssues, ...snapshot.issues].map((issue) => {
         const plan = issuePlansById[issue.id];
+        const status = issueStatusById[issue.id];
+        const issueWithStatus = status ? { ...issue, status } : issue;
 
         if (!plan) {
-          return issue;
+          return issueWithStatus;
         }
 
         return {
-          ...issue,
+          ...issueWithStatus,
           planSteps: plan.steps.length,
         };
       }),
-    [issuePlansById, localDrafts, persistedIssues, snapshot.issues]
+    [
+      issuePlansById,
+      issueStatusById,
+      localDrafts,
+      persistedIssues,
+      snapshot.issues,
+    ]
   );
 
   const filteredIssues = useMemo(() => {
@@ -350,6 +367,13 @@ export function BubblophyDashboard({
     setIssuePlansById((currentPlans) => ({
       ...currentPlans,
       [plan.issueId]: plan,
+    }));
+  };
+
+  const handleIssueStatusUpdated = (issue: IssueSummary) => {
+    setIssueStatusById((currentStatuses) => ({
+      ...currentStatuses,
+      [issue.id]: issue.status,
     }));
   };
 
@@ -457,10 +481,15 @@ export function BubblophyDashboard({
                 canPersistIssuePlans={
                   canUseDatabase && Boolean(createIssuePlanAction)
                 }
+                canPersistIssueStatus={
+                  canUseDatabase && Boolean(updateIssueStatusAction)
+                }
                 createIssuePlanAction={createIssuePlanAction}
+                updateIssueStatusAction={updateIssueStatusAction}
                 onProjectSelect={handleProjectSelect}
                 onDraftDelete={handleDeleteDraft}
                 onIssuePlanSaved={handleIssuePlanSaved}
+                onIssueStatusUpdated={handleIssueStatusUpdated}
                 onIssueSelect={setSelectedIssueId}
               />
             </div>
@@ -967,10 +996,13 @@ function IssueQueue({
   selectedIssue,
   selectedProjectKey,
   canPersistIssuePlans,
+  canPersistIssueStatus,
   createIssuePlanAction,
+  updateIssueStatusAction,
   onProjectSelect,
   onDraftDelete,
   onIssuePlanSaved,
+  onIssueStatusUpdated,
   onIssueSelect,
 }: {
   dataSource: DashboardSnapshot['meta']['dataSource'];
@@ -979,12 +1011,17 @@ function IssueQueue({
   selectedIssue: DashboardIssue | null;
   selectedProjectKey: ProjectFilterKey;
   canPersistIssuePlans: boolean;
+  canPersistIssueStatus: boolean;
   createIssuePlanAction?: (
     input: CreateBubblophyIssuePlanActionInput
   ) => Promise<CreateBubblophyIssuePlanActionResult>;
+  updateIssueStatusAction?: (
+    input: UpdateBubblophyIssueStatusActionInput
+  ) => Promise<UpdateBubblophyIssueStatusActionResult>;
   onProjectSelect: (projectKey: ProjectFilterKey) => void;
   onDraftDelete: (issueId: string) => void;
   onIssuePlanSaved: (plan: IssuePlanDraft) => void;
+  onIssueStatusUpdated: (issue: IssueSummary) => void;
   onIssueSelect: (issueId: string) => void;
 }) {
   return (
@@ -1089,9 +1126,12 @@ function IssueQueue({
           issue={selectedIssue}
           issuePlan={issuePlan}
           canPersistIssuePlans={canPersistIssuePlans}
+          canPersistIssueStatus={canPersistIssueStatus}
           createIssuePlanAction={createIssuePlanAction}
+          updateIssueStatusAction={updateIssueStatusAction}
           onDraftDelete={onDraftDelete}
           onIssuePlanSaved={onIssuePlanSaved}
+          onIssueStatusUpdated={onIssueStatusUpdated}
         />
       </CardContent>
     </Card>
@@ -1109,19 +1149,27 @@ function IssueDetailPanel({
   issue,
   issuePlan,
   canPersistIssuePlans,
+  canPersistIssueStatus,
   createIssuePlanAction,
+  updateIssueStatusAction,
   onDraftDelete,
   onIssuePlanSaved,
+  onIssueStatusUpdated,
 }: {
   dataSource: DashboardSnapshot['meta']['dataSource'];
   issue: DashboardIssue | null;
   issuePlan?: IssuePlanDraft;
   canPersistIssuePlans: boolean;
+  canPersistIssueStatus: boolean;
   createIssuePlanAction?: (
     input: CreateBubblophyIssuePlanActionInput
   ) => Promise<CreateBubblophyIssuePlanActionResult>;
+  updateIssueStatusAction?: (
+    input: UpdateBubblophyIssueStatusActionInput
+  ) => Promise<UpdateBubblophyIssueStatusActionResult>;
   onDraftDelete: (issueId: string) => void;
   onIssuePlanSaved: (plan: IssuePlanDraft) => void;
+  onIssueStatusUpdated: (issue: IssueSummary) => void;
 }) {
   const [isPlanDialogOpen, setIsPlanDialogOpen] = useState(false);
 
@@ -1175,6 +1223,16 @@ function IssueDetailPanel({
           </dd>
         </div>
       </dl>
+
+      <IssueStatusTransitionPanel
+        key={`${issue.id}-${issue.status}`}
+        issue={issue}
+        canPersistIssueStatus={
+          canPersistIssueStatus && !isLocalDraftIssue(issue)
+        }
+        updateIssueStatusAction={updateIssueStatusAction}
+        onIssueStatusUpdated={onIssueStatusUpdated}
+      />
 
       <div className="grid gap-2 rounded-md border border-border bg-background p-3">
         <div className="flex items-start justify-between gap-3">
@@ -1249,6 +1307,136 @@ function IssueDetailPanel({
         />
       ) : null}
     </aside>
+  );
+}
+
+const issueStatusOptions = [
+  'triage',
+  'geplant',
+  'bereit',
+  'in_arbeit',
+  'review',
+  'blockiert',
+] satisfies IssueStatus[];
+
+/**
+ * Renders a human-only issue status transition control.
+ *
+ * @param props Selected issue, status action, and success callback.
+ * @returns Compact status transition form or non-persistent explanation.
+ */
+function IssueStatusTransitionPanel({
+  issue,
+  canPersistIssueStatus,
+  updateIssueStatusAction,
+  onIssueStatusUpdated,
+}: {
+  issue: DashboardIssue;
+  canPersistIssueStatus: boolean;
+  updateIssueStatusAction?: (
+    input: UpdateBubblophyIssueStatusActionInput
+  ) => Promise<UpdateBubblophyIssueStatusActionResult>;
+  onIssueStatusUpdated: (issue: IssueSummary) => void;
+}) {
+  const availableStatuses = issueStatusOptions.filter(
+    (status) => status !== issue.status
+  );
+  const [nextStatus, setNextStatus] = useState<IssueStatus>(
+    availableStatuses[0] ?? issue.status
+  );
+  const [reason, setReason] = useState('');
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const canSubmit =
+    canPersistIssueStatus &&
+    Boolean(updateIssueStatusAction) &&
+    nextStatus !== issue.status &&
+    !isPending;
+
+  const handleSubmit = () => {
+    if (!canSubmit || !updateIssueStatusAction) {
+      return;
+    }
+
+    setActionError(null);
+    startTransition(async () => {
+      const result = await updateIssueStatusAction({
+        issueId: issue.id,
+        status: nextStatus,
+        reason,
+      });
+
+      if (result.status === 'updated') {
+        onIssueStatusUpdated(result.issue);
+        setReason('');
+        return;
+      }
+
+      setActionError(getIssueStatusActionErrorMessage(result));
+    });
+  };
+
+  return (
+    <div className="grid gap-3 rounded-md border border-border bg-background p-3">
+      <div className="grid gap-1">
+        <h4 className="text-sm font-medium">Status pflegen</h4>
+        <p className="text-xs text-muted-foreground">
+          Menschliche Statusänderung ohne Agent-Run oder automatische
+          Ausführung.
+        </p>
+      </div>
+
+      {canPersistIssueStatus && updateIssueStatusAction ? (
+        <form
+          className="grid gap-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleSubmit();
+          }}>
+          <label className="grid gap-1.5 text-sm font-medium">
+            Neuer Status
+            <select
+              name="status"
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+              value={nextStatus}
+              onChange={(event) =>
+                setNextStatus(event.currentTarget.value as IssueStatus)
+              }>
+              {availableStatuses.map((status) => (
+                <option key={status} value={status}>
+                  {issueStatusLabels[status]}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="grid gap-1.5 text-sm font-medium">
+            Grund
+            <Input
+              name="reason"
+              placeholder="Kurz, warum der Status wechselt"
+              value={reason}
+              onChange={(event) => setReason(event.currentTarget.value)}
+            />
+          </label>
+
+          {actionError ? (
+            <p role="alert" className="text-sm text-destructive">
+              {actionError}
+            </p>
+          ) : null}
+
+          <Button type="submit" size="sm" disabled={!canSubmit}>
+            {isPending ? 'Speichert...' : 'Status speichern'}
+          </Button>
+        </form>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Persistente Statusänderungen sind nur für gespeicherte Issues bei
+          aktiver Datenbank verfügbar.
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -2091,6 +2279,42 @@ function getIssuePlanActionErrorMessage(
   }
 
   return 'Mindestens ein nicht-leerer Schritt ist nötig.';
+}
+
+/**
+ * Converts issue status action outcomes into quiet inline feedback.
+ *
+ * @param result Result returned by the persisted issue status action.
+ * @returns Human-readable error message for the detail panel.
+ */
+function getIssueStatusActionErrorMessage(
+  result: Exclude<UpdateBubblophyIssueStatusActionResult, { status: 'updated' }>
+) {
+  if (result.status === 'unchanged') {
+    return 'Dieser Status ist bereits gesetzt. Es wurde kein Audit-Event geschrieben.';
+  }
+
+  if (result.status === 'not_found') {
+    return 'Dieses Issue wurde nicht gefunden. Der Status wurde nicht geändert.';
+  }
+
+  if (result.status === 'forbidden') {
+    return 'Du bist kein Mitglied dieses Projekts. Der Status wurde nicht geändert.';
+  }
+
+  if (result.status === 'database_unavailable') {
+    return 'Die Datenbank ist gerade nicht verfügbar. Der Status wurde nicht geändert.';
+  }
+
+  if (result.reason === 'empty_issue') {
+    return 'Wähle ein Issue aus, bevor du den Status speicherst.';
+  }
+
+  if (result.reason === 'reason_too_long') {
+    return 'Der Statusgrund ist zu lang.';
+  }
+
+  return 'Der gewählte Status ist nicht gültig.';
 }
 
 /**

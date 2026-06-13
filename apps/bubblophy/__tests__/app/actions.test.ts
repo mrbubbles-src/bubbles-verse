@@ -3,10 +3,12 @@ import type {
   CreateBubblophyIssueActionInput,
   CreateBubblophyIssuePlanActionInput,
   CreateBubblophyProjectActionInput,
+  UpdateBubblophyIssueStatusActionInput,
 } from '@/app/actions';
 import type { CreateBubblophyAgentTokenInput } from '@/lib/agent-tokens/create';
 import type { CreateBubblophyIssueDraftInput } from '@/lib/issues/create';
 import type { CreateOrUpdateBubblophyIssuePlanDraftInput } from '@/lib/issues/plans';
+import type { UpdateBubblophyIssueStatusInput } from '@/lib/issues/status';
 import type { CreateBubblophyProjectInput } from '@/lib/projects/create';
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -14,6 +16,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const requireBubblophySessionMock = vi.fn();
 const createBubblophyIssueDraftMock = vi.fn();
 const createBubblophyIssuePlanDraftMock = vi.fn();
+const updateBubblophyIssueStatusMock = vi.fn();
 const createBubblophyProjectMock = vi.fn();
 const createBubblophyAgentTokenMock = vi.fn();
 
@@ -33,6 +36,11 @@ vi.mock('@/lib/issues/plans', () => ({
   ) => createBubblophyIssuePlanDraftMock(input),
 }));
 
+vi.mock('@/lib/issues/status', () => ({
+  updateBubblophyIssueStatus: (input: UpdateBubblophyIssueStatusInput) =>
+    updateBubblophyIssueStatusMock(input),
+}));
+
 vi.mock('@/lib/projects/create', () => ({
   createBubblophyProject: (input: CreateBubblophyProjectInput) =>
     createBubblophyProjectMock(input),
@@ -48,6 +56,7 @@ describe('createBubblophyIssueAction', () => {
     requireBubblophySessionMock.mockReset();
     createBubblophyIssueDraftMock.mockReset();
     createBubblophyIssuePlanDraftMock.mockReset();
+    updateBubblophyIssueStatusMock.mockReset();
     createBubblophyProjectMock.mockReset();
     createBubblophyAgentTokenMock.mockReset();
   });
@@ -112,6 +121,7 @@ describe('createBubblophyIssuePlanAction', () => {
     requireBubblophySessionMock.mockReset();
     createBubblophyIssueDraftMock.mockReset();
     createBubblophyIssuePlanDraftMock.mockReset();
+    updateBubblophyIssueStatusMock.mockReset();
     createBubblophyProjectMock.mockReset();
     createBubblophyAgentTokenMock.mockReset();
   });
@@ -161,11 +171,75 @@ describe('createBubblophyIssuePlanAction', () => {
   });
 });
 
+describe('updateBubblophyIssueStatusAction', () => {
+  beforeEach(() => {
+    requireBubblophySessionMock.mockReset();
+    createBubblophyIssueDraftMock.mockReset();
+    createBubblophyIssuePlanDraftMock.mockReset();
+    updateBubblophyIssueStatusMock.mockReset();
+    createBubblophyProjectMock.mockReset();
+    createBubblophyAgentTokenMock.mockReset();
+  });
+
+  it('resolves the auth user server-side instead of accepting a client authUserId', async () => {
+    requireBubblophySessionMock.mockResolvedValue({
+      authUserId: 'user_server',
+      email: 'owner@example.test',
+      user: {},
+    });
+    updateBubblophyIssueStatusMock.mockResolvedValue({
+      status: 'updated',
+      issue: {
+        id: 'BV-12',
+        title: 'Status pflegen',
+        projectKey: 'BV',
+        status: 'bereit',
+        priority: 'hoch',
+        owner: 'Nicht zugewiesen',
+        planSteps: 2,
+        approvalRequired: true,
+      },
+    });
+
+    const { updateBubblophyIssueStatusAction } = await import('@/app/actions');
+    const result = await updateBubblophyIssueStatusAction({
+      authUserId: 'user_client_spoof',
+      issueId: 'BV-12',
+      status: 'bereit',
+      reason: 'Plan geprüft.',
+    } as UpdateBubblophyIssueStatusActionInput & { authUserId: string });
+
+    expect(requireBubblophySessionMock).toHaveBeenCalledWith({
+      nextPath: '/',
+    });
+    expect(updateBubblophyIssueStatusMock).toHaveBeenCalledWith({
+      authUserId: 'user_server',
+      issueId: 'BV-12',
+      status: 'bereit',
+      reason: 'Plan geprüft.',
+    });
+    expect(result).toEqual({
+      status: 'updated',
+      issue: {
+        id: 'BV-12',
+        title: 'Status pflegen',
+        projectKey: 'BV',
+        status: 'bereit',
+        priority: 'hoch',
+        owner: 'Nicht zugewiesen',
+        planSteps: 2,
+        approvalRequired: true,
+      },
+    });
+  });
+});
+
 describe('createBubblophyProjectAction', () => {
   beforeEach(() => {
     requireBubblophySessionMock.mockReset();
     createBubblophyIssueDraftMock.mockReset();
     createBubblophyIssuePlanDraftMock.mockReset();
+    updateBubblophyIssueStatusMock.mockReset();
     createBubblophyProjectMock.mockReset();
     createBubblophyAgentTokenMock.mockReset();
   });
@@ -232,6 +306,7 @@ describe('createBubblophyAgentTokenAction', () => {
     requireBubblophySessionMock.mockReset();
     createBubblophyIssueDraftMock.mockReset();
     createBubblophyIssuePlanDraftMock.mockReset();
+    updateBubblophyIssueStatusMock.mockReset();
     createBubblophyProjectMock.mockReset();
     createBubblophyAgentTokenMock.mockReset();
   });

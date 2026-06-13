@@ -38,6 +38,9 @@ einem bewusst human-gesteuerten Kontrollzentrum.
 - Der Issue-Dialog bietet bei aktiver Datenbankquelle zusätzlich
   `In Datenbank speichern`; bei Sample- oder Fallback-Daten bleibt er bewusst
   lokal und markiert Drafts als nicht gespeichert.
+- Im Issue-Detail können Menschen bei aktiver Datenbankquelle den Status eines
+  gespeicherten Issues ändern. Die Änderung schreibt ein `status_changed`-Event
+  und startet keinen Agent-Run.
 - Im Issue-Detailpanel können Menschen bei aktiver Datenbankquelle einen
   Plan-Entwurf speichern. Der server-only Plan-Service schreibt eine neue
   Planversion plus `plan_updated`-Event und startet keinen Agent-Run.
@@ -96,6 +99,10 @@ bun run build
   die echte Prüfung bleibt serverseitig.
 - Persistierte Issue-Erfassung läuft serverseitig über Projektmitgliedschaft,
   schreibt nur Issue plus `created`-Event und startet keine Agent-Runs.
+- Persistierte Issue-Statuspflege läuft serverseitig über Projektmitgliedschaft,
+  schreibt nur den neuen Status plus `status_changed`-Event und startet keine
+  Agent-Runs. Identische Zielstatus werden als No-op behandelt, damit keine
+  Audit-Events gespammt werden.
 - Persistierte Plan-Erfassung läuft serverseitig über Issue-Projektmitgliedschaft,
   schreibt eine neue Planversion plus `plan_updated`-Event und startet keine
   Agent-Runs.

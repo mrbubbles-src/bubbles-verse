@@ -7,6 +7,8 @@ import type {
   CreateBubblophyIssuePlanActionResult,
   CreateBubblophyProjectActionInput,
   CreateBubblophyProjectActionResult,
+  UpdateBubblophyIssueStatusActionInput,
+  UpdateBubblophyIssueStatusActionResult,
 } from '@/app/actions';
 import type { DashboardSnapshot } from '@/lib/dashboard/types';
 import type React from 'react';
@@ -239,6 +241,87 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       within(detailPanel).getByText(/Sample-Daten enthalten aktuell/i)
     ).toBeInTheDocument();
+    expect(
+      within(detailPanel).queryByRole('button', { name: 'Status speichern' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('persists a human issue status transition and resets the target state', async () => {
+    const updateIssueStatusAction = vi.fn<
+      (
+        input: UpdateBubblophyIssueStatusActionInput
+      ) => Promise<UpdateBubblophyIssueStatusActionResult>
+    >(async () => ({
+      status: 'updated',
+      issue: {
+        id: 'BV-12',
+        title: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+        projectKey: 'BV',
+        status: 'bereit',
+        priority: 'hoch',
+        owner: 'mrbubbles',
+        planSteps: 3,
+        approvalRequired: true,
+      },
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        updateIssueStatusAction={updateIssueStatusAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+    const statusSelect = within(detailPanel).getByLabelText('Neuer Status');
+
+    expect(statusSelect).toBeInstanceOf(HTMLSelectElement);
+
+    if (!(statusSelect instanceof HTMLSelectElement)) {
+      throw new Error('Expected the status select to render.');
+    }
+
+    fireEvent.change(statusSelect, {
+      target: { value: 'bereit' },
+    });
+    fireEvent.change(within(detailPanel).getByLabelText('Grund'), {
+      target: { value: 'Plan ist bereit zur Prüfung.' },
+    });
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Status speichern' })
+    );
+
+    await waitFor(() => {
+      expect(updateIssueStatusAction).toHaveBeenCalledWith({
+        issueId: 'BV-12',
+        status: 'bereit',
+        reason: 'Plan ist bereit zur Prüfung.',
+      });
+    });
+    expect(updateIssueStatusAction.mock.calls[0]?.[0]).not.toHaveProperty(
+      'authUserId'
+    );
+
+    await waitFor(() => {
+      expect(within(detailPanel).getByText('Bereit')).toBeInTheDocument();
+    });
+
+    const resetStatusSelect =
+      within(detailPanel).getByLabelText('Neuer Status');
+
+    expect(resetStatusSelect).toBeInstanceOf(HTMLSelectElement);
+
+    if (!(resetStatusSelect instanceof HTMLSelectElement)) {
+      throw new Error('Expected the reset status select to render.');
+    }
+
+    expect(resetStatusSelect.value).not.toBe('bereit');
   });
 
   it('persists a human issue plan and renders it in the detail panel', async () => {
@@ -376,6 +459,9 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       within(detailPanel).getByText('Diese Notiz bleibt nur lokal.')
     ).toBeInTheDocument();
+    expect(
+      within(detailPanel).queryByRole('button', { name: 'Status speichern' })
+    ).not.toBeInTheDocument();
 
     fireEvent.click(
       within(detailPanel).getByRole('button', { name: 'Draft verwerfen' })
