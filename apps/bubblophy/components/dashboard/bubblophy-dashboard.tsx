@@ -37,7 +37,7 @@ import {
 import { getIssueReadinessPercent } from '@/lib/dashboard/metrics';
 import { bubblophySidebarData, getBubblophyBreadcrumbs } from '@/lib/sidebar';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
 import { BubblesAppHeader } from '@bubbles/ui/components/bubbles-app-header';
 import { BubblesSidebarLayout } from '@bubbles/ui/components/bubbles-sidebar-layout';
@@ -151,7 +151,12 @@ type ProjectFilterKey = 'all' | string;
 
 type SnapshotIssue = DashboardSnapshot['issues'][number];
 
-type DashboardIssue = SnapshotIssue | LocalDraftIssue;
+type DashboardIssue = SnapshotIssue | ClientPersistedIssue | LocalDraftIssue;
+
+type ClientPersistedIssue = SnapshotIssue & {
+  description?: string;
+  isClientPersisted: true;
+};
 
 type LocalDraftIssue = SnapshotIssue & {
   createdLabel: string;
@@ -323,7 +328,9 @@ export function BubblophyDashboard({
   const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
   const [isAgentTokenDialogOpen, setIsAgentTokenDialogOpen] = useState(false);
   const [localDrafts, setLocalDrafts] = useState<LocalDraftIssue[]>([]);
-  const [persistedIssues, setPersistedIssues] = useState<IssueSummary[]>([]);
+  const [persistedIssues, setPersistedIssues] = useState<
+    ClientPersistedIssue[]
+  >([]);
   const [issuePlansById, setIssuePlansById] = useState<
     Record<string, IssuePlanDraft>
   >({});
@@ -424,6 +431,7 @@ export function BubblophyDashboard({
     readyIssues,
     openIssues: totalOpenIssues,
   });
+  const canOpenIssueDialog = allProjects.length > 0;
 
   const handleProjectSelect = (projectKey: ProjectFilterKey) => {
     setSelectedProjectKey(projectKey);
@@ -460,7 +468,7 @@ export function BubblophyDashboard({
     setIsDraftDialogOpen(false);
   };
 
-  const handlePersistedIssueCreated = (issue: IssueSummary) => {
+  const handlePersistedIssueCreated = (issue: ClientPersistedIssue) => {
     setPersistedIssues((currentIssues) => [issue, ...currentIssues]);
     setSelectedProjectKey(issue.projectKey);
     setSelectedIssueId(issue.id);
@@ -523,6 +531,8 @@ export function BubblophyDashboard({
           subtitle="Human-gesteuerte Issue- und Agent-Orchestrierung"
           actions={
             <DashboardToolbar
+              canCreateIssue={canOpenIssueDialog}
+              disabledReason="Erstelle zuerst ein Projekt."
               onCreateIssue={() => setIsDraftDialogOpen(true)}
             />
           }
@@ -609,6 +619,8 @@ export function BubblophyDashboard({
                 onIssueStatusUpdated={handleIssueStatusUpdated}
                 onAgentRunRequested={handleAgentRunRequested}
                 onIssueSelect={setSelectedIssueId}
+                canCreateIssue={canOpenIssueDialog}
+                onCreateIssue={() => setIsDraftDialogOpen(true)}
               />
             </div>
 
@@ -703,10 +715,23 @@ function DataSourceStatus({ snapshot }: BubblophyDashboardProps) {
  * @param props Handler for local draft creation.
  * @returns Primary toolbar controls.
  */
-function DashboardToolbar({ onCreateIssue }: { onCreateIssue: () => void }) {
+function DashboardToolbar({
+  canCreateIssue,
+  disabledReason,
+  onCreateIssue,
+}: {
+  canCreateIssue: boolean;
+  disabledReason: string;
+  onCreateIssue: () => void;
+}) {
   return (
     <div className="flex flex-wrap gap-2">
-      <Button size="lg" type="button" onClick={onCreateIssue}>
+      <Button
+        size="lg"
+        type="button"
+        disabled={!canCreateIssue}
+        title={canCreateIssue ? undefined : disabledReason}
+        onClick={onCreateIssue}>
         <HugeiconsIcon
           aria-hidden
           data-icon="inline-start"
@@ -1128,6 +1153,8 @@ function IssueQueue({
   onIssueStatusUpdated,
   onAgentRunRequested,
   onIssueSelect,
+  canCreateIssue,
+  onCreateIssue,
 }: {
   dataSource: DashboardSnapshot['meta']['dataSource'];
   issues: DashboardIssue[];
@@ -1152,6 +1179,8 @@ function IssueQueue({
   onIssueStatusUpdated: (issue: IssueSummary) => void;
   onAgentRunRequested: (run: AgentRunSummary) => void;
   onIssueSelect: (issueId: string) => void;
+  canCreateIssue: boolean;
+  onCreateIssue: () => void;
 }) {
   const activeProjectAgentTokens = selectedIssue
     ? agentTokens.filter(
@@ -1201,7 +1230,33 @@ function IssueQueue({
                   <TableCell
                     colSpan={6}
                     className="py-6 text-sm text-muted-foreground">
-                    Noch keine Issues für diesen Filter.
+                    <div className="grid gap-3">
+                      <div>
+                        <p>Noch keine Issues für diesen Filter.</p>
+                        {selectedProjectKey !== 'all' ? (
+                          <p className="mt-1">
+                            Das ausgewählte Projekt ist bereit für das erste
+                            echte Issue.
+                          </p>
+                        ) : null}
+                      </div>
+                      {selectedProjectKey !== 'all' && canCreateIssue ? (
+                        <div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={onCreateIssue}>
+                            <HugeiconsIcon
+                              aria-hidden
+                              data-icon="inline-start"
+                              icon={Add01Icon}
+                              strokeWidth={2}
+                            />
+                            Issue für {selectedProjectKey} anlegen
+                          </Button>
+                        </div>
+                      ) : null}
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : null}
@@ -1329,6 +1384,11 @@ function IssueDetailPanel({
     );
   }
 
+  const visibleDescription =
+    !isLocalDraftIssue(issue) && 'description' in issue
+      ? issue.description?.trim()
+      : undefined;
+
   return (
     <aside
       aria-label="Issue-Details"
@@ -1356,6 +1416,12 @@ function IssueDetailPanel({
           {issuePriorityLabels[issue.priority]}
         </Badge>
       </div>
+
+      {visibleDescription ? (
+        <p className="rounded-md border border-border bg-background p-3 text-sm text-muted-foreground">
+          {visibleDescription}
+        </p>
+      ) : null}
 
       <dl className="grid gap-3 text-sm">
         <div className="flex items-center justify-between gap-3">
@@ -2326,7 +2392,7 @@ function NewIssueDraftDialog({
     input: CreateBubblophyIssueActionInput
   ) => Promise<CreateBubblophyIssueActionResult>;
   onCreateDraft: (input: LocalDraftIssueInput) => void;
-  onPersistedIssueCreated: (issue: IssueSummary) => void;
+  onPersistedIssueCreated: (issue: ClientPersistedIssue) => void;
   onOpenChange: (open: boolean) => void;
 }) {
   const defaultProjectKey =
@@ -2334,6 +2400,7 @@ function NewIssueDraftDialog({
       ? (projects[0]?.key ?? '')
       : selectedProjectKey;
   const [projectKey, setProjectKey] = useState(defaultProjectKey);
+  const wasOpenRef = useRef(open);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<IssuePriority>('mittel');
@@ -2352,6 +2419,16 @@ function NewIssueDraftDialog({
     projectKey,
     title,
   } satisfies PersistedIssueInput;
+
+  useEffect(() => {
+    const wasOpen = wasOpenRef.current;
+
+    wasOpenRef.current = open;
+
+    if (open && !wasOpen) {
+      setProjectKey(defaultProjectKey);
+    }
+  }, [defaultProjectKey, open]);
 
   const handleLocalDraftCreate = () => {
     if (!canCreateDraft || isPersistPending) {
@@ -2372,7 +2449,11 @@ function NewIssueDraftDialog({
       const result = await createIssueAction(draftInput);
 
       if (result.status === 'created') {
-        onPersistedIssueCreated(result.issue);
+        onPersistedIssueCreated({
+          ...result.issue,
+          description: draftInput.description.trim() || undefined,
+          isClientPersisted: true,
+        });
         return;
       }
 
@@ -2384,7 +2465,9 @@ function NewIssueDraftDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Neues Issue als Draft</DialogTitle>
+          <DialogTitle>
+            {canPersistToDatabase ? 'Neues Issue' : 'Neues Issue als Draft'}
+          </DialogTitle>
           <DialogDescription>
             {canPersistToDatabase
               ? 'Speichere ein menschlich angelegtes Issue in der Datenbank oder halte es bewusst nur lokal.'

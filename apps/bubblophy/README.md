@@ -33,6 +33,9 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   weiter klar markierte lokale Drafts.
 - Der Projektbereich bietet bei aktiver Datenbankquelle `Neues Projekt`; bei
   Sample- oder Fallback-Daten wird kein DB-Projektbutton angeboten.
+- In einer leeren Datenbank führt der UI-Flow von `Neues Projekt` direkt in
+  den ausgewählten Projektkontext und bietet dort das erste persistierte Issue
+  für dieses Projekt an.
 - Projektkarten und Issues sind auswählbare Controls mit sichtbarem Zustand.
   Projektfilter können gelöst werden; Sidebar-Links führen auf echte
   Dashboard-Sections statt auf Platzhalter.

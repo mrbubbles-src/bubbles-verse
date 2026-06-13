@@ -63,3 +63,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   token hashes closed to direct authenticated access.
 - Reused the shared `@bubbles/supabase-access` cookie and optimistic session
   helpers while keeping Bubblophy-specific authorization inside the app.
+- Improved the empty database onboarding flow so creating a project selects it
+  immediately and offers a project-bound persisted issue creation path.

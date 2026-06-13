@@ -745,6 +745,138 @@ describe('BubblophyDashboard interactions', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('guides an empty database from project creation to the first persisted issue', async () => {
+    const createProjectAction = vi.fn<
+      (
+        input: CreateBubblophyProjectActionInput
+      ) => Promise<CreateBubblophyProjectActionResult>
+    >(async () => ({
+      status: 'created',
+      project: {
+        id: 'project_zen',
+        name: 'Zentrum',
+        key: 'ZEN',
+        health: 'stabil',
+        openIssues: 0,
+        readyIssues: 0,
+        blockedIssues: 0,
+        memberCount: 1,
+        agentTokenCount: 0,
+      },
+    }));
+    const createIssueAction = vi.fn<
+      (
+        input: CreateBubblophyIssueActionInput
+      ) => Promise<CreateBubblophyIssueActionResult>
+    >(async () => ({
+      status: 'created',
+      issue: {
+        id: 'ZEN-1',
+        title: 'Erstes echtes Issue',
+        projectKey: 'ZEN',
+        status: 'triage',
+        priority: 'hoch',
+        owner: 'Nicht zugewiesen',
+        planSteps: 0,
+        approvalRequired: true,
+      },
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={emptyDatabaseSnapshot}
+        createProjectAction={createProjectAction}
+        createIssueAction={createIssueAction}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: /Neues Issue/i })).toBeDisabled();
+
+    const projectCreateButtons = screen.getAllByRole('button', {
+      name: 'Neues Projekt',
+    });
+    const projectCreateButton = projectCreateButtons[0];
+
+    if (!projectCreateButton) {
+      throw new Error('Expected a project create button.');
+    }
+
+    fireEvent.click(projectCreateButton);
+    fireEvent.change(screen.getByLabelText('Name'), {
+      target: { value: 'Zentrum' },
+    });
+    fireEvent.change(screen.getByLabelText('Key'), {
+      target: { value: 'zen' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Projekt erstellen' }));
+
+    await waitFor(() => {
+      expect(createProjectAction).toHaveBeenCalledWith({
+        name: 'Zentrum',
+        key: 'zen',
+        description: '',
+        repositoryUrl: '',
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Gefiltert auf Projekt ZEN.')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Issue für ZEN anlegen' })
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Issue für ZEN anlegen' })
+    );
+
+    expect(screen.getByRole('dialog')).toHaveTextContent('Neues Issue');
+    expect(screen.getByLabelText('Projekt')).toHaveValue('ZEN');
+    fireEvent.change(screen.getByLabelText('Titel'), {
+      target: { value: 'Erstes echtes Issue' },
+    });
+    fireEvent.change(screen.getByLabelText('Beschreibung'), {
+      target: { value: 'Direkt aus dem neuen Projekt angelegt.' },
+    });
+    fireEvent.change(screen.getByLabelText('Priorität'), {
+      target: { value: 'hoch' },
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'In Datenbank speichern' })
+    );
+
+    await waitFor(() => {
+      expect(createIssueAction).toHaveBeenCalledWith({
+        projectKey: 'ZEN',
+        title: 'Erstes echtes Issue',
+        description: 'Direkt aus dem neuen Projekt angelegt.',
+        priority: 'hoch',
+      });
+    });
+    expect(createIssueAction.mock.calls[0]?.[0]).not.toHaveProperty(
+      'authUserId'
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+    expect(
+      screen.getByRole('button', { name: 'Erstes echtes Issue' })
+    ).toHaveAttribute('aria-pressed', 'true');
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    expect(within(detailPanel).getByText('ZEN-1')).toBeInTheDocument();
+    expect(
+      within(detailPanel).getByText('Erstes echtes Issue')
+    ).toBeInTheDocument();
+    expect(
+      within(detailPanel).getByText('Direkt aus dem neuen Projekt angelegt.')
+    ).toBeInTheDocument();
+  });
+
   it('creates an agent token and shows the plaintext only in the dialog', async () => {
     const createAgentTokenAction = vi.fn<
       (
