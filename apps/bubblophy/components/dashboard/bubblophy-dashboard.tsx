@@ -13,12 +13,16 @@ import type {
   RequestBubblophyAgentRunActionResult,
   TransitionBubblophyAgentRunActionInput,
   TransitionBubblophyAgentRunActionResult,
+  TransitionBubblophyProjectArchiveActionInput,
+  TransitionBubblophyProjectArchiveActionResult,
   UpdateBubblophyAgentTokenLifecycleActionInput,
   UpdateBubblophyAgentTokenLifecycleActionResult,
   UpdateBubblophyIssueContentActionInput,
   UpdateBubblophyIssueContentActionResult,
   UpdateBubblophyIssueStatusActionInput,
   UpdateBubblophyIssueStatusActionResult,
+  UpdateBubblophyProjectContentActionInput,
+  UpdateBubblophyProjectContentActionResult,
 } from '@/app/actions';
 import type {
   AgentRunState,
@@ -112,6 +116,12 @@ interface BubblophyDashboardProps {
   createProjectAction?: (
     input: CreateBubblophyProjectActionInput
   ) => Promise<CreateBubblophyProjectActionResult>;
+  updateProjectContentAction?: (
+    input: UpdateBubblophyProjectContentActionInput
+  ) => Promise<UpdateBubblophyProjectContentActionResult>;
+  transitionProjectArchiveAction?: (
+    input: TransitionBubblophyProjectArchiveActionInput
+  ) => Promise<TransitionBubblophyProjectArchiveActionResult>;
   createAgentTokenAction?: (
     input: CreateBubblophyAgentTokenActionInput
   ) => Promise<CreateBubblophyAgentTokenActionResult>;
@@ -442,6 +452,8 @@ export function BubblophyDashboard({
   requestAgentRunAction,
   transitionAgentRunAction,
   createProjectAction,
+  updateProjectContentAction,
+  transitionProjectArchiveAction,
   createAgentTokenAction,
   updateAgentTokenLifecycleAction,
 }: BubblophyDashboardProps) {
@@ -475,6 +487,9 @@ export function BubblophyDashboard({
   const [persistedProjects, setPersistedProjects] = useState<ProjectSummary[]>(
     []
   );
+  const [updatedProjectsByKey, setUpdatedProjectsByKey] = useState<
+    Record<string, ProjectSummary>
+  >({});
   const [persistedAgentTokens, setPersistedAgentTokens] = useState<
     AgentTokenSummary[]
   >([]);
@@ -497,8 +512,11 @@ export function BubblophyDashboard({
     [persistedIssues, snapshot.issues]
   );
   const baseProjects = useMemo(
-    () => [...persistedProjects, ...snapshot.projects],
-    [persistedProjects, snapshot.projects]
+    () =>
+      [...persistedProjects, ...snapshot.projects].map(
+        (project) => updatedProjectsByKey[project.key] ?? project
+      ),
+    [persistedProjects, snapshot.projects, updatedProjectsByKey]
   );
   const allAgentTokens = useMemo(
     () =>
@@ -573,6 +591,10 @@ export function BubblophyDashboard({
       }),
     [baseIssues, baseProjects, updatedIssuesById]
   );
+  const activeProjects = useMemo(
+    () => allProjects.filter((project) => !project.isArchived),
+    [allProjects]
+  );
 
   const filteredIssues = useMemo(() => {
     if (selectedProjectKey === 'all') {
@@ -581,11 +603,18 @@ export function BubblophyDashboard({
 
     return allIssues.filter((issue) => issue.projectKey === selectedProjectKey);
   }, [allIssues, selectedProjectKey]);
+  const selectedProject =
+    selectedProjectKey === 'all'
+      ? null
+      : (allProjects.find((project) => project.key === selectedProjectKey) ??
+        null);
+  const isSelectedProjectArchived = selectedProject?.isArchived ?? false;
 
-  const selectedIssue =
-    filteredIssues.find((issue) => issue.id === selectedIssueId) ??
-    filteredIssues[0] ??
-    null;
+  const selectedIssue = isSelectedProjectArchived
+    ? null
+    : (filteredIssues.find((issue) => issue.id === selectedIssueId) ??
+      filteredIssues[0] ??
+      null);
   const selectedIssueRuns = selectedIssue
     ? allAgentRuns.filter((run) => run.issueId === selectedIssue.id)
     : [];
@@ -610,7 +639,8 @@ export function BubblophyDashboard({
     readyIssues,
     openIssues: totalOpenIssues,
   });
-  const canOpenIssueDialog = allProjects.length > 0;
+  const canOpenIssueDialog =
+    activeProjects.length > 0 && !isSelectedProjectArchived;
 
   const updateSelectionUrl = (
     projectKey: ProjectFilterKey,
@@ -686,6 +716,13 @@ export function BubblophyDashboard({
     setIsProjectDialogOpen(false);
   };
 
+  const handleProjectUpdated = (project: ProjectSummary) => {
+    setUpdatedProjectsByKey((currentProjects) => ({
+      ...currentProjects,
+      [project.key]: project,
+    }));
+  };
+
   const handleIssuePlanSaved = (plan: IssuePlanDraft) => {
     setIssuePlansById((currentPlans) => ({
       ...currentPlans,
@@ -752,7 +789,11 @@ export function BubblophyDashboard({
           actions={
             <DashboardToolbar
               canCreateIssue={canOpenIssueDialog}
-              disabledReason="Erstelle zuerst ein Projekt."
+              disabledReason={
+                isSelectedProjectArchived
+                  ? 'Dieses Projekt ist archiviert.'
+                  : 'Erstelle zuerst ein Projekt.'
+              }
               onCreateIssue={() => setIsDraftDialogOpen(true)}
             />
           }
@@ -812,9 +853,17 @@ export function BubblophyDashboard({
                 canCreateProject={
                   canUseDatabase && Boolean(createProjectAction)
                 }
+                canManageProjects={
+                  canUseDatabase &&
+                  Boolean(updateProjectContentAction) &&
+                  Boolean(transitionProjectArchiveAction)
+                }
                 readiness={readiness}
                 selectedProjectKey={selectedProjectKey}
+                updateProjectContentAction={updateProjectContentAction}
+                transitionProjectArchiveAction={transitionProjectArchiveAction}
                 onCreateProject={() => setIsProjectDialogOpen(true)}
+                onProjectUpdated={handleProjectUpdated}
                 onProjectSelect={handleProjectSelect}
               />
               <IssueQueue
@@ -824,13 +873,19 @@ export function BubblophyDashboard({
                 selectedIssue={selectedIssue}
                 selectedProjectKey={selectedProjectKey}
                 canPersistIssuePlans={
-                  canUseDatabase && Boolean(createIssuePlanAction)
+                  canUseDatabase &&
+                  !isSelectedProjectArchived &&
+                  Boolean(createIssuePlanAction)
                 }
                 canPersistIssueContent={
-                  canUseDatabase && Boolean(updateIssueContentAction)
+                  canUseDatabase &&
+                  !isSelectedProjectArchived &&
+                  Boolean(updateIssueContentAction)
                 }
                 canPersistIssueStatus={
-                  canUseDatabase && Boolean(updateIssueStatusAction)
+                  canUseDatabase &&
+                  !isSelectedProjectArchived &&
+                  Boolean(updateIssueStatusAction)
                 }
                 createIssuePlanAction={createIssuePlanAction}
                 updateIssueContentAction={updateIssueContentAction}
@@ -856,11 +911,14 @@ export function BubblophyDashboard({
                 agentTokens={displayedAgentTokens}
                 canCreateAgentToken={
                   canUseDatabase &&
-                  allProjects.length > 0 &&
+                  activeProjects.length > 0 &&
+                  !isSelectedProjectArchived &&
                   Boolean(createAgentTokenAction)
                 }
                 canUpdateAgentTokens={
-                  canUseDatabase && Boolean(updateAgentTokenLifecycleAction)
+                  canUseDatabase &&
+                  !isSelectedProjectArchived &&
+                  Boolean(updateAgentTokenLifecycleAction)
                 }
                 updateAgentTokenLifecycleAction={
                   updateAgentTokenLifecycleAction
@@ -871,7 +929,11 @@ export function BubblophyDashboard({
               <RunQueue
                 dataSource={snapshot.meta.dataSource}
                 agentRuns={displayedAgentRuns}
-                transitionAgentRunAction={transitionAgentRunAction}
+                transitionAgentRunAction={
+                  isSelectedProjectArchived
+                    ? undefined
+                    : transitionAgentRunAction
+                }
                 onAgentRunTransitioned={handleAgentRunTransitioned}
               />
               <ActivityFeed
@@ -884,12 +946,12 @@ export function BubblophyDashboard({
       </main>
       {isDraftDialogOpen ? (
         <NewIssueDraftDialog
-          projects={allProjects}
+          projects={activeProjects}
           open={isDraftDialogOpen}
           selectedProjectKey={selectedProjectKey}
           canPersistToDatabase={
             canUseDatabase &&
-            allProjects.length > 0 &&
+            activeProjects.length > 0 &&
             Boolean(createIssueAction)
           }
           createIssueAction={createIssueAction}
@@ -908,7 +970,7 @@ export function BubblophyDashboard({
       ) : null}
       {isAgentTokenDialogOpen ? (
         <NewAgentTokenDialog
-          projects={allProjects}
+          projects={activeProjects}
           open={isAgentTokenDialogOpen}
           createAgentTokenAction={createAgentTokenAction}
           onAgentTokenCreated={handleAgentTokenCreated}
@@ -1030,17 +1092,29 @@ function ProjectOverview({
   meta,
   projects,
   canCreateProject,
+  canManageProjects,
   readiness,
   selectedProjectKey,
+  updateProjectContentAction,
+  transitionProjectArchiveAction,
   onCreateProject,
+  onProjectUpdated,
   onProjectSelect,
 }: {
   meta: DashboardSnapshot['meta'];
   projects: ProjectSummary[];
   canCreateProject: boolean;
+  canManageProjects: boolean;
   readiness: number;
   selectedProjectKey: ProjectFilterKey;
+  updateProjectContentAction?: (
+    input: UpdateBubblophyProjectContentActionInput
+  ) => Promise<UpdateBubblophyProjectContentActionResult>;
+  transitionProjectArchiveAction?: (
+    input: TransitionBubblophyProjectArchiveActionInput
+  ) => Promise<TransitionBubblophyProjectArchiveActionResult>;
   onCreateProject: () => void;
+  onProjectUpdated: (project: ProjectSummary) => void;
   onProjectSelect: (projectKey: ProjectFilterKey) => void;
 }) {
   const isDatabaseUnavailable = meta.dataSource === 'database_unavailable';
@@ -1056,6 +1130,11 @@ function ProjectOverview({
     event.preventDefault();
     onProjectSelect(projectKey);
   };
+  const selectedProject =
+    selectedProjectKey === 'all'
+      ? null
+      : (projects.find((project) => project.key === selectedProjectKey) ??
+        null);
 
   return (
     <Card id="projects" className="scroll-mt-24">
@@ -1153,10 +1232,20 @@ function ProjectOverview({
                     {project.key}
                   </p>
                 </div>
-                <Badge variant={healthVariant[project.health]}>
-                  {projectHealthLabels[project.health]}
-                </Badge>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  {project.isArchived ? (
+                    <Badge variant="secondary">Archiviert</Badge>
+                  ) : null}
+                  <Badge variant={healthVariant[project.health]}>
+                    {projectHealthLabels[project.health]}
+                  </Badge>
+                </div>
               </div>
+              {project.description ? (
+                <p className="line-clamp-2 text-xs text-muted-foreground">
+                  {project.description}
+                </p>
+              ) : null}
 
               <ReadinessBar
                 label={`${project.readyIssues} bereit`}
@@ -1175,6 +1264,14 @@ function ProjectOverview({
             </button>
           ))}
         </nav>
+        {selectedProject && canManageProjects ? (
+          <ProjectManagementPanel
+            project={selectedProject}
+            updateProjectContentAction={updateProjectContentAction}
+            transitionProjectArchiveAction={transitionProjectArchiveAction}
+            onProjectUpdated={onProjectUpdated}
+          />
+        ) : null}
       </CardContent>
     </Card>
   );
@@ -1326,6 +1423,203 @@ function NewProjectDialog({
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * Renders project edit and archive controls for one selected project.
+ *
+ * @param props Selected project, server actions, and success callback.
+ * @returns Project management panel with safe server-backed actions.
+ */
+function ProjectManagementPanel({
+  project,
+  updateProjectContentAction,
+  transitionProjectArchiveAction,
+  onProjectUpdated,
+}: {
+  project: ProjectSummary;
+  updateProjectContentAction?: (
+    input: UpdateBubblophyProjectContentActionInput
+  ) => Promise<UpdateBubblophyProjectContentActionResult>;
+  transitionProjectArchiveAction?: (
+    input: TransitionBubblophyProjectArchiveActionInput
+  ) => Promise<TransitionBubblophyProjectArchiveActionResult>;
+  onProjectUpdated: (project: ProjectSummary) => void;
+}) {
+  const [name, setName] = useState(project.name);
+  const [description, setDescription] = useState(project.description ?? '');
+  const [confirmArchive, setConfirmArchive] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const normalizedName = name.trim();
+  const normalizedDescription = description.trim();
+  const hasContentChanges =
+    normalizedName !== project.name ||
+    normalizedDescription !== (project.description ?? '');
+  const canSaveContent =
+    Boolean(updateProjectContentAction) &&
+    normalizedName.length > 0 &&
+    hasContentChanges &&
+    !isPending;
+
+  const handleContentSubmit = () => {
+    if (!canSaveContent || !updateProjectContentAction) {
+      return;
+    }
+
+    setActionError(null);
+    startTransition(async () => {
+      const result = await updateProjectContentAction({
+        projectKey: project.key,
+        name,
+        description,
+      });
+
+      if (result.status === 'updated') {
+        onProjectUpdated(result.project);
+        setConfirmArchive(false);
+        return;
+      }
+
+      if (result.status === 'unchanged') {
+        return;
+      }
+
+      setActionError(getProjectManagementActionErrorMessage(result));
+    });
+  };
+
+  const handleArchiveDecision = () => {
+    if (!transitionProjectArchiveAction || isPending) {
+      return;
+    }
+
+    if (!project.isArchived && !confirmArchive) {
+      setConfirmArchive(true);
+      return;
+    }
+
+    setActionError(null);
+    startTransition(async () => {
+      const result = await transitionProjectArchiveAction({
+        projectKey: project.key,
+        decision: project.isArchived ? 'restore' : 'archive',
+      });
+
+      if (result.status === 'updated') {
+        onProjectUpdated(result.project);
+        setConfirmArchive(false);
+        return;
+      }
+
+      if (result.status === 'unchanged') {
+        setConfirmArchive(false);
+        return;
+      }
+
+      setActionError(getProjectArchiveActionErrorMessage(result));
+    });
+  };
+
+  const handleReset = () => {
+    setName(project.name);
+    setDescription(project.description ?? '');
+    setActionError(null);
+  };
+
+  return (
+    <section className="grid gap-3 rounded-md border border-border bg-muted/20 p-4 md:col-span-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="grid gap-1">
+          <h3 className="text-sm font-medium">Projekt verwalten</h3>
+          <p className="text-xs text-muted-foreground">
+            {project.isArchived
+              ? 'Dieses Projekt ist archiviert. Operative Aktionen bleiben gesperrt, bis es wiederhergestellt wird.'
+              : 'Änderungen bleiben projektgebunden und schreiben ein Audit-Event.'}
+          </p>
+        </div>
+        <Badge variant={project.isArchived ? 'secondary' : 'outline'}>
+          {project.isArchived ? 'Archiviert' : 'Aktiv'}
+        </Badge>
+      </div>
+      <form
+        className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
+        onSubmit={(event) => {
+          event.preventDefault();
+          handleContentSubmit();
+        }}>
+        <label className="grid gap-1.5 text-sm font-medium">
+          Name
+          <Input
+            name="projectName"
+            value={name}
+            aria-invalid={normalizedName.length === 0}
+            disabled={project.isArchived || isPending}
+            onChange={(event) => setName(event.currentTarget.value)}
+          />
+        </label>
+        <label className="grid gap-1.5 text-sm font-medium">
+          Beschreibung
+          <Input
+            name="projectDescription"
+            value={description}
+            disabled={project.isArchived || isPending}
+            onChange={(event) => setDescription(event.currentTarget.value)}
+          />
+        </label>
+        <div className="flex flex-wrap items-end gap-2">
+          <Button
+            type="submit"
+            size="sm"
+            disabled={!canSaveContent || project.isArchived}>
+            {isPending ? 'Speichert...' : 'Speichern'}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={isPending}
+            onClick={handleReset}>
+            Zurücksetzen
+          </Button>
+        </div>
+      </form>
+      {normalizedName.length === 0 ? (
+        <p className="text-xs text-destructive">
+          Der Projektname darf nicht leer sein.
+        </p>
+      ) : null}
+      {actionError ? (
+        <p role="alert" className="text-sm text-destructive">
+          {actionError}
+        </p>
+      ) : null}
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant={project.isArchived ? 'default' : 'outline'}
+          disabled={!transitionProjectArchiveAction || isPending}
+          onClick={handleArchiveDecision}>
+          {project.isArchived
+            ? 'Projekt wiederherstellen'
+            : confirmArchive
+              ? 'Endgültig archivieren'
+              : 'Projekt archivieren'}
+        </Button>
+        {confirmArchive ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={isPending}
+            onClick={() => setConfirmArchive(false)}>
+            Abbrechen
+          </Button>
+        ) : null}
+      </div>
+    </section>
   );
 }
 
@@ -3674,6 +3968,72 @@ function getCreateProjectActionErrorMessage(
   }
 
   return 'Der Projekt-Key darf nur A-Z, 0-9 und 2 bis 8 Zeichen enthalten.';
+}
+
+function getProjectManagementActionErrorMessage(
+  result: Exclude<
+    UpdateBubblophyProjectContentActionResult,
+    { status: 'updated' }
+  >
+) {
+  if (result.status === 'unchanged') {
+    return 'Name und Beschreibung sind unverändert. Es wurde kein Audit-Event geschrieben.';
+  }
+
+  if (result.status === 'not_found') {
+    return 'Dieses Projekt wurde nicht gefunden. Die Änderung wurde nicht gespeichert.';
+  }
+
+  if (result.status === 'forbidden') {
+    return 'Nur Owner und Maintainer können Projekte verwalten.';
+  }
+
+  if (result.status === 'database_unavailable') {
+    return 'Die Datenbank ist gerade nicht verfügbar. Die Änderung wurde nicht gespeichert.';
+  }
+
+  if (result.reason === 'empty_project') {
+    return 'Wähle ein Projekt aus, bevor du speicherst.';
+  }
+
+  if (result.reason === 'name_too_long') {
+    return 'Der Projektname ist zu lang.';
+  }
+
+  if (result.reason === 'description_too_long') {
+    return 'Die Projektbeschreibung ist zu lang.';
+  }
+
+  return 'Gib einen Projektnamen ein, bevor du speicherst.';
+}
+
+function getProjectArchiveActionErrorMessage(
+  result: Exclude<
+    TransitionBubblophyProjectArchiveActionResult,
+    { status: 'updated' }
+  >
+) {
+  if (result.status === 'unchanged') {
+    return 'Dieses Projekt ist bereits in diesem Archivzustand.';
+  }
+
+  if (result.status === 'not_found') {
+    return 'Dieses Projekt wurde nicht gefunden. Der Archivstatus wurde nicht geändert.';
+  }
+
+  if (result.status === 'forbidden') {
+    return 'Nur Owner und Maintainer können Projekte archivieren oder wiederherstellen.';
+  }
+
+  if (result.status === 'database_unavailable') {
+    return 'Die Datenbank ist gerade nicht verfügbar. Der Archivstatus wurde nicht geändert.';
+  }
+
+  if (result.reason === 'empty_project') {
+    return 'Wähle ein Projekt aus, bevor du den Archivstatus änderst.';
+  }
+
+  return 'Die Archiventscheidung ist nicht gültig.';
 }
 
 /**

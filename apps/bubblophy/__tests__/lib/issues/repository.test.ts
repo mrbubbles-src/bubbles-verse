@@ -20,6 +20,7 @@ const baseProjectRow = {
   projectId: 'project_bubblesverse',
   projectName: 'Bubblesverse',
   projectKey: 'BV',
+  projectDescription: 'Projektbeschreibung aus der Datenbank.',
   projectIsArchived: false,
   projectMemberCount: 3,
   activeAgentTokenCount: 2,
@@ -28,6 +29,7 @@ const baseProjectRow = {
   | 'projectId'
   | 'projectName'
   | 'projectKey'
+  | 'projectDescription'
   | 'projectIsArchived'
   | 'projectMemberCount'
   | 'activeAgentTokenCount'
@@ -118,6 +120,8 @@ describe('Bubblophy issue repository mapping', () => {
         id: 'project_bubblesverse',
         name: 'Bubblesverse',
         key: 'BV',
+        description: 'Projektbeschreibung aus der Datenbank.',
+        isArchived: false,
         health: 'blockiert',
         openIssues: 2,
         readyIssues: 1,
@@ -224,7 +228,7 @@ describe('Bubblophy issue repository mapping', () => {
     );
   });
 
-  it('keeps empty and archived projects out of unsafe states', () => {
+  it('keeps empty projects visible and archived projects non-operative', () => {
     const snapshot = buildBubblophyProjectIssueSnapshot([
       makeIssueRow({
         projectId: 'project_empty',
@@ -247,19 +251,33 @@ describe('Bubblophy issue repository mapping', () => {
       }),
     ]);
 
-    expect(snapshot.projects).toEqual([
-      {
-        id: 'project_empty',
-        name: 'Leeres Projekt',
-        key: 'LP',
-        health: 'stabil',
-        openIssues: 0,
-        readyIssues: 0,
-        blockedIssues: 0,
-        memberCount: 0,
-        agentTokenCount: 0,
-      },
-    ]);
+    expect(snapshot.projects).toHaveLength(2);
+    expect(snapshot.projects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'project_empty',
+          name: 'Leeres Projekt',
+          key: 'LP',
+          isArchived: false,
+          health: 'stabil',
+          openIssues: 0,
+          readyIssues: 0,
+          blockedIssues: 0,
+          memberCount: 0,
+          agentTokenCount: 0,
+        }),
+        expect.objectContaining({
+          id: 'project_archived',
+          name: 'Archiv',
+          key: 'AR',
+          isArchived: true,
+          health: 'stabil',
+          openIssues: 0,
+          readyIssues: 0,
+          blockedIssues: 0,
+        }),
+      ])
+    );
     expect(snapshot.issues).toEqual([]);
   });
 

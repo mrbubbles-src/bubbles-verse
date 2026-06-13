@@ -137,11 +137,15 @@ export function mapCreatedProjectToSummary(project: {
   id: string;
   name: string;
   key: string;
+  description?: string;
+  isArchived?: boolean;
 }): ProjectSummary {
   return {
     id: project.id,
     name: project.name,
     key: project.key,
+    description: project.description ?? '',
+    isArchived: project.isArchived ?? false,
     health: 'stabil',
     openIssues: 0,
     readyIssues: 0,

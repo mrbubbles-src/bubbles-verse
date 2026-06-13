@@ -11,12 +11,16 @@ import type {
   RequestBubblophyAgentRunActionResult,
   TransitionBubblophyAgentRunActionInput,
   TransitionBubblophyAgentRunActionResult,
+  TransitionBubblophyProjectArchiveActionInput,
+  TransitionBubblophyProjectArchiveActionResult,
   UpdateBubblophyAgentTokenLifecycleActionInput,
   UpdateBubblophyAgentTokenLifecycleActionResult,
   UpdateBubblophyIssueContentActionInput,
   UpdateBubblophyIssueContentActionResult,
   UpdateBubblophyIssueStatusActionInput,
   UpdateBubblophyIssueStatusActionResult,
+  UpdateBubblophyProjectContentActionInput,
+  UpdateBubblophyProjectContentActionResult,
 } from '@/app/actions';
 import type { DashboardSnapshot } from '@/lib/dashboard/types';
 import type React from 'react';
@@ -498,7 +502,9 @@ describe('BubblophyDashboard interactions', () => {
 
     const detailPanel = screen.getByLabelText('Issue-Details');
 
-    fireEvent.click(within(detailPanel).getByRole('button', { name: 'Bearbeiten' }));
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Bearbeiten' })
+    );
     fireEvent.change(within(detailPanel).getByLabelText('Titel'), {
       target: { value: 'Plan-Notiz persistent nachschärfen' },
     });
@@ -507,7 +513,9 @@ describe('BubblophyDashboard interactions', () => {
         value: 'Beschreibung wurde über die Server-Action gespeichert.',
       },
     });
-    fireEvent.click(within(detailPanel).getByRole('button', { name: 'Speichern' }));
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Speichern' })
+    );
 
     await waitFor(() => {
       expect(updateIssueContentAction).toHaveBeenCalledWith({
@@ -537,11 +545,12 @@ describe('BubblophyDashboard interactions', () => {
   });
 
   it('cancels human issue edits without calling the server action', () => {
-    const updateIssueContentAction = vi.fn<
-      (
-        input: UpdateBubblophyIssueContentActionInput
-      ) => Promise<UpdateBubblophyIssueContentActionResult>
-    >();
+    const updateIssueContentAction =
+      vi.fn<
+        (
+          input: UpdateBubblophyIssueContentActionInput
+        ) => Promise<UpdateBubblophyIssueContentActionResult>
+      >();
 
     render(
       <BubblophyDashboard
@@ -552,17 +561,23 @@ describe('BubblophyDashboard interactions', () => {
 
     const detailPanel = screen.getByLabelText('Issue-Details');
 
-    fireEvent.click(within(detailPanel).getByRole('button', { name: 'Bearbeiten' }));
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Bearbeiten' })
+    );
     fireEvent.change(within(detailPanel).getByLabelText('Titel'), {
       target: { value: 'Nicht speichern' },
     });
     fireEvent.change(within(detailPanel).getByLabelText('Beschreibung'), {
       target: { value: 'Wird verworfen.' },
     });
-    fireEvent.click(within(detailPanel).getByRole('button', { name: 'Abbrechen' }));
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Abbrechen' })
+    );
 
     expect(updateIssueContentAction).not.toHaveBeenCalled();
-    expect(within(detailPanel).queryByText('Nicht speichern')).not.toBeInTheDocument();
+    expect(
+      within(detailPanel).queryByText('Nicht speichern')
+    ).not.toBeInTheDocument();
     expect(
       within(detailPanel).getByText('Beschreibung aus dem Dashboard-Snapshot.')
     ).toBeInTheDocument();
@@ -592,11 +607,15 @@ describe('BubblophyDashboard interactions', () => {
 
     const detailPanel = screen.getByLabelText('Issue-Details');
 
-    fireEvent.click(within(detailPanel).getByRole('button', { name: 'Bearbeiten' }));
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Bearbeiten' })
+    );
     fireEvent.change(within(detailPanel).getByLabelText('Titel'), {
       target: { value: 'Nicht erlaubt' },
     });
-    fireEvent.click(within(detailPanel).getByRole('button', { name: 'Speichern' }));
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Speichern' })
+    );
 
     await waitFor(() => {
       expect(updateIssueContentAction).toHaveBeenCalledWith({
@@ -1108,6 +1127,8 @@ describe('BubblophyDashboard interactions', () => {
         id: 'project_zen',
         name: 'Zentrum',
         key: 'ZEN',
+        description: 'Neue Projektarbeit.',
+        isArchived: false,
         health: 'stabil',
         openIssues: 0,
         readyIssues: 0,
@@ -1182,6 +1203,301 @@ describe('BubblophyDashboard interactions', () => {
     );
   });
 
+  it('edits the selected project through server-backed management controls', async () => {
+    const updateProjectContentAction = vi.fn<
+      (
+        input: UpdateBubblophyProjectContentActionInput
+      ) => Promise<UpdateBubblophyProjectContentActionResult>
+    >(async () => ({
+      status: 'updated',
+      project: {
+        id: 'project_bubblesverse',
+        name: 'Bubblesverse lokal',
+        key: 'BV',
+        description: 'Projektsteuerung geschärft.',
+        isArchived: false,
+        health: 'stabil',
+        openIssues: 12,
+        readyIssues: 4,
+        blockedIssues: 2,
+        memberCount: 3,
+        agentTokenCount: 1,
+      },
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        updateProjectContentAction={updateProjectContentAction}
+        transitionProjectArchiveAction={async () => ({ status: 'unchanged' })}
+      />
+    );
+
+    const projectsSection = document.getElementById('projects');
+
+    expect(projectsSection).toBeInstanceOf(HTMLElement);
+
+    if (!projectsSection) {
+      throw new Error('Expected the projects section to render.');
+    }
+
+    fireEvent.click(
+      within(projectsSection).getByRole('button', {
+        name: 'Projekt Bubblesverse (BV) auswählen',
+      })
+    );
+    fireEvent.change(within(projectsSection).getByLabelText('Name'), {
+      target: { value: 'Bubblesverse lokal' },
+    });
+    fireEvent.change(within(projectsSection).getByLabelText('Beschreibung'), {
+      target: { value: 'Projektsteuerung geschärft.' },
+    });
+    fireEvent.click(
+      within(projectsSection).getByRole('button', { name: 'Speichern' })
+    );
+
+    await waitFor(() => {
+      expect(updateProjectContentAction).toHaveBeenCalledWith({
+        projectKey: 'BV',
+        name: 'Bubblesverse lokal',
+        description: 'Projektsteuerung geschärft.',
+      });
+    });
+    expect(updateProjectContentAction.mock.calls[0]?.[0]).not.toHaveProperty(
+      'authUserId'
+    );
+    await waitFor(() => {
+      expect(
+        within(projectsSection).getByText('Bubblesverse lokal')
+      ).toBeInTheDocument();
+    });
+    expect(
+      within(projectsSection).getByText('Projektsteuerung geschärft.')
+    ).toBeInTheDocument();
+    expect(screen.getByText('Gefiltert auf Projekt BV.')).toBeInTheDocument();
+  });
+
+  it('requires confirmation before archiving and blocks archived project actions', async () => {
+    const transitionProjectArchiveAction = vi.fn<
+      (
+        input: TransitionBubblophyProjectArchiveActionInput
+      ) => Promise<TransitionBubblophyProjectArchiveActionResult>
+    >(async () => ({
+      status: 'updated',
+      project: {
+        id: 'project_bubblesverse',
+        name: 'Bubblesverse',
+        key: 'BV',
+        description: 'Projektbeschreibung aus der Datenbank.',
+        isArchived: true,
+        health: 'stabil',
+        openIssues: 0,
+        readyIssues: 0,
+        blockedIssues: 0,
+        memberCount: 3,
+        agentTokenCount: 1,
+      },
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        updateProjectContentAction={async () => ({ status: 'unchanged' })}
+        transitionProjectArchiveAction={transitionProjectArchiveAction}
+        createIssueAction={async () => ({ status: 'forbidden' })}
+        createAgentTokenAction={async () => ({ status: 'forbidden' })}
+        updateAgentTokenLifecycleAction={async () => ({ status: 'forbidden' })}
+        transitionAgentRunAction={async () => ({ status: 'forbidden' })}
+      />
+    );
+
+    const projectsSection = document.getElementById('projects');
+
+    expect(projectsSection).toBeInstanceOf(HTMLElement);
+
+    if (!projectsSection) {
+      throw new Error('Expected the projects section to render.');
+    }
+
+    const selectedProjectButton = within(projectsSection).getByRole('button', {
+      name: 'Projekt Bubblesverse (BV) auswählen',
+    });
+
+    fireEvent.click(selectedProjectButton);
+    fireEvent.click(
+      within(projectsSection).getByRole('button', {
+        name: 'Projekt archivieren',
+      })
+    );
+
+    expect(transitionProjectArchiveAction).not.toHaveBeenCalled();
+    expect(
+      within(projectsSection).getByRole('button', {
+        name: 'Endgültig archivieren',
+      })
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      within(projectsSection).getByRole('button', {
+        name: 'Endgültig archivieren',
+      })
+    );
+
+    await waitFor(() => {
+      expect(transitionProjectArchiveAction).toHaveBeenCalledWith({
+        projectKey: 'BV',
+        decision: 'archive',
+      });
+    });
+    expect(
+      transitionProjectArchiveAction.mock.calls[0]?.[0]
+    ).not.toHaveProperty('authUserId');
+    await waitFor(() => {
+      expect(
+        within(projectsSection).getAllByText('Archiviert').length
+      ).toBeGreaterThan(0);
+    });
+    expect(selectedProjectButton).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: /Neues Issue/i })).toBeDisabled();
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent(
+      'Kein Issue ausgewählt.'
+    );
+    expect(
+      screen.queryByRole('button', { name: 'Agent-Token erstellen' })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Pausieren' })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Freigeben' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('restores an archived project without changing the selected project', async () => {
+    const archivedSnapshot = {
+      ...databaseSnapshot,
+      projects: databaseSnapshot.projects.map((project) =>
+        project.key === 'BV'
+          ? {
+              ...project,
+              isArchived: true,
+              health: 'stabil',
+              openIssues: 0,
+              readyIssues: 0,
+              blockedIssues: 0,
+            }
+          : project
+      ),
+    } satisfies DashboardSnapshot;
+    const transitionProjectArchiveAction = vi.fn<
+      (
+        input: TransitionBubblophyProjectArchiveActionInput
+      ) => Promise<TransitionBubblophyProjectArchiveActionResult>
+    >(async () => ({
+      status: 'updated',
+      project: {
+        id: 'project_bubblesverse',
+        name: 'Bubblesverse',
+        key: 'BV',
+        description: 'Projektbeschreibung aus der Datenbank.',
+        isArchived: false,
+        health: 'aufmerksam',
+        openIssues: 12,
+        readyIssues: 4,
+        blockedIssues: 2,
+        memberCount: 3,
+        agentTokenCount: 1,
+      },
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={archivedSnapshot}
+        updateProjectContentAction={async () => ({ status: 'unchanged' })}
+        transitionProjectArchiveAction={transitionProjectArchiveAction}
+      />
+    );
+
+    const projectsSection = document.getElementById('projects');
+
+    expect(projectsSection).toBeInstanceOf(HTMLElement);
+
+    if (!projectsSection) {
+      throw new Error('Expected the projects section to render.');
+    }
+
+    const selectedProjectButton = within(projectsSection).getByRole('button', {
+      name: 'Projekt Bubblesverse (BV) auswählen',
+    });
+
+    fireEvent.click(selectedProjectButton);
+    expect(screen.getByRole('button', { name: /Neues Issue/i })).toBeDisabled();
+
+    fireEvent.click(
+      within(projectsSection).getByRole('button', {
+        name: 'Projekt wiederherstellen',
+      })
+    );
+
+    await waitFor(() => {
+      expect(transitionProjectArchiveAction).toHaveBeenCalledWith({
+        projectKey: 'BV',
+        decision: 'restore',
+      });
+    });
+    await waitFor(() => {
+      expect(within(projectsSection).getByText('Aktiv')).toBeInTheDocument();
+    });
+    expect(selectedProjectButton).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: /Neues Issue/i })).toBeEnabled();
+  });
+
+  it('shows project management denials without mutating local project state', async () => {
+    const updateProjectContentAction = vi.fn<
+      (
+        input: UpdateBubblophyProjectContentActionInput
+      ) => Promise<UpdateBubblophyProjectContentActionResult>
+    >(async () => ({ status: 'forbidden' }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        updateProjectContentAction={updateProjectContentAction}
+        transitionProjectArchiveAction={async () => ({ status: 'unchanged' })}
+      />
+    );
+
+    const projectsSection = document.getElementById('projects');
+
+    expect(projectsSection).toBeInstanceOf(HTMLElement);
+
+    if (!projectsSection) {
+      throw new Error('Expected the projects section to render.');
+    }
+
+    fireEvent.click(
+      within(projectsSection).getByRole('button', {
+        name: 'Projekt Bubblesverse (BV) auswählen',
+      })
+    );
+    fireEvent.change(within(projectsSection).getByLabelText('Name'), {
+      target: { value: 'Verbotene Änderung' },
+    });
+    fireEvent.click(
+      within(projectsSection).getByRole('button', { name: 'Speichern' })
+    );
+
+    expect(await within(projectsSection).findByRole('alert')).toHaveTextContent(
+      'Nur Owner und Maintainer können Projekte verwalten.'
+    );
+    expect(within(projectsSection).getByLabelText('Name')).toHaveValue(
+      'Verbotene Änderung'
+    );
+    expect(
+      within(projectsSection).queryByText('Verbotene Änderung')
+    ).not.toBeInTheDocument();
+  });
+
   it('keeps the project dialog open and shows duplicate errors', async () => {
     const createProjectAction = vi.fn<
       (
@@ -1238,6 +1554,8 @@ describe('BubblophyDashboard interactions', () => {
         id: 'project_zen',
         name: 'Zentrum',
         key: 'ZEN',
+        description: '',
+        isArchived: false,
         health: 'stabil',
         openIssues: 0,
         readyIssues: 0,

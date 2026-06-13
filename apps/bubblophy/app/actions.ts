@@ -36,6 +36,12 @@ import type {
   CreateBubblophyProjectInput,
   CreateBubblophyProjectResult,
 } from '@/lib/projects/create';
+import type {
+  TransitionBubblophyProjectArchiveInput,
+  TransitionBubblophyProjectArchiveResult,
+  UpdateBubblophyProjectContentInput,
+  UpdateBubblophyProjectContentResult,
+} from '@/lib/projects/manage';
 
 import { transitionBubblophyAgentRun } from '@/lib/agent-runs/human-transition';
 import { requestBubblophyAgentRun } from '@/lib/agent-runs/request';
@@ -47,6 +53,10 @@ import { updateBubblophyIssueContent } from '@/lib/issues/edit';
 import { createOrUpdateBubblophyIssuePlanDraft } from '@/lib/issues/plans';
 import { updateBubblophyIssueStatus } from '@/lib/issues/status';
 import { createBubblophyProject } from '@/lib/projects/create';
+import {
+  transitionBubblophyProjectArchive,
+  updateBubblophyProjectContent,
+} from '@/lib/projects/manage';
 
 export type CreateBubblophyIssueActionInput = Omit<
   CreateBubblophyIssueDraftInput,
@@ -85,6 +95,22 @@ export type CreateBubblophyProjectActionInput = Omit<
 >;
 
 export type CreateBubblophyProjectActionResult = CreateBubblophyProjectResult;
+
+export type UpdateBubblophyProjectContentActionInput = Omit<
+  UpdateBubblophyProjectContentInput,
+  'authUserId'
+>;
+
+export type UpdateBubblophyProjectContentActionResult =
+  UpdateBubblophyProjectContentResult;
+
+export type TransitionBubblophyProjectArchiveActionInput = Omit<
+  TransitionBubblophyProjectArchiveInput,
+  'authUserId'
+>;
+
+export type TransitionBubblophyProjectArchiveActionResult =
+  TransitionBubblophyProjectArchiveResult;
 
 export type CreateBubblophyAgentTokenActionInput = Omit<
   CreateBubblophyAgentTokenInput,
@@ -218,6 +244,46 @@ export async function createBubblophyProjectAction(
   const session = await requireBubblophySession({ nextPath: '/' });
 
   return createBubblophyProject({
+    ...input,
+    authUserId: session.authUserId,
+  });
+}
+
+/**
+ * Persists human project title/description edits for this session.
+ *
+ * The client never provides an auth user ID. The service enforces
+ * owner/maintainer roles, no-op detection, and project audit metadata.
+ *
+ * @param input Project key, name, and optional description.
+ * @returns Structured result for project management controls.
+ */
+export async function updateBubblophyProjectContentAction(
+  input: UpdateBubblophyProjectContentActionInput
+): Promise<UpdateBubblophyProjectContentActionResult> {
+  const session = await requireBubblophySession({ nextPath: '/' });
+
+  return updateBubblophyProjectContent({
+    ...input,
+    authUserId: session.authUserId,
+  });
+}
+
+/**
+ * Archives or restores a project for the current human session.
+ *
+ * The client never provides an auth user ID. The service enforces
+ * owner/maintainer roles and writes explicit project lifecycle audit metadata.
+ *
+ * @param input Project key and archive lifecycle decision.
+ * @returns Structured result for project management controls.
+ */
+export async function transitionBubblophyProjectArchiveAction(
+  input: TransitionBubblophyProjectArchiveActionInput
+): Promise<TransitionBubblophyProjectArchiveActionResult> {
+  const session = await requireBubblophySession({ nextPath: '/' });
+
+  return transitionBubblophyProjectArchive({
     ...input,
     authUserId: session.authUserId,
   });

@@ -5,9 +5,11 @@ import type {
   CreateBubblophyProjectActionInput,
   RequestBubblophyAgentRunActionInput,
   TransitionBubblophyAgentRunActionInput,
+  TransitionBubblophyProjectArchiveActionInput,
   UpdateBubblophyAgentTokenLifecycleActionInput,
   UpdateBubblophyIssueContentActionInput,
   UpdateBubblophyIssueStatusActionInput,
+  UpdateBubblophyProjectContentActionInput,
 } from '@/app/actions';
 import type { TransitionBubblophyAgentRunInput } from '@/lib/agent-runs/human-transition';
 import type { RequestBubblophyAgentRunInput } from '@/lib/agent-runs/request';
@@ -18,6 +20,10 @@ import type { UpdateBubblophyIssueContentInput } from '@/lib/issues/edit';
 import type { CreateOrUpdateBubblophyIssuePlanDraftInput } from '@/lib/issues/plans';
 import type { UpdateBubblophyIssueStatusInput } from '@/lib/issues/status';
 import type { CreateBubblophyProjectInput } from '@/lib/projects/create';
+import type {
+  TransitionBubblophyProjectArchiveInput,
+  UpdateBubblophyProjectContentInput,
+} from '@/lib/projects/manage';
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -27,6 +33,8 @@ const updateBubblophyIssueContentMock = vi.fn();
 const createBubblophyIssuePlanDraftMock = vi.fn();
 const updateBubblophyIssueStatusMock = vi.fn();
 const createBubblophyProjectMock = vi.fn();
+const updateBubblophyProjectContentMock = vi.fn();
+const transitionBubblophyProjectArchiveMock = vi.fn();
 const createBubblophyAgentTokenMock = vi.fn();
 const updateBubblophyAgentTokenLifecycleMock = vi.fn();
 const requestBubblophyAgentRunMock = vi.fn();
@@ -63,6 +71,14 @@ vi.mock('@/lib/projects/create', () => ({
     createBubblophyProjectMock(input),
 }));
 
+vi.mock('@/lib/projects/manage', () => ({
+  updateBubblophyProjectContent: (input: UpdateBubblophyProjectContentInput) =>
+    updateBubblophyProjectContentMock(input),
+  transitionBubblophyProjectArchive: (
+    input: TransitionBubblophyProjectArchiveInput
+  ) => transitionBubblophyProjectArchiveMock(input),
+}));
+
 vi.mock('@/lib/agent-tokens/create', () => ({
   createBubblophyAgentToken: (input: CreateBubblophyAgentTokenInput) =>
     createBubblophyAgentTokenMock(input),
@@ -92,6 +108,8 @@ describe('createBubblophyIssueAction', () => {
     createBubblophyIssuePlanDraftMock.mockReset();
     updateBubblophyIssueStatusMock.mockReset();
     createBubblophyProjectMock.mockReset();
+    updateBubblophyProjectContentMock.mockReset();
+    transitionBubblophyProjectArchiveMock.mockReset();
     createBubblophyAgentTokenMock.mockReset();
     updateBubblophyAgentTokenLifecycleMock.mockReset();
     transitionBubblophyAgentRunMock.mockReset();
@@ -356,6 +374,8 @@ describe('createBubblophyProjectAction', () => {
         id: 'project_bv',
         name: 'Bubblesverse',
         key: 'BV',
+        description: 'Projektarbeit',
+        isArchived: false,
         health: 'stabil',
         openIssues: 0,
         readyIssues: 0,
@@ -390,12 +410,146 @@ describe('createBubblophyProjectAction', () => {
         id: 'project_bv',
         name: 'Bubblesverse',
         key: 'BV',
+        description: 'Projektarbeit',
+        isArchived: false,
         health: 'stabil',
         openIssues: 0,
         readyIssues: 0,
         blockedIssues: 0,
         memberCount: 1,
         agentTokenCount: 0,
+      },
+    });
+  });
+});
+
+describe('updateBubblophyProjectContentAction', () => {
+  beforeEach(() => {
+    requireBubblophySessionMock.mockReset();
+    updateBubblophyProjectContentMock.mockReset();
+  });
+
+  it('resolves the auth user server-side instead of accepting a client authUserId', async () => {
+    requireBubblophySessionMock.mockResolvedValue({
+      authUserId: 'user_server',
+      email: 'owner@example.test',
+      user: {},
+    });
+    updateBubblophyProjectContentMock.mockResolvedValue({
+      status: 'updated',
+      project: {
+        id: 'project_bv',
+        name: 'Bubblesverse lokal',
+        key: 'BV',
+        description: 'Projektbeschreibung aktualisiert.',
+        isArchived: false,
+        health: 'stabil',
+        openIssues: 2,
+        readyIssues: 1,
+        blockedIssues: 0,
+        memberCount: 2,
+        agentTokenCount: 1,
+      },
+    });
+
+    const { updateBubblophyProjectContentAction } =
+      await import('@/app/actions');
+    const result = await updateBubblophyProjectContentAction({
+      authUserId: 'user_client_spoof',
+      projectKey: 'BV',
+      name: 'Bubblesverse lokal',
+      description: 'Projektbeschreibung aktualisiert.',
+    } as UpdateBubblophyProjectContentActionInput & { authUserId: string });
+
+    expect(requireBubblophySessionMock).toHaveBeenCalledWith({
+      nextPath: '/',
+    });
+    expect(updateBubblophyProjectContentMock).toHaveBeenCalledWith({
+      authUserId: 'user_server',
+      projectKey: 'BV',
+      name: 'Bubblesverse lokal',
+      description: 'Projektbeschreibung aktualisiert.',
+    });
+    expect(result).toEqual({
+      status: 'updated',
+      project: {
+        id: 'project_bv',
+        name: 'Bubblesverse lokal',
+        key: 'BV',
+        description: 'Projektbeschreibung aktualisiert.',
+        isArchived: false,
+        health: 'stabil',
+        openIssues: 2,
+        readyIssues: 1,
+        blockedIssues: 0,
+        memberCount: 2,
+        agentTokenCount: 1,
+      },
+    });
+  });
+});
+
+describe('transitionBubblophyProjectArchiveAction', () => {
+  beforeEach(() => {
+    requireBubblophySessionMock.mockReset();
+    transitionBubblophyProjectArchiveMock.mockReset();
+  });
+
+  it('resolves the auth user server-side for archive decisions', async () => {
+    requireBubblophySessionMock.mockResolvedValue({
+      authUserId: 'user_server',
+      email: 'owner@example.test',
+      user: {},
+    });
+    transitionBubblophyProjectArchiveMock.mockResolvedValue({
+      status: 'updated',
+      project: {
+        id: 'project_bv',
+        name: 'Bubblesverse',
+        key: 'BV',
+        description: 'Projektarbeit',
+        isArchived: true,
+        health: 'stabil',
+        openIssues: 0,
+        readyIssues: 0,
+        blockedIssues: 0,
+        memberCount: 2,
+        agentTokenCount: 1,
+      },
+    });
+
+    const { transitionBubblophyProjectArchiveAction } =
+      await import('@/app/actions');
+    const result = await transitionBubblophyProjectArchiveAction({
+      authUserId: 'user_client_spoof',
+      projectKey: 'BV',
+      decision: 'archive',
+    } as TransitionBubblophyProjectArchiveActionInput & {
+      authUserId: string;
+    });
+
+    expect(requireBubblophySessionMock).toHaveBeenCalledWith({
+      nextPath: '/',
+    });
+    expect(transitionBubblophyProjectArchiveMock).toHaveBeenCalledWith({
+      authUserId: 'user_server',
+      projectKey: 'BV',
+      decision: 'archive',
+    });
+    expect(result).toEqual({
+      status: 'updated',
+      project: {
+        id: 'project_bv',
+        name: 'Bubblesverse',
+        key: 'BV',
+        description: 'Projektarbeit',
+        isArchived: true,
+        health: 'stabil',
+        openIssues: 0,
+        readyIssues: 0,
+        blockedIssues: 0,
+        memberCount: 2,
+        agentTokenCount: 1,
       },
     });
   });

@@ -94,3 +94,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added server-backed issue title and description editing with contributor role
   checks, no-op protection, explicit issue update audit metadata, and inline
   dashboard feedback for forbidden saves.
+- Added server-backed project editing plus archive/restore controls for
+  owner/maintainer users, with visible archived-project state, explicit
+  `project_updated` audit metadata, and UI/server guards that keep archived
+  projects out of operative issue, run, and token mutation paths.

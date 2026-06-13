@@ -25,6 +25,7 @@ export interface BubblophyProjectIssuePersistenceRow {
   projectId: string;
   projectName: string;
   projectKey: string;
+  projectDescription: string;
   projectIsArchived: boolean;
   projectMemberCount: number;
   activeAgentTokenCount: number;
@@ -126,6 +127,8 @@ interface MutableProjectSummary {
   id: string;
   name: string;
   key: string;
+  description: string;
+  isArchived: boolean;
   openIssues: number;
   readyIssues: number;
   blockedIssues: number;
@@ -260,16 +263,13 @@ export function buildBubblophyProjectIssueSnapshot(
   const issues: IssueSummary[] = [];
 
   for (const row of rows) {
-    if (row.projectIsArchived) {
-      continue;
-    }
-
     const project =
       projectMap.get(row.projectId) ?? createMutableProjectSummary(row);
 
     projectMap.set(row.projectId, project);
 
     if (
+      row.projectIsArchived ||
       row.issueDatabaseId === null ||
       row.issueNumber === null ||
       row.issueTitle === null ||
@@ -507,6 +507,8 @@ function createMutableProjectSummary(
     id: row.projectId,
     name: row.projectName,
     key: row.projectKey,
+    description: row.projectDescription,
+    isArchived: row.projectIsArchived,
     openIssues: 0,
     readyIssues: 0,
     blockedIssues: 0,

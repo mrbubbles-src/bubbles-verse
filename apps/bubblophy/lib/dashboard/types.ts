@@ -30,6 +30,8 @@ export interface ProjectSummary {
   id: string;
   name: string;
   key: string;
+  description?: string;
+  isArchived: boolean;
   health: ProjectHealth;
   openIssues: number;
   readyIssues: number;

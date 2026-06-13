@@ -21,6 +21,7 @@ function makeRow(
     projectId: 'project_bubblesverse',
     projectName: 'Bubblesverse',
     projectKey: 'BV',
+    projectDescription: 'Projektbeschreibung aus dem Read-Pfad.',
     projectIsArchived: false,
     projectMemberCount: 2,
     activeAgentTokenCount: 1,

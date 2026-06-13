@@ -23,6 +23,10 @@ dauerhaften Autopilot-Rechte.
 - Issue-Inhaltsänderungen sind serverseitig an die Issue-Projektbindung
   gekoppelt. Owner, Maintainer:innen und Members dürfen Titel/Beschreibung
   ändern; Viewer bleiben lesend.
+- Projektverwaltung ist enger: Nur Owner und Maintainer dürfen
+  Name/Beschreibung ändern oder Projekte archivieren/wiederherstellen.
+  Archivierte Projekte bleiben sichtbar, sind aber keine aktive
+  Mutationsfläche.
 - Request-bezogene Session-Checks dürfen React `cache()` nutzen, aber nicht in
   `use cache` landen.
 - Die aktuelle MVP-Route `/` nutzt noch Snapshot-Daten, ist aber nicht mehr
@@ -67,6 +71,9 @@ dauerhaften Autopilot-Rechte.
   `changedFields`) statt stiller Datenänderung.
 - Projektweite Änderungen wie `agent_token_created`, spätere Token-Revoke- und
   Run-Freigabe-Ereignisse landen in `bubblophy_project_events`.
+- Projektänderungen und Archivstatuswechsel nutzen `project_updated` mit
+  eindeutiger Payload (`entity: "project"`, `action`, `changedFields`) und ohne
+  kopierte Projektinhalte.
 - `bubblophy_project_events` ist projektgebunden (`project_id NOT NULL`) und
   hält nur öffentliche Metadaten. Token-Plaintext und Token-Hash gehören weder
   in Audit-Payloads noch in Logs.

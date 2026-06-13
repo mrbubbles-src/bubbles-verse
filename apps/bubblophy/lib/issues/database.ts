@@ -155,15 +155,11 @@ async function selectBubblophyProjectIssueRowsForProjectIds(
           id: bubblophyProjects.id,
           key: bubblophyProjects.key,
           name: bubblophyProjects.name,
+          description: bubblophyProjects.description,
           isArchived: bubblophyProjects.isArchived,
         })
         .from(bubblophyProjects)
-        .where(
-          and(
-            inArray(bubblophyProjects.id, projectIds),
-            eq(bubblophyProjects.isArchived, false)
-          )
-        )
+        .where(inArray(bubblophyProjects.id, projectIds))
         .orderBy(asc(bubblophyProjects.key)),
       db
         .select({
@@ -207,7 +203,9 @@ async function selectBubblophyProjectIssueRowsForProjectIds(
     ]
   );
 
-  const visibleProjectIds = projectRows.map((project) => project.id);
+  const visibleProjectIds = projectRows
+    .filter((project) => !project.isArchived)
+    .map((project) => project.id);
   const visibleIssueIds = issueRows
     .filter((issue) => visibleProjectIds.includes(issue.projectId))
     .map((issue) => issue.id);
@@ -426,6 +424,7 @@ function buildMembershipRows(input: {
     id: string;
     key: string;
     name: string;
+    description: string;
     isArchived: boolean;
   }[];
   issues: {
@@ -486,6 +485,7 @@ function createProjectIssueMembershipRow(input: {
     id: string;
     key: string;
     name: string;
+    description: string;
     isArchived: boolean;
   };
   memberCount: number;
@@ -507,6 +507,7 @@ function createProjectIssueMembershipRow(input: {
     projectId: input.project.id,
     projectName: input.project.name,
     projectKey: input.project.key,
+    projectDescription: input.project.description,
     projectIsArchived: input.project.isArchived,
     projectMemberCount: input.memberCount,
     activeAgentTokenCount: input.tokenCount,

@@ -33,6 +33,10 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   weiter klar markierte lokale Drafts.
 - Der Projektbereich bietet bei aktiver Datenbankquelle `Neues Projekt`; bei
   Sample- oder Fallback-Daten wird kein DB-Projektbutton angeboten.
+- Owner und Maintainer können im Projektbereich Name/Beschreibung bearbeiten
+  sowie Projekte über `is_archived` archivieren oder wiederherstellen.
+  Archivierte Projekte bleiben sichtbar markiert, wirken aber nicht als aktive
+  Arbeitsfläche für neue Issues, Run-Anfragen oder Agent-Token-Aktionen.
 - In einer leeren Datenbank führt der UI-Flow von `Neues Projekt` direkt in
   den ausgewählten Projektkontext und bietet dort das erste persistierte Issue
   für dieses Projekt an.
@@ -153,6 +157,14 @@ bun run build
 - Persistierte Projekt-Erfassung läuft serverseitig über die menschliche
   Session, schreibt Projekt plus Owner-Mitgliedschaft und startet keine
   Agent-Runs.
+- Persistierte Projektänderungen und Archivierung laufen serverseitig über
+  Owner/Maintainer-Mitgliedschaft. Sie schreiben `project_updated`-Events mit
+  klarer Payload (`entity: "project"`, `action`, `changedFields`) ohne
+  Inhaltsduplikate.
+- Archivierte Projekte werden serverseitig für operative Mutationen
+  ausgeschlossen: Issue Create/Edit/Status/Plan, Run Request/Human Transition,
+  Agent-Run-Tokenupdates und Agent-Token Create/Lifecycle prüfen vorhandene
+  Projektbindung gegen nicht archivierte Projekte.
 - Persistierte Agent-Token-Erstellung läuft serverseitig über Owner- oder
   Maintainer-Mitgliedschaft, schreibt nur den Token-Hash und startet keine
   Agent-Runs. Projektweite `agent_token_created`-Audit-Events landen in

@@ -3,9 +3,11 @@ import type {
   createBubblophyIssueAction,
   createBubblophyIssuePlanAction,
   createBubblophyProjectAction,
-  updateBubblophyIssueContentAction,
+  transitionBubblophyProjectArchiveAction,
   updateBubblophyAgentTokenLifecycleAction,
+  updateBubblophyIssueContentAction,
   updateBubblophyIssueStatusAction,
+  updateBubblophyProjectContentAction,
 } from '@/app/actions';
 import type { BubblophyDashboardSnapshotInput } from '@/lib/dashboard/data';
 import type { DashboardSnapshot } from '@/lib/dashboard/types';
@@ -22,6 +24,8 @@ const BubblophyDashboardMock = vi.fn(
     createIssuePlanAction?: typeof createBubblophyIssuePlanAction;
     updateIssueStatusAction?: typeof updateBubblophyIssueStatusAction;
     createProjectAction?: typeof createBubblophyProjectAction;
+    updateProjectContentAction?: typeof updateBubblophyProjectContentAction;
+    transitionProjectArchiveAction?: typeof transitionBubblophyProjectArchiveAction;
     createAgentTokenAction?: typeof createBubblophyAgentTokenAction;
     updateAgentTokenLifecycleAction?: typeof updateBubblophyAgentTokenLifecycleAction;
   }) => <div data-testid="dashboard">{props.snapshot.projects[0]?.name}</div>
@@ -54,6 +58,8 @@ vi.mock('@/components/dashboard/bubblophy-dashboard', () => ({
     createIssuePlanAction?: typeof createBubblophyIssuePlanAction;
     updateIssueStatusAction?: typeof updateBubblophyIssueStatusAction;
     createProjectAction?: typeof createBubblophyProjectAction;
+    updateProjectContentAction?: typeof updateBubblophyProjectContentAction;
+    transitionProjectArchiveAction?: typeof transitionBubblophyProjectArchiveAction;
     createAgentTokenAction?: typeof createBubblophyAgentTokenAction;
     updateAgentTokenLifecycleAction?: typeof updateBubblophyAgentTokenLifecycleAction;
   }) => BubblophyDashboardMock(props),
@@ -78,6 +84,8 @@ describe('Bubblophy home page', () => {
           id: 'project',
           name: 'Allowed Project',
           key: 'AP',
+          description: 'Persistiertes Testprojekt.',
+          isArchived: false,
           health: 'stabil',
           openIssues: 1,
           readyIssues: 1,
@@ -114,10 +122,18 @@ describe('Bubblophy home page', () => {
     });
     expect(element.props.snapshot).toBe(snapshot);
     expect(element.props.createIssueAction).toEqual(expect.any(Function));
-    expect(element.props.updateIssueContentAction).toEqual(expect.any(Function));
+    expect(element.props.updateIssueContentAction).toEqual(
+      expect.any(Function)
+    );
     expect(element.props.createIssuePlanAction).toEqual(expect.any(Function));
     expect(element.props.updateIssueStatusAction).toEqual(expect.any(Function));
     expect(element.props.createProjectAction).toEqual(expect.any(Function));
+    expect(element.props.updateProjectContentAction).toEqual(
+      expect.any(Function)
+    );
+    expect(element.props.transitionProjectArchiveAction).toEqual(
+      expect.any(Function)
+    );
     expect(element.props.createAgentTokenAction).toEqual(expect.any(Function));
     expect(element.props.updateAgentTokenLifecycleAction).toEqual(
       expect.any(Function)
