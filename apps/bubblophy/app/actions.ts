@@ -1,6 +1,10 @@
 'use server';
 
 import type {
+  RequestBubblophyAgentRunInput,
+  RequestBubblophyAgentRunResult,
+} from '@/lib/agent-runs/request';
+import type {
   CreateBubblophyAgentTokenInput,
   CreateBubblophyAgentTokenResult,
 } from '@/lib/agent-tokens/create';
@@ -21,6 +25,7 @@ import type {
   CreateBubblophyProjectResult,
 } from '@/lib/projects/create';
 
+import { requestBubblophyAgentRun } from '@/lib/agent-runs/request';
 import { createBubblophyAgentToken } from '@/lib/agent-tokens/create';
 import { requireBubblophySession } from '@/lib/auth/session';
 import { createBubblophyIssueDraft } from '@/lib/issues/create';
@@ -65,6 +70,14 @@ export type CreateBubblophyAgentTokenActionInput = Omit<
 
 export type CreateBubblophyAgentTokenActionResult =
   CreateBubblophyAgentTokenResult;
+
+export type RequestBubblophyAgentRunActionInput = Omit<
+  RequestBubblophyAgentRunInput,
+  'authUserId'
+>;
+
+export type RequestBubblophyAgentRunActionResult =
+  RequestBubblophyAgentRunResult;
 
 /**
  * Persists a human-created Bubblophy issue draft for the current session.
@@ -166,6 +179,26 @@ export async function createBubblophyAgentTokenAction(
   const session = await requireBubblophySession({ nextPath: '/' });
 
   return createBubblophyAgentToken({
+    ...input,
+    authUserId: session.authUserId,
+  });
+}
+
+/**
+ * Requests a human-controlled agent run for the current session.
+ *
+ * The client never provides an auth user ID. The action records a waiting run
+ * request and audit event only; it does not start an agent or execute tools.
+ *
+ * @param input Issue key, selected token ID, and optional instructions.
+ * @returns Structured result for the future dashboard run request UI.
+ */
+export async function requestBubblophyAgentRunAction(
+  input: RequestBubblophyAgentRunActionInput
+): Promise<RequestBubblophyAgentRunActionResult> {
+  const session = await requireBubblophySession({ nextPath: '/' });
+
+  return requestBubblophyAgentRun({
     ...input,
     authUserId: session.authUserId,
   });

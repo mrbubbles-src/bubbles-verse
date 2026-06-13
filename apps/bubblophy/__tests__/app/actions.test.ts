@@ -3,8 +3,10 @@ import type {
   CreateBubblophyIssueActionInput,
   CreateBubblophyIssuePlanActionInput,
   CreateBubblophyProjectActionInput,
+  RequestBubblophyAgentRunActionInput,
   UpdateBubblophyIssueStatusActionInput,
 } from '@/app/actions';
+import type { RequestBubblophyAgentRunInput } from '@/lib/agent-runs/request';
 import type { CreateBubblophyAgentTokenInput } from '@/lib/agent-tokens/create';
 import type { CreateBubblophyIssueDraftInput } from '@/lib/issues/create';
 import type { CreateOrUpdateBubblophyIssuePlanDraftInput } from '@/lib/issues/plans';
@@ -19,6 +21,7 @@ const createBubblophyIssuePlanDraftMock = vi.fn();
 const updateBubblophyIssueStatusMock = vi.fn();
 const createBubblophyProjectMock = vi.fn();
 const createBubblophyAgentTokenMock = vi.fn();
+const requestBubblophyAgentRunMock = vi.fn();
 
 vi.mock('@/lib/auth/session', () => ({
   requireBubblophySession: (options: { nextPath?: string }) =>
@@ -49,6 +52,11 @@ vi.mock('@/lib/projects/create', () => ({
 vi.mock('@/lib/agent-tokens/create', () => ({
   createBubblophyAgentToken: (input: CreateBubblophyAgentTokenInput) =>
     createBubblophyAgentTokenMock(input),
+}));
+
+vi.mock('@/lib/agent-runs/request', () => ({
+  requestBubblophyAgentRun: (input: RequestBubblophyAgentRunInput) =>
+    requestBubblophyAgentRunMock(input),
 }));
 
 describe('createBubblophyIssueAction', () => {
@@ -357,6 +365,61 @@ describe('createBubblophyAgentTokenAction', () => {
         state: 'aktiv',
         lastUsedAt: 'noch nie verwendet',
         plaintextToken: 'bubblophy_agent_plaintext',
+      },
+    });
+  });
+});
+
+describe('requestBubblophyAgentRunAction', () => {
+  beforeEach(() => {
+    requireBubblophySessionMock.mockReset();
+    requestBubblophyAgentRunMock.mockReset();
+  });
+
+  it('resolves the auth user server-side instead of accepting a client authUserId', async () => {
+    requireBubblophySessionMock.mockResolvedValue({
+      authUserId: 'user_server',
+      email: 'owner@example.test',
+      user: {},
+    });
+    requestBubblophyAgentRunMock.mockResolvedValue({
+      status: 'requested',
+      run: {
+        id: 'run_bv_12',
+        issueId: 'BV-12',
+        agentLabel: 'codex-local-lio',
+        state: 'wartet',
+        requestedBy: 'Mensch',
+        lastEvent: 'Anfrage gespeichert: Nur vorbereiten.',
+      },
+    });
+
+    const { requestBubblophyAgentRunAction } = await import('@/app/actions');
+    const result = await requestBubblophyAgentRunAction({
+      authUserId: 'user_client_spoof',
+      issueId: 'BV-12',
+      agentTokenId: 'token_codex',
+      instructions: 'Nur vorbereiten.',
+    } as RequestBubblophyAgentRunActionInput & { authUserId: string });
+
+    expect(requireBubblophySessionMock).toHaveBeenCalledWith({
+      nextPath: '/',
+    });
+    expect(requestBubblophyAgentRunMock).toHaveBeenCalledWith({
+      authUserId: 'user_server',
+      issueId: 'BV-12',
+      agentTokenId: 'token_codex',
+      instructions: 'Nur vorbereiten.',
+    });
+    expect(result).toEqual({
+      status: 'requested',
+      run: {
+        id: 'run_bv_12',
+        issueId: 'BV-12',
+        agentLabel: 'codex-local-lio',
+        state: 'wartet',
+        requestedBy: 'Mensch',
+        lastEvent: 'Anfrage gespeichert: Nur vorbereiten.',
       },
     });
   });
