@@ -19,6 +19,7 @@
       "name": "bubblophy",
       "version": "0.1.0",
       "dependencies": {
+        "@bubbles/database-access": "workspace:*",
         "@bubbles/supabase-access": "workspace:*",
         "@bubbles/theme": "workspace:*",
         "@bubbles/ui": "workspace:*",
@@ -55,6 +56,7 @@
       "name": "dashboard",
       "version": "1.0.0",
       "dependencies": {
+        "@bubbles/database-access": "workspace:*",
         "@bubbles/footer": "workspace:*",
         "@bubbles/markdown-editor": "workspace:*",
         "@bubbles/markdown-renderer": "workspace:*",
@@ -268,6 +270,20 @@
         "shiki": "catalog:markdown",
         "tailwindcss": "catalog:tooling",
         "typescript": "catalog:tooling",
+      },
+    },
+    "packages/database-access": {
+      "name": "@bubbles/database-access",
+      "version": "0.1.0",
+      "dependencies": {
+        "postgres": "catalog:database",
+      },
+      "devDependencies": {
+        "@bubbles/eslint-config": "workspace:*",
+        "@bubbles/typescript-config": "workspace:*",
+        "eslint": "catalog:tooling",
+        "typescript": "catalog:tooling",
+        "vitest": "catalog:testing",
       },
     },
     "packages/eslint-config": {
@@ -646,6 +662,8 @@
     "@bcoe/v8-coverage": ["@bcoe/v8-coverage@1.0.2", "", {}, "sha512-6zABk/ECA/QYSCQ1NGiVwwbQerUCZ+TQbp64Q3AgmfNvurHH0j8TtXa1qbShXA6qqkpAj4V5W8pP6mLe1mcMqA=="],
 
     "@bramus/specificity": ["@bramus/specificity@2.4.2", "", { "dependencies": { "css-tree": "^3.0.0" }, "bin": { "specificity": "bin/cli.js" } }, "sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw=="],
+
+    "@bubbles/database-access": ["@bubbles/database-access@workspace:packages/database-access"],
 
     "@bubbles/eslint-config": ["@bubbles/eslint-config@workspace:packages/eslint-config"],
 

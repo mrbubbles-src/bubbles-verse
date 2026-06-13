@@ -1,0 +1,25 @@
+{
+  "name": "@bubbles/database-access",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "lint": "eslint",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./postgres": "./src/postgres.ts"
+  },
+  "dependencies": {
+    "postgres": "catalog:database"
+  },
+  "devDependencies": {
+    "@bubbles/eslint-config": "workspace:*",
+    "@bubbles/typescript-config": "workspace:*",
+    "eslint": "catalog:tooling",
+    "typescript": "catalog:tooling",
+    "vitest": "catalog:testing"
+  }
+}

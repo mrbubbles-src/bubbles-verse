@@ -14,6 +14,7 @@
     "test:run": "bun --bun vitest run"
   },
   "dependencies": {
+    "@bubbles/database-access": "workspace:*",
     "@bubbles/supabase-access": "workspace:*",
     "@bubbles/theme": "workspace:*",
     "@bubbles/ui": "workspace:*",

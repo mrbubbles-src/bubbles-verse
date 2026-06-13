@@ -13,6 +13,7 @@
     "test:run": "bun --bun vitest run"
   },
   "dependencies": {
+    "@bubbles/database-access": "workspace:*",
     "@bubbles/footer": "workspace:*",
     "@bubbles/markdown-editor": "workspace:*",
     "@bubbles/markdown-renderer": "workspace:*",

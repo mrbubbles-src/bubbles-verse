@@ -1,13 +1,12 @@
+import type { BubblesPostgresClient } from '@bubbles/database-access/postgres';
+
+import { getCachedBubblesPostgresClient } from '@bubbles/database-access/postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
 
 import * as relations from './relations';
 import * as schema from './schema';
 
-type DashboardSqlClient = ReturnType<typeof postgres>;
-
 declare global {
-  var __dashboardSqlClient: DashboardSqlClient | undefined;
   var __dashboardDbClient:
     | ReturnType<typeof createDashboardDbClient>
     | undefined;
@@ -23,11 +22,9 @@ declare global {
  * @returns One reusable Postgres.js client for the whole process.
  */
 function createDashboardSqlClient() {
-  return postgres(process.env.DATABASE_URL!, {
-    prepare: false,
-    idle_timeout: 20,
-    connect_timeout: 10,
-    max_lifetime: 60 * 30,
+  return getCachedBubblesPostgresClient({
+    appKey: 'dashboard',
+    databaseUrl: process.env.DATABASE_URL!,
   });
 }
 
@@ -37,7 +34,7 @@ function createDashboardSqlClient() {
  * @param sqlClient Shared Postgres.js transport instance.
  * @returns Drizzle client configured with the dashboard schema.
  */
-function createDashboardDbClient(sqlClient: DashboardSqlClient) {
+function createDashboardDbClient(sqlClient: BubblesPostgresClient) {
   return drizzle(sqlClient, {
     schema: { ...schema, ...relations },
   });
@@ -50,10 +47,7 @@ function createDashboardDbClient(sqlClient: DashboardSqlClient) {
  * still working the same way in production.
  */
 function getDashboardDb() {
-  const sqlClient =
-    globalThis.__dashboardSqlClient ?? createDashboardSqlClient();
-
-  globalThis.__dashboardSqlClient = sqlClient;
+  const sqlClient = createDashboardSqlClient();
 
   const dbClient =
     globalThis.__dashboardDbClient ?? createDashboardDbClient(sqlClient);
