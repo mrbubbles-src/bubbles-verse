@@ -1,4 +1,5 @@
 import type {
+  createBubblophyAgentTokenAction,
   createBubblophyIssueAction,
   createBubblophyIssuePlanAction,
   createBubblophyProjectAction,
@@ -16,6 +17,7 @@ const BubblophyDashboardMock = vi.fn(
     createIssueAction?: typeof createBubblophyIssueAction;
     createIssuePlanAction?: typeof createBubblophyIssuePlanAction;
     createProjectAction?: typeof createBubblophyProjectAction;
+    createAgentTokenAction?: typeof createBubblophyAgentTokenAction;
   }) => <div data-testid="dashboard">{props.snapshot.projects[0]?.name}</div>
 );
 
@@ -44,6 +46,7 @@ vi.mock('@/components/dashboard/bubblophy-dashboard', () => ({
     createIssueAction?: typeof createBubblophyIssueAction;
     createIssuePlanAction?: typeof createBubblophyIssuePlanAction;
     createProjectAction?: typeof createBubblophyProjectAction;
+    createAgentTokenAction?: typeof createBubblophyAgentTokenAction;
   }) => BubblophyDashboardMock(props),
 }));
 
@@ -104,6 +107,7 @@ describe('Bubblophy home page', () => {
     expect(element.props.createIssueAction).toEqual(expect.any(Function));
     expect(element.props.createIssuePlanAction).toEqual(expect.any(Function));
     expect(element.props.createProjectAction).toEqual(expect.any(Function));
+    expect(element.props.createAgentTokenAction).toEqual(expect.any(Function));
   });
 
   it('does not load dashboard data when the session gate redirects', async () => {

@@ -54,7 +54,10 @@ dauerhaften Autopilot-Rechte.
 
 ## Audit und RLS
 
-- Relevante Änderungen landen in `bubblophy_issue_events`.
+- Issue- und Plan-Änderungen landen in `bubblophy_issue_events`.
+- Projektweite Änderungen wie `agent_token_created` brauchen noch ein eigenes
+  Audit-Modell, damit spätere RLS-Policies nicht an issue-zentrierten Events
+  vorbeigebogen werden.
 - Events erfassen entweder `actor_auth_user_id` oder `actor_agent_token_id`.
 - RLS-Policies sollen Projektmitgliedschaften für Menschen und Projektgrenzen
   für Agent-Tokens erzwingen.

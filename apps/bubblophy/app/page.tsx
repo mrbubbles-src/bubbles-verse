@@ -6,6 +6,7 @@ import { Suspense } from 'react';
 import { connection } from 'next/server';
 
 import {
+  createBubblophyAgentTokenAction,
   createBubblophyIssueAction,
   createBubblophyIssuePlanAction,
   createBubblophyProjectAction,
@@ -67,6 +68,7 @@ export async function ProtectedBubblophyDashboard() {
       createIssueAction={createBubblophyIssueAction}
       createIssuePlanAction={createBubblophyIssuePlanAction}
       createProjectAction={createBubblophyProjectAction}
+      createAgentTokenAction={createBubblophyAgentTokenAction}
     />
   );
 }

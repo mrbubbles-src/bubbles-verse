@@ -1,4 +1,6 @@
 import type {
+  CreateBubblophyAgentTokenActionInput,
+  CreateBubblophyAgentTokenActionResult,
   CreateBubblophyIssueActionInput,
   CreateBubblophyIssueActionResult,
   CreateBubblophyIssuePlanActionInput,
@@ -364,6 +366,14 @@ describe('BubblophyDashboard interactions', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('does not expose fake agent token creation for sample snapshots', () => {
+    render(<BubblophyDashboard snapshot={dashboardSnapshot} />);
+
+    expect(
+      screen.queryByRole('button', { name: 'Agent-Token erstellen' })
+    ).not.toBeInTheDocument();
+  });
+
   it('creates and selects a database project from the projects panel', async () => {
     const createProjectAction = vi.fn<
       (
@@ -489,6 +499,81 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       screen.queryByRole('button', { name: /^Doppeltes Projekt\s+DP/i })
     ).not.toBeInTheDocument();
+  });
+
+  it('creates an agent token and shows the plaintext only in the dialog', async () => {
+    const createAgentTokenAction = vi.fn<
+      (
+        input: CreateBubblophyAgentTokenActionInput
+      ) => Promise<CreateBubblophyAgentTokenActionResult>
+    >(async () => ({
+      status: 'created',
+      token: {
+        id: 'token_codex_local',
+        label: 'Codex lokal',
+        projectKey: 'BV',
+        scopes: ['projects:read', 'issues:read'],
+        state: 'aktiv',
+        lastUsedAt: 'noch nie verwendet',
+        plaintextToken: 'bubblophy_agent_plaintext_once',
+      },
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        createAgentTokenAction={createAgentTokenAction}
+      />
+    );
+
+    const agentSection = document.getElementById('agents');
+
+    expect(agentSection).toBeInstanceOf(HTMLElement);
+
+    if (!agentSection) {
+      throw new Error('Expected the agent token section to render.');
+    }
+
+    fireEvent.click(
+      within(agentSection).getByRole('button', {
+        name: 'Agent-Token erstellen',
+      })
+    );
+    fireEvent.change(screen.getByLabelText('Label'), {
+      target: { value: 'Codex lokal' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Token erstellen' }));
+
+    await waitFor(() => {
+      expect(createAgentTokenAction).toHaveBeenCalledWith({
+        projectKey: 'BV',
+        label: 'Codex lokal',
+        scopes: ['projects:read', 'issues:read'],
+      });
+    });
+    expect(createAgentTokenAction.mock.calls[0]?.[0]).not.toHaveProperty(
+      'authUserId'
+    );
+
+    const dialog = await screen.findByRole('dialog');
+
+    expect(
+      within(dialog).getByText('bubblophy_agent_plaintext_once')
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(/später nicht wieder sichtbar/i)
+    ).toBeInTheDocument();
+    expect(within(agentSection).getByText('Codex lokal')).toBeInTheDocument();
+    expect(
+      within(agentSection).queryByText('bubblophy_agent_plaintext_once')
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Fertig' }));
+
+    expect(
+      screen.queryByText('bubblophy_agent_plaintext_once')
+    ).not.toBeInTheDocument();
+    expect(within(agentSection).getByText('Codex lokal')).toBeInTheDocument();
   });
 
   it('persists an issue from the dialog when database data and an action are available', async () => {

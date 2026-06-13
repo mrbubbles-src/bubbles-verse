@@ -39,3 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a server-only issue plan draft flow, authenticated server action, and
   dashboard dialog that writes plan versions plus `plan_updated` events without
   starting agent runs.
+- Added server-only Bubblophy agent token creation with secure random tokens,
+  hash-only persistence, owner/maintainer checks, a one-time plaintext display,
+  and no agent run side effects. Project-wide token audit events remain a
+  follow-up schema/RLS slice.

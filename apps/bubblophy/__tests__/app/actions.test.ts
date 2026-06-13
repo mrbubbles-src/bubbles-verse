@@ -1,8 +1,10 @@
 import type {
+  CreateBubblophyAgentTokenActionInput,
   CreateBubblophyIssueActionInput,
   CreateBubblophyIssuePlanActionInput,
   CreateBubblophyProjectActionInput,
 } from '@/app/actions';
+import type { CreateBubblophyAgentTokenInput } from '@/lib/agent-tokens/create';
 import type { CreateBubblophyIssueDraftInput } from '@/lib/issues/create';
 import type { CreateOrUpdateBubblophyIssuePlanDraftInput } from '@/lib/issues/plans';
 import type { CreateBubblophyProjectInput } from '@/lib/projects/create';
@@ -13,6 +15,7 @@ const requireBubblophySessionMock = vi.fn();
 const createBubblophyIssueDraftMock = vi.fn();
 const createBubblophyIssuePlanDraftMock = vi.fn();
 const createBubblophyProjectMock = vi.fn();
+const createBubblophyAgentTokenMock = vi.fn();
 
 vi.mock('@/lib/auth/session', () => ({
   requireBubblophySession: (options: { nextPath?: string }) =>
@@ -35,12 +38,18 @@ vi.mock('@/lib/projects/create', () => ({
     createBubblophyProjectMock(input),
 }));
 
+vi.mock('@/lib/agent-tokens/create', () => ({
+  createBubblophyAgentToken: (input: CreateBubblophyAgentTokenInput) =>
+    createBubblophyAgentTokenMock(input),
+}));
+
 describe('createBubblophyIssueAction', () => {
   beforeEach(() => {
     requireBubblophySessionMock.mockReset();
     createBubblophyIssueDraftMock.mockReset();
     createBubblophyIssuePlanDraftMock.mockReset();
     createBubblophyProjectMock.mockReset();
+    createBubblophyAgentTokenMock.mockReset();
   });
 
   it('resolves the auth user server-side instead of accepting a client authUserId', async () => {
@@ -104,6 +113,7 @@ describe('createBubblophyIssuePlanAction', () => {
     createBubblophyIssueDraftMock.mockReset();
     createBubblophyIssuePlanDraftMock.mockReset();
     createBubblophyProjectMock.mockReset();
+    createBubblophyAgentTokenMock.mockReset();
   });
 
   it('resolves the auth user server-side instead of accepting a client authUserId', async () => {
@@ -157,6 +167,7 @@ describe('createBubblophyProjectAction', () => {
     createBubblophyIssueDraftMock.mockReset();
     createBubblophyIssuePlanDraftMock.mockReset();
     createBubblophyProjectMock.mockReset();
+    createBubblophyAgentTokenMock.mockReset();
   });
 
   it('resolves the auth user server-side instead of accepting a client authUserId', async () => {
@@ -211,6 +222,66 @@ describe('createBubblophyProjectAction', () => {
         blockedIssues: 0,
         memberCount: 1,
         agentTokenCount: 0,
+      },
+    });
+  });
+});
+
+describe('createBubblophyAgentTokenAction', () => {
+  beforeEach(() => {
+    requireBubblophySessionMock.mockReset();
+    createBubblophyIssueDraftMock.mockReset();
+    createBubblophyIssuePlanDraftMock.mockReset();
+    createBubblophyProjectMock.mockReset();
+    createBubblophyAgentTokenMock.mockReset();
+  });
+
+  it('resolves the auth user server-side instead of accepting a client authUserId', async () => {
+    requireBubblophySessionMock.mockResolvedValue({
+      authUserId: 'user_server',
+      email: 'owner@example.test',
+      user: {},
+    });
+    createBubblophyAgentTokenMock.mockResolvedValue({
+      status: 'created',
+      token: {
+        id: 'token_codex',
+        label: 'Codex lokal',
+        projectKey: 'BV',
+        scopes: ['projects:read', 'issues:read'],
+        state: 'aktiv',
+        lastUsedAt: 'noch nie verwendet',
+        plaintextToken: 'bubblophy_agent_plaintext',
+      },
+    });
+
+    const { createBubblophyAgentTokenAction } = await import('@/app/actions');
+    const result = await createBubblophyAgentTokenAction({
+      authUserId: 'user_client_spoof',
+      projectKey: 'BV',
+      label: 'Codex lokal',
+      scopes: ['projects:read', 'issues:read'],
+    } as CreateBubblophyAgentTokenActionInput & { authUserId: string });
+
+    expect(requireBubblophySessionMock).toHaveBeenCalledWith({
+      nextPath: '/',
+    });
+    expect(createBubblophyAgentTokenMock).toHaveBeenCalledWith({
+      authUserId: 'user_server',
+      projectKey: 'BV',
+      label: 'Codex lokal',
+      scopes: ['projects:read', 'issues:read'],
+    });
+    expect(result).toEqual({
+      status: 'created',
+      token: {
+        id: 'token_codex',
+        label: 'Codex lokal',
+        projectKey: 'BV',
+        scopes: ['projects:read', 'issues:read'],
+        state: 'aktiv',
+        lastUsedAt: 'noch nie verwendet',
+        plaintextToken: 'bubblophy_agent_plaintext',
       },
     });
   });

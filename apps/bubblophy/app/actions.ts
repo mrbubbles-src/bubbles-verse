@@ -1,6 +1,10 @@
 'use server';
 
 import type {
+  CreateBubblophyAgentTokenInput,
+  CreateBubblophyAgentTokenResult,
+} from '@/lib/agent-tokens/create';
+import type {
   CreateBubblophyIssueDraftInput,
   CreateBubblophyIssueDraftResult,
 } from '@/lib/issues/create';
@@ -13,6 +17,7 @@ import type {
   CreateBubblophyProjectResult,
 } from '@/lib/projects/create';
 
+import { createBubblophyAgentToken } from '@/lib/agent-tokens/create';
 import { requireBubblophySession } from '@/lib/auth/session';
 import { createBubblophyIssueDraft } from '@/lib/issues/create';
 import { createOrUpdateBubblophyIssuePlanDraft } from '@/lib/issues/plans';
@@ -39,6 +44,14 @@ export type CreateBubblophyProjectActionInput = Omit<
 >;
 
 export type CreateBubblophyProjectActionResult = CreateBubblophyProjectResult;
+
+export type CreateBubblophyAgentTokenActionInput = Omit<
+  CreateBubblophyAgentTokenInput,
+  'authUserId'
+>;
+
+export type CreateBubblophyAgentTokenActionResult =
+  CreateBubblophyAgentTokenResult;
 
 /**
  * Persists a human-created Bubblophy issue draft for the current session.
@@ -98,6 +111,27 @@ export async function createBubblophyProjectAction(
   const session = await requireBubblophySession({ nextPath: '/' });
 
   return createBubblophyProject({
+    ...input,
+    authUserId: session.authUserId,
+  });
+}
+
+/**
+ * Creates a scoped Bubblophy agent token for the current human session.
+ *
+ * The client never provides an auth user ID or token hash. The service
+ * generates the bearer token server-side, stores only its hash, and returns the
+ * plaintext exactly once for immediate copy.
+ *
+ * @param input Project key, label, scopes, and optional expiry.
+ * @returns Structured result for the dashboard token dialog.
+ */
+export async function createBubblophyAgentTokenAction(
+  input: CreateBubblophyAgentTokenActionInput
+): Promise<CreateBubblophyAgentTokenActionResult> {
+  const session = await requireBubblophySession({ nextPath: '/' });
+
+  return createBubblophyAgentToken({
     ...input,
     authUserId: session.authUserId,
   });

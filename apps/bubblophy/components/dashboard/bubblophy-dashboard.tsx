@@ -1,6 +1,8 @@
 'use client';
 
 import type {
+  CreateBubblophyAgentTokenActionInput,
+  CreateBubblophyAgentTokenActionResult,
   CreateBubblophyIssueActionInput,
   CreateBubblophyIssueActionResult,
   CreateBubblophyIssuePlanActionInput,
@@ -11,6 +13,7 @@ import type {
 import type {
   AgentRunState,
   AgentTokenState,
+  AgentTokenSummary,
   DashboardSnapshot,
   IssuePriority,
   IssueStatus,
@@ -84,6 +87,9 @@ interface BubblophyDashboardProps {
   createProjectAction?: (
     input: CreateBubblophyProjectActionInput
   ) => Promise<CreateBubblophyProjectActionResult>;
+  createAgentTokenAction?: (
+    input: CreateBubblophyAgentTokenActionInput
+  ) => Promise<CreateBubblophyAgentTokenActionResult>;
 }
 
 const issueStatusVariant = {
@@ -169,6 +175,20 @@ interface PersistedProjectInput {
   repositoryUrl: string;
 }
 
+type CreatedAgentToken = Extract<
+  CreateBubblophyAgentTokenActionResult,
+  { status: 'created' }
+>['token'];
+
+const agentTokenScopeOptions = [
+  'projects:read',
+  'issues:read',
+  'issues:write',
+  'plans:write',
+  'runs:create',
+  'runs:update',
+];
+
 /**
  * Checks whether an issue row is a local-only draft.
  *
@@ -193,6 +213,7 @@ export function BubblophyDashboard({
   createIssueAction,
   createIssuePlanAction,
   createProjectAction,
+  createAgentTokenAction,
 }: BubblophyDashboardProps) {
   const [selectedProjectKey, setSelectedProjectKey] =
     useState<ProjectFilterKey>('all');
@@ -201,6 +222,7 @@ export function BubblophyDashboard({
   );
   const [isDraftDialogOpen, setIsDraftDialogOpen] = useState(false);
   const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
+  const [isAgentTokenDialogOpen, setIsAgentTokenDialogOpen] = useState(false);
   const [localDrafts, setLocalDrafts] = useState<LocalDraftIssue[]>([]);
   const [persistedIssues, setPersistedIssues] = useState<IssueSummary[]>([]);
   const [issuePlansById, setIssuePlansById] = useState<
@@ -209,11 +231,18 @@ export function BubblophyDashboard({
   const [persistedProjects, setPersistedProjects] = useState<ProjectSummary[]>(
     []
   );
+  const [persistedAgentTokens, setPersistedAgentTokens] = useState<
+    AgentTokenSummary[]
+  >([]);
   const [draftSequence, setDraftSequence] = useState(1);
 
   const allProjects = useMemo(
     () => [...persistedProjects, ...snapshot.projects],
     [persistedProjects, snapshot.projects]
+  );
+  const allAgentTokens = useMemo(
+    () => [...persistedAgentTokens, ...snapshot.agentTokens],
+    [persistedAgentTokens, snapshot.agentTokens]
   );
 
   const allIssues = useMemo<DashboardIssue[]>(
@@ -320,6 +349,19 @@ export function BubblophyDashboard({
       ...currentPlans,
       [plan.issueId]: plan,
     }));
+  };
+
+  const handleAgentTokenCreated = (token: CreatedAgentToken) => {
+    const summary: AgentTokenSummary = {
+      id: token.id,
+      label: token.label,
+      projectKey: token.projectKey,
+      scopes: token.scopes,
+      state: token.state,
+      lastUsedAt: token.lastUsedAt,
+    };
+
+    setPersistedAgentTokens((currentTokens) => [summary, ...currentTokens]);
   };
 
   const handleDeleteDraft = (issueId: string) => {
@@ -431,7 +473,14 @@ export function BubblophyDashboard({
             </div>
 
             <aside className="grid content-start gap-5">
-              <AgentAccess snapshot={snapshot} />
+              <AgentAccess
+                agentTokens={allAgentTokens}
+                canCreateAgentToken={
+                  snapshot.meta.dataSource === 'database' &&
+                  Boolean(createAgentTokenAction)
+                }
+                onCreateAgentToken={() => setIsAgentTokenDialogOpen(true)}
+              />
               <RunQueue snapshot={snapshot} />
               <ActivityFeed snapshot={snapshot} />
             </aside>
@@ -459,6 +508,15 @@ export function BubblophyDashboard({
           createProjectAction={createProjectAction}
           onOpenChange={setIsProjectDialogOpen}
           onPersistedProjectCreated={handlePersistedProjectCreated}
+        />
+      ) : null}
+      {isAgentTokenDialogOpen ? (
+        <NewAgentTokenDialog
+          projects={allProjects}
+          open={isAgentTokenDialogOpen}
+          createAgentTokenAction={createAgentTokenAction}
+          onAgentTokenCreated={handleAgentTokenCreated}
+          onOpenChange={setIsAgentTokenDialogOpen}
         />
       ) : null}
     </BubblesSidebarLayout>
@@ -1355,7 +1413,15 @@ function IssuePlanDraftDialog({
  * @param props Dashboard snapshot with agent token summaries.
  * @returns Agent token panel.
  */
-function AgentAccess({ snapshot }: BubblophyDashboardProps) {
+function AgentAccess({
+  agentTokens,
+  canCreateAgentToken,
+  onCreateAgentToken,
+}: {
+  agentTokens: AgentTokenSummary[];
+  canCreateAgentToken: boolean;
+  onCreateAgentToken: () => void;
+}) {
   return (
     <Card id="agents" className="scroll-mt-24">
       <CardHeader>
@@ -1371,9 +1437,21 @@ function AgentAccess({ snapshot }: BubblophyDashboardProps) {
         <CardDescription>
           Projektbegrenzt, gehasht gespeichert, ohne Supabase-Service-Role.
         </CardDescription>
+        {canCreateAgentToken ? (
+          <CardAction>
+            <Button type="button" size="sm" onClick={onCreateAgentToken}>
+              Agent-Token erstellen
+            </Button>
+          </CardAction>
+        ) : null}
       </CardHeader>
       <CardContent className="grid gap-3">
-        {snapshot.agentTokens.map((token) => (
+        {agentTokens.length === 0 ? (
+          <p className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
+            Noch keine Agent-Tokens für diese Datenquelle.
+          </p>
+        ) : null}
+        {agentTokens.map((token) => (
           <div key={token.id} className="rounded-md border border-border p-3">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
@@ -1397,6 +1475,194 @@ function AgentAccess({ snapshot }: BubblophyDashboardProps) {
         ))}
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * Renders the human-controlled agent token creation dialog.
+ *
+ * @param props Projects, server action, and one-time result callback.
+ * @returns Dialog for creating a scoped agent token without starting a run.
+ */
+function NewAgentTokenDialog({
+  projects,
+  open,
+  createAgentTokenAction,
+  onAgentTokenCreated,
+  onOpenChange,
+}: {
+  projects: ProjectSummary[];
+  open: boolean;
+  createAgentTokenAction?: (
+    input: CreateBubblophyAgentTokenActionInput
+  ) => Promise<CreateBubblophyAgentTokenActionResult>;
+  onAgentTokenCreated: (token: CreatedAgentToken) => void;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const [projectKey, setProjectKey] = useState(projects[0]?.key ?? '');
+  const [label, setLabel] = useState('');
+  const [scopes, setScopes] = useState<string[]>([
+    'projects:read',
+    'issues:read',
+  ]);
+  const [createdToken, setCreatedToken] = useState<CreatedAgentToken | null>(
+    null
+  );
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const canSubmit =
+    Boolean(createAgentTokenAction) &&
+    Boolean(projectKey) &&
+    Boolean(label.trim()) &&
+    scopes.length > 0 &&
+    !isPending &&
+    !createdToken;
+
+  const toggleScope = (scope: string) => {
+    setScopes((currentScopes) =>
+      currentScopes.includes(scope)
+        ? currentScopes.filter((currentScope) => currentScope !== scope)
+        : [...currentScopes, scope]
+    );
+  };
+
+  const handleSubmit = () => {
+    if (!canSubmit || !createAgentTokenAction) {
+      return;
+    }
+
+    setActionError(null);
+    startTransition(async () => {
+      const result = await createAgentTokenAction({
+        projectKey,
+        label,
+        scopes,
+      });
+
+      if (result.status === 'created') {
+        setCreatedToken(result.token);
+        onAgentTokenCreated(result.token);
+        return;
+      }
+
+      setActionError(getAgentTokenActionErrorMessage(result));
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Agent-Token erstellen</DialogTitle>
+          <DialogDescription>
+            Erstellt ein projektbegrenztes Token. Der Klartext wird nur einmal
+            angezeigt und nicht im Browser gespeichert.
+          </DialogDescription>
+        </DialogHeader>
+
+        {createdToken ? (
+          <div className="grid gap-4">
+            <div className="rounded-md border border-border bg-muted/30 p-3">
+              <p className="text-sm font-medium">Token jetzt kopieren</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Dieser Klartext ist später nicht wieder sichtbar. Speichere ihn
+                nicht in localStorage und teile ihn nur mit dem vorgesehenen
+                Agent-Prozess.
+              </p>
+              <code className="mt-3 block rounded-md bg-background p-3 text-xs break-all">
+                {createdToken.plaintextToken}
+              </code>
+            </div>
+            <DialogFooter>
+              <Button type="button" onClick={() => onOpenChange(false)}>
+                Fertig
+              </Button>
+            </DialogFooter>
+          </div>
+        ) : (
+          <form
+            className="grid gap-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              handleSubmit();
+            }}>
+            <label className="grid gap-1.5 text-sm font-medium">
+              Projekt
+              <select
+                name="projectKey"
+                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                value={projectKey}
+                onChange={(event) => setProjectKey(event.currentTarget.value)}>
+                {projects.map((project) => (
+                  <option key={project.id} value={project.key}>
+                    {project.key} · {project.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="grid gap-1.5 text-sm font-medium">
+              Label
+              <Input
+                name="label"
+                placeholder="Codex lokal"
+                value={label}
+                onChange={(event) => setLabel(event.currentTarget.value)}
+              />
+            </label>
+
+            <fieldset className="grid gap-2">
+              <legend className="text-sm font-medium">Scopes</legend>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {agentTokenScopeOptions.map((scope) => (
+                  <label
+                    key={scope}
+                    className="flex items-center gap-2 rounded-md border border-border p-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={scopes.includes(scope)}
+                      onChange={() => toggleScope(scope)}
+                    />
+                    <span>{scope}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            <div className="rounded-md border border-dashed border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+              Token-Erstellung prüft serverseitig Owner/Maintainer-Rollen,
+              speichert nur den Hash und startet keinen Agent-Run. Projektweite
+              Audit-Events folgen mit einem eigenen Event-Modell.
+            </div>
+
+            {actionError ? (
+              <p role="alert" className="text-sm text-destructive">
+                {actionError}
+              </p>
+            ) : null}
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isPending}
+                onClick={() => onOpenChange(false)}>
+                Schließen
+              </Button>
+              <Button type="submit" disabled={!canSubmit}>
+                {isPending ? 'Erstellt...' : 'Token erstellen'}
+              </Button>
+            </DialogFooter>
+
+            {!canSubmit ? (
+              <p className="text-xs text-muted-foreground">
+                Projekt, Label und mindestens ein Scope sind nötig.
+              </p>
+            ) : null}
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -1787,4 +2053,52 @@ function getCreateProjectActionErrorMessage(
   }
 
   return 'Der Projekt-Key darf nur A-Z, 0-9 und 2 bis 8 Zeichen enthalten.';
+}
+
+/**
+ * Converts agent token create outcomes into quiet dialog feedback.
+ *
+ * @param result Result returned by the persisted token action.
+ * @returns Human-readable error message for the token dialog.
+ */
+function getAgentTokenActionErrorMessage(
+  result: Exclude<CreateBubblophyAgentTokenActionResult, { status: 'created' }>
+) {
+  if (result.status === 'forbidden') {
+    return 'Nur Owner und Maintainer können Agent-Tokens für dieses Projekt erstellen.';
+  }
+
+  if (result.status === 'duplicate') {
+    return 'Dieses Token kollidiert mit einem bestehenden Hash. Bitte erneut versuchen.';
+  }
+
+  if (result.status === 'database_unavailable') {
+    return 'Die Datenbank ist gerade nicht verfügbar. Es wurde kein Token erstellt.';
+  }
+
+  if (result.reason === 'empty_project') {
+    return 'Wähle ein Projekt aus.';
+  }
+
+  if (result.reason === 'invalid_project_key') {
+    return 'Der Projekt-Key ist nicht gültig.';
+  }
+
+  if (result.reason === 'label_too_long') {
+    return 'Das Token-Label ist zu lang.';
+  }
+
+  if (result.reason === 'empty_scopes') {
+    return 'Wähle mindestens einen Scope aus.';
+  }
+
+  if (result.reason === 'invalid_scope') {
+    return 'Mindestens ein Scope ist nicht erlaubt.';
+  }
+
+  if (result.reason === 'invalid_expires_at') {
+    return 'Das Ablaufdatum ist nicht gültig.';
+  }
+
+  return 'Gib ein Label ein.';
 }
