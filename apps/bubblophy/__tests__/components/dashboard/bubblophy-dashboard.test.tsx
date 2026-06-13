@@ -959,6 +959,10 @@ describe('BubblophyDashboard interactions', () => {
     fireEvent.click(
       within(detailPanel).getByRole('button', { name: 'Plan entwerfen' })
     );
+    expect(screen.getByRole('dialog')).toHaveClass(
+      'max-h-[min(90svh,42rem)]',
+      'overflow-y-auto'
+    );
     fireEvent.change(screen.getByLabelText('Plan-Zusammenfassung'), {
       target: { value: 'Kontext sichern und Review vorbereiten.' },
     });
@@ -1947,11 +1951,14 @@ describe('BubblophyDashboard interactions', () => {
       />
     );
 
-    expect(screen.getByRole('button', { name: /Neues Issue/i })).toBeDisabled();
+    expect(
+      screen.queryByRole('button', { name: /Neues Issue/i })
+    ).not.toBeInTheDocument();
 
     const projectCreateButtons = screen.getAllByRole('button', {
       name: 'Neues Projekt',
     });
+    expect(projectCreateButtons).toHaveLength(2);
     const projectCreateButton = projectCreateButtons[0];
 
     if (!projectCreateButton) {
@@ -1959,6 +1966,10 @@ describe('BubblophyDashboard interactions', () => {
     }
 
     fireEvent.click(projectCreateButton);
+    expect(screen.getByRole('dialog')).toHaveClass(
+      'max-h-[min(90svh,42rem)]',
+      'overflow-y-auto'
+    );
     fireEvent.change(screen.getByLabelText('Name'), {
       target: { value: 'Zentrum' },
     });
@@ -2558,6 +2569,10 @@ describe('BubblophyDashboard interactions', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: /Neues Issue/i }));
+    expect(screen.getByRole('dialog')).toHaveClass(
+      'max-h-[min(90svh,42rem)]',
+      'overflow-y-auto'
+    );
 
     expect(
       screen.getByRole('button', { name: 'Issue erstellen' })

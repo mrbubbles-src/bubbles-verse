@@ -112,3 +112,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Clarified dashboard action labels and empty states so issue creation, plan
   drafting, and run queues point at existing human-controlled workflows instead
   of database jargon or future-placeholder wording.
+- Constrained Bubblophy project, issue, plan, and agent-token dialogs to the
+  visible viewport with internal scrolling so mobile and in-app browser sizes
+  keep actions reachable.
+- Changed the empty-database header CTA from a disabled issue button to the
+  real project creation action so first use starts with an actionable step.

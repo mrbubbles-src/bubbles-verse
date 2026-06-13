@@ -711,6 +711,10 @@ export function BubblophyDashboard({
   });
   const canOpenIssueDialog =
     activeProjects.length > 0 && !isSelectedProjectArchived;
+  const canCreateFirstProjectFromHeader =
+    activeProjects.length === 0 &&
+    canUseDatabase &&
+    Boolean(createProjectAction);
 
   const updateSelectionUrl = (
     projectKey: ProjectFilterKey,
@@ -908,12 +912,14 @@ export function BubblophyDashboard({
           actions={
             <DashboardToolbar
               canCreateIssue={canOpenIssueDialog}
+              canCreateProject={canCreateFirstProjectFromHeader}
               disabledReason={
                 isSelectedProjectArchived
                   ? 'Dieses Projekt ist archiviert.'
                   : 'Erstelle zuerst ein Projekt.'
               }
               onCreateIssue={() => setIsDraftDialogOpen(true)}
+              onCreateProject={() => setIsProjectDialogOpen(true)}
             />
           }
         />
@@ -1136,34 +1142,50 @@ function DataSourceStatus({ snapshot }: BubblophyDashboardProps) {
 /**
  * Renders dashboard-level actions with clear local behavior.
  *
- * @param props Handler for local draft creation.
+ * @param props Availability flags and handlers for the primary dashboard CTA.
  * @returns Primary toolbar controls.
  */
 function DashboardToolbar({
   canCreateIssue,
+  canCreateProject,
   disabledReason,
   onCreateIssue,
+  onCreateProject,
 }: {
   canCreateIssue: boolean;
+  canCreateProject: boolean;
   disabledReason: string;
   onCreateIssue: () => void;
+  onCreateProject: () => void;
 }) {
   return (
     <div className="flex flex-wrap gap-2">
-      <Button
-        size="lg"
-        type="button"
-        disabled={!canCreateIssue}
-        title={canCreateIssue ? undefined : disabledReason}
-        onClick={onCreateIssue}>
-        <HugeiconsIcon
-          aria-hidden
-          data-icon="inline-start"
-          icon={Add01Icon}
-          strokeWidth={2}
-        />
-        Neues Issue
-      </Button>
+      {canCreateProject ? (
+        <Button size="lg" type="button" onClick={onCreateProject}>
+          <HugeiconsIcon
+            aria-hidden
+            data-icon="inline-start"
+            icon={Folder01Icon}
+            strokeWidth={2}
+          />
+          Neues Projekt
+        </Button>
+      ) : (
+        <Button
+          size="lg"
+          type="button"
+          disabled={!canCreateIssue}
+          title={canCreateIssue ? undefined : disabledReason}
+          onClick={onCreateIssue}>
+          <HugeiconsIcon
+            aria-hidden
+            data-icon="inline-start"
+            icon={Add01Icon}
+            strokeWidth={2}
+          />
+          Neues Issue
+        </Button>
+      )}
     </div>
   );
 }
@@ -1343,16 +1365,6 @@ function ProjectOverview({
                 </p>
               </div>
             )}
-            {canCreateProject ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="mt-3"
-                onClick={onCreateProject}>
-                Neues Projekt
-              </Button>
-            ) : null}
           </div>
         ) : null}
         <nav
@@ -1490,7 +1502,7 @@ function NewProjectDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[min(90svh,42rem)] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Neues Projekt</DialogTitle>
           <DialogDescription>
@@ -3054,7 +3066,7 @@ function IssuePlanDraftDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[min(90svh,42rem)] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
             {issuePlan ? 'Plan bearbeiten' : 'Plan entwerfen'}
@@ -3596,7 +3608,7 @@ function NewAgentTokenDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[min(90svh,42rem)] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Agent-Token erstellen</DialogTitle>
           <DialogDescription>
@@ -4040,7 +4052,7 @@ function NewIssueDraftDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[min(90svh,42rem)] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
             {canPersistToDatabase ? 'Neues Issue' : 'Neues Issue als Draft'}
