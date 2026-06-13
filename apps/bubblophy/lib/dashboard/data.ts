@@ -2,18 +2,32 @@ import 'server-only';
 
 import type { BubblophySession } from '@/lib/auth/session';
 import type { DashboardSnapshot } from '@/lib/dashboard/types';
-import type { BubblophyProjectIssuePersistenceRow } from '@/lib/issues/repository';
+import type {
+  BubblophyActivityPersistenceRow,
+  BubblophyAgentTokenPersistenceRow,
+  BubblophyProjectIssuePersistenceRow,
+} from '@/lib/issues/repository';
 
 import { dashboardSnapshot } from '@/lib/dashboard/sample-data';
-import { buildBubblophyProjectIssueSnapshot } from '@/lib/issues/repository';
+import {
+  buildBubblophyActivityEvents,
+  buildBubblophyAgentTokenSummaries,
+  buildBubblophyProjectIssueSnapshot,
+} from '@/lib/issues/repository';
 
-export type BubblophyProjectIssueRowSelector = (
+export interface BubblophyDashboardPersistenceRows {
+  projectIssueRows: BubblophyProjectIssuePersistenceRow[];
+  agentTokenRows: BubblophyAgentTokenPersistenceRow[];
+  activityRows: BubblophyActivityPersistenceRow[];
+}
+
+export type BubblophyDashboardRowSelector = (
   authUserId: string
-) => Promise<BubblophyProjectIssuePersistenceRow[]>;
+) => Promise<BubblophyDashboardPersistenceRows>;
 
 export interface BubblophyDashboardSnapshotInput {
   session: Pick<BubblophySession, 'authUserId'>;
-  loadRows?: BubblophyProjectIssueRowSelector;
+  loadRows?: BubblophyDashboardRowSelector;
 }
 
 /**
@@ -53,10 +67,12 @@ export async function loadBubblophyProjectIssueDashboardSnapshot({
   selectRows,
 }: {
   authUserId: string;
-  selectRows: BubblophyProjectIssueRowSelector;
+  selectRows: BubblophyDashboardRowSelector;
 }): Promise<DashboardSnapshot> {
   const rows = await selectRows(authUserId);
-  const { projects, issues } = buildBubblophyProjectIssueSnapshot(rows);
+  const { projects, issues } = buildBubblophyProjectIssueSnapshot(
+    rows.projectIssueRows
+  );
 
   return {
     meta: {
@@ -66,9 +82,9 @@ export async function loadBubblophyProjectIssueDashboardSnapshot({
     },
     projects,
     issues,
-    agentTokens: [],
+    agentTokens: buildBubblophyAgentTokenSummaries(rows.agentTokenRows),
     agentRuns: [],
-    activity: [],
+    activity: buildBubblophyActivityEvents(rows.activityRows),
   };
 }
 
@@ -112,10 +128,10 @@ async function getDefaultProjectIssueRowSelector() {
     return null;
   }
 
-  const { selectBubblophyProjectIssueRowsForUser } =
+  const { selectBubblophyDashboardRowsForUser } =
     await import('@/lib/issues/database');
 
-  return selectBubblophyProjectIssueRowsForUser;
+  return selectBubblophyDashboardRowsForUser;
 }
 
 /**

@@ -46,8 +46,9 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   `documentation/auth-security-plan.md`.
 - Die UI nutzt einen typisierten Dashboard-Snapshot als View Model. Der
   server-only Read-Pfad unter `lib/dashboard/data.ts` kann Datenbankzeilen
-  abfragen und fällt in Dev kontrolliert auf Sample-Daten zurück, wenn die
-  Datenbank nicht verfügbar ist.
+  inklusive Projekten, Issues, öffentlichen Agent-Token-Summaries und
+  Project-Events abfragen. Er fällt in Dev kontrolliert auf Sample-Daten
+  zurück, wenn die Datenbank nicht verfügbar ist.
 
 ## Lokal starten
 
@@ -101,6 +102,9 @@ bun run build
   Maintainer-Mitgliedschaft, schreibt nur den Token-Hash und startet keine
   Agent-Runs. Projektweite `agent_token_created`-Audit-Events landen in
   `bubblophy_project_events`, nicht in issue-zentrierten Events.
+- Der Datenbank-Snapshot liest Agent-Token-Summaries und Project-Events nur für
+  Projekte mit menschlicher Mitgliedschaft. Token-Plaintext und `token_hash`
+  werden nicht selektiert und nicht an die UI gegeben.
 - Agenten nutzen eingeschränkte Bubblophy-Agent-Tokens mit Hash, Scopes,
   Projektgrenze, Status und Ablaufdatum.
 - Agenten erhalten keine Mensch-Logins und keinen Supabase-Service-Role-Key.

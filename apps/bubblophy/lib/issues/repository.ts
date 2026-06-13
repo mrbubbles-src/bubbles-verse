@@ -5,6 +5,9 @@ import type {
   BubblophyIssueStatus,
 } from '@/drizzle/db/schema';
 import type {
+  ActivityEvent,
+  AgentTokenState,
+  AgentTokenSummary,
   IssuePriority,
   IssueStatus,
   IssueSummary,
@@ -34,6 +37,23 @@ export type BubblophyProjectIssueMembershipRow =
     projectMemberAuthUserId: string;
   };
 
+export interface BubblophyAgentTokenPersistenceRow {
+  id: string;
+  label: string;
+  projectKey: string;
+  scopes: string[];
+  state: 'active' | 'paused' | 'revoked';
+  lastUsedAt: string | null;
+}
+
+export interface BubblophyActivityPersistenceRow {
+  id: string;
+  summary: string;
+  actorAuthUserId: string | null;
+  actorAgentTokenLabel: string | null;
+  createdAt: string;
+}
+
 export interface BubblophyProjectIssueRepositorySnapshot {
   projects: ProjectSummary[];
   issues: IssueSummary[];
@@ -62,6 +82,12 @@ const issuePriorityLabels = {
   medium: 'mittel',
   high: 'hoch',
 } satisfies Record<BubblophyIssuePriority, IssuePriority>;
+
+const agentTokenStateLabels = {
+  active: 'aktiv',
+  paused: 'pausiert',
+  revoked: 'pausiert',
+} satisfies Record<BubblophyAgentTokenPersistenceRow['state'], AgentTokenState>;
 
 interface MutableProjectSummary {
   id: string;
@@ -117,6 +143,21 @@ export function formatBubblophyIssueKey(
   issueNumber: number
 ) {
   return `${projectKey}-${issueNumber.toString().padStart(2, '0')}`;
+}
+
+/**
+ * Maps persisted agent token state into the current dashboard vocabulary.
+ *
+ * Revoked tokens are intentionally shown as paused until the UI grows a
+ * dedicated revoked state.
+ *
+ * @param state Database token state.
+ * @returns Dashboard token state.
+ */
+export function mapBubblophyAgentTokenState(
+  state: BubblophyAgentTokenPersistenceRow['state']
+): AgentTokenState {
+  return agentTokenStateLabels[state];
 }
 
 /**
@@ -228,6 +269,51 @@ export function buildBubblophyProjectIssueSnapshotForUser(
 }
 
 /**
+ * Converts membership-scoped token rows into public dashboard summaries.
+ *
+ * The row type deliberately excludes `tokenHash` and plaintext token material.
+ *
+ * @param rows Token rows already constrained to visible projects.
+ * @returns Public token summaries for the dashboard.
+ */
+export function buildBubblophyAgentTokenSummaries(
+  rows: BubblophyAgentTokenPersistenceRow[]
+): AgentTokenSummary[] {
+  return rows
+    .map((row) => ({
+      id: row.id,
+      label: row.label,
+      projectKey: row.projectKey,
+      scopes: [...row.scopes],
+      state: mapBubblophyAgentTokenState(row.state),
+      lastUsedAt: row.lastUsedAt ?? 'noch nie verwendet',
+    }))
+    .sort(
+      (left, right) =>
+        left.projectKey.localeCompare(right.projectKey) ||
+        left.label.localeCompare(right.label) ||
+        left.id.localeCompare(right.id)
+    );
+}
+
+/**
+ * Converts project-event rows into the dashboard activity feed.
+ *
+ * @param rows Project activity rows already constrained to visible projects.
+ * @returns Activity events ordered by the caller's row order.
+ */
+export function buildBubblophyActivityEvents(
+  rows: BubblophyActivityPersistenceRow[]
+): ActivityEvent[] {
+  return rows.map((row) => ({
+    id: row.id,
+    label: row.summary,
+    actor: formatActivityActor(row),
+    occurredAt: row.createdAt,
+  }));
+}
+
+/**
  * Creates a mutable project accumulator from the project portion of a row.
  *
  * @param row Persistence row containing project fields.
@@ -246,4 +332,22 @@ function createMutableProjectSummary(
     memberCount: Math.max(0, row.projectMemberCount),
     agentTokenCount: Math.max(0, row.activeAgentTokenCount),
   };
+}
+
+/**
+ * Formats a quiet activity actor label for the dashboard.
+ *
+ * @param row Activity row with optional human or agent actor.
+ * @returns Human-readable actor label.
+ */
+function formatActivityActor(row: BubblophyActivityPersistenceRow) {
+  if (row.actorAuthUserId) {
+    return 'Mensch';
+  }
+
+  if (row.actorAgentTokenLabel) {
+    return `Agent-Token ${row.actorAgentTokenLabel}`;
+  }
+
+  return 'System';
 }

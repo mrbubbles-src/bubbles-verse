@@ -43,3 +43,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   hash-only persistence, owner/maintainer checks, a one-time plaintext display,
   project-wide `agent_token_created` audit events, and no agent run side
   effects.
+- Added database-backed dashboard reads for public agent token summaries and
+  project audit activity, constrained by project membership and excluding token
+  secrets.

@@ -1,10 +1,13 @@
 import type { BubblophyProjectIssuePersistenceRow } from '@/lib/issues/repository';
 
 import {
+  buildBubblophyActivityEvents,
+  buildBubblophyAgentTokenSummaries,
   buildBubblophyProjectIssueSnapshot,
   buildBubblophyProjectIssueSnapshotForUser,
   deriveBubblophyProjectHealth,
   formatBubblophyIssueKey,
+  mapBubblophyAgentTokenState,
   mapBubblophyIssuePriority,
   mapBubblophyIssueStatus,
 } from '@/lib/issues/repository';
@@ -58,6 +61,10 @@ describe('Bubblophy issue repository mapping', () => {
     expect(mapBubblophyIssuePriority('low')).toBe('niedrig');
     expect(mapBubblophyIssuePriority('medium')).toBe('mittel');
     expect(mapBubblophyIssuePriority('high')).toBe('hoch');
+
+    expect(mapBubblophyAgentTokenState('active')).toBe('aktiv');
+    expect(mapBubblophyAgentTokenState('paused')).toBe('pausiert');
+    expect(mapBubblophyAgentTokenState('revoked')).toBe('pausiert');
   });
 
   it('formats stable human-facing issue keys', () => {
@@ -198,6 +205,82 @@ describe('Bubblophy issue repository mapping', () => {
       expect.objectContaining({
         projectKey: 'AL',
       }),
+    ]);
+  });
+
+  it('maps public agent token rows without secret fields', () => {
+    const tokens = buildBubblophyAgentTokenSummaries([
+      {
+        id: 'token_b',
+        label: 'Claude Code',
+        projectKey: 'BV',
+        scopes: ['plans:write'],
+        state: 'paused',
+        lastUsedAt: '2026-06-13T10:00:00.000Z',
+      },
+      {
+        id: 'token_a',
+        label: 'Codex lokal',
+        projectKey: 'BV',
+        scopes: ['projects:read', 'issues:read'],
+        state: 'active',
+        lastUsedAt: null,
+      },
+    ]);
+
+    expect(tokens).toEqual([
+      {
+        id: 'token_b',
+        label: 'Claude Code',
+        projectKey: 'BV',
+        scopes: ['plans:write'],
+        state: 'pausiert',
+        lastUsedAt: '2026-06-13T10:00:00.000Z',
+      },
+      {
+        id: 'token_a',
+        label: 'Codex lokal',
+        projectKey: 'BV',
+        scopes: ['projects:read', 'issues:read'],
+        state: 'aktiv',
+        lastUsedAt: 'noch nie verwendet',
+      },
+    ]);
+    expect(JSON.stringify(tokens)).not.toContain('tokenHash');
+    expect(JSON.stringify(tokens)).not.toContain('plaintextToken');
+  });
+
+  it('maps project events into activity without exposing raw auth user IDs', () => {
+    expect(
+      buildBubblophyActivityEvents([
+        {
+          id: 'event_human',
+          summary: 'Agent-Token erstellt.',
+          actorAuthUserId: 'user_123',
+          actorAgentTokenLabel: null,
+          createdAt: '2026-06-13T10:00:00.000Z',
+        },
+        {
+          id: 'event_agent',
+          summary: 'Run angefragt.',
+          actorAuthUserId: null,
+          actorAgentTokenLabel: 'Codex lokal',
+          createdAt: '2026-06-13T11:00:00.000Z',
+        },
+      ])
+    ).toEqual([
+      {
+        id: 'event_human',
+        label: 'Agent-Token erstellt.',
+        actor: 'Mensch',
+        occurredAt: '2026-06-13T10:00:00.000Z',
+      },
+      {
+        id: 'event_agent',
+        label: 'Run angefragt.',
+        actor: 'Agent-Token Codex lokal',
+        occurredAt: '2026-06-13T11:00:00.000Z',
+      },
     ]);
   });
 

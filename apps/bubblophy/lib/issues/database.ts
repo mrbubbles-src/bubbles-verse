@@ -1,6 +1,9 @@
 import 'server-only';
 
+import type { BubblophyDashboardPersistenceRows } from '@/lib/dashboard/data';
 import type {
+  BubblophyActivityPersistenceRow,
+  BubblophyAgentTokenPersistenceRow,
   BubblophyProjectIssueMembershipRow,
   BubblophyProjectIssuePersistenceRow,
   BubblophyProjectIssueRepositorySnapshot,
@@ -8,13 +11,14 @@ import type {
 
 import { buildBubblophyProjectIssueSnapshotForUser } from '@/lib/issues/repository';
 
-import { and, asc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 
 import { db } from '@/drizzle/db';
 import {
   bubblophyAgentTokens,
   bubblophyIssuePlans,
   bubblophyIssues,
+  bubblophyProjectEvents,
   bubblophyProjectMembers,
   bubblophyProjects,
 } from '@/drizzle/db/schema';
@@ -47,6 +51,41 @@ export async function loadBubblophyProjectIssueSnapshotFromDatabase(
 }
 
 /**
+ * Selects all dashboard row groups visible to one authenticated human.
+ *
+ * Every query is constrained by the user's project memberships. Token hashes
+ * and plaintext token material are never selected.
+ *
+ * @param authUserId Supabase Auth user ID from the authorized human session.
+ * @returns Project/issue rows plus public token and activity rows.
+ */
+export async function selectBubblophyDashboardRowsForUser(
+  authUserId: string
+): Promise<BubblophyDashboardPersistenceRows> {
+  const projectIds = await selectVisibleProjectIdsForUser(authUserId);
+
+  if (projectIds.length === 0) {
+    return {
+      projectIssueRows: [],
+      agentTokenRows: [],
+      activityRows: [],
+    };
+  }
+
+  const [projectIssueRows, agentTokenRows, activityRows] = await Promise.all([
+    selectBubblophyProjectIssueRowsForProjectIds(authUserId, projectIds),
+    selectBubblophyAgentTokenRowsForProjectIds(projectIds),
+    selectBubblophyProjectActivityRowsForProjectIds(projectIds),
+  ]);
+
+  return {
+    projectIssueRows,
+    agentTokenRows,
+    activityRows,
+  };
+}
+
+/**
  * Selects membership-scoped Bubblophy project and issue rows for one user.
  *
  * The selector returns flat mapper rows only. Snapshot construction, fallback
@@ -58,20 +97,43 @@ export async function loadBubblophyProjectIssueSnapshotFromDatabase(
 export async function selectBubblophyProjectIssueRowsForUser(
   authUserId: string
 ): Promise<BubblophyProjectIssuePersistenceRow[]> {
-  const membershipRows = await db
-    .select({
-      projectId: bubblophyProjectMembers.projectId,
-      authUserId: bubblophyProjectMembers.authUserId,
-    })
-    .from(bubblophyProjectMembers)
-    .where(eq(bubblophyProjectMembers.authUserId, authUserId));
-
-  const projectIds = membershipRows.map((row) => row.projectId);
+  const projectIds = await selectVisibleProjectIdsForUser(authUserId);
 
   if (projectIds.length === 0) {
     return [];
   }
 
+  return selectBubblophyProjectIssueRowsForProjectIds(authUserId, projectIds);
+}
+
+/**
+ * Selects project IDs where the user has a project membership.
+ *
+ * @param authUserId Supabase Auth user ID from the authorized human session.
+ * @returns Visible project IDs for subsequent read queries.
+ */
+async function selectVisibleProjectIdsForUser(authUserId: string) {
+  const membershipRows = await db
+    .select({
+      projectId: bubblophyProjectMembers.projectId,
+    })
+    .from(bubblophyProjectMembers)
+    .where(eq(bubblophyProjectMembers.authUserId, authUserId));
+
+  return membershipRows.map((row) => row.projectId);
+}
+
+/**
+ * Selects membership-scoped project and issue rows for known project IDs.
+ *
+ * @param authUserId Supabase Auth user ID from the authorized human session.
+ * @param projectIds Project IDs already constrained by membership.
+ * @returns Project/issue mapper rows visible to that user.
+ */
+async function selectBubblophyProjectIssueRowsForProjectIds(
+  authUserId: string,
+  projectIds: string[]
+): Promise<BubblophyProjectIssuePersistenceRow[]> {
   const [projectRows, memberCounts, tokenCounts, issueRows] = await Promise.all(
     [
       db
@@ -157,6 +219,65 @@ export async function selectBubblophyProjectIssueRowsForUser(
   });
 
   return rows;
+}
+
+/**
+ * Selects public agent token summary rows for visible projects.
+ *
+ * The selected shape intentionally omits `token_hash`.
+ *
+ * @param projectIds Project IDs already constrained by membership.
+ * @returns Public token rows for the dashboard.
+ */
+async function selectBubblophyAgentTokenRowsForProjectIds(
+  projectIds: string[]
+): Promise<BubblophyAgentTokenPersistenceRow[]> {
+  return db
+    .select({
+      id: bubblophyAgentTokens.id,
+      label: bubblophyAgentTokens.label,
+      projectKey: bubblophyProjects.key,
+      scopes: bubblophyAgentTokens.scopes,
+      state: bubblophyAgentTokens.state,
+      lastUsedAt: bubblophyAgentTokens.lastUsedAt,
+    })
+    .from(bubblophyAgentTokens)
+    .innerJoin(
+      bubblophyProjects,
+      eq(bubblophyProjects.id, bubblophyAgentTokens.projectId)
+    )
+    .where(inArray(bubblophyAgentTokens.projectId, projectIds))
+    .orderBy(asc(bubblophyProjects.key), asc(bubblophyAgentTokens.label));
+}
+
+/**
+ * Selects recent project-level activity rows for visible projects.
+ *
+ * @param projectIds Project IDs already constrained by membership.
+ * @returns Activity rows, newest first.
+ */
+async function selectBubblophyProjectActivityRowsForProjectIds(
+  projectIds: string[]
+): Promise<BubblophyActivityPersistenceRow[]> {
+  return db
+    .select({
+      id: bubblophyProjectEvents.id,
+      summary: bubblophyProjectEvents.summary,
+      actorAuthUserId: bubblophyProjectEvents.actorAuthUserId,
+      actorAgentTokenLabel: bubblophyAgentTokens.label,
+      createdAt: bubblophyProjectEvents.createdAt,
+    })
+    .from(bubblophyProjectEvents)
+    .leftJoin(
+      bubblophyAgentTokens,
+      and(
+        eq(bubblophyAgentTokens.id, bubblophyProjectEvents.actorAgentTokenId),
+        eq(bubblophyAgentTokens.projectId, bubblophyProjectEvents.projectId)
+      )
+    )
+    .where(inArray(bubblophyProjectEvents.projectId, projectIds))
+    .orderBy(desc(bubblophyProjectEvents.createdAt))
+    .limit(20);
 }
 
 /**

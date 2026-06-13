@@ -1,3 +1,4 @@
+import type { BubblophyDashboardPersistenceRows } from '@/lib/dashboard/data';
 import type { BubblophyProjectIssuePersistenceRow } from '@/lib/issues/repository';
 
 import {
@@ -35,13 +36,41 @@ function makeRow(
   };
 }
 
+function makeDatabaseRows(
+  rows: Partial<BubblophyDashboardPersistenceRows> = {}
+): BubblophyDashboardPersistenceRows {
+  return {
+    projectIssueRows: [makeRow()],
+    agentTokenRows: [
+      {
+        id: 'token_codex',
+        label: 'Codex lokal',
+        projectKey: 'BV',
+        scopes: ['projects:read', 'issues:read'],
+        state: 'active',
+        lastUsedAt: null,
+      },
+    ],
+    activityRows: [
+      {
+        id: 'event_token_created',
+        summary: 'Agent-Token "Codex lokal" für BV erstellt.',
+        actorAuthUserId: 'user_owner',
+        actorAgentTokenLabel: null,
+        createdAt: '2026-06-13T16:00:00.000Z',
+      },
+    ],
+    ...rows,
+  };
+}
+
 describe('getBubblophyDashboardSnapshot', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
   });
 
   it('returns database metadata and mapped rows when the loader succeeds', async () => {
-    const selectRows = vi.fn(async () => [makeRow()]);
+    const selectRows = vi.fn(async () => makeDatabaseRows());
 
     await expect(
       getBubblophyDashboardSnapshot({ session, loadRows: selectRows })
@@ -65,15 +94,49 @@ describe('getBubblophyDashboardSnapshot', () => {
           status: 'bereit',
         },
       ],
+      agentTokens: [
+        {
+          id: 'token_codex',
+          label: 'Codex lokal',
+          projectKey: 'BV',
+          scopes: ['projects:read', 'issues:read'],
+          state: 'aktiv',
+          lastUsedAt: 'noch nie verwendet',
+        },
+      ],
+      activity: [
+        {
+          id: 'event_token_created',
+          label: 'Agent-Token "Codex lokal" für BV erstellt.',
+          actor: 'Mensch',
+          occurredAt: '2026-06-13T16:00:00.000Z',
+        },
+      ],
     });
     expect(selectRows).toHaveBeenCalledWith('user_owner');
+  });
+
+  it('does not expose token secrets in database snapshots', async () => {
+    const snapshot = await getBubblophyDashboardSnapshot({
+      session,
+      loadRows: async () => makeDatabaseRows(),
+    });
+    const serializedSnapshot = JSON.stringify(snapshot);
+
+    expect(serializedSnapshot).not.toContain('tokenHash');
+    expect(serializedSnapshot).not.toContain('plaintextToken');
   });
 
   it('keeps an available but empty database empty instead of using sample data', async () => {
     await expect(
       getBubblophyDashboardSnapshot({
         session,
-        loadRows: async () => [],
+        loadRows: async () =>
+          makeDatabaseRows({
+            projectIssueRows: [],
+            agentTokenRows: [],
+            activityRows: [],
+          }),
       })
     ).resolves.toMatchObject({
       meta: {
@@ -115,7 +178,7 @@ describe('loadBubblophyProjectIssueDashboardSnapshot', () => {
     await expect(
       loadBubblophyProjectIssueDashboardSnapshot({
         authUserId: 'user_owner',
-        selectRows: async () => [makeRow()],
+        selectRows: async () => makeDatabaseRows(),
       })
     ).resolves.toMatchObject({
       meta: {
