@@ -41,6 +41,9 @@ einem bewusst human-gesteuerten Kontrollzentrum.
 - Im Issue-Detail können Menschen bei aktiver Datenbankquelle den Status eines
   gespeicherten Issues ändern. Die Änderung schreibt ein `status_changed`-Event
   und startet keinen Agent-Run.
+- Im Issue-Detail können Menschen bei aktiver Datenbankquelle einen Agent-Run
+  anfragen, wenn ein aktives Projekt-Token existiert. Die RunQueue zeigt den
+  neuen Eintrag lokal als wartend; es wird kein Agent gestartet.
 - Im Issue-Detailpanel können Menschen bei aktiver Datenbankquelle einen
   Plan-Entwurf speichern. Der server-only Plan-Service schreibt eine neue
   Planversion plus `plan_updated`-Event und startet keinen Agent-Run.
@@ -103,6 +106,10 @@ bun run build
   schreibt nur den neuen Status plus `status_changed`-Event und startet keine
   Agent-Runs. Identische Zielstatus werden als No-op behandelt, damit keine
   Audit-Events gespammt werden.
+- Persistierte Agent-Run-Anfragen laufen serverseitig über
+  Projektmitgliedschaft und aktive Same-Project-Tokens. Sie schreiben nur einen
+  wartenden Run plus `agent_run_requested`-Event; es gibt keinen Worker,
+  Toolcall, Polling-Loop oder Autopilot.
 - Persistierte Plan-Erfassung läuft serverseitig über Issue-Projektmitgliedschaft,
   schreibt eine neue Planversion plus `plan_updated`-Event und startet keine
   Agent-Runs.

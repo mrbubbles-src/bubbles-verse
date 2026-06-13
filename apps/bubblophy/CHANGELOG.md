@@ -55,3 +55,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added human-controlled issue status transitions for database-backed issues,
   including membership-checked server actions, `status_changed` audit events,
   same-status no-op protection, and no agent run side effects.
+- Added dashboard UI for human-only agent run requests that insert local
+  waiting RunQueue entries after the server action succeeds, without starting
+  agents or executing work.

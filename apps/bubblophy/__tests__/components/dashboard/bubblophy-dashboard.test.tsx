@@ -7,6 +7,8 @@ import type {
   CreateBubblophyIssuePlanActionResult,
   CreateBubblophyProjectActionInput,
   CreateBubblophyProjectActionResult,
+  RequestBubblophyAgentRunActionInput,
+  RequestBubblophyAgentRunActionResult,
   UpdateBubblophyIssueStatusActionInput,
   UpdateBubblophyIssueStatusActionResult,
 } from '@/app/actions';
@@ -65,6 +67,11 @@ const databaseUnavailableSnapshot = {
 const databaseSnapshotWithEmptyRuns = {
   ...databaseSnapshot,
   agentRuns: [],
+} satisfies DashboardSnapshot;
+
+const databaseSnapshotWithoutAgentTokens = {
+  ...databaseSnapshotWithEmptyRuns,
+  agentTokens: [],
 } satisfies DashboardSnapshot;
 
 vi.mock('next/navigation', () => ({
@@ -956,6 +963,170 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       screen.getByRole('button', { name: 'Lokaler Fallback-Draft' })
     ).toBeInTheDocument();
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    expect(
+      within(detailPanel).queryByRole('button', { name: 'Run anfragen' })
+    ).not.toBeInTheDocument();
+    expect(
+      within(detailPanel).getByText(/Lokale Drafts können keinen Agent-Run/i)
+    ).toBeInTheDocument();
+  });
+
+  it('requests a human-only agent run and adds it to the run queue', async () => {
+    const requestAgentRunAction = vi.fn<
+      (
+        input: RequestBubblophyAgentRunActionInput
+      ) => Promise<RequestBubblophyAgentRunActionResult>
+    >(async () => ({
+      status: 'requested',
+      run: {
+        id: 'run_bv_12_requested',
+        issueId: 'BV-12',
+        agentLabel: 'codex-local-lio',
+        state: 'wartet',
+        requestedBy: 'Mensch',
+        lastEvent:
+          'Anfrage gespeichert: Bitte nur die Planung prüfen, nichts ausführen.',
+      },
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithEmptyRuns}
+        requestAgentRunAction={requestAgentRunAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    expect(
+      within(detailPanel).getByText(/kein Agent gestartet/i)
+    ).toBeInTheDocument();
+    fireEvent.change(within(detailPanel).getByLabelText('Agent-Token'), {
+      target: { value: 'token_codex_bv' },
+    });
+    fireEvent.change(within(detailPanel).getByLabelText('Auftrag'), {
+      target: {
+        value: 'Bitte nur die Planung prüfen, nichts ausführen.',
+      },
+    });
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Run anfragen' })
+    );
+
+    await waitFor(() => {
+      expect(requestAgentRunAction).toHaveBeenCalledWith({
+        issueId: 'BV-12',
+        agentTokenId: 'token_codex_bv',
+        instructions: 'Bitte nur die Planung prüfen, nichts ausführen.',
+      });
+    });
+    expect(requestAgentRunAction.mock.calls[0]?.[0]).not.toHaveProperty(
+      'authUserId'
+    );
+
+    const runsSection = document.getElementById('runs');
+
+    expect(runsSection).toBeInstanceOf(HTMLElement);
+
+    if (!runsSection) {
+      throw new Error('Expected the runs section to render.');
+    }
+
+    await waitFor(() => {
+      expect(within(runsSection).getByText('BV-12')).toBeInTheDocument();
+    });
+    expect(
+      within(runsSection).getByText(/codex-local-lio · angefragt von Mensch/i)
+    ).toBeInTheDocument();
+    expect(within(runsSection).getByText('Wartet')).toBeInTheDocument();
+    expect(
+      within(runsSection).getByText(
+        /Anfrage gespeichert: Bitte nur die Planung prüfen/i
+      )
+    ).toBeInTheDocument();
+    expect(
+      within(runsSection).queryByText(/gestartet/i)
+    ).not.toBeInTheDocument();
+    expect(
+      within(runsSection).queryByText(/ausgeführt/i)
+    ).not.toBeInTheDocument();
+    expect(
+      within(runsSection).queryByText(/Noch keine Runs/i)
+    ).not.toBeInTheDocument();
+  });
+
+  it('blocks run requests for database issues without active project tokens', () => {
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithoutAgentTokens}
+        requestAgentRunAction={async () => ({
+          status: 'database_unavailable',
+        })}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    expect(
+      within(detailPanel).queryByRole('button', { name: 'Run anfragen' })
+    ).not.toBeInTheDocument();
+    expect(
+      within(detailPanel).getByText(/kein aktives Agent-Token verfügbar/i)
+    ).toBeInTheDocument();
+  });
+
+  it('does not expose persistent run requests when the database is unavailable', () => {
+    const requestAgentRunAction = vi.fn<
+      (
+        input: RequestBubblophyAgentRunActionInput
+      ) => Promise<RequestBubblophyAgentRunActionResult>
+    >(async () => ({
+      status: 'database_unavailable',
+    }));
+    const unavailableWithIssueAndToken = {
+      ...databaseUnavailableSnapshot,
+      projects: databaseSnapshot.projects,
+      issues: databaseSnapshot.issues,
+      agentTokens: databaseSnapshot.agentTokens,
+    } satisfies DashboardSnapshot;
+
+    render(
+      <BubblophyDashboard
+        snapshot={unavailableWithIssueAndToken}
+        requestAgentRunAction={requestAgentRunAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    expect(
+      within(detailPanel).queryByRole('button', { name: 'Run anfragen' })
+    ).not.toBeInTheDocument();
+    expect(
+      within(detailPanel).getByText(/Datenbank ist nicht bereit/i)
+    ).toBeInTheDocument();
+    expect(requestAgentRunAction).not.toHaveBeenCalled();
   });
 
   it('does not expose operative run actions for sample snapshots', () => {
@@ -975,6 +1146,12 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       screen.queryByRole('button', { name: /Run prüfen|Run starten/i })
     ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Run anfragen' })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/Sample-Daten erlauben keine Run-Anfrage/i)
+    ).toBeInTheDocument();
     expect(
       within(runsSection).getByText(/Sample\/Fallback zeigt keine operative/i)
     ).toBeInTheDocument();

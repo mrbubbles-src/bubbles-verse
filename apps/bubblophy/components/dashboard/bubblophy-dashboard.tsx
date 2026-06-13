@@ -9,11 +9,14 @@ import type {
   CreateBubblophyIssuePlanActionResult,
   CreateBubblophyProjectActionInput,
   CreateBubblophyProjectActionResult,
+  RequestBubblophyAgentRunActionInput,
+  RequestBubblophyAgentRunActionResult,
   UpdateBubblophyIssueStatusActionInput,
   UpdateBubblophyIssueStatusActionResult,
 } from '@/app/actions';
 import type {
   AgentRunState,
+  AgentRunSummary,
   AgentTokenState,
   AgentTokenSummary,
   DashboardSnapshot,
@@ -88,6 +91,9 @@ interface BubblophyDashboardProps {
   updateIssueStatusAction?: (
     input: UpdateBubblophyIssueStatusActionInput
   ) => Promise<UpdateBubblophyIssueStatusActionResult>;
+  requestAgentRunAction?: (
+    input: RequestBubblophyAgentRunActionInput
+  ) => Promise<RequestBubblophyAgentRunActionResult>;
   createProjectAction?: (
     input: CreateBubblophyProjectActionInput
   ) => Promise<CreateBubblophyProjectActionResult>;
@@ -304,6 +310,7 @@ export function BubblophyDashboard({
   createIssueAction,
   createIssuePlanAction,
   updateIssueStatusAction,
+  requestAgentRunAction,
   createProjectAction,
   createAgentTokenAction,
 }: BubblophyDashboardProps) {
@@ -329,6 +336,9 @@ export function BubblophyDashboard({
   const [persistedAgentTokens, setPersistedAgentTokens] = useState<
     AgentTokenSummary[]
   >([]);
+  const [persistedAgentRuns, setPersistedAgentRuns] = useState<
+    AgentRunSummary[]
+  >([]);
   const [draftSequence, setDraftSequence] = useState(1);
   const canUseDatabase =
     snapshot.meta.dataSource === 'database' ||
@@ -345,6 +355,10 @@ export function BubblophyDashboard({
   const allAgentTokens = useMemo(
     () => [...persistedAgentTokens, ...snapshot.agentTokens],
     [persistedAgentTokens, snapshot.agentTokens]
+  );
+  const allAgentRuns = useMemo(
+    () => [...persistedAgentRuns, ...snapshot.agentRuns],
+    [persistedAgentRuns, snapshot.agentRuns]
   );
 
   const allIssues = useMemo<DashboardIssue[]>(
@@ -487,6 +501,10 @@ export function BubblophyDashboard({
     setPersistedAgentTokens((currentTokens) => [summary, ...currentTokens]);
   };
 
+  const handleAgentRunRequested = (run: AgentRunSummary) => {
+    setPersistedAgentRuns((currentRuns) => [run, ...currentRuns]);
+  };
+
   const handleDeleteDraft = (issueId: string) => {
     setLocalDrafts((currentDrafts) =>
       currentDrafts.filter((draft) => draft.id !== issueId)
@@ -583,10 +601,13 @@ export function BubblophyDashboard({
                 }
                 createIssuePlanAction={createIssuePlanAction}
                 updateIssueStatusAction={updateIssueStatusAction}
+                requestAgentRunAction={requestAgentRunAction}
+                agentTokens={allAgentTokens}
                 onProjectSelect={handleProjectSelect}
                 onDraftDelete={handleDeleteDraft}
                 onIssuePlanSaved={handleIssuePlanSaved}
                 onIssueStatusUpdated={handleIssueStatusUpdated}
+                onAgentRunRequested={handleAgentRunRequested}
                 onIssueSelect={setSelectedIssueId}
               />
             </div>
@@ -602,7 +623,10 @@ export function BubblophyDashboard({
                 }
                 onCreateAgentToken={() => setIsAgentTokenDialogOpen(true)}
               />
-              <RunQueue snapshot={snapshot} />
+              <RunQueue
+                dataSource={snapshot.meta.dataSource}
+                agentRuns={allAgentRuns}
+              />
               <ActivityFeed snapshot={snapshot} />
             </aside>
           </div>
@@ -1096,10 +1120,13 @@ function IssueQueue({
   canPersistIssueStatus,
   createIssuePlanAction,
   updateIssueStatusAction,
+  requestAgentRunAction,
+  agentTokens,
   onProjectSelect,
   onDraftDelete,
   onIssuePlanSaved,
   onIssueStatusUpdated,
+  onAgentRunRequested,
   onIssueSelect,
 }: {
   dataSource: DashboardSnapshot['meta']['dataSource'];
@@ -1115,12 +1142,25 @@ function IssueQueue({
   updateIssueStatusAction?: (
     input: UpdateBubblophyIssueStatusActionInput
   ) => Promise<UpdateBubblophyIssueStatusActionResult>;
+  requestAgentRunAction?: (
+    input: RequestBubblophyAgentRunActionInput
+  ) => Promise<RequestBubblophyAgentRunActionResult>;
+  agentTokens: AgentTokenSummary[];
   onProjectSelect: (projectKey: ProjectFilterKey) => void;
   onDraftDelete: (issueId: string) => void;
   onIssuePlanSaved: (plan: IssuePlanDraft) => void;
   onIssueStatusUpdated: (issue: IssueSummary) => void;
+  onAgentRunRequested: (run: AgentRunSummary) => void;
   onIssueSelect: (issueId: string) => void;
 }) {
+  const activeProjectAgentTokens = selectedIssue
+    ? agentTokens.filter(
+        (token) =>
+          token.projectKey === selectedIssue.projectKey &&
+          token.state === 'aktiv'
+      )
+    : [];
+
   return (
     <Card id="issues" className="scroll-mt-24">
       <CardHeader>
@@ -1226,9 +1266,12 @@ function IssueQueue({
           canPersistIssueStatus={canPersistIssueStatus}
           createIssuePlanAction={createIssuePlanAction}
           updateIssueStatusAction={updateIssueStatusAction}
+          requestAgentRunAction={requestAgentRunAction}
+          activeAgentTokens={activeProjectAgentTokens}
           onDraftDelete={onDraftDelete}
           onIssuePlanSaved={onIssuePlanSaved}
           onIssueStatusUpdated={onIssueStatusUpdated}
+          onAgentRunRequested={onAgentRunRequested}
         />
       </CardContent>
     </Card>
@@ -1249,9 +1292,12 @@ function IssueDetailPanel({
   canPersistIssueStatus,
   createIssuePlanAction,
   updateIssueStatusAction,
+  requestAgentRunAction,
+  activeAgentTokens,
   onDraftDelete,
   onIssuePlanSaved,
   onIssueStatusUpdated,
+  onAgentRunRequested,
 }: {
   dataSource: DashboardSnapshot['meta']['dataSource'];
   issue: DashboardIssue | null;
@@ -1264,9 +1310,14 @@ function IssueDetailPanel({
   updateIssueStatusAction?: (
     input: UpdateBubblophyIssueStatusActionInput
   ) => Promise<UpdateBubblophyIssueStatusActionResult>;
+  requestAgentRunAction?: (
+    input: RequestBubblophyAgentRunActionInput
+  ) => Promise<RequestBubblophyAgentRunActionResult>;
+  activeAgentTokens: AgentTokenSummary[];
   onDraftDelete: (issueId: string) => void;
   onIssuePlanSaved: (plan: IssuePlanDraft) => void;
   onIssueStatusUpdated: (issue: IssueSummary) => void;
+  onAgentRunRequested: (run: AgentRunSummary) => void;
 }) {
   const [isPlanDialogOpen, setIsPlanDialogOpen] = useState(false);
 
@@ -1329,6 +1380,15 @@ function IssueDetailPanel({
         }
         updateIssueStatusAction={updateIssueStatusAction}
         onIssueStatusUpdated={onIssueStatusUpdated}
+      />
+
+      <AgentRunRequestPanel
+        key={`${issue.id}-${activeAgentTokens.map((token) => token.id).join('-')}`}
+        dataSource={dataSource}
+        issue={issue}
+        activeAgentTokens={activeAgentTokens}
+        requestAgentRunAction={requestAgentRunAction}
+        onAgentRunRequested={onAgentRunRequested}
       />
 
       <div className="grid gap-2 rounded-md border border-border bg-background p-3">
@@ -1531,6 +1591,137 @@ function IssueStatusTransitionPanel({
         <p className="text-sm text-muted-foreground">
           Persistente Statusänderungen sind nur für gespeicherte Issues bei
           aktiver Datenbank verfügbar.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Renders a human-only agent run request control.
+ *
+ * @param props Selected issue, active project tokens, and request action.
+ * @returns Compact request form or a non-persistent explanation.
+ */
+function AgentRunRequestPanel({
+  dataSource,
+  issue,
+  activeAgentTokens,
+  requestAgentRunAction,
+  onAgentRunRequested,
+}: {
+  dataSource: DashboardSnapshot['meta']['dataSource'];
+  issue: DashboardIssue;
+  activeAgentTokens: AgentTokenSummary[];
+  requestAgentRunAction?: (
+    input: RequestBubblophyAgentRunActionInput
+  ) => Promise<RequestBubblophyAgentRunActionResult>;
+  onAgentRunRequested: (run: AgentRunSummary) => void;
+}) {
+  const isDatabaseSource =
+    dataSource === 'database' || dataSource === 'empty_database';
+  const canRequestRun =
+    isDatabaseSource &&
+    !isLocalDraftIssue(issue) &&
+    activeAgentTokens.length > 0 &&
+    Boolean(requestAgentRunAction);
+  const [agentTokenId, setAgentTokenId] = useState(
+    activeAgentTokens[0]?.id ?? ''
+  );
+  const [instructions, setInstructions] = useState('');
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const canSubmit = canRequestRun && Boolean(agentTokenId) && !isPending;
+
+  const handleSubmit = () => {
+    if (!canSubmit || !requestAgentRunAction) {
+      return;
+    }
+
+    setActionError(null);
+    startTransition(async () => {
+      const result = await requestAgentRunAction({
+        issueId: issue.id,
+        agentTokenId,
+        instructions,
+      });
+
+      if (result.status === 'requested') {
+        onAgentRunRequested(result.run);
+        setInstructions('');
+        return;
+      }
+
+      setActionError(getAgentRunRequestActionErrorMessage(result));
+    });
+  };
+
+  return (
+    <div className="grid gap-3 rounded-md border border-border bg-background p-3">
+      <div className="grid gap-1">
+        <h4 className="text-sm font-medium">Run anfragen</h4>
+        <p className="text-xs text-muted-foreground">
+          Erstellt nur einen wartenden Run-Eintrag. Es wird kein Agent gestartet
+          und kein Code ausgeführt.
+        </p>
+      </div>
+
+      {canRequestRun ? (
+        <form
+          className="grid gap-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleSubmit();
+          }}>
+          <label className="grid gap-1.5 text-sm font-medium">
+            Agent-Token
+            <select
+              name="agentTokenId"
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+              value={agentTokenId}
+              onChange={(event) => setAgentTokenId(event.currentTarget.value)}>
+              {activeAgentTokens.map((token) => (
+                <option key={token.id} value={token.id}>
+                  {token.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="grid gap-1.5 text-sm font-medium">
+            Auftrag
+            <Textarea
+              name="instructions"
+              placeholder="Optional: Was soll später geprüft werden?"
+              maxLength={500}
+              value={instructions}
+              onChange={(event) => setInstructions(event.currentTarget.value)}
+            />
+          </label>
+
+          <p className="text-xs text-muted-foreground">
+            Maximal 500 Zeichen. Die Anfrage wartet auf menschliche Freigabe;
+            sie ist kein Autostart.
+          </p>
+
+          {actionError ? (
+            <p role="alert" className="text-sm text-destructive">
+              {actionError}
+            </p>
+          ) : null}
+
+          <Button type="submit" size="sm" disabled={!canSubmit}>
+            {isPending ? 'Fragt an...' : 'Run anfragen'}
+          </Button>
+        </form>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          {getAgentRunRequestUnavailableMessage({
+            dataSource,
+            issue,
+            activeAgentTokens,
+            requestAgentRunAction,
+          })}
         </p>
       )}
     </div>
@@ -1985,13 +2176,18 @@ function NewAgentTokenDialog({
 /**
  * Renders pending and reviewable agent runs.
  *
- * @param props Dashboard snapshot with agent run summaries.
+ * @param props Data source and agent run summaries.
  * @returns Run queue panel.
  */
-function RunQueue({ snapshot }: BubblophyDashboardProps) {
+function RunQueue({
+  dataSource,
+  agentRuns,
+}: {
+  dataSource: DashboardSnapshot['meta']['dataSource'];
+  agentRuns: AgentRunSummary[];
+}) {
   const isDatabaseSource =
-    snapshot.meta.dataSource === 'database' ||
-    snapshot.meta.dataSource === 'empty_database';
+    dataSource === 'database' || dataSource === 'empty_database';
 
   return (
     <Card id="runs" className="scroll-mt-24">
@@ -2017,14 +2213,14 @@ function RunQueue({ snapshot }: BubblophyDashboardProps) {
             Run-Workflow existiert.
           </div>
         ) : null}
-        {isDatabaseSource && snapshot.agentRuns.length === 0 ? (
+        {isDatabaseSource && agentRuns.length === 0 ? (
           <div className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
             Noch keine Runs. Bubblophy startet keine Agenten automatisch; ein
             späterer Run-Request braucht eine explizite menschliche Freigabe.
           </div>
         ) : null}
         {isDatabaseSource
-          ? snapshot.agentRuns.map((run) => (
+          ? agentRuns.map((run) => (
               <div
                 key={run.id}
                 className="grid gap-2 rounded-md bg-muted/30 p-3">
@@ -2412,6 +2608,84 @@ function getIssueStatusActionErrorMessage(
   }
 
   return 'Der gewählte Status ist nicht gültig.';
+}
+
+/**
+ * Converts run request action outcomes into quiet inline feedback.
+ *
+ * @param result Result returned by the persisted run request action.
+ * @returns Human-readable error message for the detail panel.
+ */
+function getAgentRunRequestActionErrorMessage(
+  result: Exclude<RequestBubblophyAgentRunActionResult, { status: 'requested' }>
+) {
+  if (result.status === 'not_found') {
+    return 'Dieses Issue wurde nicht gefunden. Es wurde kein Run angefragt.';
+  }
+
+  if (result.status === 'forbidden') {
+    return 'Du bist kein Mitglied dieses Projekts. Es wurde kein Run angefragt.';
+  }
+
+  if (result.status === 'token_unavailable') {
+    return 'Dieses Agent-Token ist nicht aktiv oder gehört nicht zu diesem Projekt.';
+  }
+
+  if (result.status === 'database_unavailable') {
+    return 'Die Datenbank ist gerade nicht verfügbar. Es wurde kein Run angefragt.';
+  }
+
+  if (result.reason === 'empty_issue') {
+    return 'Wähle ein Issue aus, bevor du einen Run anfragst.';
+  }
+
+  if (result.reason === 'empty_agent_token') {
+    return 'Wähle ein aktives Agent-Token aus.';
+  }
+
+  return 'Der Auftrag ist zu lang. Maximal 500 Zeichen sind erlaubt.';
+}
+
+/**
+ * Explains why a persisted run request is not available.
+ *
+ * @param props Current data source, selected issue, active tokens, and action.
+ * @returns Short non-operative helper copy.
+ */
+function getAgentRunRequestUnavailableMessage({
+  dataSource,
+  issue,
+  activeAgentTokens,
+  requestAgentRunAction,
+}: {
+  dataSource: DashboardSnapshot['meta']['dataSource'];
+  issue: DashboardIssue;
+  activeAgentTokens: AgentTokenSummary[];
+  requestAgentRunAction?: (
+    input: RequestBubblophyAgentRunActionInput
+  ) => Promise<RequestBubblophyAgentRunActionResult>;
+}) {
+  if (isLocalDraftIssue(issue)) {
+    return 'Lokale Drafts können keinen Agent-Run anfragen, solange sie nicht gespeichert sind.';
+  }
+
+  if (dataSource === 'sample') {
+    return 'Sample-Daten erlauben keine Run-Anfrage. Echte Requests erscheinen erst mit Datenbankdaten.';
+  }
+
+  if (dataSource === 'database_unavailable') {
+    return 'Die Datenbank ist nicht bereit. Bubblophy zeigt deshalb keine persistente Run-Anfrage.';
+  }
+
+  if (activeAgentTokens.length === 0) {
+    return 'Für dieses Projekt ist kein aktives Agent-Token verfügbar.';
+  }
+
+  if (!requestAgentRunAction) {
+    return 'Die Server-Action für Run-Anfragen ist in dieser Oberfläche nicht aktiv.';
+  }
+
+  return 'Run-Anfragen sind gerade nicht verfügbar.';
 }
 
 /**
