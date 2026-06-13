@@ -1,3 +1,8 @@
+import type {
+  createBubblophyIssueAction,
+  createBubblophyIssuePlanAction,
+  createBubblophyProjectAction,
+} from '@/app/actions';
 import type { BubblophyDashboardSnapshotInput } from '@/lib/dashboard/data';
 import type { DashboardSnapshot } from '@/lib/dashboard/types';
 
@@ -6,9 +11,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const requireBubblophySessionMock = vi.fn();
 const getBubblophyDashboardSnapshotMock = vi.fn();
 const BubblophyDashboardMock = vi.fn(
-  ({ snapshot }: { snapshot: DashboardSnapshot }) => (
-    <div data-testid="dashboard">{snapshot.projects[0]?.name}</div>
-  )
+  (props: {
+    snapshot: DashboardSnapshot;
+    createIssueAction?: typeof createBubblophyIssueAction;
+    createIssuePlanAction?: typeof createBubblophyIssuePlanAction;
+    createProjectAction?: typeof createBubblophyProjectAction;
+  }) => <div data-testid="dashboard">{props.snapshot.projects[0]?.name}</div>
 );
 
 vi.mock('next/server', async (importOriginal) => {
@@ -31,8 +39,12 @@ vi.mock('@/lib/dashboard/data', () => ({
 }));
 
 vi.mock('@/components/dashboard/bubblophy-dashboard', () => ({
-  BubblophyDashboard: (props: { snapshot: DashboardSnapshot }) =>
-    BubblophyDashboardMock(props),
+  BubblophyDashboard: (props: {
+    snapshot: DashboardSnapshot;
+    createIssueAction?: typeof createBubblophyIssueAction;
+    createIssuePlanAction?: typeof createBubblophyIssuePlanAction;
+    createProjectAction?: typeof createBubblophyProjectAction;
+  }) => BubblophyDashboardMock(props),
 }));
 
 describe('Bubblophy home page', () => {
@@ -89,6 +101,9 @@ describe('Bubblophy home page', () => {
       },
     });
     expect(element.props.snapshot).toBe(snapshot);
+    expect(element.props.createIssueAction).toEqual(expect.any(Function));
+    expect(element.props.createIssuePlanAction).toEqual(expect.any(Function));
+    expect(element.props.createProjectAction).toEqual(expect.any(Function));
   });
 
   it('does not load dashboard data when the session gate redirects', async () => {

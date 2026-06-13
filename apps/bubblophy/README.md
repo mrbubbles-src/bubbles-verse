@@ -35,6 +35,9 @@ einem bewusst human-gesteuerten Kontrollzentrum.
 - Der Issue-Dialog bietet bei aktiver Datenbankquelle zusätzlich
   `In Datenbank speichern`; bei Sample- oder Fallback-Daten bleibt er bewusst
   lokal und markiert Drafts als nicht gespeichert.
+- Im Issue-Detailpanel können Menschen bei aktiver Datenbankquelle einen
+  Plan-Entwurf speichern. Der server-only Plan-Service schreibt eine neue
+  Planversion plus `plan_updated`-Event und startet keinen Agent-Run.
 - Der Auth- und Sicherheitsplan liegt in
   `documentation/auth-security-plan.md`.
 - Die UI nutzt einen typisierten Dashboard-Snapshot als View Model. Der
@@ -84,6 +87,9 @@ bun run build
   die echte Prüfung bleibt serverseitig.
 - Persistierte Issue-Erfassung läuft serverseitig über Projektmitgliedschaft,
   schreibt nur Issue plus `created`-Event und startet keine Agent-Runs.
+- Persistierte Plan-Erfassung läuft serverseitig über Issue-Projektmitgliedschaft,
+  schreibt eine neue Planversion plus `plan_updated`-Event und startet keine
+  Agent-Runs.
 - Persistierte Projekt-Erfassung läuft serverseitig über die menschliche
   Session, schreibt Projekt plus Owner-Mitgliedschaft und startet keine
   Agent-Runs.

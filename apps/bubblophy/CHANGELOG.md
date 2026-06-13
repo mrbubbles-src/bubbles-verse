@@ -36,3 +36,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   minimal dashboard dialog for database-backed project creation.
 - Added the initial Drizzle SQL migration and database setup notes for
   reviewable Bubblophy table creation without remote migration execution.
+- Added a server-only issue plan draft flow, authenticated server action, and
+  dashboard dialog that writes plan versions plus `plan_updated` events without
+  starting agent runs.

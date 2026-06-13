@@ -1,6 +1,8 @@
 import type {
   CreateBubblophyIssueActionInput,
   CreateBubblophyIssueActionResult,
+  CreateBubblophyIssuePlanActionInput,
+  CreateBubblophyIssuePlanActionResult,
   CreateBubblophyProjectActionInput,
   CreateBubblophyProjectActionResult,
 } from '@/app/actions';
@@ -193,6 +195,105 @@ describe('BubblophyDashboard interactions', () => {
     expect(within(detailPanel).getByText('BV-12')).toBeInTheDocument();
     expect(
       within(detailPanel).getByText('Projekt BV · Owner mrbubbles')
+    ).toBeInTheDocument();
+  });
+
+  it('does not expose fake plan persistence for sample snapshots', () => {
+    render(<BubblophyDashboard snapshot={dashboardSnapshot} />);
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    expect(
+      within(detailPanel).queryByRole('button', { name: /Plan entwerfen/i })
+    ).not.toBeInTheDocument();
+    expect(
+      within(detailPanel).getByText(/Sample-Daten enthalten aktuell/i)
+    ).toBeInTheDocument();
+  });
+
+  it('persists a human issue plan and renders it in the detail panel', async () => {
+    const createIssuePlanAction = vi.fn<
+      (
+        input: CreateBubblophyIssuePlanActionInput
+      ) => Promise<CreateBubblophyIssuePlanActionResult>
+    >(async () => ({
+      status: 'created',
+      plan: {
+        issueId: 'BV-12',
+        version: 2,
+        summary: 'Kontext sichern und Review vorbereiten.',
+        steps: [
+          { id: 'step_1', text: 'Bestehenden Snapshot lesen' },
+          { id: 'step_2', text: 'Plan-Notiz prüfen' },
+        ],
+      },
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        createIssuePlanAction={createIssuePlanAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Plan entwerfen' })
+    );
+    fireEvent.change(screen.getByLabelText('Plan-Zusammenfassung'), {
+      target: { value: 'Kontext sichern und Review vorbereiten.' },
+    });
+    fireEvent.change(screen.getByLabelText('Schritt 1'), {
+      target: { value: 'Bestehenden Snapshot lesen' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Schritt hinzufügen' }));
+    fireEvent.change(screen.getByLabelText('Schritt 2'), {
+      target: { value: 'Plan-Notiz prüfen' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Plan speichern' }));
+
+    await waitFor(() => {
+      expect(createIssuePlanAction).toHaveBeenCalledWith({
+        issueId: 'BV-12',
+        summary: 'Kontext sichern und Review vorbereiten.',
+        steps: ['Bestehenden Snapshot lesen', 'Plan-Notiz prüfen'],
+      });
+    });
+    expect(createIssuePlanAction.mock.calls[0]?.[0]).not.toHaveProperty(
+      'authUserId'
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    const updatedDetailPanel = screen.getByLabelText('Issue-Details');
+
+    expect(
+      within(updatedDetailPanel).getByText(
+        'Kontext sichern und Review vorbereiten.'
+      )
+    ).toBeInTheDocument();
+    expect(
+      within(updatedDetailPanel).getByText('Bestehenden Snapshot lesen')
+    ).toBeInTheDocument();
+    expect(
+      within(updatedDetailPanel).getByText('Plan-Notiz prüfen')
+    ).toBeInTheDocument();
+    expect(
+      within(updatedDetailPanel).getByText(
+        'Plan v2, menschlich gespeichert. Es wurde kein Agent-Run gestartet.'
+      )
+    ).toBeInTheDocument();
+    expect(
+      within(updatedDetailPanel).getByText('2 Schritte')
     ).toBeInTheDocument();
   });
 

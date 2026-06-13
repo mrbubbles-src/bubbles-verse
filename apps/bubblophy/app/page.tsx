@@ -7,6 +7,7 @@ import { connection } from 'next/server';
 
 import {
   createBubblophyIssueAction,
+  createBubblophyIssuePlanAction,
   createBubblophyProjectAction,
 } from '@/app/actions';
 import { BubblophyDashboard } from '@/components/dashboard/bubblophy-dashboard';
@@ -64,6 +65,7 @@ export async function ProtectedBubblophyDashboard() {
     <BubblophyDashboard
       snapshot={dashboardSnapshot}
       createIssueAction={createBubblophyIssueAction}
+      createIssuePlanAction={createBubblophyIssuePlanAction}
       createProjectAction={createBubblophyProjectAction}
     />
   );

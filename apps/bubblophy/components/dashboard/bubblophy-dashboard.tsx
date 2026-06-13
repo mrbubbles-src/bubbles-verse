@@ -3,6 +3,8 @@
 import type {
   CreateBubblophyIssueActionInput,
   CreateBubblophyIssueActionResult,
+  CreateBubblophyIssuePlanActionInput,
+  CreateBubblophyIssuePlanActionResult,
   CreateBubblophyProjectActionInput,
   CreateBubblophyProjectActionResult,
 } from '@/app/actions';
@@ -76,6 +78,9 @@ interface BubblophyDashboardProps {
   createIssueAction?: (
     input: CreateBubblophyIssueActionInput
   ) => Promise<CreateBubblophyIssueActionResult>;
+  createIssuePlanAction?: (
+    input: CreateBubblophyIssuePlanActionInput
+  ) => Promise<CreateBubblophyIssuePlanActionResult>;
   createProjectAction?: (
     input: CreateBubblophyProjectActionInput
   ) => Promise<CreateBubblophyProjectActionResult>;
@@ -152,6 +157,11 @@ interface PersistedIssueInput {
   title: string;
 }
 
+type IssuePlanDraft = Extract<
+  CreateBubblophyIssuePlanActionResult,
+  { status: 'created' }
+>['plan'];
+
 interface PersistedProjectInput {
   description: string;
   key: string;
@@ -181,6 +191,7 @@ function isLocalDraftIssue(issue: DashboardIssue): issue is LocalDraftIssue {
 export function BubblophyDashboard({
   snapshot,
   createIssueAction,
+  createIssuePlanAction,
   createProjectAction,
 }: BubblophyDashboardProps) {
   const [selectedProjectKey, setSelectedProjectKey] =
@@ -192,6 +203,9 @@ export function BubblophyDashboard({
   const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
   const [localDrafts, setLocalDrafts] = useState<LocalDraftIssue[]>([]);
   const [persistedIssues, setPersistedIssues] = useState<IssueSummary[]>([]);
+  const [issuePlansById, setIssuePlansById] = useState<
+    Record<string, IssuePlanDraft>
+  >({});
   const [persistedProjects, setPersistedProjects] = useState<ProjectSummary[]>(
     []
   );
@@ -203,8 +217,20 @@ export function BubblophyDashboard({
   );
 
   const allIssues = useMemo<DashboardIssue[]>(
-    () => [...localDrafts, ...persistedIssues, ...snapshot.issues],
-    [localDrafts, persistedIssues, snapshot.issues]
+    () =>
+      [...localDrafts, ...persistedIssues, ...snapshot.issues].map((issue) => {
+        const plan = issuePlansById[issue.id];
+
+        if (!plan) {
+          return issue;
+        }
+
+        return {
+          ...issue,
+          planSteps: plan.steps.length,
+        };
+      }),
+    [issuePlansById, localDrafts, persistedIssues, snapshot.issues]
   );
 
   const filteredIssues = useMemo(() => {
@@ -219,6 +245,9 @@ export function BubblophyDashboard({
     filteredIssues.find((issue) => issue.id === selectedIssueId) ??
     filteredIssues[0] ??
     null;
+  const selectedIssuePlan = selectedIssue
+    ? issuePlansById[selectedIssue.id]
+    : undefined;
   const openIssues = allProjects.reduce(
     (sum, project) => sum + project.openIssues,
     0
@@ -284,6 +313,13 @@ export function BubblophyDashboard({
     setSelectedProjectKey(project.key);
     setSelectedIssueId('');
     setIsProjectDialogOpen(false);
+  };
+
+  const handleIssuePlanSaved = (plan: IssuePlanDraft) => {
+    setIssuePlansById((currentPlans) => ({
+      ...currentPlans,
+      [plan.issueId]: plan,
+    }));
   };
 
   const handleDeleteDraft = (issueId: string) => {
@@ -379,10 +415,17 @@ export function BubblophyDashboard({
               <IssueQueue
                 dataSource={snapshot.meta.dataSource}
                 issues={filteredIssues}
+                issuePlan={selectedIssuePlan}
                 selectedIssue={selectedIssue}
                 selectedProjectKey={selectedProjectKey}
+                canPersistIssuePlans={
+                  snapshot.meta.dataSource === 'database' &&
+                  Boolean(createIssuePlanAction)
+                }
+                createIssuePlanAction={createIssuePlanAction}
                 onProjectSelect={handleProjectSelect}
                 onDraftDelete={handleDeleteDraft}
+                onIssuePlanSaved={handleIssuePlanSaved}
                 onIssueSelect={setSelectedIssueId}
               />
             </div>
@@ -845,18 +888,28 @@ function ReadinessBar({
 function IssueQueue({
   dataSource,
   issues,
+  issuePlan,
   selectedIssue,
   selectedProjectKey,
+  canPersistIssuePlans,
+  createIssuePlanAction,
   onProjectSelect,
   onDraftDelete,
+  onIssuePlanSaved,
   onIssueSelect,
 }: {
   dataSource: DashboardSnapshot['meta']['dataSource'];
   issues: DashboardIssue[];
+  issuePlan?: IssuePlanDraft;
   selectedIssue: DashboardIssue | null;
   selectedProjectKey: ProjectFilterKey;
+  canPersistIssuePlans: boolean;
+  createIssuePlanAction?: (
+    input: CreateBubblophyIssuePlanActionInput
+  ) => Promise<CreateBubblophyIssuePlanActionResult>;
   onProjectSelect: (projectKey: ProjectFilterKey) => void;
   onDraftDelete: (issueId: string) => void;
+  onIssuePlanSaved: (plan: IssuePlanDraft) => void;
   onIssueSelect: (issueId: string) => void;
 }) {
   return (
@@ -956,7 +1009,11 @@ function IssueQueue({
         <IssueDetailPanel
           dataSource={dataSource}
           issue={selectedIssue}
+          issuePlan={issuePlan}
+          canPersistIssuePlans={canPersistIssuePlans}
+          createIssuePlanAction={createIssuePlanAction}
           onDraftDelete={onDraftDelete}
+          onIssuePlanSaved={onIssuePlanSaved}
         />
       </CardContent>
     </Card>
@@ -972,12 +1029,24 @@ function IssueQueue({
 function IssueDetailPanel({
   dataSource,
   issue,
+  issuePlan,
+  canPersistIssuePlans,
+  createIssuePlanAction,
   onDraftDelete,
+  onIssuePlanSaved,
 }: {
   dataSource: DashboardSnapshot['meta']['dataSource'];
   issue: DashboardIssue | null;
+  issuePlan?: IssuePlanDraft;
+  canPersistIssuePlans: boolean;
+  createIssuePlanAction?: (
+    input: CreateBubblophyIssuePlanActionInput
+  ) => Promise<CreateBubblophyIssuePlanActionResult>;
   onDraftDelete: (issueId: string) => void;
+  onIssuePlanSaved: (plan: IssuePlanDraft) => void;
 }) {
+  const [isPlanDialogOpen, setIsPlanDialogOpen] = useState(false);
+
   if (!issue) {
     return (
       <aside className="rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
@@ -1030,7 +1099,18 @@ function IssueDetailPanel({
       </dl>
 
       <div className="grid gap-2 rounded-md border border-border bg-background p-3">
-        <h4 className="text-sm font-medium">Plan und Notiz</h4>
+        <div className="flex items-start justify-between gap-3">
+          <h4 className="text-sm font-medium">Plan und Notiz</h4>
+          {canPersistIssuePlans && !isLocalDraftIssue(issue) ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setIsPlanDialogOpen(true)}>
+              {issuePlan ? 'Plan bearbeiten' : 'Plan entwerfen'}
+            </Button>
+          ) : null}
+        </div>
         {isLocalDraftIssue(issue) ? (
           <>
             <p className="text-sm text-muted-foreground">{issue.description}</p>
@@ -1039,6 +1119,30 @@ function IssueDetailPanel({
               nach echter Persistenz gespeichert.
             </p>
           </>
+        ) : issuePlan ? (
+          <div className="grid gap-3">
+            {issuePlan.summary ? (
+              <p className="text-sm text-muted-foreground">
+                {issuePlan.summary}
+              </p>
+            ) : null}
+            <ol className="grid gap-2 text-sm">
+              {issuePlan.steps.map((step, index) => (
+                <li
+                  key={step.id}
+                  className="grid grid-cols-[1.5rem_minmax(0,1fr)] gap-2">
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {index + 1}.
+                  </span>
+                  <span>{step.text}</span>
+                </li>
+              ))}
+            </ol>
+            <p className="text-xs text-muted-foreground">
+              Plan v{issuePlan.version}, menschlich gespeichert. Es wurde kein
+              Agent-Run gestartet.
+            </p>
+          </div>
         ) : (
           <p className="text-sm text-muted-foreground">
             {dataSource === 'database'
@@ -1056,7 +1160,192 @@ function IssueDetailPanel({
           Draft verwerfen
         </Button>
       ) : null}
+      {isPlanDialogOpen ? (
+        <IssuePlanDraftDialog
+          issue={issue}
+          issuePlan={issuePlan}
+          open={isPlanDialogOpen}
+          createIssuePlanAction={createIssuePlanAction}
+          onIssuePlanSaved={onIssuePlanSaved}
+          onOpenChange={setIsPlanDialogOpen}
+        />
+      ) : null}
     </aside>
+  );
+}
+
+/**
+ * Renders the human issue plan draft dialog.
+ *
+ * @param props Selected issue, optional existing plan, and server action.
+ * @returns Dialog for writing a plan without starting an agent run.
+ */
+function IssuePlanDraftDialog({
+  issue,
+  issuePlan,
+  open,
+  createIssuePlanAction,
+  onIssuePlanSaved,
+  onOpenChange,
+}: {
+  issue: DashboardIssue;
+  issuePlan?: IssuePlanDraft;
+  open: boolean;
+  createIssuePlanAction?: (
+    input: CreateBubblophyIssuePlanActionInput
+  ) => Promise<CreateBubblophyIssuePlanActionResult>;
+  onIssuePlanSaved: (plan: IssuePlanDraft) => void;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const [summary, setSummary] = useState(issuePlan?.summary ?? '');
+  const [steps, setSteps] = useState(
+    issuePlan?.steps.map((step) => step.text) ?? ['']
+  );
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const normalizedSteps = steps
+    .map((step) => step.trim())
+    .filter((step) => step.length > 0);
+  const canSubmit =
+    Boolean(createIssuePlanAction) && normalizedSteps.length > 0 && !isPending;
+
+  const updateStep = (index: number, value: string) => {
+    setSteps((currentSteps) =>
+      currentSteps.map((step, stepIndex) =>
+        stepIndex === index ? value : step
+      )
+    );
+  };
+
+  const removeStep = (index: number) => {
+    setSteps((currentSteps) =>
+      currentSteps.filter((_, stepIndex) => stepIndex !== index)
+    );
+  };
+
+  const handleSubmit = () => {
+    if (!canSubmit || !createIssuePlanAction) {
+      return;
+    }
+
+    setActionError(null);
+    startTransition(async () => {
+      const result = await createIssuePlanAction({
+        issueId: issue.id,
+        summary,
+        steps,
+      });
+
+      if (result.status === 'created') {
+        onIssuePlanSaved(result.plan);
+        onOpenChange(false);
+        return;
+      }
+
+      setActionError(getIssuePlanActionErrorMessage(result));
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>
+            {issuePlan ? 'Plan bearbeiten' : 'Plan entwerfen'}
+          </DialogTitle>
+          <DialogDescription>
+            Speichert eine neue menschliche Planversion für {issue.id}. Es wird
+            kein Agent-Run gestartet.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form
+          className="grid gap-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleSubmit();
+          }}>
+          <label className="grid gap-1.5 text-sm font-medium">
+            Plan-Zusammenfassung
+            <Textarea
+              name="summary"
+              placeholder="Was ist der menschliche Arbeitsplan?"
+              value={summary}
+              onChange={(event) => setSummary(event.currentTarget.value)}
+            />
+          </label>
+
+          <div className="grid gap-2">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-medium">Schritte</p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={steps.length >= 12 || isPending}
+                onClick={() =>
+                  setSteps((currentSteps) => [...currentSteps, ''])
+                }>
+                Schritt hinzufügen
+              </Button>
+            </div>
+            {steps.map((step, index) => (
+              <div
+                key={`${index}-${steps.length}`}
+                className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+                <Input
+                  aria-label={`Schritt ${index + 1}`}
+                  value={step}
+                  placeholder={`Schritt ${index + 1}`}
+                  onChange={(event) =>
+                    updateStep(index, event.currentTarget.value)
+                  }
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={steps.length === 1 || isPending}
+                  onClick={() => removeStep(index)}>
+                  Entfernen
+                </Button>
+              </div>
+            ))}
+          </div>
+
+          <div className="rounded-md border border-dashed border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+            Plan-Speichern prüft Session und Projektmitgliedschaft serverseitig,
+            schreibt eine neue Planversion plus Audit-Event und startet keinen
+            Agent-Run.
+          </div>
+
+          {actionError ? (
+            <p role="alert" className="text-sm text-destructive">
+              {actionError}
+            </p>
+          ) : null}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isPending}
+              onClick={() => onOpenChange(false)}>
+              Schließen
+            </Button>
+            <Button type="submit" disabled={!canSubmit}>
+              {isPending ? 'Speichert...' : 'Plan speichern'}
+            </Button>
+          </DialogFooter>
+
+          {!canSubmit ? (
+            <p className="text-xs text-muted-foreground">
+              Mindestens ein nicht-leerer Schritt ist nötig.
+            </p>
+          ) : null}
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -1426,6 +1715,46 @@ function getCreateIssueActionErrorMessage(
   }
 
   return 'Gib einen Titel ein, bevor du speicherst.';
+}
+
+/**
+ * Converts issue plan action outcomes into quiet dialog feedback.
+ *
+ * @param result Result returned by the persisted plan action.
+ * @returns Human-readable error message for the plan dialog.
+ */
+function getIssuePlanActionErrorMessage(
+  result: Exclude<CreateBubblophyIssuePlanActionResult, { status: 'created' }>
+) {
+  if (result.status === 'not_found') {
+    return 'Dieses Issue wurde nicht gefunden. Der Plan wurde nicht gespeichert.';
+  }
+
+  if (result.status === 'forbidden') {
+    return 'Du bist kein Mitglied dieses Projekts. Der Plan wurde nicht gespeichert.';
+  }
+
+  if (result.status === 'database_unavailable') {
+    return 'Die Datenbank ist gerade nicht verfügbar. Der Plan wurde nicht gespeichert.';
+  }
+
+  if (result.reason === 'empty_issue') {
+    return 'Wähle ein Issue aus, bevor du den Plan speicherst.';
+  }
+
+  if (result.reason === 'summary_too_long') {
+    return 'Die Plan-Zusammenfassung ist zu lang.';
+  }
+
+  if (result.reason === 'too_many_steps') {
+    return 'Der Plan darf höchstens 12 Schritte enthalten.';
+  }
+
+  if (result.reason === 'step_too_long') {
+    return 'Ein Plan-Schritt ist zu lang.';
+  }
+
+  return 'Mindestens ein nicht-leerer Schritt ist nötig.';
 }
 
 /**

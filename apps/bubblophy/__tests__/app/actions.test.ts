@@ -1,14 +1,17 @@
 import type {
   CreateBubblophyIssueActionInput,
+  CreateBubblophyIssuePlanActionInput,
   CreateBubblophyProjectActionInput,
 } from '@/app/actions';
 import type { CreateBubblophyIssueDraftInput } from '@/lib/issues/create';
+import type { CreateOrUpdateBubblophyIssuePlanDraftInput } from '@/lib/issues/plans';
 import type { CreateBubblophyProjectInput } from '@/lib/projects/create';
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const requireBubblophySessionMock = vi.fn();
 const createBubblophyIssueDraftMock = vi.fn();
+const createBubblophyIssuePlanDraftMock = vi.fn();
 const createBubblophyProjectMock = vi.fn();
 
 vi.mock('@/lib/auth/session', () => ({
@@ -21,6 +24,12 @@ vi.mock('@/lib/issues/create', () => ({
     createBubblophyIssueDraftMock(input),
 }));
 
+vi.mock('@/lib/issues/plans', () => ({
+  createOrUpdateBubblophyIssuePlanDraft: (
+    input: CreateOrUpdateBubblophyIssuePlanDraftInput
+  ) => createBubblophyIssuePlanDraftMock(input),
+}));
+
 vi.mock('@/lib/projects/create', () => ({
   createBubblophyProject: (input: CreateBubblophyProjectInput) =>
     createBubblophyProjectMock(input),
@@ -30,6 +39,7 @@ describe('createBubblophyIssueAction', () => {
   beforeEach(() => {
     requireBubblophySessionMock.mockReset();
     createBubblophyIssueDraftMock.mockReset();
+    createBubblophyIssuePlanDraftMock.mockReset();
     createBubblophyProjectMock.mockReset();
   });
 
@@ -88,10 +98,64 @@ describe('createBubblophyIssueAction', () => {
   });
 });
 
+describe('createBubblophyIssuePlanAction', () => {
+  beforeEach(() => {
+    requireBubblophySessionMock.mockReset();
+    createBubblophyIssueDraftMock.mockReset();
+    createBubblophyIssuePlanDraftMock.mockReset();
+    createBubblophyProjectMock.mockReset();
+  });
+
+  it('resolves the auth user server-side instead of accepting a client authUserId', async () => {
+    requireBubblophySessionMock.mockResolvedValue({
+      authUserId: 'user_server',
+      email: 'owner@example.test',
+      user: {},
+    });
+    createBubblophyIssuePlanDraftMock.mockResolvedValue({
+      status: 'created',
+      plan: {
+        issueId: 'BV-12',
+        version: 2,
+        summary: 'Plan prüfen',
+        steps: [{ id: 'step_1', text: 'Kontext lesen' }],
+      },
+    });
+
+    const { createBubblophyIssuePlanAction } = await import('@/app/actions');
+    const result = await createBubblophyIssuePlanAction({
+      authUserId: 'user_client_spoof',
+      issueId: 'BV-12',
+      summary: 'Plan prüfen',
+      steps: ['Kontext lesen'],
+    } as CreateBubblophyIssuePlanActionInput & { authUserId: string });
+
+    expect(requireBubblophySessionMock).toHaveBeenCalledWith({
+      nextPath: '/',
+    });
+    expect(createBubblophyIssuePlanDraftMock).toHaveBeenCalledWith({
+      authUserId: 'user_server',
+      issueId: 'BV-12',
+      summary: 'Plan prüfen',
+      steps: ['Kontext lesen'],
+    });
+    expect(result).toEqual({
+      status: 'created',
+      plan: {
+        issueId: 'BV-12',
+        version: 2,
+        summary: 'Plan prüfen',
+        steps: [{ id: 'step_1', text: 'Kontext lesen' }],
+      },
+    });
+  });
+});
+
 describe('createBubblophyProjectAction', () => {
   beforeEach(() => {
     requireBubblophySessionMock.mockReset();
     createBubblophyIssueDraftMock.mockReset();
+    createBubblophyIssuePlanDraftMock.mockReset();
     createBubblophyProjectMock.mockReset();
   });
 
