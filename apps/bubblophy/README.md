@@ -20,6 +20,8 @@ einem bewusst human-gesteuerten Kontrollzentrum.
 - `/login`, `/auth/callback` und `/auth/logout` bereiten den Supabase/GitHub
   Login für Menschen vor.
 - Das Drizzle-Grundschema liegt unter `drizzle/db/schema.ts`.
+- Die lokale Initialmigration liegt unter `drizzle/0000_premium_psynapse.sql`;
+  `documentation/database-setup.md` beschreibt Review, Anwendung und RLS-TODOs.
 - Eine erste server-only Repository-/Mapper-Grenze für Projekt-/Issue-Zeilen
   liegt unter `lib/issues/repository.ts`.
 - Ein server-only Create-Vertrag für Projekte liegt unter

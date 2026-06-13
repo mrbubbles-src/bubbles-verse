@@ -182,6 +182,9 @@ export const bubblophyIssues = pgTable(
       table.projectId,
       table.status
     ),
+    parentIssueIdx: index('bubblophy_issues_parent_issue_idx').on(
+      table.parentIssueId
+    ),
     assignedUserIdx: index('bubblophy_issues_assigned_user_idx').on(
       table.assignedAuthUserId
     ),
@@ -323,5 +326,8 @@ export const bubblophyIssueEvents = pgTable(
     actorAgentTokenIdx: index(
       'bubblophy_issue_events_actor_agent_token_idx'
     ).on(table.actorAgentTokenId),
+    agentRunIdx: index('bubblophy_issue_events_agent_run_idx').on(
+      table.agentRunId
+    ),
   })
 );
