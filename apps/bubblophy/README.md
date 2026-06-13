@@ -32,6 +32,9 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   weiter klar markierte lokale Drafts.
 - Der Projektbereich bietet bei aktiver Datenbankquelle `Neues Projekt`; bei
   Sample- oder Fallback-Daten wird kein DB-Projektbutton angeboten.
+- Projektkarten und Issues sind auswählbare Controls mit sichtbarem Zustand.
+  Projektfilter können gelöst werden; Sidebar-Links führen auf echte
+  Dashboard-Sections statt auf Platzhalter.
 - Der Issue-Dialog bietet bei aktiver Datenbankquelle zusätzlich
   `In Datenbank speichern`; bei Sample- oder Fallback-Daten bleibt er bewusst
   lokal und markiert Drafts als nicht gespeichert.
@@ -105,6 +108,9 @@ bun run build
 - Der Datenbank-Snapshot liest Agent-Token-Summaries und Project-Events nur für
   Projekte mit menschlicher Mitgliedschaft. Token-Plaintext und `token_hash`
   werden nicht selektiert und nicht an die UI gegeben.
+- Sample- und Fallback-Daten markieren Agent-Tokens und Audit-Aktivität als
+  Beispielvorschau. Der Run-Bereich zeigt dort keine operative Queue und keine
+  Run-Start- oder Prüfaktion.
 - Agenten nutzen eingeschränkte Bubblophy-Agent-Tokens mit Hash, Scopes,
   Projektgrenze, Status und Ablaufdatum.
 - Agenten erhalten keine Mensch-Logins und keinen Supabase-Service-Role-Key.

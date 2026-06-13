@@ -39,6 +39,11 @@ const emptyDatabaseSnapshot = {
   issues: [],
 } satisfies DashboardSnapshot;
 
+const databaseSnapshotWithEmptyRuns = {
+  ...databaseSnapshot,
+  agentRuns: [],
+} satisfies DashboardSnapshot;
+
 vi.mock('next/navigation', () => ({
   usePathname: () => '/',
   useRouter: () => ({
@@ -164,13 +169,14 @@ describe('BubblophyDashboard interactions', () => {
       throw new Error('Expected the projects section to render.');
     }
 
-    fireEvent.click(
-      within(projectsSection).getByRole('button', {
-        name: /^Novari\s+NO\s+Stabil/i,
-      })
-    );
+    const novariProjectButton = within(projectsSection).getByRole('button', {
+      name: /^Novari\s+NO\s+Stabil/i,
+    });
+
+    fireEvent.click(novariProjectButton);
 
     expect(screen.getByText('Gefiltert auf Projekt NO.')).toBeInTheDocument();
+    expect(novariProjectButton).toHaveAttribute('aria-pressed', 'true');
     expect(
       screen.getByRole('button', {
         name: 'Novari-Projekte für externe Mitarbeit freigeben',
@@ -186,14 +192,15 @@ describe('BubblophyDashboard interactions', () => {
   it('shows issue details when an issue is clicked', () => {
     render(<BubblophyDashboard snapshot={dashboardSnapshot} />);
 
-    fireEvent.click(
-      screen.getByRole('button', {
-        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
-      })
-    );
+    const issueButton = screen.getByRole('button', {
+      name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+    });
+
+    fireEvent.click(issueButton);
 
     const detailPanel = screen.getByLabelText('Issue-Details');
 
+    expect(issueButton).toHaveAttribute('aria-pressed', 'true');
     expect(within(detailPanel).getByText('BV-12')).toBeInTheDocument();
     expect(
       within(detailPanel).getByText('Projekt BV · Owner mrbubbles')
@@ -372,6 +379,9 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       screen.queryByRole('button', { name: 'Agent-Token erstellen' })
     ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/Beispielhafte Agent-Token-Vorschau/i)
+    ).toBeInTheDocument();
   });
 
   it('creates and selects a database project from the projects panel', async () => {
@@ -721,18 +731,51 @@ describe('BubblophyDashboard interactions', () => {
     ).toBeInTheDocument();
   });
 
-  it('scrolls to the run queue instead of exposing a dead run action', () => {
-    const scrollIntoView = vi.fn();
-    window.HTMLElement.prototype.scrollIntoView = scrollIntoView;
-
+  it('does not expose operative run actions for sample snapshots', () => {
     render(<BubblophyDashboard snapshot={dashboardSnapshot} />);
 
-    fireEvent.click(screen.getByRole('button', { name: /Run-Queue öffnen/i }));
+    const runsSection = document.getElementById('runs');
 
-    expect(scrollIntoView).toHaveBeenCalledWith({
-      behavior: 'smooth',
-      block: 'start',
-    });
+    expect(runsSection).toBeInstanceOf(HTMLElement);
+
+    if (!runsSection) {
+      throw new Error('Expected the runs section to render.');
+    }
+
+    expect(
+      screen.queryByRole('button', { name: /Run-Queue öffnen/i })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /Run prüfen|Run starten/i })
+    ).not.toBeInTheDocument();
+    expect(
+      within(runsSection).getByText(/Sample\/Fallback zeigt keine operative/i)
+    ).toBeInTheDocument();
+    expect(
+      within(runsSection).queryByText('Plan wartet auf Freigabe')
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/Beispielhafte Audit-Vorschau/i)
+    ).toBeInTheDocument();
+  });
+
+  it('shows an honest empty run state for database snapshots without runs', () => {
+    render(<BubblophyDashboard snapshot={databaseSnapshotWithEmptyRuns} />);
+
+    const runsSection = document.getElementById('runs');
+
+    expect(runsSection).toBeInstanceOf(HTMLElement);
+
+    if (!runsSection) {
+      throw new Error('Expected the runs section to render.');
+    }
+
+    expect(
+      within(runsSection).getByText(/Noch keine Runs/i)
+    ).toBeInTheDocument();
+    expect(
+      within(runsSection).getByText(/explizite menschliche Freigabe/i)
+    ).toBeInTheDocument();
   });
 
   it('passes real section links into the shared sidebar shell', () => {
@@ -749,5 +792,11 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       within(navigation).getByRole('link', { name: 'Agent-Tokens' })
     ).toHaveAttribute('href', '/#agents');
+    expect(
+      within(navigation).getByRole('link', { name: 'Runs' })
+    ).toHaveAttribute('href', '/#runs');
+    expect(
+      within(navigation).getByRole('link', { name: 'Audit' })
+    ).toHaveAttribute('href', '/#activity');
   });
 });

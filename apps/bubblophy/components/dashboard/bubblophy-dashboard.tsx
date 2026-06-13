@@ -44,7 +44,6 @@ import {
   FlashIcon,
   Folder01Icon,
   HugeiconsIcon,
-  PlayCircle02Icon,
   UserGroupIcon,
 } from '@bubbles/ui/lib/hugeicons';
 import { Badge } from '@bubbles/ui/shadcn/badge';
@@ -372,13 +371,6 @@ export function BubblophyDashboard({
     setSelectedIssueId(snapshot.issues[0]?.id ?? '');
   };
 
-  const handleRunQueueSelect = () => {
-    document.getElementById('runs')?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-    });
-  };
-
   return (
     <BubblesSidebarLayout
       sidebarData={bubblophySidebarData}
@@ -390,7 +382,6 @@ export function BubblophyDashboard({
           actions={
             <DashboardToolbar
               onCreateIssue={() => setIsDraftDialogOpen(true)}
-              onOpenRuns={handleRunQueueSelect}
             />
           }
         />
@@ -474,6 +465,7 @@ export function BubblophyDashboard({
 
             <aside className="grid content-start gap-5">
               <AgentAccess
+                dataSource={snapshot.meta.dataSource}
                 agentTokens={allAgentTokens}
                 canCreateAgentToken={
                   snapshot.meta.dataSource === 'database' &&
@@ -552,16 +544,10 @@ function DataSourceStatus({ snapshot }: BubblophyDashboardProps) {
 /**
  * Renders dashboard-level actions with clear local behavior.
  *
- * @param props Handlers for local draft creation and run queue navigation.
+ * @param props Handler for local draft creation.
  * @returns Primary toolbar controls.
  */
-function DashboardToolbar({
-  onCreateIssue,
-  onOpenRuns,
-}: {
-  onCreateIssue: () => void;
-  onOpenRuns: () => void;
-}) {
+function DashboardToolbar({ onCreateIssue }: { onCreateIssue: () => void }) {
   return (
     <div className="flex flex-wrap gap-2">
       <Button size="lg" type="button" onClick={onCreateIssue}>
@@ -572,15 +558,6 @@ function DashboardToolbar({
           strokeWidth={2}
         />
         Neues Issue
-      </Button>
-      <Button size="lg" variant="outline" type="button" onClick={onOpenRuns}>
-        <HugeiconsIcon
-          aria-hidden
-          data-icon="inline-start"
-          icon={PlayCircle02Icon}
-          strokeWidth={2}
-        />
-        Run-Queue öffnen
       </Button>
     </div>
   );
@@ -663,7 +640,10 @@ function ProjectOverview({
                 Neues Projekt
               </Button>
             ) : null}
-            <button type="button" onClick={() => onProjectSelect('all')}>
+            <button
+              type="button"
+              aria-pressed={selectedProjectKey === 'all'}
+              onClick={() => onProjectSelect('all')}>
               <Badge
                 variant={selectedProjectKey === 'all' ? 'default' : 'outline'}>
                 Alle · {readiness}% bereit
@@ -1017,11 +997,13 @@ function IssueQueue({
               {issues.map((issue) => (
                 <TableRow
                   key={issue.id}
-                  data-state={selectedIssue?.id === issue.id ? 'selected' : ''}>
+                  data-state={selectedIssue?.id === issue.id ? 'selected' : ''}
+                  className="data-[state=selected]:bg-muted/40">
                   <TableCell className="font-mono text-muted-foreground">
                     <button
                       type="button"
-                      className="rounded-sm underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:outline-none"
+                      aria-pressed={selectedIssue?.id === issue.id}
+                      className="rounded-sm underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:outline-none aria-pressed:text-primary"
                       onClick={() => onIssueSelect(issue.id)}>
                       {issue.id}
                     </button>
@@ -1030,7 +1012,8 @@ function IssueQueue({
                     <div className="flex flex-wrap items-center gap-2">
                       <button
                         type="button"
-                        className="text-left font-medium underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:outline-none"
+                        aria-pressed={selectedIssue?.id === issue.id}
+                        className="text-left font-medium underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:outline-none aria-pressed:text-primary"
                         onClick={() => onIssueSelect(issue.id)}>
                         {issue.title}
                       </button>
@@ -1414,14 +1397,18 @@ function IssuePlanDraftDialog({
  * @returns Agent token panel.
  */
 function AgentAccess({
+  dataSource,
   agentTokens,
   canCreateAgentToken,
   onCreateAgentToken,
 }: {
+  dataSource: DashboardSnapshot['meta']['dataSource'];
   agentTokens: AgentTokenSummary[];
   canCreateAgentToken: boolean;
   onCreateAgentToken: () => void;
 }) {
+  const isDatabaseSource = dataSource === 'database';
+
   return (
     <Card id="agents" className="scroll-mt-24">
       <CardHeader>
@@ -1446,6 +1433,12 @@ function AgentAccess({
         ) : null}
       </CardHeader>
       <CardContent className="grid gap-3">
+        {!isDatabaseSource && agentTokens.length > 0 ? (
+          <p className="rounded-md border border-dashed border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+            Beispielhafte Agent-Token-Vorschau aus Sample/Fallback-Daten. Hier
+            sind keine operativen Tokens aktiv.
+          </p>
+        ) : null}
         {agentTokens.length === 0 ? (
           <p className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
             Noch keine Agent-Tokens für diese Datenquelle.
@@ -1673,6 +1666,8 @@ function NewAgentTokenDialog({
  * @returns Run queue panel.
  */
 function RunQueue({ snapshot }: BubblophyDashboardProps) {
+  const isDatabaseSource = snapshot.meta.dataSource === 'database';
+
   return (
     <Card id="runs" className="scroll-mt-24">
       <CardHeader>
@@ -1685,24 +1680,44 @@ function RunQueue({ snapshot }: BubblophyDashboardProps) {
           />
           Runs
         </CardTitle>
+        <CardDescription>
+          Agent-Runs entstehen später nur nach expliziter menschlicher Freigabe.
+        </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3">
-        {snapshot.agentRuns.map((run) => (
-          <div key={run.id} className="grid gap-2 rounded-md bg-muted/30 p-3">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className="text-sm font-medium">{run.issueId}</p>
-                <p className="text-xs text-muted-foreground">
-                  {run.agentLabel} · angefragt von {run.requestedBy}
-                </p>
-              </div>
-              <Badge variant={runVariant[run.state]}>
-                {agentRunStateLabels[run.state]}
-              </Badge>
-            </div>
-            <p className="text-xs text-muted-foreground">{run.lastEvent}</p>
+        {!isDatabaseSource ? (
+          <div className="rounded-md border border-dashed border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+            Sample/Fallback zeigt keine operative Run-Queue. Echte Runs werden
+            erst angezeigt, wenn ein gespeicherter, menschlich freigegebener
+            Run-Workflow existiert.
           </div>
-        ))}
+        ) : null}
+        {isDatabaseSource && snapshot.agentRuns.length === 0 ? (
+          <div className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
+            Noch keine Runs. Bubblophy startet keine Agenten automatisch; ein
+            späterer Run-Request braucht eine explizite menschliche Freigabe.
+          </div>
+        ) : null}
+        {isDatabaseSource
+          ? snapshot.agentRuns.map((run) => (
+              <div
+                key={run.id}
+                className="grid gap-2 rounded-md bg-muted/30 p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-medium">{run.issueId}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {run.agentLabel} · angefragt von {run.requestedBy}
+                    </p>
+                  </div>
+                  <Badge variant={runVariant[run.state]}>
+                    {agentRunStateLabels[run.state]}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">{run.lastEvent}</p>
+              </div>
+            ))
+          : null}
       </CardContent>
     </Card>
   );
@@ -1715,6 +1730,8 @@ function RunQueue({ snapshot }: BubblophyDashboardProps) {
  * @returns Activity timeline panel.
  */
 function ActivityFeed({ snapshot }: BubblophyDashboardProps) {
+  const isDatabaseSource = snapshot.meta.dataSource === 'database';
+
   return (
     <Card id="activity" className="scroll-mt-24">
       <CardHeader>
@@ -1728,7 +1745,18 @@ function ActivityFeed({ snapshot }: BubblophyDashboardProps) {
           Aktivität
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="grid gap-3">
+        {!isDatabaseSource && snapshot.activity.length > 0 ? (
+          <p className="rounded-md border border-dashed border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+            Beispielhafte Audit-Vorschau aus Sample/Fallback-Daten. Echte
+            Projekt-Events werden nur im Datenbankmodus geladen.
+          </p>
+        ) : null}
+        {snapshot.activity.length === 0 ? (
+          <p className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
+            Noch keine Audit-Aktivität für diese Datenquelle.
+          </p>
+        ) : null}
         <ol className="grid gap-3">
           {snapshot.activity.map((event) => (
             <li

@@ -46,3 +46,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added database-backed dashboard reads for public agent token summaries and
   project audit activity, constrained by project membership and excluding token
   secrets.
+- Improved dashboard interaction states for project and issue selection,
+  section navigation, and honest Sample/Fallback previews. The Runs panel no
+  longer exposes fake run actions before a human-approved run workflow exists.
