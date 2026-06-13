@@ -20,8 +20,9 @@ einem bewusst human-gesteuerten Kontrollzentrum.
 - `/login`, `/auth/callback` und `/auth/logout` bereiten den Supabase/GitHub
   Login für Menschen vor.
 - Das Drizzle-Grundschema liegt unter `drizzle/db/schema.ts`.
-- Die lokale Initialmigration liegt unter `drizzle/0000_premium_psynapse.sql`;
-  `documentation/database-setup.md` beschreibt Review, Anwendung und RLS-TODOs.
+- Die lokalen Datenbankmigrationen liegen unter `drizzle/`; darunter ist eine
+  additive RLS-Baseline, die vor einer Remote-Anwendung separat reviewt werden
+  muss.
 - Eine erste server-only Repository-/Mapper-Grenze für Projekt-/Issue-Zeilen
   liegt unter `lib/issues/repository.ts`.
 - Ein server-only Create-Vertrag für Projekte liegt unter
@@ -133,9 +134,11 @@ bun run build
 - Alles bleibt human-in-the-loop; Agent-Runs brauchen explizite Freigabe.
 - Datenzugriff auf `DATABASE_URL` ist in `drizzle/db/index.ts` durch
   `server-only` auf Server-Bundles begrenzt.
-- Projektmitgliedschaften, RLS-Policies und Agent-Scopes sind im Schema
-  vorbereitet, ersetzen die temporäre Allowlist aber erst nach einer späteren
-  Migration und Policy-Umsetzung.
+- Projektmitgliedschaften, RLS-Policies und Agent-Scopes sind im Schema und in
+  einer lokalen RLS-Baseline vorbereitet. Direkte Supabase-Zugriffe bleiben
+  membership-scoped; `bubblophy_agent_tokens` wird wegen `token_hash` nicht
+  direkt für `authenticated` geöffnet. Server Actions behalten zusätzlich ihre
+  serverseitigen Membership-Prüfungen.
 - Die aktuelle Issue-Nummer-Vergabe passiert im MVP transaktional über
   `max(issue_number) + 1` pro Projekt und wird vom eindeutigen DB-Index
   abgesichert. Ein späterer Projekt-Counter kann parallele Kollisionen

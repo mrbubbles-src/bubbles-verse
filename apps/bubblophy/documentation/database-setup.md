@@ -17,11 +17,13 @@ Supabase-Datenbank verändert.
 
 ## Vorbereitete Migration
 
-Die Struktur liegt aktuell in zwei lokalen Migrationen:
+Die Struktur und die erste RLS-Baseline liegen aktuell in drei lokalen
+Migrationen:
 
 ```text
 apps/bubblophy/drizzle/0000_premium_psynapse.sql
 apps/bubblophy/drizzle/0001_chilly_hiroim.sql
+apps/bubblophy/drizzle/0002_bubblophy_rls_baseline.sql
 ```
 
 `0000_premium_psynapse.sql` erzeugt:
@@ -58,7 +60,24 @@ Prüfung der generierten Migration:
 - Keine `DROP`-, `DELETE`-, `TRUNCATE`- oder destruktiven
   `ALTER TABLE ... DROP`-Statements.
 - Keine Service-Role-Annahmen.
-- Keine RLS-Policies. Das ist Absicht; siehe Phase 2.
+
+`0002_bubblophy_rls_baseline.sql` ergänzt:
+
+- `private` Helper-Funktionen nach Dashboard-Muster, um den aktuellen
+  Supabase-Auth-User und Projektmitgliedschaft für Policies zu prüfen.
+- `alter table ... enable row level security` für alle Bubblophy-Tabellen.
+- Membership-gebundene direkte `select` Policies für Projekte,
+  Projektmitgliedschaften, Issues, Pläne, Issue-Events, Projekt-Events und
+  Agent-Runs.
+- Keine direkten Browser-Write-Policies. Mutationen bleiben weiterhin über
+  server-only Server Actions mit eigener Membership-Prüfung begrenzt.
+- Keine direkte `authenticated` Select-Freigabe auf `bubblophy_agent_tokens`,
+  weil PostgreSQL-RLS keine Spalten maskiert und `token_hash` geheim bleiben
+  muss. Öffentliche Token-Summaries laufen aktuell server-only; eine sichere
+  View kann später separat ergänzt werden.
+
+Diese RLS-Baseline ist additiv und lokal reviewbar. Sie wurde nicht remote
+angewendet.
 
 ## Lokal reviewen
 
@@ -108,12 +127,13 @@ Dev-Server-Neustart prüfen. Bei `schema_missing` danach die oben genannten
 Migrationen gegen die bewusst ausgewählte Zielumgebung anwenden. Fehlerdetails,
 Stacktraces und Datenbank-URLs werden nicht an die UI weitergegeben.
 
-## Phase 2: RLS und Zugriff
+## RLS- und Zugriff-Baseline
 
-Die Initialmigration stellt nur die Struktur bereit. RLS wird separat
-entworfen, damit wir die Policy-Grenzen reviewen können, bevor sie live gehen.
+Die `0002`-Migration ist die erste konkrete RLS-Baseline. Sie schützt direkte
+Supabase-`authenticated` Zugriffe konservativ, ersetzt aber nicht die
+serverseitigen Prüfungen in Bubblophy.
 
-Geplante Richtung:
+Aktuelle Richtung:
 
 - Menschen melden sich über Supabase Auth an.
 - Projektzugriff für Menschen basiert auf `bubblophy_project_members` und
@@ -126,18 +146,15 @@ Geplante Richtung:
 - Agent-Runs werden nicht automatisch durch Issue- oder Projekt-Erstellung
   gestartet; menschliche Freigabe bleibt explizit.
 
-Offene RLS-TODOs:
+Offene Phase-2-Punkte:
 
-- Helper-Funktionen im `private` Schema nach Dashboard-Muster entwerfen,
-  z. B. für Projektmitgliedschaft und Agent-Token-Projektgrenzen.
-- `alter table ... enable row level security` für alle Bubblophy-Tabellen in
-  einer separaten Migration aktivieren.
-- Policies für Menschen und Agent-Token-Pfade getrennt definieren.
-- `bubblophy_project_events` für Projektmitglieder lesbar machen; direkte
-  Browser-Writes nicht erlauben.
-- Audit-Schreibpfade für `bubblophy_issue_events` und
-  `bubblophy_project_events` so begrenzen, dass entweder ein menschlicher Actor
-  oder ein gültiges Agent-Token nachvollziehbar ist.
-- Entscheiden, ob Server-internes `DATABASE_URL` als privileged Backend-Pfad
-  zusätzlich zu RLS verwendet wird oder ob alle App-Zugriffe strict durch RLS
-  laufen sollen.
+- Sichere View oder RPC für öffentliche Agent-Token-Summaries, falls Browser
+  sie direkt über Supabase lesen soll. Die Basistabelle bleibt wegen
+  `token_hash` geschlossen.
+- Direkte Browser-Write-Policies nur dann ergänzen, wenn sie dieselben Grenzen
+  wie die bestehenden Server Actions ausdrücken können.
+- Agent-Token-API-Policies getrennt von Mensch-Sessions entwerfen. Agenten
+  bekommen keine Supabase-Mensch-Session und keinen Service-Role-Key.
+- Entscheiden, ob Server-internes `DATABASE_URL` langfristig als privileged
+  Backend-Pfad zusätzlich zu RLS verwendet wird oder ob alle App-Zugriffe strict
+  durch RLS laufen sollen.
