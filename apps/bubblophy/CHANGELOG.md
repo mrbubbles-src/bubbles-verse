@@ -83,3 +83,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added reload-aware project/issue selection, project-scoped tokens/runs/activity
   panels, visible persisted issue creation, and close/reopen status handling for
   completed issues without hiding them from the dashboard.
+- Added server-backed agent token lifecycle controls for pause, resume, and
+  guarded revoke, including owner/maintainer checks, explicit audit metadata,
+  expiry-aware token states, and no token hash or plaintext exposure.

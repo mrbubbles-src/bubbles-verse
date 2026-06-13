@@ -13,6 +13,8 @@ import type {
   RequestBubblophyAgentRunActionResult,
   TransitionBubblophyAgentRunActionInput,
   TransitionBubblophyAgentRunActionResult,
+  UpdateBubblophyAgentTokenLifecycleActionInput,
+  UpdateBubblophyAgentTokenLifecycleActionResult,
   UpdateBubblophyIssueStatusActionInput,
   UpdateBubblophyIssueStatusActionResult,
 } from '@/app/actions';
@@ -108,6 +110,9 @@ interface BubblophyDashboardProps {
   createAgentTokenAction?: (
     input: CreateBubblophyAgentTokenActionInput
   ) => Promise<CreateBubblophyAgentTokenActionResult>;
+  updateAgentTokenLifecycleAction?: (
+    input: UpdateBubblophyAgentTokenLifecycleActionInput
+  ) => Promise<UpdateBubblophyAgentTokenLifecycleActionResult>;
 }
 
 const issueStatusVariant = {
@@ -141,6 +146,8 @@ const healthVariant = {
 const tokenVariant = {
   aktiv: 'published',
   pausiert: 'secondary',
+  widerrufen: 'destructive',
+  abgelaufen: 'draft',
 } satisfies Record<
   AgentTokenState,
   React.ComponentProps<typeof Badge>['variant']
@@ -430,6 +437,7 @@ export function BubblophyDashboard({
   transitionAgentRunAction,
   createProjectAction,
   createAgentTokenAction,
+  updateAgentTokenLifecycleAction,
 }: BubblophyDashboardProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -464,6 +472,9 @@ export function BubblophyDashboard({
   const [persistedAgentTokens, setPersistedAgentTokens] = useState<
     AgentTokenSummary[]
   >([]);
+  const [updatedAgentTokensById, setUpdatedAgentTokensById] = useState<
+    Record<string, AgentTokenSummary>
+  >({});
   const [persistedAgentRuns, setPersistedAgentRuns] = useState<
     AgentRunSummary[]
   >([]);
@@ -484,8 +495,11 @@ export function BubblophyDashboard({
     [persistedProjects, snapshot.projects]
   );
   const allAgentTokens = useMemo(
-    () => [...persistedAgentTokens, ...snapshot.agentTokens],
-    [persistedAgentTokens, snapshot.agentTokens]
+    () =>
+      [...persistedAgentTokens, ...snapshot.agentTokens].map(
+        (token) => updatedAgentTokensById[token.id] ?? token
+      ),
+    [persistedAgentTokens, snapshot.agentTokens, updatedAgentTokensById]
   );
   const allAgentRuns = useMemo(
     () =>
@@ -688,9 +702,17 @@ export function BubblophyDashboard({
       scopes: token.scopes,
       state: token.state,
       lastUsedAt: token.lastUsedAt,
+      expiresAt: token.expiresAt,
     };
 
     setPersistedAgentTokens((currentTokens) => [summary, ...currentTokens]);
+  };
+
+  const handleAgentTokenLifecycleUpdated = (token: AgentTokenSummary) => {
+    setUpdatedAgentTokensById((currentTokens) => ({
+      ...currentTokens,
+      [token.id]: token,
+    }));
   };
 
   const handleAgentRunRequested = (run: AgentRunSummary) => {
@@ -826,7 +848,14 @@ export function BubblophyDashboard({
                   allProjects.length > 0 &&
                   Boolean(createAgentTokenAction)
                 }
+                canUpdateAgentTokens={
+                  canUseDatabase && Boolean(updateAgentTokenLifecycleAction)
+                }
+                updateAgentTokenLifecycleAction={
+                  updateAgentTokenLifecycleAction
+                }
                 onCreateAgentToken={() => setIsAgentTokenDialogOpen(true)}
+                onAgentTokenLifecycleUpdated={handleAgentTokenLifecycleUpdated}
               />
               <RunQueue
                 dataSource={snapshot.meta.dataSource}
@@ -2249,12 +2278,20 @@ function AgentAccess({
   dataSource,
   agentTokens,
   canCreateAgentToken,
+  canUpdateAgentTokens,
+  updateAgentTokenLifecycleAction,
   onCreateAgentToken,
+  onAgentTokenLifecycleUpdated,
 }: {
   dataSource: DashboardSnapshot['meta']['dataSource'];
   agentTokens: AgentTokenSummary[];
   canCreateAgentToken: boolean;
+  canUpdateAgentTokens: boolean;
+  updateAgentTokenLifecycleAction?: (
+    input: UpdateBubblophyAgentTokenLifecycleActionInput
+  ) => Promise<UpdateBubblophyAgentTokenLifecycleActionResult>;
   onCreateAgentToken: () => void;
+  onAgentTokenLifecycleUpdated: (token: AgentTokenSummary) => void;
 }) {
   const isDatabaseSource =
     dataSource === 'database' || dataSource === 'empty_database';
@@ -2302,6 +2339,9 @@ function AgentAccess({
                 <p className="mt-1 text-xs text-muted-foreground">
                   {token.projectKey} · {token.lastUsedAt}
                 </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Ablauf: {token.expiresAt}
+                </p>
               </div>
               <Badge variant={tokenVariant[token.state]}>
                 {agentTokenStateLabels[token.state]}
@@ -2314,10 +2354,139 @@ function AgentAccess({
                 </Badge>
               ))}
             </div>
+            {canUpdateAgentTokens && updateAgentTokenLifecycleAction ? (
+              <AgentTokenLifecycleControls
+                key={`${token.id}-${token.state}`}
+                token={token}
+                updateAgentTokenLifecycleAction={
+                  updateAgentTokenLifecycleAction
+                }
+                onAgentTokenLifecycleUpdated={onAgentTokenLifecycleUpdated}
+              />
+            ) : null}
           </div>
         ))}
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * Renders real server-backed lifecycle controls for one agent token.
+ *
+ * @param props Token row, lifecycle action, and success callback.
+ * @returns Inline lifecycle buttons with explicit denial feedback.
+ */
+function AgentTokenLifecycleControls({
+  token,
+  updateAgentTokenLifecycleAction,
+  onAgentTokenLifecycleUpdated,
+}: {
+  token: AgentTokenSummary;
+  updateAgentTokenLifecycleAction: (
+    input: UpdateBubblophyAgentTokenLifecycleActionInput
+  ) => Promise<UpdateBubblophyAgentTokenLifecycleActionResult>;
+  onAgentTokenLifecycleUpdated: (token: AgentTokenSummary) => void;
+}) {
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [isRevokeConfirming, setIsRevokeConfirming] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const availableDecisions = getAvailableAgentTokenLifecycleDecisions(token);
+
+  const handleDecision = (
+    decision: UpdateBubblophyAgentTokenLifecycleActionInput['decision']
+  ) => {
+    if (isPending) {
+      return;
+    }
+
+    setActionError(null);
+    startTransition(async () => {
+      const result = await updateAgentTokenLifecycleAction({
+        tokenId: token.id,
+        decision,
+      });
+
+      if (result.status === 'updated' || result.status === 'unchanged') {
+        onAgentTokenLifecycleUpdated(result.token);
+        setIsRevokeConfirming(false);
+        return;
+      }
+
+      setActionError(getAgentTokenLifecycleActionErrorMessage(result));
+    });
+  };
+
+  if (availableDecisions.length === 0) {
+    return (
+      <p className="mt-3 text-xs text-muted-foreground">
+        Für diesen Token sind keine weiteren Lifecycle-Aktionen verfügbar.
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-3 grid gap-2">
+      <div className="flex flex-wrap gap-2">
+        {availableDecisions.map((decision) =>
+          decision === 'revoke' ? (
+            <Button
+              key={decision}
+              type="button"
+              size="sm"
+              variant="destructive"
+              disabled={isPending}
+              onClick={() => {
+                setActionError(null);
+                setIsRevokeConfirming(true);
+              }}>
+              {getAgentTokenLifecycleDecisionLabel(decision)}
+            </Button>
+          ) : (
+            <Button
+              key={decision}
+              type="button"
+              size="sm"
+              variant="secondary"
+              disabled={isPending}
+              onClick={() => handleDecision(decision)}>
+              {getAgentTokenLifecycleDecisionLabel(decision)}
+            </Button>
+          )
+        )}
+      </div>
+      {isRevokeConfirming ? (
+        <div className="grid gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-2">
+          <p className="text-xs text-muted-foreground">
+            Widerruf ist endgültig. Dieses Token kann danach nicht fortgesetzt
+            werden.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="destructive"
+              disabled={isPending}
+              onClick={() => handleDecision('revoke')}>
+              Endgültig widerrufen
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={isPending}
+              onClick={() => setIsRevokeConfirming(false)}>
+              Abbrechen
+            </Button>
+          </div>
+        </div>
+      ) : null}
+      {actionError ? (
+        <p role="alert" className="text-xs text-destructive">
+          {actionError}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -3117,6 +3286,86 @@ function getAgentRunTransitionActionErrorMessage(
   }
 
   return 'Diese Run-Entscheidung ist nicht gültig.';
+}
+
+/**
+ * Returns available lifecycle decisions for a public token state.
+ *
+ * Revoked and expired tokens intentionally expose no further actions because
+ * they must not be resumed and revoke is already terminal for the UI.
+ *
+ * @param token Public token summary.
+ * @returns Ordered lifecycle decisions for inline controls.
+ */
+function getAvailableAgentTokenLifecycleDecisions(
+  token: AgentTokenSummary
+): UpdateBubblophyAgentTokenLifecycleActionInput['decision'][] {
+  if (token.state === 'widerrufen' || token.state === 'abgelaufen') {
+    return [];
+  }
+
+  if (token.state === 'pausiert') {
+    return ['resume', 'revoke'];
+  }
+
+  return ['pause', 'revoke'];
+}
+
+/**
+ * Labels lifecycle decisions for human-facing token controls.
+ *
+ * @param decision Lifecycle decision sent to the server action.
+ * @returns Button label.
+ */
+function getAgentTokenLifecycleDecisionLabel(
+  decision: UpdateBubblophyAgentTokenLifecycleActionInput['decision']
+) {
+  if (decision === 'pause') {
+    return 'Pausieren';
+  }
+
+  if (decision === 'resume') {
+    return 'Fortsetzen';
+  }
+
+  return 'Widerrufen';
+}
+
+/**
+ * Converts token lifecycle action outcomes into quiet inline feedback.
+ *
+ * @param result Result returned by the persisted token lifecycle action.
+ * @returns Human-readable error message for the token panel.
+ */
+function getAgentTokenLifecycleActionErrorMessage(
+  result: Exclude<
+    UpdateBubblophyAgentTokenLifecycleActionResult,
+    { status: 'updated' } | { status: 'unchanged' }
+  >
+) {
+  if (result.status === 'not_found') {
+    return 'Dieses Agent-Token wurde nicht gefunden.';
+  }
+
+  if (result.status === 'forbidden') {
+    return 'Nur Owner und Maintainer können Agent-Tokens ändern.';
+  }
+
+  if (result.status === 'invalid_transition') {
+    return result.reason === 'expired'
+      ? 'Abgelaufene Tokens können nicht fortgesetzt oder pausiert werden.'
+      : 'Widerrufene Tokens können nicht erneut aktiviert werden.';
+  }
+
+  if (result.status === 'database_unavailable') {
+    return 'Die Datenbank ist gerade nicht verfügbar. Das Token wurde nicht geändert.';
+  }
+
+  if (result.reason === 'empty_token') {
+    return 'Wähle ein Agent-Token aus.';
+  }
+
+  return 'Diese Token-Aktion ist nicht gültig.';
 }
 
 /**

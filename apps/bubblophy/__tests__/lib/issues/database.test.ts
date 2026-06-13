@@ -49,6 +49,7 @@ const tableRows = {
       scopes: ['projects:read', 'issues:read'],
       state: 'active',
       lastUsedAt: null,
+      expiresAt: null,
     },
   ],
   issues: [

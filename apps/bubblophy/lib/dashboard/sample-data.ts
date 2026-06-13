@@ -91,6 +91,7 @@ export const dashboardSnapshot = {
       scopes: ['issues:read', 'issues:write', 'runs:create'],
       state: 'aktiv',
       lastUsedAt: 'vor 12 Min.',
+      expiresAt: 'läuft nicht automatisch ab',
     },
     {
       id: 'token_claude_no',
@@ -99,6 +100,7 @@ export const dashboardSnapshot = {
       scopes: ['issues:read', 'plans:write'],
       state: 'aktiv',
       lastUsedAt: 'vor 1 Std.',
+      expiresAt: '2026-12-31T23:00:00.000Z',
     },
     {
       id: 'token_archive_bv',
@@ -107,6 +109,7 @@ export const dashboardSnapshot = {
       scopes: ['issues:read'],
       state: 'pausiert',
       lastUsedAt: 'gestern',
+      expiresAt: 'läuft nicht automatisch ab',
     },
   ],
   agentRuns: [

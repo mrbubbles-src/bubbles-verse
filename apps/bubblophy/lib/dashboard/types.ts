@@ -20,7 +20,11 @@ export type AgentRunState =
   | 'abgebrochen'
   | 'fehlgeschlagen';
 
-export type AgentTokenState = 'aktiv' | 'pausiert';
+export type AgentTokenState =
+  | 'aktiv'
+  | 'pausiert'
+  | 'widerrufen'
+  | 'abgelaufen';
 
 export interface ProjectSummary {
   id: string;
@@ -65,6 +69,7 @@ export interface AgentTokenSummary {
   scopes: string[];
   state: AgentTokenState;
   lastUsedAt: string;
+  expiresAt: string;
 }
 
 export interface AgentRunSummary {

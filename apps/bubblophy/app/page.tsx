@@ -12,6 +12,7 @@ import {
   createBubblophyProjectAction,
   requestBubblophyAgentRunAction,
   transitionBubblophyAgentRunAction,
+  updateBubblophyAgentTokenLifecycleAction,
   updateBubblophyIssueStatusAction,
 } from '@/app/actions';
 import { BubblophyDashboard } from '@/components/dashboard/bubblophy-dashboard';
@@ -75,6 +76,7 @@ export async function ProtectedBubblophyDashboard() {
       transitionAgentRunAction={transitionBubblophyAgentRunAction}
       createProjectAction={createBubblophyProjectAction}
       createAgentTokenAction={createBubblophyAgentTokenAction}
+      updateAgentTokenLifecycleAction={updateBubblophyAgentTokenLifecycleAction}
     />
   );
 }

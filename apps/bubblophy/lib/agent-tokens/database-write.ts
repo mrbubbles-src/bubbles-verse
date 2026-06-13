@@ -96,6 +96,7 @@ async function createAgentToken(
           label: bubblophyAgentTokens.label,
           scopes: bubblophyAgentTokens.scopes,
           state: bubblophyAgentTokens.state,
+          expiresAt: bubblophyAgentTokens.expiresAt,
         });
 
       if (!token) {
@@ -122,6 +123,7 @@ async function createAgentToken(
           projectKey: project.key,
           scopes: token.scopes,
           state: 'active',
+          expiresAt: token.expiresAt,
         },
       };
     });

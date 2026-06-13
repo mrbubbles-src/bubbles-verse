@@ -13,6 +13,10 @@ import type {
   CreateBubblophyAgentTokenResult,
 } from '@/lib/agent-tokens/create';
 import type {
+  UpdateBubblophyAgentTokenLifecycleInput,
+  UpdateBubblophyAgentTokenLifecycleResult,
+} from '@/lib/agent-tokens/lifecycle';
+import type {
   CreateBubblophyIssueDraftInput,
   CreateBubblophyIssueDraftResult,
 } from '@/lib/issues/create';
@@ -32,6 +36,7 @@ import type {
 import { transitionBubblophyAgentRun } from '@/lib/agent-runs/human-transition';
 import { requestBubblophyAgentRun } from '@/lib/agent-runs/request';
 import { createBubblophyAgentToken } from '@/lib/agent-tokens/create';
+import { updateBubblophyAgentTokenLifecycle } from '@/lib/agent-tokens/lifecycle';
 import { requireBubblophySession } from '@/lib/auth/session';
 import { createBubblophyIssueDraft } from '@/lib/issues/create';
 import { createOrUpdateBubblophyIssuePlanDraft } from '@/lib/issues/plans';
@@ -75,6 +80,14 @@ export type CreateBubblophyAgentTokenActionInput = Omit<
 
 export type CreateBubblophyAgentTokenActionResult =
   CreateBubblophyAgentTokenResult;
+
+export type UpdateBubblophyAgentTokenLifecycleActionInput = Omit<
+  UpdateBubblophyAgentTokenLifecycleInput,
+  'authUserId'
+>;
+
+export type UpdateBubblophyAgentTokenLifecycleActionResult =
+  UpdateBubblophyAgentTokenLifecycleResult;
 
 export type RequestBubblophyAgentRunActionInput = Omit<
   RequestBubblophyAgentRunInput,
@@ -192,6 +205,27 @@ export async function createBubblophyAgentTokenAction(
   const session = await requireBubblophySession({ nextPath: '/' });
 
   return createBubblophyAgentToken({
+    ...input,
+    authUserId: session.authUserId,
+  });
+}
+
+/**
+ * Applies a human lifecycle decision to an agent token for this session.
+ *
+ * The client never provides an auth user ID. The service delegates project
+ * binding, owner/maintainer checks, transition rules, and audit writing to the
+ * server-only token lifecycle store.
+ *
+ * @param input Token ID and lifecycle decision.
+ * @returns Structured result for the dashboard token controls.
+ */
+export async function updateBubblophyAgentTokenLifecycleAction(
+  input: UpdateBubblophyAgentTokenLifecycleActionInput
+): Promise<UpdateBubblophyAgentTokenLifecycleActionResult> {
+  const session = await requireBubblophySession({ nextPath: '/' });
+
+  return updateBubblophyAgentTokenLifecycle({
     ...input,
     authUserId: session.authUserId,
   });

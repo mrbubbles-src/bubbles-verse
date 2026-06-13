@@ -54,6 +54,7 @@ export interface BubblophyAgentTokenPersistenceRow {
   scopes: string[];
   state: 'active' | 'paused' | 'revoked';
   lastUsedAt: string | null;
+  expiresAt: string | null;
 }
 
 export interface BubblophyAgentRunPersistenceRow {
@@ -108,7 +109,7 @@ const issuePriorityLabels = {
 const agentTokenStateLabels = {
   active: 'aktiv',
   paused: 'pausiert',
-  revoked: 'pausiert',
+  revoked: 'widerrufen',
 } satisfies Record<BubblophyAgentTokenPersistenceRow['state'], AgentTokenState>;
 
 const agentRunStateLabels = {
@@ -183,6 +184,29 @@ export function mapBubblophyAgentTokenState(
   state: BubblophyAgentTokenPersistenceRow['state']
 ): AgentTokenState {
   return agentTokenStateLabels[state];
+}
+
+/**
+ * Maps persisted token state and expiry into the public dashboard vocabulary.
+ *
+ * Expiry is derived from `expiresAt` without mutating the database row. Revoked
+ * tokens stay revoked even when their expiry timestamp is also in the past.
+ *
+ * @param row Public token row without token hash or plaintext.
+ * @returns Dashboard token state.
+ */
+export function deriveBubblophyAgentTokenState(
+  row: Pick<BubblophyAgentTokenPersistenceRow, 'state' | 'expiresAt'>
+): AgentTokenState {
+  if (row.state === 'revoked') {
+    return 'widerrufen';
+  }
+
+  if (isExpiredTimestamp(row.expiresAt)) {
+    return 'abgelaufen';
+  }
+
+  return mapBubblophyAgentTokenState(row.state);
 }
 
 /**
@@ -398,8 +422,9 @@ export function buildBubblophyAgentTokenSummaries(
       label: row.label,
       projectKey: row.projectKey,
       scopes: [...row.scopes],
-      state: mapBubblophyAgentTokenState(row.state),
+      state: deriveBubblophyAgentTokenState(row),
       lastUsedAt: row.lastUsedAt ?? 'noch nie verwendet',
+      expiresAt: row.expiresAt ?? 'läuft nicht automatisch ab',
     }))
     .sort(
       (left, right) =>
@@ -407,6 +432,22 @@ export function buildBubblophyAgentTokenSummaries(
         left.label.localeCompare(right.label) ||
         left.id.localeCompare(right.id)
     );
+}
+
+/**
+ * Detects ISO timestamp expiry using the current server clock.
+ *
+ * @param expiresAt Nullable persisted expiry timestamp.
+ * @returns True when the timestamp is valid and no longer in the future.
+ */
+function isExpiredTimestamp(expiresAt: string | null) {
+  if (!expiresAt) {
+    return false;
+  }
+
+  const time = Date.parse(expiresAt);
+
+  return Number.isFinite(time) && time <= Date.now();
 }
 
 /**

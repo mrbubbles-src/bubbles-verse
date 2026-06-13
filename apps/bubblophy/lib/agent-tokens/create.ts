@@ -32,6 +32,7 @@ export interface BubblophyAgentTokenCreateStore {
           projectKey: string;
           scopes: BubblophyAgentTokenScope[];
           state: 'active';
+          expiresAt: string | null;
         };
       }
     | {
@@ -173,6 +174,7 @@ export function mapCreatedAgentTokenToSummary(token: {
   projectKey: string;
   scopes: BubblophyAgentTokenScope[];
   state: 'active';
+  expiresAt: string | null;
 }): AgentTokenSummary {
   return {
     id: token.id,
@@ -181,6 +183,7 @@ export function mapCreatedAgentTokenToSummary(token: {
     scopes: token.scopes,
     state: 'aktiv',
     lastUsedAt: 'noch nie verwendet',
+    expiresAt: token.expiresAt ?? 'läuft nicht automatisch ab',
   };
 }
 

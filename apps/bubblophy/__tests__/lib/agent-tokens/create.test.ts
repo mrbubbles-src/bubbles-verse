@@ -172,6 +172,7 @@ describe('createBubblophyAgentToken', () => {
         projectKey: input.projectKey,
         scopes: input.scopes,
         state: 'active',
+        expiresAt: input.expiresAt,
       },
     }));
 
@@ -194,6 +195,7 @@ describe('createBubblophyAgentToken', () => {
         scopes: ['projects:read', 'issues:read'],
         state: 'aktiv',
         lastUsedAt: 'noch nie verwendet',
+        expiresAt: 'läuft nicht automatisch ab',
         plaintextToken,
       },
     });
@@ -281,6 +283,7 @@ describe('Bubblophy agent token helpers', () => {
         projectKey: 'BV',
         scopes: ['projects:read'],
         state: 'active',
+        expiresAt: null,
       })
     ).toEqual({
       id: 'token_codex',
@@ -289,6 +292,7 @@ describe('Bubblophy agent token helpers', () => {
       scopes: ['projects:read'],
       state: 'aktiv',
       lastUsedAt: 'noch nie verwendet',
+      expiresAt: 'läuft nicht automatisch ab',
     });
   });
 

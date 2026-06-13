@@ -263,6 +263,7 @@ async function selectBubblophyAgentTokenRowsForProjectIds(
       scopes: bubblophyAgentTokens.scopes,
       state: bubblophyAgentTokens.state,
       lastUsedAt: bubblophyAgentTokens.lastUsedAt,
+      expiresAt: bubblophyAgentTokens.expiresAt,
     })
     .from(bubblophyAgentTokens)
     .innerJoin(

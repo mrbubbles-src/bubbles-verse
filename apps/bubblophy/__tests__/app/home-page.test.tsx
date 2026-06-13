@@ -3,6 +3,7 @@ import type {
   createBubblophyIssueAction,
   createBubblophyIssuePlanAction,
   createBubblophyProjectAction,
+  updateBubblophyAgentTokenLifecycleAction,
   updateBubblophyIssueStatusAction,
 } from '@/app/actions';
 import type { BubblophyDashboardSnapshotInput } from '@/lib/dashboard/data';
@@ -20,6 +21,7 @@ const BubblophyDashboardMock = vi.fn(
     updateIssueStatusAction?: typeof updateBubblophyIssueStatusAction;
     createProjectAction?: typeof createBubblophyProjectAction;
     createAgentTokenAction?: typeof createBubblophyAgentTokenAction;
+    updateAgentTokenLifecycleAction?: typeof updateBubblophyAgentTokenLifecycleAction;
   }) => <div data-testid="dashboard">{props.snapshot.projects[0]?.name}</div>
 );
 
@@ -50,6 +52,7 @@ vi.mock('@/components/dashboard/bubblophy-dashboard', () => ({
     updateIssueStatusAction?: typeof updateBubblophyIssueStatusAction;
     createProjectAction?: typeof createBubblophyProjectAction;
     createAgentTokenAction?: typeof createBubblophyAgentTokenAction;
+    updateAgentTokenLifecycleAction?: typeof updateBubblophyAgentTokenLifecycleAction;
   }) => BubblophyDashboardMock(props),
 }));
 
@@ -112,6 +115,9 @@ describe('Bubblophy home page', () => {
     expect(element.props.updateIssueStatusAction).toEqual(expect.any(Function));
     expect(element.props.createProjectAction).toEqual(expect.any(Function));
     expect(element.props.createAgentTokenAction).toEqual(expect.any(Function));
+    expect(element.props.updateAgentTokenLifecycleAction).toEqual(
+      expect.any(Function)
+    );
   });
 
   it('does not load dashboard data when the session gate redirects', async () => {

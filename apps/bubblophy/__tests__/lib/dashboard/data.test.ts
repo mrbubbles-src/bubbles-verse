@@ -53,6 +53,7 @@ function makeDatabaseRows(
         scopes: ['projects:read', 'issues:read'],
         state: 'active',
         lastUsedAt: null,
+        expiresAt: null,
       },
     ],
     agentRunRows: [
@@ -128,6 +129,7 @@ describe('getBubblophyDashboardSnapshot', () => {
           scopes: ['projects:read', 'issues:read'],
           state: 'aktiv',
           lastUsedAt: 'noch nie verwendet',
+          expiresAt: 'läuft nicht automatisch ab',
         },
       ],
       activity: [

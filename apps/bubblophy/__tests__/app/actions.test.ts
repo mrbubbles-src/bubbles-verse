@@ -5,11 +5,13 @@ import type {
   CreateBubblophyProjectActionInput,
   RequestBubblophyAgentRunActionInput,
   TransitionBubblophyAgentRunActionInput,
+  UpdateBubblophyAgentTokenLifecycleActionInput,
   UpdateBubblophyIssueStatusActionInput,
 } from '@/app/actions';
 import type { TransitionBubblophyAgentRunInput } from '@/lib/agent-runs/human-transition';
 import type { RequestBubblophyAgentRunInput } from '@/lib/agent-runs/request';
 import type { CreateBubblophyAgentTokenInput } from '@/lib/agent-tokens/create';
+import type { UpdateBubblophyAgentTokenLifecycleInput } from '@/lib/agent-tokens/lifecycle';
 import type { CreateBubblophyIssueDraftInput } from '@/lib/issues/create';
 import type { CreateOrUpdateBubblophyIssuePlanDraftInput } from '@/lib/issues/plans';
 import type { UpdateBubblophyIssueStatusInput } from '@/lib/issues/status';
@@ -23,6 +25,7 @@ const createBubblophyIssuePlanDraftMock = vi.fn();
 const updateBubblophyIssueStatusMock = vi.fn();
 const createBubblophyProjectMock = vi.fn();
 const createBubblophyAgentTokenMock = vi.fn();
+const updateBubblophyAgentTokenLifecycleMock = vi.fn();
 const requestBubblophyAgentRunMock = vi.fn();
 const transitionBubblophyAgentRunMock = vi.fn();
 
@@ -57,6 +60,12 @@ vi.mock('@/lib/agent-tokens/create', () => ({
     createBubblophyAgentTokenMock(input),
 }));
 
+vi.mock('@/lib/agent-tokens/lifecycle', () => ({
+  updateBubblophyAgentTokenLifecycle: (
+    input: UpdateBubblophyAgentTokenLifecycleInput
+  ) => updateBubblophyAgentTokenLifecycleMock(input),
+}));
+
 vi.mock('@/lib/agent-runs/request', () => ({
   requestBubblophyAgentRun: (input: RequestBubblophyAgentRunInput) =>
     requestBubblophyAgentRunMock(input),
@@ -75,6 +84,7 @@ describe('createBubblophyIssueAction', () => {
     updateBubblophyIssueStatusMock.mockReset();
     createBubblophyProjectMock.mockReset();
     createBubblophyAgentTokenMock.mockReset();
+    updateBubblophyAgentTokenLifecycleMock.mockReset();
     transitionBubblophyAgentRunMock.mockReset();
   });
 
@@ -347,6 +357,7 @@ describe('createBubblophyAgentTokenAction', () => {
         scopes: ['projects:read', 'issues:read'],
         state: 'aktiv',
         lastUsedAt: 'noch nie verwendet',
+        expiresAt: 'läuft nicht automatisch ab',
         plaintextToken: 'bubblophy_agent_plaintext',
       },
     });
@@ -377,7 +388,67 @@ describe('createBubblophyAgentTokenAction', () => {
         scopes: ['projects:read', 'issues:read'],
         state: 'aktiv',
         lastUsedAt: 'noch nie verwendet',
+        expiresAt: 'läuft nicht automatisch ab',
         plaintextToken: 'bubblophy_agent_plaintext',
+      },
+    });
+  });
+});
+
+describe('updateBubblophyAgentTokenLifecycleAction', () => {
+  beforeEach(() => {
+    requireBubblophySessionMock.mockReset();
+    createBubblophyAgentTokenMock.mockReset();
+    updateBubblophyAgentTokenLifecycleMock.mockReset();
+  });
+
+  it('resolves the auth user server-side instead of accepting a client authUserId', async () => {
+    requireBubblophySessionMock.mockResolvedValue({
+      authUserId: 'user_server',
+      email: 'owner@example.test',
+      user: {},
+    });
+    updateBubblophyAgentTokenLifecycleMock.mockResolvedValue({
+      status: 'updated',
+      token: {
+        id: 'token_codex',
+        label: 'Codex lokal',
+        projectKey: 'BV',
+        scopes: ['projects:read'],
+        state: 'pausiert',
+        lastUsedAt: 'noch nie verwendet',
+        expiresAt: 'läuft nicht automatisch ab',
+      },
+    });
+
+    const { updateBubblophyAgentTokenLifecycleAction } =
+      await import('@/app/actions');
+    const result = await updateBubblophyAgentTokenLifecycleAction({
+      authUserId: 'user_client_spoof',
+      tokenId: 'token_codex',
+      decision: 'pause',
+    } as UpdateBubblophyAgentTokenLifecycleActionInput & {
+      authUserId: string;
+    });
+
+    expect(requireBubblophySessionMock).toHaveBeenCalledWith({
+      nextPath: '/',
+    });
+    expect(updateBubblophyAgentTokenLifecycleMock).toHaveBeenCalledWith({
+      authUserId: 'user_server',
+      tokenId: 'token_codex',
+      decision: 'pause',
+    });
+    expect(result).toEqual({
+      status: 'updated',
+      token: {
+        id: 'token_codex',
+        label: 'Codex lokal',
+        projectKey: 'BV',
+        scopes: ['projects:read'],
+        state: 'pausiert',
+        lastUsedAt: 'noch nie verwendet',
+        expiresAt: 'läuft nicht automatisch ab',
       },
     });
   });

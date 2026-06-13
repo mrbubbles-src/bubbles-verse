@@ -31,6 +31,8 @@ export const projectHealthLabels = {
 export const agentTokenStateLabels = {
   aktiv: 'Aktiv',
   pausiert: 'Pausiert',
+  widerrufen: 'Widerrufen',
+  abgelaufen: 'Abgelaufen',
 } satisfies Record<AgentTokenState, string>;
 
 export const agentRunStateLabels = {

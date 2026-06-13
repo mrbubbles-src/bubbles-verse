@@ -11,6 +11,8 @@ import type {
   RequestBubblophyAgentRunActionResult,
   TransitionBubblophyAgentRunActionInput,
   TransitionBubblophyAgentRunActionResult,
+  UpdateBubblophyAgentTokenLifecycleActionInput,
+  UpdateBubblophyAgentTokenLifecycleActionResult,
   UpdateBubblophyIssueStatusActionInput,
   UpdateBubblophyIssueStatusActionResult,
 } from '@/app/actions';
@@ -1220,6 +1222,7 @@ describe('BubblophyDashboard interactions', () => {
         scopes: ['projects:read', 'issues:read'],
         state: 'aktiv',
         lastUsedAt: 'noch nie verwendet',
+        expiresAt: 'läuft nicht automatisch ab',
         plaintextToken: 'bubblophy_agent_plaintext_once',
       },
     }));
@@ -1338,6 +1341,247 @@ describe('BubblophyDashboard interactions', () => {
       within(agentSection).queryByText('Codex lokal')
     ).not.toBeInTheDocument();
     expect(screen.queryByText(/bubblophy_agent_/i)).not.toBeInTheDocument();
+  });
+
+  it('pauses an active agent token through the lifecycle action', async () => {
+    const updateAgentTokenLifecycleAction = vi.fn<
+      (
+        input: UpdateBubblophyAgentTokenLifecycleActionInput
+      ) => Promise<UpdateBubblophyAgentTokenLifecycleActionResult>
+    >(async () => ({
+      status: 'updated',
+      token: {
+        id: 'token_codex_bv',
+        label: 'codex-local-lio',
+        projectKey: 'BV',
+        scopes: ['issues:read', 'issues:write', 'runs:create'],
+        state: 'pausiert',
+        lastUsedAt: 'vor 12 Min.',
+        expiresAt: 'läuft nicht automatisch ab',
+      },
+    }));
+    const firstToken = databaseSnapshot.agentTokens[0];
+
+    if (!firstToken) {
+      throw new Error('Expected a token fixture.');
+    }
+
+    const singleTokenSnapshot = {
+      ...databaseSnapshot,
+      agentTokens: [firstToken],
+    } satisfies DashboardSnapshot;
+
+    render(
+      <BubblophyDashboard
+        snapshot={singleTokenSnapshot}
+        updateAgentTokenLifecycleAction={updateAgentTokenLifecycleAction}
+      />
+    );
+
+    const agentSection = document.getElementById('agents');
+
+    expect(agentSection).toBeInstanceOf(HTMLElement);
+
+    if (!agentSection) {
+      throw new Error('Expected the agent token section to render.');
+    }
+
+    const pauseButton = within(agentSection).getAllByRole('button', {
+      name: 'Pausieren',
+    })[0];
+
+    if (!pauseButton) {
+      throw new Error('Expected a pause button.');
+    }
+
+    fireEvent.click(pauseButton);
+
+    await waitFor(() => {
+      expect(updateAgentTokenLifecycleAction).toHaveBeenCalledWith({
+        tokenId: 'token_codex_bv',
+        decision: 'pause',
+      });
+    });
+    expect(
+      updateAgentTokenLifecycleAction.mock.calls[0]?.[0]
+    ).not.toHaveProperty('authUserId');
+    await waitFor(() => {
+      expect(
+        within(agentSection).getAllByText('Pausiert').length
+      ).toBeGreaterThan(0);
+    });
+  });
+
+  it('requires explicit confirmation before revoking an agent token', async () => {
+    const updateAgentTokenLifecycleAction = vi.fn<
+      (
+        input: UpdateBubblophyAgentTokenLifecycleActionInput
+      ) => Promise<UpdateBubblophyAgentTokenLifecycleActionResult>
+    >(async () => ({
+      status: 'updated',
+      token: {
+        id: 'token_codex_bv',
+        label: 'codex-local-lio',
+        projectKey: 'BV',
+        scopes: ['issues:read', 'issues:write', 'runs:create'],
+        state: 'widerrufen',
+        lastUsedAt: 'vor 12 Min.',
+        expiresAt: 'läuft nicht automatisch ab',
+      },
+    }));
+    const firstToken = databaseSnapshot.agentTokens[0];
+
+    if (!firstToken) {
+      throw new Error('Expected a token fixture.');
+    }
+
+    const singleTokenSnapshot = {
+      ...databaseSnapshot,
+      agentTokens: [firstToken],
+    } satisfies DashboardSnapshot;
+
+    render(
+      <BubblophyDashboard
+        snapshot={singleTokenSnapshot}
+        updateAgentTokenLifecycleAction={updateAgentTokenLifecycleAction}
+      />
+    );
+
+    const agentSection = document.getElementById('agents');
+
+    expect(agentSection).toBeInstanceOf(HTMLElement);
+
+    if (!agentSection) {
+      throw new Error('Expected the agent token section to render.');
+    }
+
+    const revokeButton = within(agentSection).getAllByRole('button', {
+      name: 'Widerrufen',
+    })[0];
+
+    if (!revokeButton) {
+      throw new Error('Expected a revoke button.');
+    }
+
+    fireEvent.click(revokeButton);
+
+    expect(updateAgentTokenLifecycleAction).not.toHaveBeenCalled();
+    expect(
+      within(agentSection).getByText(/Widerruf ist endgültig/i)
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      within(agentSection).getByRole('button', {
+        name: 'Endgültig widerrufen',
+      })
+    );
+
+    await waitFor(() => {
+      expect(updateAgentTokenLifecycleAction).toHaveBeenCalledWith({
+        tokenId: 'token_codex_bv',
+        decision: 'revoke',
+      });
+    });
+    await waitFor(() => {
+      expect(
+        within(agentSection).getAllByText('Widerrufen').length
+      ).toBeGreaterThan(0);
+    });
+    expect(
+      within(agentSection).queryByRole('button', { name: 'Fortsetzen' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not show lifecycle actions for revoked or expired tokens', () => {
+    const tokenLifecycleSnapshot = {
+      ...databaseSnapshot,
+      agentTokens: [
+        {
+          id: 'token_revoked',
+          label: 'Widerrufenes Token',
+          projectKey: 'BV',
+          scopes: ['issues:read'],
+          state: 'widerrufen',
+          lastUsedAt: 'gestern',
+          expiresAt: 'läuft nicht automatisch ab',
+        },
+        {
+          id: 'token_expired',
+          label: 'Abgelaufenes Token',
+          projectKey: 'BV',
+          scopes: ['issues:read'],
+          state: 'abgelaufen',
+          lastUsedAt: 'noch nie verwendet',
+          expiresAt: '2000-01-01T00:00:00.000Z',
+        },
+      ],
+    } satisfies DashboardSnapshot;
+
+    render(
+      <BubblophyDashboard
+        snapshot={tokenLifecycleSnapshot}
+        updateAgentTokenLifecycleAction={async () => ({
+          status: 'database_unavailable',
+        })}
+      />
+    );
+
+    const agentSection = document.getElementById('agents');
+
+    expect(agentSection).toBeInstanceOf(HTMLElement);
+
+    if (!agentSection) {
+      throw new Error('Expected the agent token section to render.');
+    }
+
+    expect(within(agentSection).getByText('Widerrufen')).toBeInTheDocument();
+    expect(within(agentSection).getByText('Abgelaufen')).toBeInTheDocument();
+    expect(
+      within(agentSection).queryByRole('button', { name: 'Fortsetzen' })
+    ).not.toBeInTheDocument();
+    expect(
+      within(agentSection).queryByRole('button', { name: 'Widerrufen' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows forbidden lifecycle errors without changing the token state', async () => {
+    const updateAgentTokenLifecycleAction = vi.fn<
+      (
+        input: UpdateBubblophyAgentTokenLifecycleActionInput
+      ) => Promise<UpdateBubblophyAgentTokenLifecycleActionResult>
+    >(async () => ({ status: 'forbidden' }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        updateAgentTokenLifecycleAction={updateAgentTokenLifecycleAction}
+      />
+    );
+
+    const agentSection = document.getElementById('agents');
+
+    expect(agentSection).toBeInstanceOf(HTMLElement);
+
+    if (!agentSection) {
+      throw new Error('Expected the agent token section to render.');
+    }
+
+    const pauseButton = within(agentSection).getAllByRole('button', {
+      name: 'Pausieren',
+    })[0];
+
+    if (!pauseButton) {
+      throw new Error('Expected a pause button.');
+    }
+
+    fireEvent.click(pauseButton);
+
+    expect(await within(agentSection).findByRole('alert')).toHaveTextContent(
+      'Nur Owner und Maintainer können Agent-Tokens ändern.'
+    );
+    expect(within(agentSection).getAllByText('Aktiv').length).toBeGreaterThan(
+      0
+    );
   });
 
   it('persists an issue from the dialog when database data and an action are available', async () => {

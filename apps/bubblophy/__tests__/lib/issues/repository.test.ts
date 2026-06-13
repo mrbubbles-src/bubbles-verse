@@ -70,7 +70,7 @@ describe('Bubblophy issue repository mapping', () => {
 
     expect(mapBubblophyAgentTokenState('active')).toBe('aktiv');
     expect(mapBubblophyAgentTokenState('paused')).toBe('pausiert');
-    expect(mapBubblophyAgentTokenState('revoked')).toBe('pausiert');
+    expect(mapBubblophyAgentTokenState('revoked')).toBe('widerrufen');
 
     expect(mapBubblophyAgentRunState('requested')).toBe('wartet');
     expect(mapBubblophyAgentRunState('approved')).toBe('freigegeben');
@@ -305,6 +305,7 @@ describe('Bubblophy issue repository mapping', () => {
         scopes: ['plans:write'],
         state: 'paused',
         lastUsedAt: '2026-06-13T10:00:00.000Z',
+        expiresAt: null,
       },
       {
         id: 'token_a',
@@ -313,10 +314,29 @@ describe('Bubblophy issue repository mapping', () => {
         scopes: ['projects:read', 'issues:read'],
         state: 'active',
         lastUsedAt: null,
+        expiresAt: '2000-01-01T00:00:00.000Z',
+      },
+      {
+        id: 'token_c',
+        label: 'Archiv',
+        projectKey: 'BV',
+        scopes: ['issues:read'],
+        state: 'revoked',
+        lastUsedAt: null,
+        expiresAt: null,
       },
     ]);
 
     expect(tokens).toEqual([
+      {
+        id: 'token_c',
+        label: 'Archiv',
+        projectKey: 'BV',
+        scopes: ['issues:read'],
+        state: 'widerrufen',
+        lastUsedAt: 'noch nie verwendet',
+        expiresAt: 'läuft nicht automatisch ab',
+      },
       {
         id: 'token_b',
         label: 'Claude Code',
@@ -324,14 +344,16 @@ describe('Bubblophy issue repository mapping', () => {
         scopes: ['plans:write'],
         state: 'pausiert',
         lastUsedAt: '2026-06-13T10:00:00.000Z',
+        expiresAt: 'läuft nicht automatisch ab',
       },
       {
         id: 'token_a',
         label: 'Codex lokal',
         projectKey: 'BV',
         scopes: ['projects:read', 'issues:read'],
-        state: 'aktiv',
+        state: 'abgelaufen',
         lastUsedAt: 'noch nie verwendet',
+        expiresAt: '2000-01-01T00:00:00.000Z',
       },
     ]);
     expect(JSON.stringify(tokens)).not.toContain('tokenHash');
