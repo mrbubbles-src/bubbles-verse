@@ -1,11 +1,14 @@
 import 'server-only';
 
 import type {
+  BubblophyAgentRunState,
   BubblophyIssuePriority,
   BubblophyIssueStatus,
 } from '@/drizzle/db/schema';
 import type {
   ActivityEvent,
+  AgentRunState,
+  AgentRunSummary,
   AgentTokenState,
   AgentTokenSummary,
   IssuePriority,
@@ -45,6 +48,15 @@ export interface BubblophyAgentTokenPersistenceRow {
   scopes: string[];
   state: 'active' | 'paused' | 'revoked';
   lastUsedAt: string | null;
+}
+
+export interface BubblophyAgentRunPersistenceRow {
+  id: string;
+  projectKey: string;
+  issueNumber: number;
+  agentTokenLabel: string;
+  state: BubblophyAgentRunState;
+  updatedAt: string;
 }
 
 export interface BubblophyActivityPersistenceRow {
@@ -89,6 +101,16 @@ const agentTokenStateLabels = {
   paused: 'pausiert',
   revoked: 'pausiert',
 } satisfies Record<BubblophyAgentTokenPersistenceRow['state'], AgentTokenState>;
+
+const agentRunStateLabels = {
+  requested: 'wartet',
+  approved: 'freigegeben',
+  running: 'läuft',
+  needs_review: 'review',
+  completed: 'review',
+  cancelled: 'review',
+  failed: 'review',
+} satisfies Record<BubblophyAgentRunPersistenceRow['state'], AgentRunState>;
 
 interface MutableProjectSummary {
   id: string;
@@ -159,6 +181,21 @@ export function mapBubblophyAgentTokenState(
   state: BubblophyAgentTokenPersistenceRow['state']
 ): AgentTokenState {
   return agentTokenStateLabels[state];
+}
+
+/**
+ * Maps persisted agent run state into the current dashboard vocabulary.
+ *
+ * Terminal states are grouped into review until the UI grows dedicated
+ * completion/cancellation lanes.
+ *
+ * @param state Database run state.
+ * @returns Dashboard run state.
+ */
+export function mapBubblophyAgentRunState(
+  state: BubblophyAgentRunPersistenceRow['state']
+): AgentRunState {
+  return agentRunStateLabels[state];
 }
 
 /**
@@ -296,6 +333,28 @@ export function buildBubblophyAgentTokenSummaries(
         left.label.localeCompare(right.label) ||
         left.id.localeCompare(right.id)
     );
+}
+
+/**
+ * Converts membership-scoped run rows into public dashboard summaries.
+ *
+ * The row type deliberately excludes token hashes, plaintext tokens, and raw
+ * auth user IDs.
+ *
+ * @param rows Run rows already constrained to visible projects.
+ * @returns Public run summaries for the dashboard queue.
+ */
+export function buildBubblophyAgentRunSummaries(
+  rows: BubblophyAgentRunPersistenceRow[]
+): AgentRunSummary[] {
+  return rows.map((row) => ({
+    id: row.id,
+    issueId: formatBubblophyIssueKey(row.projectKey, row.issueNumber),
+    agentLabel: row.agentTokenLabel,
+    state: mapBubblophyAgentRunState(row.state),
+    requestedBy: 'Mensch',
+    lastEvent: `Status ${mapBubblophyAgentRunState(row.state)} · zuletzt ${row.updatedAt}`,
+  }));
 }
 
 /**

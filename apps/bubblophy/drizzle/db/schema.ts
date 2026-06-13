@@ -93,6 +93,9 @@ export const bubblophyAgentRunState = pgEnum('bubblophy_agent_run_state', [
   'failed',
 ]);
 
+export type BubblophyAgentRunState =
+  (typeof bubblophyAgentRunState.enumValues)[number];
+
 export const bubblophyAgentTokenScopes = [
   'projects:read',
   'issues:read',

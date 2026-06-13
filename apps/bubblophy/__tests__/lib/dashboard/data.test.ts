@@ -52,6 +52,16 @@ function makeDatabaseRows(
         lastUsedAt: null,
       },
     ],
+    agentRunRows: [
+      {
+        id: 'run_codex',
+        projectKey: 'BV',
+        issueNumber: 7,
+        agentTokenLabel: 'Codex lokal',
+        state: 'requested',
+        updatedAt: '2026-06-13T16:10:00.000Z',
+      },
+    ],
     activityRows: [
       {
         id: 'event_token_created',
@@ -114,6 +124,17 @@ describe('getBubblophyDashboardSnapshot', () => {
           occurredAt: '2026-06-13T16:00:00.000Z',
         },
       ],
+      agentRuns: [
+        {
+          id: 'run_codex',
+          issueId: 'BV-07',
+          agentLabel: 'Codex lokal',
+          state: 'wartet',
+          requestedBy: 'Mensch',
+          lastEvent:
+            'Status wartet · zuletzt 2026-06-13T16:10:00.000Z',
+        },
+      ],
     });
     expect(selectRows).toHaveBeenCalledWith('user_owner');
   });
@@ -127,6 +148,7 @@ describe('getBubblophyDashboardSnapshot', () => {
 
     expect(serializedSnapshot).not.toContain('tokenHash');
     expect(serializedSnapshot).not.toContain('plaintextToken');
+    expect(serializedSnapshot).not.toContain('requestedByAuthUserId');
   });
 
   it('marks an available but empty database without using sample data', async () => {
@@ -137,6 +159,7 @@ describe('getBubblophyDashboardSnapshot', () => {
           makeDatabaseRows({
             projectIssueRows: [],
             agentTokenRows: [],
+            agentRunRows: [],
             activityRows: [],
           }),
       })

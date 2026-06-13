@@ -3,6 +3,7 @@ import 'server-only';
 import type { BubblophyDashboardPersistenceRows } from '@/lib/dashboard/data';
 import type {
   BubblophyActivityPersistenceRow,
+  BubblophyAgentRunPersistenceRow,
   BubblophyAgentTokenPersistenceRow,
   BubblophyProjectIssueMembershipRow,
   BubblophyProjectIssuePersistenceRow,
@@ -15,6 +16,7 @@ import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 
 import { db } from '@/drizzle/db';
 import {
+  bubblophyAgentRuns,
   bubblophyAgentTokens,
   bubblophyIssuePlans,
   bubblophyIssues,
@@ -68,19 +70,23 @@ export async function selectBubblophyDashboardRowsForUser(
     return {
       projectIssueRows: [],
       agentTokenRows: [],
+      agentRunRows: [],
       activityRows: [],
     };
   }
 
-  const [projectIssueRows, agentTokenRows, activityRows] = await Promise.all([
-    selectBubblophyProjectIssueRowsForProjectIds(authUserId, projectIds),
-    selectBubblophyAgentTokenRowsForProjectIds(projectIds),
-    selectBubblophyProjectActivityRowsForProjectIds(projectIds),
-  ]);
+  const [projectIssueRows, agentTokenRows, agentRunRows, activityRows] =
+    await Promise.all([
+      selectBubblophyProjectIssueRowsForProjectIds(authUserId, projectIds),
+      selectBubblophyAgentTokenRowsForProjectIds(projectIds),
+      selectBubblophyAgentRunRowsForProjectIds(projectIds),
+      selectBubblophyProjectActivityRowsForProjectIds(projectIds),
+    ]);
 
   return {
     projectIssueRows,
     agentTokenRows,
+    agentRunRows,
     activityRows,
   };
 }
@@ -249,6 +255,47 @@ async function selectBubblophyAgentTokenRowsForProjectIds(
     )
     .where(inArray(bubblophyAgentTokens.projectId, projectIds))
     .orderBy(asc(bubblophyProjects.key), asc(bubblophyAgentTokens.label));
+}
+
+/**
+ * Selects public agent-run rows for visible projects.
+ *
+ * The selected shape intentionally omits token hashes and raw auth user IDs.
+ *
+ * @param projectIds Project IDs already constrained by membership.
+ * @returns Public run rows for the dashboard.
+ */
+async function selectBubblophyAgentRunRowsForProjectIds(
+  projectIds: string[]
+): Promise<BubblophyAgentRunPersistenceRow[]> {
+  return db
+    .select({
+      id: bubblophyAgentRuns.id,
+      projectKey: bubblophyProjects.key,
+      issueNumber: bubblophyIssues.issueNumber,
+      agentTokenLabel: bubblophyAgentTokens.label,
+      state: bubblophyAgentRuns.state,
+      updatedAt: bubblophyAgentRuns.updatedAt,
+    })
+    .from(bubblophyAgentRuns)
+    .innerJoin(
+      bubblophyIssues,
+      eq(bubblophyIssues.id, bubblophyAgentRuns.issueId)
+    )
+    .innerJoin(
+      bubblophyProjects,
+      eq(bubblophyProjects.id, bubblophyIssues.projectId)
+    )
+    .innerJoin(
+      bubblophyAgentTokens,
+      and(
+        eq(bubblophyAgentTokens.id, bubblophyAgentRuns.agentTokenId),
+        eq(bubblophyAgentTokens.projectId, bubblophyProjects.id)
+      )
+    )
+    .where(inArray(bubblophyIssues.projectId, projectIds))
+    .orderBy(desc(bubblophyAgentRuns.updatedAt), desc(bubblophyAgentRuns.id))
+    .limit(20);
 }
 
 /**

@@ -7,12 +7,14 @@ import type {
 } from '@/lib/dashboard/types';
 import type {
   BubblophyActivityPersistenceRow,
+  BubblophyAgentRunPersistenceRow,
   BubblophyAgentTokenPersistenceRow,
   BubblophyProjectIssuePersistenceRow,
 } from '@/lib/issues/repository';
 
 import {
   buildBubblophyActivityEvents,
+  buildBubblophyAgentRunSummaries,
   buildBubblophyAgentTokenSummaries,
   buildBubblophyProjectIssueSnapshot,
 } from '@/lib/issues/repository';
@@ -20,6 +22,7 @@ import {
 export interface BubblophyDashboardPersistenceRows {
   projectIssueRows: BubblophyProjectIssuePersistenceRow[];
   agentTokenRows: BubblophyAgentTokenPersistenceRow[];
+  agentRunRows: BubblophyAgentRunPersistenceRow[];
   activityRows: BubblophyActivityPersistenceRow[];
 }
 
@@ -79,6 +82,7 @@ export async function loadBubblophyProjectIssueDashboardSnapshot({
     projects.length === 0 &&
     issues.length === 0 &&
     rows.agentTokenRows.length === 0 &&
+    rows.agentRunRows.length === 0 &&
     rows.activityRows.length === 0;
 
   return {
@@ -92,7 +96,7 @@ export async function loadBubblophyProjectIssueDashboardSnapshot({
     projects,
     issues,
     agentTokens: buildBubblophyAgentTokenSummaries(rows.agentTokenRows),
-    agentRuns: [],
+    agentRuns: buildBubblophyAgentRunSummaries(rows.agentRunRows),
     activity: buildBubblophyActivityEvents(rows.activityRows),
   };
 }

@@ -2,11 +2,13 @@ import type { BubblophyProjectIssuePersistenceRow } from '@/lib/issues/repositor
 
 import {
   buildBubblophyActivityEvents,
+  buildBubblophyAgentRunSummaries,
   buildBubblophyAgentTokenSummaries,
   buildBubblophyProjectIssueSnapshot,
   buildBubblophyProjectIssueSnapshotForUser,
   deriveBubblophyProjectHealth,
   formatBubblophyIssueKey,
+  mapBubblophyAgentRunState,
   mapBubblophyAgentTokenState,
   mapBubblophyIssuePriority,
   mapBubblophyIssueStatus,
@@ -66,6 +68,12 @@ describe('Bubblophy issue repository mapping', () => {
     expect(mapBubblophyAgentTokenState('active')).toBe('aktiv');
     expect(mapBubblophyAgentTokenState('paused')).toBe('pausiert');
     expect(mapBubblophyAgentTokenState('revoked')).toBe('pausiert');
+
+    expect(mapBubblophyAgentRunState('requested')).toBe('wartet');
+    expect(mapBubblophyAgentRunState('approved')).toBe('freigegeben');
+    expect(mapBubblophyAgentRunState('running')).toBe('läuft');
+    expect(mapBubblophyAgentRunState('needs_review')).toBe('review');
+    expect(mapBubblophyAgentRunState('completed')).toBe('review');
   });
 
   it('formats stable human-facing issue keys', () => {
@@ -252,6 +260,33 @@ describe('Bubblophy issue repository mapping', () => {
     ]);
     expect(JSON.stringify(tokens)).not.toContain('tokenHash');
     expect(JSON.stringify(tokens)).not.toContain('plaintextToken');
+  });
+
+  it('maps public agent run rows without raw auth or token secrets', () => {
+    const runs = buildBubblophyAgentRunSummaries([
+      {
+        id: 'run_codex',
+        projectKey: 'BV',
+        issueNumber: 7,
+        agentTokenLabel: 'Codex lokal',
+        state: 'requested',
+        updatedAt: '2026-06-13T16:10:00.000Z',
+      },
+    ]);
+
+    expect(runs).toEqual([
+      {
+        id: 'run_codex',
+        issueId: 'BV-07',
+        agentLabel: 'Codex lokal',
+        state: 'wartet',
+        requestedBy: 'Mensch',
+        lastEvent: 'Status wartet · zuletzt 2026-06-13T16:10:00.000Z',
+      },
+    ]);
+    expect(JSON.stringify(runs)).not.toContain('requestedByAuthUserId');
+    expect(JSON.stringify(runs)).not.toContain('tokenHash');
+    expect(JSON.stringify(runs)).not.toContain('plaintextToken');
   });
 
   it('maps project events into activity without exposing raw auth user IDs', () => {
