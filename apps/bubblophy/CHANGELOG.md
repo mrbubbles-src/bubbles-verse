@@ -67,3 +67,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   immediately and offers a project-bound persisted issue creation path.
 - Threaded issue descriptions through the server-side create and dashboard
   read DTOs so detail panels survive reloads without client-only overlays.
+- Hardened the human issue plan dialog so saved plans send normalized steps,
+  update the visible plan counter, and keep denied saves in the dialog.

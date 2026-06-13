@@ -513,6 +513,59 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       within(updatedDetailPanel).getByText('2 Schritte')
     ).toBeInTheDocument();
+    expect(screen.getAllByText('2 Schritte').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('keeps the plan dialog open and shows denied plan save errors', async () => {
+    const createIssuePlanAction = vi.fn<
+      (
+        input: CreateBubblophyIssuePlanActionInput
+      ) => Promise<CreateBubblophyIssuePlanActionResult>
+    >(async () => ({
+      status: 'forbidden',
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        createIssuePlanAction={createIssuePlanAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Plan entwerfen' })
+    );
+    fireEvent.change(screen.getByLabelText('Plan-Zusammenfassung'), {
+      target: { value: 'Nicht erlaubter Plan.' },
+    });
+    fireEvent.change(screen.getByLabelText('Schritt 1'), {
+      target: { value: 'Darf nicht gespeichert werden' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Plan speichern' }));
+
+    await waitFor(() => {
+      expect(createIssuePlanAction).toHaveBeenCalledWith({
+        issueId: 'BV-12',
+        summary: 'Nicht erlaubter Plan.',
+        steps: ['Darf nicht gespeichert werden'],
+      });
+    });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Du bist kein Mitglied dieses Projekts. Der Plan wurde nicht gespeichert.'
+    );
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(
+      screen.queryByText('Plan v2, menschlich gespeichert')
+    ).not.toBeInTheDocument();
   });
 
   it('opens a local draft dialog from the new issue action', () => {
@@ -566,6 +619,9 @@ describe('BubblophyDashboard interactions', () => {
     ).toBeInTheDocument();
     expect(
       within(detailPanel).queryByRole('button', { name: 'Status speichern' })
+    ).not.toBeInTheDocument();
+    expect(
+      within(detailPanel).queryByRole('button', { name: /Plan entwerfen/i })
     ).not.toBeInTheDocument();
 
     fireEvent.click(

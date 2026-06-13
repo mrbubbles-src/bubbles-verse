@@ -50,7 +50,8 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   neuen Eintrag lokal als wartend; es wird kein Agent gestartet.
 - Im Issue-Detailpanel können Menschen bei aktiver Datenbankquelle einen
   Plan-Entwurf speichern. Der server-only Plan-Service schreibt eine neue
-  Planversion plus `plan_updated`-Event und startet keinen Agent-Run.
+  Planversion plus `plan_updated`-Event, normalisiert leere Schritte weg und
+  startet keinen Agent-Run.
 - Im Agent-Token-Bereich können Owner/Maintainer bei aktiver Datenbankquelle
   ein projektbegrenztes Token erstellen. Der Klartext wird nur einmal gezeigt;
   gespeichert wird ausschließlich der Hash. Die Erstellung schreibt zusätzlich

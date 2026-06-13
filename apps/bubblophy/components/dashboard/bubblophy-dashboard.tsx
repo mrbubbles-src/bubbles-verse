@@ -1845,7 +1845,7 @@ function IssuePlanDraftDialog({
       const result = await createIssuePlanAction({
         issueId: issue.id,
         summary,
-        steps,
+        steps: normalizedSteps,
       });
 
       if (result.status === 'created') {
