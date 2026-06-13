@@ -1084,6 +1084,65 @@ describe('BubblophyDashboard interactions', () => {
     expect(within(agentSection).getByText('Codex lokal')).toBeInTheDocument();
   });
 
+  it('keeps the token dialog open on denied agent token creation', async () => {
+    const createAgentTokenAction = vi.fn<
+      (
+        input: CreateBubblophyAgentTokenActionInput
+      ) => Promise<CreateBubblophyAgentTokenActionResult>
+    >(async () => ({
+      status: 'forbidden',
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        createAgentTokenAction={createAgentTokenAction}
+      />
+    );
+
+    const agentSection = document.getElementById('agents');
+
+    expect(agentSection).toBeInstanceOf(HTMLElement);
+
+    if (!agentSection) {
+      throw new Error('Expected the agent token section to render.');
+    }
+
+    fireEvent.click(
+      within(agentSection).getByRole('button', {
+        name: 'Agent-Token erstellen',
+      })
+    );
+    fireEvent.change(screen.getByLabelText('Label'), {
+      target: { value: 'Codex lokal' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Token erstellen' }));
+
+    await waitFor(() => {
+      expect(createAgentTokenAction).toHaveBeenCalledWith({
+        projectKey: 'BV',
+        label: 'Codex lokal',
+        scopes: ['projects:read', 'issues:read'],
+      });
+    });
+    expect(createAgentTokenAction.mock.calls[0]?.[0]).not.toHaveProperty(
+      'authUserId'
+    );
+
+    const dialog = await screen.findByRole('dialog');
+
+    expect(within(dialog).getByRole('alert')).toHaveTextContent(
+      /Nur Owner und Maintainer/i
+    );
+    expect(
+      within(dialog).queryByText(/Token jetzt kopieren/i)
+    ).not.toBeInTheDocument();
+    expect(
+      within(agentSection).queryByText('Codex lokal')
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/bubblophy_agent_/i)).not.toBeInTheDocument();
+  });
+
   it('persists an issue from the dialog when database data and an action are available', async () => {
     const createIssueAction = vi.fn<
       (
@@ -1290,6 +1349,7 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       within(detailPanel).getByText(/kein Agent gestartet/i)
     ).toBeInTheDocument();
+    expect(requestAgentRunAction).not.toHaveBeenCalled();
     fireEvent.change(within(detailPanel).getByLabelText('Agent-Token'), {
       target: { value: 'token_codex_bv' },
     });
