@@ -204,6 +204,93 @@ function isLocalDraftIssue(issue: DashboardIssue): issue is LocalDraftIssue {
 }
 
 /**
+ * Returns the project metric contribution for one issue status.
+ *
+ * All current Bubblophy issue statuses are open work states; completed work
+ * gets a separate rule once a closed status exists.
+ *
+ * @param status Dashboard issue status.
+ * @returns Counter contribution for project issue metrics.
+ */
+function getIssueStatusMetricContribution(status: IssueStatus) {
+  return {
+    openIssues: 1,
+    readyIssues: status === 'bereit' ? 1 : 0,
+    blockedIssues: status === 'blockiert' ? 1 : 0,
+  };
+}
+
+/**
+ * Applies successful local status updates to project summaries.
+ *
+ * @param projects Project summaries from the latest snapshot and client inserts.
+ * @param baseIssues Persisted issues before local status overlays.
+ * @param updatedIssuesById Issue summaries returned from successful status writes.
+ * @returns Project summaries with deterministic local status deltas.
+ */
+function applyIssueStatusMetricOverlays({
+  projects,
+  baseIssues,
+  updatedIssuesById,
+}: {
+  projects: ProjectSummary[];
+  baseIssues: IssueSummary[];
+  updatedIssuesById: Record<string, IssueSummary>;
+}) {
+  const baseIssuesById = new Map(baseIssues.map((issue) => [issue.id, issue]));
+  const deltasByProjectKey = new Map<
+    string,
+    Pick<ProjectSummary, 'openIssues' | 'readyIssues' | 'blockedIssues'>
+  >();
+
+  for (const updatedIssue of Object.values(updatedIssuesById)) {
+    const baseIssue = baseIssuesById.get(updatedIssue.id);
+
+    if (
+      !baseIssue ||
+      baseIssue.projectKey !== updatedIssue.projectKey ||
+      baseIssue.status === updatedIssue.status
+    ) {
+      continue;
+    }
+
+    const previous = getIssueStatusMetricContribution(baseIssue.status);
+    const next = getIssueStatusMetricContribution(updatedIssue.status);
+    const currentDelta = deltasByProjectKey.get(updatedIssue.projectKey) ?? {
+      openIssues: 0,
+      readyIssues: 0,
+      blockedIssues: 0,
+    };
+
+    deltasByProjectKey.set(updatedIssue.projectKey, {
+      openIssues:
+        currentDelta.openIssues + next.openIssues - previous.openIssues,
+      readyIssues:
+        currentDelta.readyIssues + next.readyIssues - previous.readyIssues,
+      blockedIssues:
+        currentDelta.blockedIssues +
+        next.blockedIssues -
+        previous.blockedIssues,
+    });
+  }
+
+  return projects.map((project) => {
+    const delta = deltasByProjectKey.get(project.key);
+
+    if (!delta) {
+      return project;
+    }
+
+    return {
+      ...project,
+      openIssues: Math.max(0, project.openIssues + delta.openIssues),
+      readyIssues: Math.max(0, project.readyIssues + delta.readyIssues),
+      blockedIssues: Math.max(0, project.blockedIssues + delta.blockedIssues),
+    };
+  });
+}
+
+/**
  * Renders the first Bubblophy command-center screen.
  *
  * Use this component with a `DashboardSnapshot` DTO from either local sample
@@ -233,8 +320,8 @@ export function BubblophyDashboard({
   const [issuePlansById, setIssuePlansById] = useState<
     Record<string, IssuePlanDraft>
   >({});
-  const [issueStatusById, setIssueStatusById] = useState<
-    Record<string, IssueStatus>
+  const [updatedIssuesById, setUpdatedIssuesById] = useState<
+    Record<string, IssueSummary>
   >({});
   const [persistedProjects, setPersistedProjects] = useState<ProjectSummary[]>(
     []
@@ -247,7 +334,11 @@ export function BubblophyDashboard({
     snapshot.meta.dataSource === 'database' ||
     snapshot.meta.dataSource === 'empty_database';
 
-  const allProjects = useMemo(
+  const baseIssues = useMemo<IssueSummary[]>(
+    () => [...persistedIssues, ...snapshot.issues],
+    [persistedIssues, snapshot.issues]
+  );
+  const baseProjects = useMemo(
     () => [...persistedProjects, ...snapshot.projects],
     [persistedProjects, snapshot.projects]
   );
@@ -258,27 +349,33 @@ export function BubblophyDashboard({
 
   const allIssues = useMemo<DashboardIssue[]>(
     () =>
-      [...localDrafts, ...persistedIssues, ...snapshot.issues].map((issue) => {
+      [...localDrafts, ...baseIssues].map((issue) => {
+        const updatedIssue = updatedIssuesById[issue.id];
         const plan = issuePlansById[issue.id];
-        const status = issueStatusById[issue.id];
-        const issueWithStatus = status ? { ...issue, status } : issue;
+        const issueWithUpdate = updatedIssue
+          ? { ...issue, ...updatedIssue }
+          : issue;
 
         if (!plan) {
-          return issueWithStatus;
+          return issueWithUpdate;
         }
 
         return {
-          ...issueWithStatus,
+          ...issueWithUpdate,
           planSteps: plan.steps.length,
         };
       }),
-    [
-      issuePlansById,
-      issueStatusById,
-      localDrafts,
-      persistedIssues,
-      snapshot.issues,
-    ]
+    [baseIssues, issuePlansById, localDrafts, updatedIssuesById]
+  );
+
+  const allProjects = useMemo(
+    () =>
+      applyIssueStatusMetricOverlays({
+        projects: baseProjects,
+        baseIssues,
+        updatedIssuesById,
+      }),
+    [baseIssues, baseProjects, updatedIssuesById]
   );
 
   const filteredIssues = useMemo(() => {
@@ -371,9 +468,9 @@ export function BubblophyDashboard({
   };
 
   const handleIssueStatusUpdated = (issue: IssueSummary) => {
-    setIssueStatusById((currentStatuses) => ({
-      ...currentStatuses,
-      [issue.id]: issue.status,
+    setUpdatedIssuesById((currentIssues) => ({
+      ...currentIssues,
+      [issue.id]: issue,
     }));
   };
 

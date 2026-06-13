@@ -176,6 +176,27 @@ vi.mock('@bubbles/ui/shadcn/textarea', () => ({
   ),
 }));
 
+function getMetricSection(label: string) {
+  const heading = screen.getByRole('heading', { name: label });
+  const section = heading.closest('section');
+
+  expect(section).toBeInstanceOf(HTMLElement);
+
+  if (!section) {
+    throw new Error(`Expected metric section for ${label}.`);
+  }
+
+  return section;
+}
+
+function getMetricValue(label: string) {
+  return within(getMetricSection(label)).getByText(/\d+%?$/);
+}
+
+function getMetricCaption(label: string) {
+  return within(getMetricSection(label)).getByText(/bereit|lokal|Blocker/i);
+}
+
 describe('BubblophyDashboard interactions', () => {
   beforeEach(() => {
     window.HTMLElement.prototype.scrollIntoView = vi.fn();
@@ -322,6 +343,71 @@ describe('BubblophyDashboard interactions', () => {
     }
 
     expect(resetStatusSelect.value).not.toBe('bereit');
+    expect(getMetricValue('Offene Issues')).toHaveTextContent('24');
+    expect(getMetricValue('Readiness')).toHaveTextContent('33%');
+    expect(getMetricCaption('Offene Issues')).toHaveTextContent(
+      '8 bereit für Freigabe'
+    );
+    expect(
+      screen.getByRole('progressbar', { name: '5 bereit, 12 offen' })
+    ).toBeInTheDocument();
+  });
+
+  it('updates project blocker metrics after a human status transition', async () => {
+    const updateIssueStatusAction = vi.fn<
+      (
+        input: UpdateBubblophyIssueStatusActionInput
+      ) => Promise<UpdateBubblophyIssueStatusActionResult>
+    >(async () => ({
+      status: 'updated',
+      issue: {
+        id: 'BV-12',
+        title: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+        projectKey: 'BV',
+        status: 'blockiert',
+        priority: 'hoch',
+        owner: 'mrbubbles',
+        planSteps: 3,
+        approvalRequired: true,
+      },
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        updateIssueStatusAction={updateIssueStatusAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    fireEvent.change(within(detailPanel).getByLabelText('Neuer Status'), {
+      target: { value: 'blockiert' },
+    });
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Status speichern' })
+    );
+
+    await waitFor(() => {
+      expect(updateIssueStatusAction).toHaveBeenCalledWith({
+        issueId: 'BV-12',
+        status: 'blockiert',
+        reason: '',
+      });
+    });
+    await waitFor(() => {
+      expect(getMetricValue('Blocker')).toHaveTextContent('4');
+    });
+    expect(getMetricValue('Offene Issues')).toHaveTextContent('24');
+    expect(
+      screen.getByRole('progressbar', { name: '4 bereit, 12 offen' })
+    ).toBeInTheDocument();
   });
 
   it('persists a human issue plan and renders it in the detail panel', async () => {
