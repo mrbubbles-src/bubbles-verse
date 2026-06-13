@@ -1100,7 +1100,7 @@ describe('BubblophyDashboard interactions', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByText('Neues Issue als Draft')).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: 'In Datenbank speichern' })
+      screen.queryByRole('button', { name: 'Issue erstellen' })
     ).not.toBeInTheDocument();
     expect(
       screen.getAllByText(/Datenbank nicht aktiv, Draft bleibt lokal/i).length
@@ -2001,7 +2001,7 @@ describe('BubblophyDashboard interactions', () => {
       target: { value: 'hoch' },
     });
     fireEvent.click(
-      screen.getByRole('button', { name: 'In Datenbank speichern' })
+      screen.getByRole('button', { name: 'Issue erstellen' })
     );
 
     await waitFor(() => {
@@ -2560,11 +2560,14 @@ describe('BubblophyDashboard interactions', () => {
     fireEvent.click(screen.getByRole('button', { name: /Neues Issue/i }));
 
     expect(
-      screen.getByRole('button', { name: 'In Datenbank speichern' })
+      screen.getByRole('button', { name: 'Issue erstellen' })
     ).toBeDisabled();
     expect(
-      screen.getByRole('button', { name: 'Nur lokal anlegen' })
+      screen.getByRole('button', { name: 'Als lokalen Draft anlegen' })
     ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Planungsansicht folgt/i)
+    ).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText('Titel'), {
       target: { value: 'Persistiertes Test-Issue' },
@@ -2576,7 +2579,7 @@ describe('BubblophyDashboard interactions', () => {
       target: { value: 'hoch' },
     });
     fireEvent.click(
-      screen.getByRole('button', { name: 'In Datenbank speichern' })
+      screen.getByRole('button', { name: 'Issue erstellen' })
     );
 
     await waitFor(() => {
@@ -2612,7 +2615,7 @@ describe('BubblophyDashboard interactions', () => {
     ).not.toBeInTheDocument();
     expect(
       within(detailPanel).getByText(
-        /Plan-Schritte sind noch nicht ausformuliert/i
+        /Nutze „Plan entwerfen“/i
       )
     ).toBeInTheDocument();
   });
@@ -2650,7 +2653,7 @@ describe('BubblophyDashboard interactions', () => {
       target: { value: 'Nicht erlaubtes Issue' },
     });
     fireEvent.click(
-      screen.getByRole('button', { name: 'In Datenbank speichern' })
+      screen.getByRole('button', { name: 'Issue erstellen' })
     );
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
@@ -2681,7 +2684,7 @@ describe('BubblophyDashboard interactions', () => {
     fireEvent.click(screen.getByRole('button', { name: /Neues Issue/i }));
 
     expect(
-      screen.queryByRole('button', { name: 'In Datenbank speichern' })
+      screen.queryByRole('button', { name: 'Issue erstellen' })
     ).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Titel'), {
       target: { value: 'Lokaler Fallback-Draft' },

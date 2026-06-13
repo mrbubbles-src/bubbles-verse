@@ -50,9 +50,9 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   Zustand. Issue-Zeilen reagieren auf Klick, Enter und Leertaste;
   Projektfilter können gelöst werden; Sidebar-Links führen auf echte
   Dashboard-Sections statt auf Platzhalter.
-- Der Issue-Dialog bietet bei aktiver Datenbankquelle zusätzlich
-  `In Datenbank speichern`; bei Sample- oder Fallback-Daten bleibt er bewusst
-  lokal und markiert Drafts als nicht gespeichert.
+- Der Issue-Dialog bietet bei aktiver Datenbankquelle `Issue erstellen`; bei
+  Sample- oder Fallback-Daten bleibt er bewusst lokal und markiert Drafts als
+  nicht gespeichert.
 - Im Issue-Detail können Menschen bei aktiver Datenbankquelle den Status eines
   gespeicherten Issues ändern. Die Änderung schreibt ein `status_changed`-Event
   und startet keinen Agent-Run.

@@ -2519,7 +2519,7 @@ function IssueDetailPanel({
         ) : (
           <p className="text-sm text-muted-foreground">
             {dataSource === 'database' || dataSource === 'empty_database'
-              ? 'Plan-Schritte sind noch nicht ausformuliert. Die Planungsansicht folgt als nächster Schritt.'
+              ? 'Noch kein Plan gespeichert. Nutze „Plan entwerfen“, um Summary und Schritte dauerhaft am Issue zu sichern.'
               : `Sample-Daten enthalten aktuell ${issue.planSteps} Plan-Schritte als Zähler. Die ausformulierten Schritte folgen mit der Datenanbindung.`}
           </p>
         )}
@@ -3765,7 +3765,8 @@ function RunQueue({
           Runs
         </CardTitle>
         <CardDescription>
-          Agent-Runs entstehen später nur nach expliziter menschlicher Freigabe.
+          Agent-Runs entstehen nur nach Anfrage und expliziter menschlicher
+          Freigabe.
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3">
@@ -3779,7 +3780,7 @@ function RunQueue({
         {isDatabaseSource && agentRuns.length === 0 ? (
           <div className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
             Noch keine Runs. Bubblophy startet keine Agenten automatisch; ein
-            späterer Run-Request braucht eine explizite menschliche Freigabe.
+            Run-Request braucht immer eine explizite menschliche Freigabe.
           </div>
         ) : null}
         {isDatabaseSource
@@ -4046,7 +4047,7 @@ function NewIssueDraftDialog({
           </DialogTitle>
           <DialogDescription>
             {canPersistToDatabase
-              ? 'Speichere ein menschlich angelegtes Issue in der Datenbank oder halte es bewusst nur lokal.'
+              ? 'Erstelle ein echtes Issue im ausgewählten Projekt. Optional kannst du es bewusst nur als lokalen Draft halten.'
               : 'Datenbank nicht aktiv, Draft bleibt lokal und wird nicht in Supabase oder Postgres gespeichert.'}
           </DialogDescription>
         </DialogHeader>
@@ -4114,7 +4115,7 @@ function NewIssueDraftDialog({
 
           <div className="rounded-md border border-dashed border-border bg-muted/30 p-3 text-xs text-muted-foreground">
             {canPersistToDatabase
-              ? 'Datenbank-Speichern prüft die menschliche Session und Projektmitgliedschaft serverseitig. Es startet keinen Agent-Run.'
+              ? 'Issue-Erstellung prüft die menschliche Session und Projektmitgliedschaft serverseitig. Sie startet keinen Agent-Run.'
               : 'Datenbank nicht aktiv, Draft bleibt lokal.'}
           </div>
 
@@ -4138,7 +4139,7 @@ function NewIssueDraftDialog({
                 variant="outline"
                 disabled={!canCreateDraft || isPersistPending}
                 onClick={handleLocalDraftCreate}>
-                Nur lokal anlegen
+                Als lokalen Draft anlegen
               </Button>
             ) : null}
             <Button
@@ -4148,15 +4149,14 @@ function NewIssueDraftDialog({
               }>
               {canPersistToDatabase
                 ? isPersistPending
-                  ? 'Speichert...'
-                  : 'In Datenbank speichern'
+                  ? 'Erstellt...'
+                  : 'Issue erstellen'
                 : 'Draft anlegen'}
             </Button>
           </DialogFooter>
           {!canCreateDraft ? (
             <p className="text-xs text-muted-foreground">
-              Titel und Projekt sind nötig, bevor ein lokaler Draft angelegt
-              wird.
+              Titel und Projekt sind nötig, bevor ein Issue angelegt wird.
             </p>
           ) : null}
         </form>

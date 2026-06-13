@@ -109,3 +109,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `GET /api/agent-runs/[runId]` uses active same-project Bearer tokens with
   `issues:read`, returns only minimal Run/Project/Issue/latest-plan context,
   and updates `last_used_at` without starting automation.
+- Clarified dashboard action labels and empty states so issue creation, plan
+  drafting, and run queues point at existing human-controlled workflows instead
+  of database jargon or future-placeholder wording.
