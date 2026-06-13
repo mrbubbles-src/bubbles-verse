@@ -1,8 +1,9 @@
 # Bubblophy Database Setup
 
 Diese Notiz beschreibt den reviewbaren Datenbank-Stand für Bubblophy. Sie ist
-bewusst lokal vorbereitet: Es wurde keine Remote-Migration ausgeführt und keine
-Supabase-Datenbank verändert.
+als reproduzierbarer Migrationspfad im Repo gedacht: SQL wird lokal reviewt,
+committed und erst danach bewusst gegen eine ausgewählte Ziel-Datenbank
+angewendet.
 
 ## Monorepo-Konvention
 
@@ -14,6 +15,9 @@ Supabase-Datenbank verändert.
 - Schema-Änderungen werden lokal mit `bunx drizzle-kit generate` erzeugt und
   als Review-Artefakt committed. Anwenden passiert separat und bewusst mit der
   passenden Datenbank-URL.
+- Handgeschriebene SQL-Schritte wie RLS-Policies werden als Drizzle-Custom-
+  Migration erzeugt, damit sie im Journal stehen und von `drizzle-kit migrate`
+  beziehungsweise `d-mig-bun` mit ausgeführt werden.
 
 ## Vorbereitete Migration
 
@@ -55,7 +59,7 @@ Migrationskompatibilität im Baseline-Enum, wird aber nicht mehr als aktiver
 Schreibpfad genutzt. Neue Token-Audit-Ereignisse gehören in
 `bubblophy_project_events`.
 
-Prüfung der generierten Migration:
+Prüfung der vorbereiteten Migrationen:
 
 - Keine `DROP`-, `DELETE`-, `TRUNCATE`- oder destruktiven
   `ALTER TABLE ... DROP`-Statements.
@@ -76,8 +80,9 @@ Prüfung der generierten Migration:
   muss. Öffentliche Token-Summaries laufen aktuell server-only; eine sichere
   View kann später separat ergänzt werden.
 
-Diese RLS-Baseline ist additiv und lokal reviewbar. Sie wurde nicht remote
-angewendet.
+Diese RLS-Baseline ist additiv und lokal reviewbar. Sie liegt nicht als lose
+SQL-Datei neben dem Drizzle-Flow, sondern als journalisierte Custom-Migration
+vor.
 
 ## Lokal reviewen
 
@@ -88,8 +93,25 @@ cd apps/bubblophy
 bunx drizzle-kit generate
 ```
 
-Nur zum Anwenden gegen eine bewusst ausgewählte Datenbank, nicht während
-Review-Arbeit:
+Für handgeschriebene RLS-/Policy-/Function-SQL:
+
+```bash
+cd apps/bubblophy
+bunx drizzle-kit generate --custom --name bubblophy_rls_baseline
+```
+
+Danach wird der SQL-Inhalt in die erzeugte Custom-Migration geschrieben und
+reviewt. Weil diese Migration in `drizzle/meta/_journal.json` steht, wird sie
+von `bunx drizzle-kit migrate` beziehungsweise `d-mig-bun` angewendet. Ältere
+Dashboard-RLS-Dateien zeigen noch das historische manuelle Muster; Bubblophy
+nutzt für neue RLS-SQL den journalisierten Custom-Migration-Pfad.
+
+Der von Drizzle erzeugte Snapshot beschreibt weiterhin das TypeScript-Schema.
+Custom-RLS-SQL wird dort nicht vollständig als `policies` oder
+`isRLSEnabled` modelliert; maßgeblich sind die journalisierte SQL-Datei und der
+Migrationstest.
+
+Nur zum Anwenden gegen eine bewusst ausgewählte Datenbank:
 
 ```bash
 cd apps/bubblophy

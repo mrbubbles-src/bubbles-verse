@@ -9,6 +9,10 @@ const rlsMigrationPath = join(
 );
 const rlsMigrationSql = readFileSync(rlsMigrationPath, 'utf8');
 const normalizedRlsMigrationSql = normalizeSql(rlsMigrationSql);
+const drizzleJournalSql = readFileSync(
+  join(process.cwd(), 'drizzle/meta/_journal.json'),
+  'utf8'
+);
 
 const rlsProtectedTables = [
   'bubblophy_projects',
@@ -41,6 +45,10 @@ function getPolicyStatements(sql: string): string[] {
 }
 
 describe('bubblophy RLS migration', () => {
+  it('keeps the RLS baseline in the Drizzle migration journal', () => {
+    expect(drizzleJournalSql).toContain('"tag": "0002_bubblophy_rls_baseline"');
+  });
+
   it('enables row level security on every Bubblophy table', () => {
     for (const tableName of rlsProtectedTables) {
       expect(normalizedRlsMigrationSql).toContain(

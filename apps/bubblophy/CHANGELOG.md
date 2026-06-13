@@ -58,6 +58,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added dashboard UI for human-only agent run requests that insert local
   waiting RunQueue entries after the server action succeeds, without starting
   agents or executing work.
-- Added a local Supabase RLS baseline migration that enables RLS on Bubblophy
-  tables, scopes direct reads by project membership, and keeps agent token
-  hashes closed to direct authenticated access.
+- Added a journaled Supabase RLS baseline custom migration that enables RLS on
+  Bubblophy tables, scopes direct reads by project membership, and keeps agent
+  token hashes closed to direct authenticated access.

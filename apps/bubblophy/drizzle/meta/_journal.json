@@ -15,6 +15,13 @@
       "when": 1781369778358,
       "tag": "0001_chilly_hiroim",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781374720417,
+      "tag": "0002_bubblophy_rls_baseline",
+      "breakpoints": true
     }
   ]
 }

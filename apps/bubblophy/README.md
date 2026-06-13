@@ -21,8 +21,8 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   Login für Menschen vor.
 - Das Drizzle-Grundschema liegt unter `drizzle/db/schema.ts`.
 - Die lokalen Datenbankmigrationen liegen unter `drizzle/`; darunter ist eine
-  additive RLS-Baseline, die vor einer Remote-Anwendung separat reviewt werden
-  muss.
+  additive, journalisierte Drizzle-Custom-Migration für die RLS-Baseline, die
+  vor einer Remote-Anwendung separat reviewt werden muss.
 - Eine erste server-only Repository-/Mapper-Grenze für Projekt-/Issue-Zeilen
   liegt unter `lib/issues/repository.ts`.
 - Ein server-only Create-Vertrag für Projekte liegt unter
@@ -135,9 +135,10 @@ bun run build
 - Datenzugriff auf `DATABASE_URL` ist in `drizzle/db/index.ts` durch
   `server-only` auf Server-Bundles begrenzt.
 - Projektmitgliedschaften, RLS-Policies und Agent-Scopes sind im Schema und in
-  einer lokalen RLS-Baseline vorbereitet. Direkte Supabase-Zugriffe bleiben
-  membership-scoped; `bubblophy_agent_tokens` wird wegen `token_hash` nicht
-  direkt für `authenticated` geöffnet. Server Actions behalten zusätzlich ihre
+  einer lokalen Drizzle-Custom-Migration für die RLS-Baseline vorbereitet.
+  Direkte Supabase-Zugriffe bleiben membership-scoped;
+  `bubblophy_agent_tokens` wird wegen `token_hash` nicht direkt für
+  `authenticated` geöffnet. Server Actions behalten zusätzlich ihre
   serverseitigen Membership-Prüfungen.
 - Die aktuelle Issue-Nummer-Vergabe passiert im MVP transaktional über
   `max(issue_number) + 1` pro Projekt und wird vom eindeutigen DB-Index
