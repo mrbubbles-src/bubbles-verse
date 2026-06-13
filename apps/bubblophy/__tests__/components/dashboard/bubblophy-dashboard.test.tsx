@@ -9,6 +9,8 @@ import type {
   CreateBubblophyProjectActionResult,
   RequestBubblophyAgentRunActionInput,
   RequestBubblophyAgentRunActionResult,
+  TransitionBubblophyAgentRunActionInput,
+  TransitionBubblophyAgentRunActionResult,
   UpdateBubblophyIssueStatusActionInput,
   UpdateBubblophyIssueStatusActionResult,
 } from '@/app/actions';
@@ -1444,6 +1446,125 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       within(runsSection).queryByText(/Noch keine Runs/i)
     ).not.toBeInTheDocument();
+  });
+
+  it('does not expose human run decisions without the transition server action', () => {
+    render(<BubblophyDashboard snapshot={databaseSnapshot} />);
+
+    const runsSection = document.getElementById('runs');
+
+    expect(runsSection).toBeInstanceOf(HTMLElement);
+
+    if (!runsSection) {
+      throw new Error('Expected the runs section to render.');
+    }
+
+    expect(within(runsSection).getByText('BV-14')).toBeInTheDocument();
+    expect(
+      within(runsSection).queryByRole('button', { name: 'Freigeben' })
+    ).not.toBeInTheDocument();
+    expect(
+      within(runsSection).queryByRole('button', { name: 'Abbrechen' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('approves a requested run through a real server action', async () => {
+    const transitionAgentRunAction = vi.fn<
+      (
+        input: TransitionBubblophyAgentRunActionInput
+      ) => Promise<TransitionBubblophyAgentRunActionResult>
+    >(async () => ({
+      status: 'updated',
+      run: {
+        id: 'run_bv_14',
+        issueId: 'BV-14',
+        agentLabel: 'codex-local-lio',
+        state: 'freigegeben',
+        requestedBy: 'Mensch',
+        lastEvent: 'Run BV-14 wurde menschlich freigegeben.',
+      },
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        transitionAgentRunAction={transitionAgentRunAction}
+      />
+    );
+
+    const runsSection = document.getElementById('runs');
+
+    expect(runsSection).toBeInstanceOf(HTMLElement);
+
+    if (!runsSection) {
+      throw new Error('Expected the runs section to render.');
+    }
+
+    fireEvent.click(
+      within(runsSection).getByRole('button', { name: 'Freigeben' })
+    );
+
+    await waitFor(() => {
+      expect(transitionAgentRunAction).toHaveBeenCalledWith({
+        runId: 'run_bv_14',
+        decision: 'approve',
+      });
+    });
+    expect(transitionAgentRunAction.mock.calls[0]?.[0]).not.toHaveProperty(
+      'authUserId'
+    );
+
+    await waitFor(() => {
+      expect(within(runsSection).getByText('Freigegeben')).toBeInTheDocument();
+    });
+    expect(
+      within(runsSection).getByText('Run BV-14 wurde menschlich freigegeben.')
+    ).toBeInTheDocument();
+    expect(
+      within(runsSection).queryByRole('button', { name: 'Freigeben' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps run decision buttons visible and shows denied membership errors', async () => {
+    const transitionAgentRunAction = vi.fn<
+      (
+        input: TransitionBubblophyAgentRunActionInput
+      ) => Promise<TransitionBubblophyAgentRunActionResult>
+    >(async () => ({
+      status: 'forbidden',
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        transitionAgentRunAction={transitionAgentRunAction}
+      />
+    );
+
+    const runsSection = document.getElementById('runs');
+
+    expect(runsSection).toBeInstanceOf(HTMLElement);
+
+    if (!runsSection) {
+      throw new Error('Expected the runs section to render.');
+    }
+
+    fireEvent.click(
+      within(runsSection).getByRole('button', { name: 'Abbrechen' })
+    );
+
+    await waitFor(() => {
+      expect(transitionAgentRunAction).toHaveBeenCalledWith({
+        runId: 'run_bv_14',
+        decision: 'cancel',
+      });
+    });
+    expect(await within(runsSection).findByRole('alert')).toHaveTextContent(
+      'Du bist kein Mitglied dieses Projekts.'
+    );
+    expect(
+      within(runsSection).getByRole('button', { name: 'Freigeben' })
+    ).toBeInTheDocument();
   });
 
   it('blocks run requests for database issues without active project tokens', () => {

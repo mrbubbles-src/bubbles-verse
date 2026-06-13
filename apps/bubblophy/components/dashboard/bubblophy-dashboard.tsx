@@ -11,6 +11,8 @@ import type {
   CreateBubblophyProjectActionResult,
   RequestBubblophyAgentRunActionInput,
   RequestBubblophyAgentRunActionResult,
+  TransitionBubblophyAgentRunActionInput,
+  TransitionBubblophyAgentRunActionResult,
   UpdateBubblophyIssueStatusActionInput,
   UpdateBubblophyIssueStatusActionResult,
 } from '@/app/actions';
@@ -95,6 +97,9 @@ interface BubblophyDashboardProps {
   requestAgentRunAction?: (
     input: RequestBubblophyAgentRunActionInput
   ) => Promise<RequestBubblophyAgentRunActionResult>;
+  transitionAgentRunAction?: (
+    input: TransitionBubblophyAgentRunActionInput
+  ) => Promise<TransitionBubblophyAgentRunActionResult>;
   createProjectAction?: (
     input: CreateBubblophyProjectActionInput
   ) => Promise<CreateBubblophyProjectActionResult>;
@@ -143,6 +148,9 @@ const runVariant = {
   freigegeben: 'published',
   läuft: 'default',
   review: 'secondary',
+  abgeschlossen: 'published',
+  abgebrochen: 'secondary',
+  fehlgeschlagen: 'destructive',
 } satisfies Record<
   AgentRunState,
   React.ComponentProps<typeof Badge>['variant']
@@ -312,6 +320,7 @@ export function BubblophyDashboard({
   createIssuePlanAction,
   updateIssueStatusAction,
   requestAgentRunAction,
+  transitionAgentRunAction,
   createProjectAction,
   createAgentTokenAction,
 }: BubblophyDashboardProps) {
@@ -340,6 +349,9 @@ export function BubblophyDashboard({
   const [persistedAgentRuns, setPersistedAgentRuns] = useState<
     AgentRunSummary[]
   >([]);
+  const [updatedAgentRunsById, setUpdatedAgentRunsById] = useState<
+    Record<string, AgentRunSummary>
+  >({});
   const [draftSequence, setDraftSequence] = useState(1);
   const canUseDatabase =
     snapshot.meta.dataSource === 'database' ||
@@ -358,8 +370,11 @@ export function BubblophyDashboard({
     [persistedAgentTokens, snapshot.agentTokens]
   );
   const allAgentRuns = useMemo(
-    () => [...persistedAgentRuns, ...snapshot.agentRuns],
-    [persistedAgentRuns, snapshot.agentRuns]
+    () =>
+      [...persistedAgentRuns, ...snapshot.agentRuns].map(
+        (run) => updatedAgentRunsById[run.id] ?? run
+      ),
+    [persistedAgentRuns, snapshot.agentRuns, updatedAgentRunsById]
   );
 
   const allIssues = useMemo<DashboardIssue[]>(
@@ -507,6 +522,13 @@ export function BubblophyDashboard({
     setPersistedAgentRuns((currentRuns) => [run, ...currentRuns]);
   };
 
+  const handleAgentRunTransitioned = (run: AgentRunSummary) => {
+    setUpdatedAgentRunsById((currentRuns) => ({
+      ...currentRuns,
+      [run.id]: run,
+    }));
+  };
+
   const handleDeleteDraft = (issueId: string) => {
     setLocalDrafts((currentDrafts) =>
       currentDrafts.filter((draft) => draft.id !== issueId)
@@ -632,6 +654,8 @@ export function BubblophyDashboard({
               <RunQueue
                 dataSource={snapshot.meta.dataSource}
                 agentRuns={allAgentRuns}
+                transitionAgentRunAction={transitionAgentRunAction}
+                onAgentRunTransitioned={handleAgentRunTransitioned}
               />
               <ActivityFeed snapshot={snapshot} />
             </aside>
@@ -2283,9 +2307,15 @@ function NewAgentTokenDialog({
 function RunQueue({
   dataSource,
   agentRuns,
+  transitionAgentRunAction,
+  onAgentRunTransitioned,
 }: {
   dataSource: DashboardSnapshot['meta']['dataSource'];
   agentRuns: AgentRunSummary[];
+  transitionAgentRunAction?: (
+    input: TransitionBubblophyAgentRunActionInput
+  ) => Promise<TransitionBubblophyAgentRunActionResult>;
+  onAgentRunTransitioned: (run: AgentRunSummary) => void;
 }) {
   const isDatabaseSource =
     dataSource === 'database' || dataSource === 'empty_database';
@@ -2337,11 +2367,89 @@ function RunQueue({
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">{run.lastEvent}</p>
+                {run.state === 'wartet' && transitionAgentRunAction ? (
+                  <RunDecisionControls
+                    run={run}
+                    transitionAgentRunAction={transitionAgentRunAction}
+                    onAgentRunTransitioned={onAgentRunTransitioned}
+                  />
+                ) : null}
               </div>
             ))
           : null}
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * Renders real human approve/cancel actions for a requested run.
+ *
+ * @param props Run row, server action, and success callback.
+ * @returns Inline decision buttons with server-backed feedback.
+ */
+function RunDecisionControls({
+  run,
+  transitionAgentRunAction,
+  onAgentRunTransitioned,
+}: {
+  run: AgentRunSummary;
+  transitionAgentRunAction: (
+    input: TransitionBubblophyAgentRunActionInput
+  ) => Promise<TransitionBubblophyAgentRunActionResult>;
+  onAgentRunTransitioned: (run: AgentRunSummary) => void;
+}) {
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  const handleDecision = (
+    decision: TransitionBubblophyAgentRunActionInput['decision']
+  ) => {
+    if (isPending) {
+      return;
+    }
+
+    setActionError(null);
+    startTransition(async () => {
+      const result = await transitionAgentRunAction({
+        runId: run.id,
+        decision,
+      });
+
+      if (result.status === 'updated') {
+        onAgentRunTransitioned(result.run);
+        return;
+      }
+
+      setActionError(getAgentRunTransitionActionErrorMessage(result));
+    });
+  };
+
+  return (
+    <div className="grid gap-2">
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          size="sm"
+          disabled={isPending}
+          onClick={() => handleDecision('approve')}>
+          {isPending ? 'Prüft...' : 'Freigeben'}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={isPending}
+          onClick={() => handleDecision('cancel')}>
+          Abbrechen
+        </Button>
+      </div>
+      {actionError ? (
+        <p role="alert" className="text-xs text-destructive">
+          {actionError}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -2758,6 +2866,41 @@ function getAgentRunRequestActionErrorMessage(
   }
 
   return 'Der Auftrag ist zu lang. Maximal 500 Zeichen sind erlaubt.';
+}
+
+/**
+ * Converts human run transition outcomes into quiet inline feedback.
+ *
+ * @param result Result returned by the transition action.
+ * @returns Human-readable error message for the run queue.
+ */
+function getAgentRunTransitionActionErrorMessage(
+  result: Exclude<
+    TransitionBubblophyAgentRunActionResult,
+    { status: 'updated' }
+  >
+) {
+  if (result.status === 'not_found') {
+    return 'Dieser Run wurde nicht gefunden.';
+  }
+
+  if (result.status === 'forbidden') {
+    return 'Du bist kein Mitglied dieses Projekts. Der Run wurde nicht geändert.';
+  }
+
+  if (result.status === 'invalid_transition') {
+    return 'Nur angefragte Runs können freigegeben oder abgebrochen werden.';
+  }
+
+  if (result.status === 'database_unavailable') {
+    return 'Die Datenbank ist gerade nicht verfügbar. Der Run wurde nicht geändert.';
+  }
+
+  if (result.reason === 'empty_run') {
+    return 'Wähle einen Run aus.';
+  }
+
+  return 'Diese Run-Entscheidung ist nicht gültig.';
 }
 
 /**

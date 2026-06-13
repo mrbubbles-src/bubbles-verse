@@ -4,8 +4,10 @@ import type {
   CreateBubblophyIssuePlanActionInput,
   CreateBubblophyProjectActionInput,
   RequestBubblophyAgentRunActionInput,
+  TransitionBubblophyAgentRunActionInput,
   UpdateBubblophyIssueStatusActionInput,
 } from '@/app/actions';
+import type { TransitionBubblophyAgentRunInput } from '@/lib/agent-runs/human-transition';
 import type { RequestBubblophyAgentRunInput } from '@/lib/agent-runs/request';
 import type { CreateBubblophyAgentTokenInput } from '@/lib/agent-tokens/create';
 import type { CreateBubblophyIssueDraftInput } from '@/lib/issues/create';
@@ -22,6 +24,7 @@ const updateBubblophyIssueStatusMock = vi.fn();
 const createBubblophyProjectMock = vi.fn();
 const createBubblophyAgentTokenMock = vi.fn();
 const requestBubblophyAgentRunMock = vi.fn();
+const transitionBubblophyAgentRunMock = vi.fn();
 
 vi.mock('@/lib/auth/session', () => ({
   requireBubblophySession: (options: { nextPath?: string }) =>
@@ -59,6 +62,11 @@ vi.mock('@/lib/agent-runs/request', () => ({
     requestBubblophyAgentRunMock(input),
 }));
 
+vi.mock('@/lib/agent-runs/human-transition', () => ({
+  transitionBubblophyAgentRun: (input: TransitionBubblophyAgentRunInput) =>
+    transitionBubblophyAgentRunMock(input),
+}));
+
 describe('createBubblophyIssueAction', () => {
   beforeEach(() => {
     requireBubblophySessionMock.mockReset();
@@ -67,6 +75,7 @@ describe('createBubblophyIssueAction', () => {
     updateBubblophyIssueStatusMock.mockReset();
     createBubblophyProjectMock.mockReset();
     createBubblophyAgentTokenMock.mockReset();
+    transitionBubblophyAgentRunMock.mockReset();
   });
 
   it('resolves the auth user server-side instead of accepting a client authUserId', async () => {
@@ -132,6 +141,7 @@ describe('createBubblophyIssuePlanAction', () => {
     updateBubblophyIssueStatusMock.mockReset();
     createBubblophyProjectMock.mockReset();
     createBubblophyAgentTokenMock.mockReset();
+    transitionBubblophyAgentRunMock.mockReset();
   });
 
   it('resolves the auth user server-side instead of accepting a client authUserId', async () => {
@@ -187,6 +197,7 @@ describe('updateBubblophyIssueStatusAction', () => {
     updateBubblophyIssueStatusMock.mockReset();
     createBubblophyProjectMock.mockReset();
     createBubblophyAgentTokenMock.mockReset();
+    transitionBubblophyAgentRunMock.mockReset();
   });
 
   it('resolves the auth user server-side instead of accepting a client authUserId', async () => {
@@ -250,6 +261,7 @@ describe('createBubblophyProjectAction', () => {
     updateBubblophyIssueStatusMock.mockReset();
     createBubblophyProjectMock.mockReset();
     createBubblophyAgentTokenMock.mockReset();
+    transitionBubblophyAgentRunMock.mockReset();
   });
 
   it('resolves the auth user server-side instead of accepting a client authUserId', async () => {
@@ -317,6 +329,7 @@ describe('createBubblophyAgentTokenAction', () => {
     updateBubblophyIssueStatusMock.mockReset();
     createBubblophyProjectMock.mockReset();
     createBubblophyAgentTokenMock.mockReset();
+    transitionBubblophyAgentRunMock.mockReset();
   });
 
   it('resolves the auth user server-side instead of accepting a client authUserId', async () => {
@@ -374,6 +387,7 @@ describe('requestBubblophyAgentRunAction', () => {
   beforeEach(() => {
     requireBubblophySessionMock.mockReset();
     requestBubblophyAgentRunMock.mockReset();
+    transitionBubblophyAgentRunMock.mockReset();
   });
 
   it('resolves the auth user server-side instead of accepting a client authUserId', async () => {
@@ -420,6 +434,59 @@ describe('requestBubblophyAgentRunAction', () => {
         state: 'wartet',
         requestedBy: 'Mensch',
         lastEvent: 'Anfrage gespeichert: Nur vorbereiten.',
+      },
+    });
+  });
+});
+
+describe('transitionBubblophyAgentRunAction', () => {
+  beforeEach(() => {
+    requireBubblophySessionMock.mockReset();
+    transitionBubblophyAgentRunMock.mockReset();
+  });
+
+  it('resolves the auth user server-side instead of accepting a client authUserId', async () => {
+    requireBubblophySessionMock.mockResolvedValue({
+      authUserId: 'user_server',
+      email: 'owner@example.test',
+      user: {},
+    });
+    transitionBubblophyAgentRunMock.mockResolvedValue({
+      status: 'updated',
+      run: {
+        id: 'run_bv_12',
+        issueId: 'BV-12',
+        agentLabel: 'codex-local-lio',
+        state: 'freigegeben',
+        requestedBy: 'Mensch',
+        lastEvent: 'Run BV-12 wurde menschlich freigegeben.',
+      },
+    });
+
+    const { transitionBubblophyAgentRunAction } = await import('@/app/actions');
+    const result = await transitionBubblophyAgentRunAction({
+      authUserId: 'user_client_spoof',
+      runId: 'run_bv_12',
+      decision: 'approve',
+    } as TransitionBubblophyAgentRunActionInput & { authUserId: string });
+
+    expect(requireBubblophySessionMock).toHaveBeenCalledWith({
+      nextPath: '/',
+    });
+    expect(transitionBubblophyAgentRunMock).toHaveBeenCalledWith({
+      authUserId: 'user_server',
+      runId: 'run_bv_12',
+      decision: 'approve',
+    });
+    expect(result).toEqual({
+      status: 'updated',
+      run: {
+        id: 'run_bv_12',
+        issueId: 'BV-12',
+        agentLabel: 'codex-local-lio',
+        state: 'freigegeben',
+        requestedBy: 'Mensch',
+        lastEvent: 'Run BV-12 wurde menschlich freigegeben.',
       },
     });
   });

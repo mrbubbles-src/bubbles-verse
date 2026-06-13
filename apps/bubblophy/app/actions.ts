@@ -1,6 +1,10 @@
 'use server';
 
 import type {
+  TransitionBubblophyAgentRunInput,
+  TransitionBubblophyAgentRunResult,
+} from '@/lib/agent-runs/human-transition';
+import type {
   RequestBubblophyAgentRunInput,
   RequestBubblophyAgentRunResult,
 } from '@/lib/agent-runs/request';
@@ -25,6 +29,7 @@ import type {
   CreateBubblophyProjectResult,
 } from '@/lib/projects/create';
 
+import { transitionBubblophyAgentRun } from '@/lib/agent-runs/human-transition';
 import { requestBubblophyAgentRun } from '@/lib/agent-runs/request';
 import { createBubblophyAgentToken } from '@/lib/agent-tokens/create';
 import { requireBubblophySession } from '@/lib/auth/session';
@@ -78,6 +83,14 @@ export type RequestBubblophyAgentRunActionInput = Omit<
 
 export type RequestBubblophyAgentRunActionResult =
   RequestBubblophyAgentRunResult;
+
+export type TransitionBubblophyAgentRunActionInput = Omit<
+  TransitionBubblophyAgentRunInput,
+  'authUserId'
+>;
+
+export type TransitionBubblophyAgentRunActionResult =
+  TransitionBubblophyAgentRunResult;
 
 /**
  * Persists a human-created Bubblophy issue draft for the current session.
@@ -199,6 +212,27 @@ export async function requestBubblophyAgentRunAction(
   const session = await requireBubblophySession({ nextPath: '/' });
 
   return requestBubblophyAgentRun({
+    ...input,
+    authUserId: session.authUserId,
+  });
+}
+
+/**
+ * Applies a human approve/cancel decision to a requested agent run.
+ *
+ * The client never provides an auth user ID. The action resolves the human
+ * session server-side, delegates project membership and state-machine checks
+ * to the run service, and does not start any agent execution.
+ *
+ * @param input Run ID and human decision.
+ * @returns Structured result for the run queue.
+ */
+export async function transitionBubblophyAgentRunAction(
+  input: TransitionBubblophyAgentRunActionInput
+): Promise<TransitionBubblophyAgentRunActionResult> {
+  const session = await requireBubblophySession({ nextPath: '/' });
+
+  return transitionBubblophyAgentRun({
     ...input,
     authUserId: session.authUserId,
   });
