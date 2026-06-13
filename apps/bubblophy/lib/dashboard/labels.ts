@@ -37,4 +37,7 @@ export const agentRunStateLabels = {
   freigegeben: 'Freigegeben',
   läuft: 'Läuft',
   review: 'Review',
+  abgeschlossen: 'Abgeschlossen',
+  abgebrochen: 'Abgebrochen',
+  fehlgeschlagen: 'Fehlgeschlagen',
 } satisfies Record<AgentRunState, string>;

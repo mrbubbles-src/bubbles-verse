@@ -73,7 +73,9 @@ describe('Bubblophy issue repository mapping', () => {
     expect(mapBubblophyAgentRunState('approved')).toBe('freigegeben');
     expect(mapBubblophyAgentRunState('running')).toBe('läuft');
     expect(mapBubblophyAgentRunState('needs_review')).toBe('review');
-    expect(mapBubblophyAgentRunState('completed')).toBe('review');
+    expect(mapBubblophyAgentRunState('completed')).toBe('abgeschlossen');
+    expect(mapBubblophyAgentRunState('cancelled')).toBe('abgebrochen');
+    expect(mapBubblophyAgentRunState('failed')).toBe('fehlgeschlagen');
   });
 
   it('formats stable human-facing issue keys', () => {

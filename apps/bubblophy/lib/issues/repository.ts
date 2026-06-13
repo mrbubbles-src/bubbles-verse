@@ -107,9 +107,9 @@ const agentRunStateLabels = {
   approved: 'freigegeben',
   running: 'läuft',
   needs_review: 'review',
-  completed: 'review',
-  cancelled: 'review',
-  failed: 'review',
+  completed: 'abgeschlossen',
+  cancelled: 'abgebrochen',
+  failed: 'fehlgeschlagen',
 } satisfies Record<BubblophyAgentRunPersistenceRow['state'], AgentRunState>;
 
 interface MutableProjectSummary {

@@ -49,6 +49,15 @@ einem bewusst human-gesteuerten Kontrollzentrum.
 - Im Issue-Detail können Menschen bei aktiver Datenbankquelle einen Agent-Run
   anfragen, wenn ein aktives Projekt-Token existiert. Die RunQueue zeigt den
   neuen Eintrag lokal als wartend; es wird kein Agent gestartet.
+- In der RunQueue können Menschen angefragte Runs freigeben oder abbrechen,
+  wenn die echte Server-Action verfügbar ist. Die Entscheidung prüft
+  Projektmitgliedschaft, schreibt einen Statuswechsel plus Audit-Event und
+  startet weiterhin keinen Agenten.
+- `PATCH /api/agent-runs/[runId]` nimmt Agent-Statusupdates mit
+  `Authorization: Bearer <agent-token>` entgegen. Der Endpoint akzeptiert nur
+  `running`, `needs_review`, `completed` und `failed`, prüft Token-Hash,
+  Scope `runs:update`, Projektbindung, Token-Status/Ablauf und schreibt
+  `last_used_at` plus Audit-Event.
 - Im Issue-Detailpanel können Menschen bei aktiver Datenbankquelle einen
   Plan-Entwurf speichern. Der server-only Plan-Service schreibt eine neue
   Planversion plus `plan_updated`-Event, normalisiert leere Schritte weg und
@@ -117,6 +126,12 @@ bun run build
   Projektmitgliedschaft und aktive Same-Project-Tokens. Sie schreiben nur einen
   wartenden Run plus `agent_run_requested`-Event; es gibt keinen Worker,
   Toolcall, Polling-Loop oder Autopilot.
+- Persistierte Agent-Run-Freigaben und -Abbrüche laufen serverseitig über
+  Projektmitgliedschaft und erlauben nur den Übergang aus `requested`.
+- Agent-Statusupdates laufen über gehashte Bearer-Tokens mit Scope
+  `runs:update`, Projektbindung, aktivem/nicht abgelaufenem Token und enger
+  State-Machine. Der Endpoint speichert nur Status, Message, Result-JSON,
+  `last_used_at` und Audit-Events; er führt keinen Code aus.
 - Persistierte Plan-Erfassung läuft serverseitig über Issue-Projektmitgliedschaft,
   schreibt eine neue Planversion plus `plan_updated`-Event und startet keine
   Agent-Runs.

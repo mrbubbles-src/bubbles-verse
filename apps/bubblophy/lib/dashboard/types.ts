@@ -10,7 +10,14 @@ export type IssueStatus =
 
 export type IssuePriority = 'niedrig' | 'mittel' | 'hoch';
 
-export type AgentRunState = 'wartet' | 'freigegeben' | 'läuft' | 'review';
+export type AgentRunState =
+  | 'wartet'
+  | 'freigegeben'
+  | 'läuft'
+  | 'review'
+  | 'abgeschlossen'
+  | 'abgebrochen'
+  | 'fehlgeschlagen';
 
 export type AgentTokenState = 'aktiv' | 'pausiert';
 
