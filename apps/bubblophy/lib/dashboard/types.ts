@@ -42,7 +42,19 @@ export interface IssueSummary {
   priority: IssuePriority;
   owner: string;
   planSteps: number;
+  latestPlan?: IssuePlanSummary;
   approvalRequired: boolean;
+}
+
+export interface IssuePlanStepSummary {
+  id: string;
+  text: string;
+}
+
+export interface IssuePlanSummary {
+  version: number;
+  summary: string;
+  steps: IssuePlanStepSummary[];
 }
 
 export interface AgentTokenSummary {

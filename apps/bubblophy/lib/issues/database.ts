@@ -27,7 +27,14 @@ import {
 } from '@/drizzle/db/schema';
 
 type CountByProjectId = Record<string, number>;
-type CountByIssueId = Record<string, number>;
+type LatestPlanByIssueId = Record<
+  string,
+  {
+    version: number;
+    summary: string;
+    steps: BubblophyProjectIssueMembershipRow['issuePlanSteps'];
+  }
+>;
 
 /**
  * Loads the read-only Bubblophy project and issue dashboard for one user.
@@ -205,17 +212,25 @@ async function selectBubblophyProjectIssueRowsForProjectIds(
     .filter((issue) => visibleProjectIds.includes(issue.projectId))
     .map((issue) => issue.id);
 
-  const planCounts =
+  const latestPlans =
     visibleIssueIds.length === 0
-      ? []
-      : await db
-          .select({
-            issueId: bubblophyIssuePlans.issueId,
-            total: sql<number>`coalesce(sum(case when jsonb_typeof(${bubblophyIssuePlans.steps}) = 'array' then jsonb_array_length(${bubblophyIssuePlans.steps}) else 0 end), 0)::int`,
-          })
-          .from(bubblophyIssuePlans)
-          .where(inArray(bubblophyIssuePlans.issueId, visibleIssueIds))
-          .groupBy(bubblophyIssuePlans.issueId);
+      ? {}
+      : toLatestPlanByIssueId(
+          await db
+            .select({
+              issueId: bubblophyIssuePlans.issueId,
+              version: bubblophyIssuePlans.version,
+              summary: bubblophyIssuePlans.summary,
+              steps: bubblophyIssuePlans.steps,
+            })
+            .from(bubblophyIssuePlans)
+            .where(inArray(bubblophyIssuePlans.issueId, visibleIssueIds))
+            .orderBy(
+              asc(bubblophyIssuePlans.issueId),
+              desc(bubblophyIssuePlans.version),
+              desc(bubblophyIssuePlans.createdAt)
+            )
+        );
 
   const rows = buildMembershipRows({
     authUserId,
@@ -223,7 +238,7 @@ async function selectBubblophyProjectIssueRowsForProjectIds(
     issues: issueRows,
     memberCounts: toProjectCountMap(memberCounts),
     tokenCounts: toProjectCountMap(tokenCounts),
-    planCounts: toIssueCountMap(planCounts),
+    latestPlans,
   });
 
   return rows;
@@ -413,7 +428,7 @@ function buildMembershipRows(input: {
   }[];
   memberCounts: CountByProjectId;
   tokenCounts: CountByProjectId;
-  planCounts: CountByIssueId;
+  latestPlans: LatestPlanByIssueId;
 }): BubblophyProjectIssueMembershipRow[] {
   return input.projects.flatMap((project) => {
     const projectIssues = input.issues.filter(
@@ -428,7 +443,7 @@ function buildMembershipRows(input: {
           memberCount: input.memberCounts[project.id] ?? 0,
           tokenCount: input.tokenCounts[project.id] ?? 0,
           issue: null,
-          planStepCount: null,
+          latestPlan: null,
         }),
       ];
     }
@@ -440,7 +455,7 @@ function buildMembershipRows(input: {
         memberCount: input.memberCounts[project.id] ?? 0,
         tokenCount: input.tokenCounts[project.id] ?? 0,
         issue,
-        planStepCount: input.planCounts[issue.id] ?? 0,
+        latestPlan: input.latestPlans[issue.id] ?? null,
       })
     );
   });
@@ -472,7 +487,7 @@ function createProjectIssueMembershipRow(input: {
     assignedAuthUserId: string | null;
     requiresHumanApproval: boolean;
   } | null;
-  planStepCount: number | null;
+  latestPlan: LatestPlanByIssueId[string] | null;
 }): BubblophyProjectIssueMembershipRow {
   return {
     projectMemberAuthUserId: input.authUserId,
@@ -490,7 +505,12 @@ function createProjectIssueMembershipRow(input: {
     issuePriority: input.issue?.priority ?? null,
     issueAssignedAuthUserId: input.issue?.assignedAuthUserId ?? null,
     issueRequiresHumanApproval: input.issue?.requiresHumanApproval ?? null,
-    issuePlanStepCount: input.planStepCount,
+    issuePlanStepCount: Array.isArray(input.latestPlan?.steps)
+      ? input.latestPlan.steps.length
+      : 0,
+    issuePlanVersion: input.latestPlan?.version ?? null,
+    issuePlanSummary: input.latestPlan?.summary ?? null,
+    issuePlanSteps: input.latestPlan?.steps ?? null,
   };
 }
 
@@ -513,9 +533,23 @@ function toProjectCountMap(rows: { projectId: string; total: number }[]) {
  * @param rows Rows containing issue IDs and totals.
  * @returns Count lookup keyed by issue ID.
  */
-function toIssueCountMap(rows: { issueId: string; total: number }[]) {
-  return rows.reduce<CountByIssueId>((counts, row) => {
-    counts[row.issueId] = row.total;
-    return counts;
+function toLatestPlanByIssueId(
+  rows: {
+    issueId: string;
+    version: number;
+    summary: string;
+    steps: BubblophyProjectIssueMembershipRow['issuePlanSteps'];
+  }[]
+) {
+  return rows.reduce<LatestPlanByIssueId>((latestPlans, row) => {
+    if (!latestPlans[row.issueId]) {
+      latestPlans[row.issueId] = {
+        version: row.version,
+        summary: row.summary,
+        steps: row.steps,
+      };
+    }
+
+    return latestPlans;
   }, {});
 }

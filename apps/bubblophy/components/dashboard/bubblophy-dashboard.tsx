@@ -236,6 +236,27 @@ function getIssueStatusMetricContribution(status: IssueStatus) {
 }
 
 /**
+ * Converts a reloaded issue's latest plan into the local plan DTO shape.
+ *
+ * @param issue Dashboard issue from the loaded snapshot.
+ * @returns Plan DTO with issue ID, or `undefined` when no plan exists.
+ */
+function getPersistedIssuePlanDraft(
+  issue: Pick<IssueSummary, 'id' | 'latestPlan'>
+): IssuePlanDraft | undefined {
+  if (!issue.latestPlan) {
+    return undefined;
+  }
+
+  return {
+    issueId: issue.id,
+    version: issue.latestPlan.version,
+    summary: issue.latestPlan.summary,
+    steps: issue.latestPlan.steps,
+  };
+}
+
+/**
  * Applies successful local status updates to project summaries.
  *
  * @param projects Project summaries from the latest snapshot and client inserts.
@@ -381,7 +402,8 @@ export function BubblophyDashboard({
     () =>
       [...localDrafts, ...baseIssues].map((issue) => {
         const updatedIssue = updatedIssuesById[issue.id];
-        const plan = issuePlansById[issue.id];
+        const plan =
+          issuePlansById[issue.id] ?? getPersistedIssuePlanDraft(issue);
         const issueWithUpdate = updatedIssue
           ? { ...issue, ...updatedIssue }
           : issue;
@@ -421,7 +443,8 @@ export function BubblophyDashboard({
     filteredIssues[0] ??
     null;
   const selectedIssuePlan = selectedIssue
-    ? issuePlansById[selectedIssue.id]
+    ? (issuePlansById[selectedIssue.id] ??
+      getPersistedIssuePlanDraft(selectedIssue))
     : undefined;
   const openIssues = allProjects.reduce(
     (sum, project) => sum + project.openIssues,

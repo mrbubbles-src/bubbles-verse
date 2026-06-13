@@ -33,6 +33,9 @@ function makeRow(
     issueAssignedAuthUserId: 'user_owner',
     issueRequiresHumanApproval: true,
     issuePlanStepCount: 4,
+    issuePlanVersion: null,
+    issuePlanSummary: null,
+    issuePlanSteps: null,
     ...row,
   };
 }

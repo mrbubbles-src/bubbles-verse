@@ -47,6 +47,9 @@ function makeIssueRow(
     issueAssignedAuthUserId: 'mrbubbles',
     issueRequiresHumanApproval: true,
     issuePlanStepCount: 3,
+    issuePlanVersion: null,
+    issuePlanSummary: null,
+    issuePlanSteps: null,
     ...row,
   };
 }
@@ -147,6 +150,38 @@ describe('Bubblophy issue repository mapping', () => {
         planSteps: 0,
         approvalRequired: true,
       },
+    ]);
+  });
+
+  it('maps latest plan content into issue summaries', () => {
+    const snapshot = buildBubblophyProjectIssueSnapshot([
+      makeIssueRow({
+        issueDatabaseId: 'issue_bv_14',
+        issueNumber: 14,
+        issuePlanStepCount: 99,
+        issuePlanVersion: 3,
+        issuePlanSummary: 'Reload zeigt den letzten Plan.',
+        issuePlanSteps: [
+          { id: 'step_1', text: 'Kontext nach Reload lesen' },
+          { id: 'step_2', text: 'UI-Details prüfen' },
+          { id: 'broken', text: '   ' },
+        ],
+      }),
+    ]);
+
+    expect(snapshot.issues).toEqual([
+      expect.objectContaining({
+        id: 'BV-14',
+        planSteps: 2,
+        latestPlan: {
+          version: 3,
+          summary: 'Reload zeigt den letzten Plan.',
+          steps: [
+            { id: 'step_1', text: 'Kontext nach Reload lesen' },
+            { id: 'step_2', text: 'UI-Details prüfen' },
+          ],
+        },
+      }),
     ]);
   });
 

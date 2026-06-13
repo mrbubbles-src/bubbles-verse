@@ -62,6 +62,9 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   Plan-Entwurf speichern. Der server-only Plan-Service schreibt eine neue
   Planversion plus `plan_updated`-Event, normalisiert leere Schritte weg und
   startet keinen Agent-Run.
+- Der Datenbank-Snapshot lädt für gespeicherte Issues die neueste Planversion
+  mit Summary und Steps, sodass Planinhalte nach einem Reload im Detailpanel
+  erhalten bleiben.
 - Im Agent-Token-Bereich können Owner/Maintainer bei aktiver Datenbankquelle
   ein projektbegrenztes Token erstellen. Der Klartext wird nur einmal gezeigt;
   gespeichert wird ausschließlich der Hash. Die Erstellung schreibt zusätzlich
@@ -145,6 +148,9 @@ bun run build
 - Der Datenbank-Snapshot liest Agent-Token-Summaries und Project-Events nur für
   Projekte mit menschlicher Mitgliedschaft. Token-Plaintext und `token_hash`
   werden nicht selektiert und nicht an die UI gegeben.
+- Der Datenbank-Snapshot liest Planinhalte nur über membership-scoped Issues.
+  Ungültige oder leere JSONB-Step-Einträge werden nicht gerendert; ohne
+  Planversion bleibt die UI im echten Empty-State.
 - Sample-Daten markieren Agent-Tokens und Audit-Aktivität als Beispielvorschau.
   Wenn die Datenbank nicht bereit ist, bleibt der Snapshot leer und zeigt einen
   Setup-Hinweis statt Beispielprojekte als stillen Ersatz. Der Run-Bereich zeigt

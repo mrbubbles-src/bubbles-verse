@@ -4,6 +4,8 @@ import type {
   BubblophyAgentRunState,
   BubblophyIssuePriority,
   BubblophyIssueStatus,
+  JsonObject,
+  JsonValue,
 } from '@/drizzle/db/schema';
 import type {
   ActivityEvent,
@@ -11,6 +13,7 @@ import type {
   AgentRunSummary,
   AgentTokenState,
   AgentTokenSummary,
+  IssuePlanStepSummary,
   IssuePriority,
   IssueStatus,
   IssueSummary,
@@ -34,6 +37,9 @@ export interface BubblophyProjectIssuePersistenceRow {
   issueAssignedAuthUserId: string | null;
   issueRequiresHumanApproval: boolean | null;
   issuePlanStepCount: number | null;
+  issuePlanVersion: number | null;
+  issuePlanSummary: string | null;
+  issuePlanSteps: JsonValue | null;
 }
 
 export type BubblophyProjectIssueMembershipRow =
@@ -271,7 +277,8 @@ export function buildBubblophyProjectIssueSnapshot(
       status,
       priority: mapBubblophyIssuePriority(row.issuePriority),
       owner: formatIssueOwner(row.issueAssignedAuthUserId),
-      planSteps: Math.max(0, row.issuePlanStepCount ?? 0),
+      planSteps: getIssuePlanStepCount(row),
+      latestPlan: mapBubblophyIssueLatestPlan(row),
       approvalRequired: row.issueRequiresHumanApproval ?? true,
     });
   }
@@ -285,6 +292,83 @@ export function buildBubblophyProjectIssueSnapshot(
       .sort((left, right) => left.key.localeCompare(right.key)),
     issues: issues.sort((left, right) => left.id.localeCompare(right.id)),
   };
+}
+
+/**
+ * Maps a latest persisted plan row into the dashboard plan DTO.
+ *
+ * Invalid or legacy step entries are ignored instead of rendered as hardcoded
+ * demo content. The issue still keeps its explicit empty plan state when no
+ * plan version exists.
+ *
+ * @param row Issue persistence row with optional latest plan fields.
+ * @returns Latest plan DTO, or `undefined` when no plan exists.
+ */
+export function mapBubblophyIssueLatestPlan(
+  row: Pick<
+    BubblophyProjectIssuePersistenceRow,
+    'issuePlanVersion' | 'issuePlanSummary' | 'issuePlanSteps'
+  >
+): IssueSummary['latestPlan'] {
+  if (row.issuePlanVersion === null) {
+    return undefined;
+  }
+
+  return {
+    version: row.issuePlanVersion,
+    summary: row.issuePlanSummary ?? '',
+    steps: mapBubblophyIssuePlanSteps(row.issuePlanSteps),
+  };
+}
+
+/**
+ * Converts stored JSONB plan steps into stable dashboard step DTOs.
+ *
+ * @param steps JSONB value from the latest issue plan row.
+ * @returns Renderable plan steps with trimmed text.
+ */
+export function mapBubblophyIssuePlanSteps(
+  steps: JsonValue | null
+): IssuePlanStepSummary[] {
+  if (!Array.isArray(steps)) {
+    return [];
+  }
+
+  return steps.flatMap((step, index) => {
+    if (!isJsonObject(step)) {
+      return [];
+    }
+
+    const text = typeof step.text === 'string' ? step.text.trim() : '';
+
+    if (!text) {
+      return [];
+    }
+
+    return [
+      {
+        id:
+          typeof step.id === 'string' && step.id.trim()
+            ? step.id.trim()
+            : `step_${index + 1}`,
+        text,
+      },
+    ];
+  });
+}
+
+/**
+ * Derives the visible plan step count from latest plan content when present.
+ *
+ * @param row Issue persistence row with legacy count and latest plan fields.
+ * @returns Non-negative visible step count.
+ */
+function getIssuePlanStepCount(row: BubblophyProjectIssuePersistenceRow) {
+  if (row.issuePlanVersion !== null) {
+    return mapBubblophyIssuePlanSteps(row.issuePlanSteps).length;
+  }
+
+  return Math.max(0, row.issuePlanStepCount ?? 0);
 }
 
 /**
@@ -444,4 +528,14 @@ function isRawAuthIdentifier(value: string) {
       value
     )
   );
+}
+
+/**
+ * Narrows a JSON value to an object with string keys.
+ *
+ * @param value JSON value from persistence.
+ * @returns True when the value can be inspected as an object.
+ */
+function isJsonObject(value: JsonValue): value is JsonObject {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

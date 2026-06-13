@@ -51,6 +51,26 @@ const databaseSnapshotWithIssueDescription = {
   ),
 } satisfies DashboardSnapshot;
 
+const databaseSnapshotWithReloadedPlan = {
+  ...databaseSnapshot,
+  issues: databaseSnapshot.issues.map((issue) =>
+    issue.id === 'BV-12'
+      ? {
+          ...issue,
+          planSteps: 2,
+          latestPlan: {
+            version: 4,
+            summary: 'Reload zeigt den gespeicherten Plan.',
+            steps: [
+              { id: 'step_1', text: 'Persistierten Plan lesen' },
+              { id: 'step_2', text: 'Detailpanel verifizieren' },
+            ],
+          },
+        }
+      : issue
+  ),
+} satisfies DashboardSnapshot;
+
 const emptyDatabaseSnapshot = {
   ...databaseSnapshot,
   meta: {
@@ -618,6 +638,36 @@ describe('BubblophyDashboard interactions', () => {
       within(updatedDetailPanel).getByText('2 Schritte')
     ).toBeInTheDocument();
     expect(screen.getAllByText('2 Schritte').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('renders reloaded latest plan content for persisted issues', () => {
+    render(<BubblophyDashboard snapshot={databaseSnapshotWithReloadedPlan} />);
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    expect(
+      within(detailPanel).getByText('Reload zeigt den gespeicherten Plan.')
+    ).toBeInTheDocument();
+    expect(
+      within(detailPanel).getByText('Persistierten Plan lesen')
+    ).toBeInTheDocument();
+    expect(
+      within(detailPanel).getByText('Detailpanel verifizieren')
+    ).toBeInTheDocument();
+    expect(
+      within(detailPanel).getByText(
+        'Plan v4, menschlich gespeichert. Es wurde kein Agent-Run gestartet.'
+      )
+    ).toBeInTheDocument();
+    expect(
+      within(detailPanel).queryByText(/Plan-Schritte sind noch nicht/i)
+    ).not.toBeInTheDocument();
   });
 
   it('keeps the plan dialog open and shows denied plan save errors', async () => {

@@ -2,7 +2,17 @@ import { getTableName } from 'drizzle-orm';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 type DrizzleTable = Parameters<typeof getTableName>[0];
-type MockRowValue = string | number | boolean | string[] | null;
+type MockPlanStep = {
+  id: string;
+  text: string;
+};
+type MockRowValue =
+  | string
+  | number
+  | boolean
+  | string[]
+  | MockPlanStep[]
+  | null;
 type MockRow = Record<string, MockRowValue>;
 
 interface QueryCall {
@@ -74,10 +84,15 @@ const tableRows = {
       projectId: 'project_visible',
     },
   ],
-  planCounts: [
+  plans: [
     {
       issueId: 'issue_visible',
-      total: 0,
+      version: 2,
+      summary: 'Reload-fähiger Plan.',
+      steps: [
+        { id: 'step_1', text: 'Gespeicherten Plan laden' },
+        { id: 'step_2', text: 'Detailpanel prüfen' },
+      ],
     },
   ],
   projectEvents: [
@@ -199,7 +214,7 @@ function rowsForCall(call: QueryCall): MockRow[] {
   }
 
   if (call.tableName === 'bubblophy_issue_plans') {
-    return tableRows.planCounts;
+    return tableRows.plans;
   }
 
   if (call.tableName === 'bubblophy_agent_runs') {
@@ -245,12 +260,26 @@ describe('selectBubblophyDashboardRowsForUser', () => {
         createdAt: '2026-06-13T16:00:00.000Z',
       },
     ]);
+    expect(rows.projectIssueRows).toEqual([
+      expect.objectContaining({
+        issuePlanStepCount: 2,
+        issuePlanVersion: 2,
+        issuePlanSummary: 'Reload-fähiger Plan.',
+        issuePlanSteps: [
+          { id: 'step_1', text: 'Gespeicherten Plan laden' },
+          { id: 'step_2', text: 'Detailpanel prüfen' },
+        ],
+      }),
+    ]);
 
     const projectEventCall = calls.find(
       (call) => call.tableName === 'bubblophy_project_events'
     );
     const issueEventCall = calls.find(
       (call) => call.tableName === 'bubblophy_issue_events'
+    );
+    const issuePlanCall = calls.find(
+      (call) => call.tableName === 'bubblophy_issue_plans'
     );
     const selectedKeys = calls.flatMap((call) => call.selectedKeys);
 
@@ -262,6 +291,16 @@ describe('selectBubblophyDashboardRowsForUser', () => {
       joinedTableNames: expect.arrayContaining(['bubblophy_issues']),
       whereCalled: true,
       limitValue: 20,
+    });
+    expect(issuePlanCall).toMatchObject({
+      selectedKeys: expect.arrayContaining([
+        'issueId',
+        'version',
+        'summary',
+        'steps',
+      ]),
+      whereCalled: true,
+      groupByCalled: false,
     });
     expect(selectedKeys).not.toContain('tokenHash');
     expect(selectedKeys).not.toContain('plaintextToken');

@@ -47,7 +47,15 @@ export function cloneDashboardSnapshot(
   return {
     meta: { ...snapshot.meta },
     projects: snapshot.projects.map((project) => ({ ...project })),
-    issues: snapshot.issues.map((issue) => ({ ...issue })),
+    issues: snapshot.issues.map((issue) => ({
+      ...issue,
+      latestPlan: issue.latestPlan
+        ? {
+            ...issue.latestPlan,
+            steps: issue.latestPlan.steps.map((step) => ({ ...step })),
+          }
+        : undefined,
+    })),
     agentTokens: snapshot.agentTokens.map((token) => ({
       ...token,
       scopes: [...token.scopes],
