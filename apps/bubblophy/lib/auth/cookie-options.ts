@@ -1,18 +1,6 @@
-/**
- * Derives the shared parent cookie domain from a subdomain hostname.
- *
- * Hosts without a subdomain, such as `localhost`, return `undefined` so auth
- * cookies stay host-scoped.
- */
-export function getSharedAuthCookieDomain(hostname: string) {
-  const labels = hostname.split('.').filter(Boolean);
+import { getSupabaseAuthCookieOptions } from '@bubbles/supabase-access/auth';
 
-  if (labels.length < 3) {
-    return undefined;
-  }
-
-  return `.${labels.slice(1).join('.')}`;
-}
+export { getSharedAuthCookieDomain } from '@bubbles/supabase-access/auth';
 
 /**
  * Returns the Bubblophy auth cookie options shared by browser and server
@@ -28,14 +16,5 @@ export function getBubblophyAuthCookieOptions({
   appUrl: string;
   cookieDomain?: string;
 }) {
-  const parsedAppUrl = new URL(appUrl);
-  const sharedCookieDomain =
-    cookieDomain ?? getSharedAuthCookieDomain(parsedAppUrl.hostname);
-
-  return {
-    ...(sharedCookieDomain ? { domain: sharedCookieDomain } : {}),
-    path: '/',
-    sameSite: 'lax' as const,
-    secure: parsedAppUrl.protocol === 'https:',
-  };
+  return getSupabaseAuthCookieOptions({ appUrl, cookieDomain });
 }

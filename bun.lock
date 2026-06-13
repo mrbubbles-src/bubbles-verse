@@ -19,6 +19,7 @@
       "name": "bubblophy",
       "version": "0.1.0",
       "dependencies": {
+        "@bubbles/supabase-access": "workspace:*",
         "@bubbles/theme": "workspace:*",
         "@bubbles/ui": "workspace:*",
         "@supabase/ssr": "catalog:supabase",
@@ -57,6 +58,7 @@
         "@bubbles/footer": "workspace:*",
         "@bubbles/markdown-editor": "workspace:*",
         "@bubbles/markdown-renderer": "workspace:*",
+        "@bubbles/supabase-access": "workspace:*",
         "@bubbles/theme": "workspace:*",
         "@bubbles/ui": "workspace:*",
         "@supabase/ssr": "catalog:supabase",
@@ -374,6 +376,20 @@
         "vitest": "catalog:testing",
       },
     },
+    "packages/supabase-access": {
+      "name": "@bubbles/supabase-access",
+      "version": "0.1.0",
+      "dependencies": {
+        "next": "catalog:",
+      },
+      "devDependencies": {
+        "@bubbles/eslint-config": "workspace:*",
+        "@bubbles/typescript-config": "workspace:*",
+        "eslint": "catalog:tooling",
+        "typescript": "catalog:tooling",
+        "vitest": "catalog:testing",
+      },
+    },
     "packages/theme": {
       "name": "@bubbles/theme",
       "version": "1.0.0",
@@ -638,6 +654,8 @@
     "@bubbles/markdown-editor": ["@bubbles/markdown-editor@workspace:packages/markdown-editor"],
 
     "@bubbles/markdown-renderer": ["@bubbles/markdown-renderer@workspace:packages/markdown-renderer"],
+
+    "@bubbles/supabase-access": ["@bubbles/supabase-access@workspace:packages/supabase-access"],
 
     "@bubbles/theme": ["@bubbles/theme@workspace:packages/theme"],
 

@@ -61,3 +61,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a journaled Supabase RLS baseline custom migration that enables RLS on
   Bubblophy tables, scopes direct reads by project membership, and keeps agent
   token hashes closed to direct authenticated access.
+- Reused the shared `@bubbles/supabase-access` cookie and optimistic session
+  helpers while keeping Bubblophy-specific authorization inside the app.

@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 
-import { NextResponse } from 'next/server';
+import { getOptimisticSupabaseSession } from '@bubbles/supabase-access/auth';
 
 /**
  * Checks whether the request carries a Supabase auth cookie.
@@ -13,14 +13,5 @@ import { NextResponse } from 'next/server';
  * @returns Proxy response plus a cheap session-presence flag.
  */
 export function getOptimisticDashboardSession(request: NextRequest) {
-  return {
-    hasSession: request.cookies
-      .getAll()
-      .some(
-        ({ name }) => name.startsWith('sb-') && name.includes('-auth-token')
-      ),
-    response: NextResponse.next({
-      request,
-    }),
-  };
+  return getOptimisticSupabaseSession(request);
 }

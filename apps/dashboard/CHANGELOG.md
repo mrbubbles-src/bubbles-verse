@@ -70,6 +70,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Reused the shared `@bubbles/supabase-access` cookie and optimistic
+  session-cookie helpers while keeping dashboard authorization inside the app.
 - Updated dashboard management dialogs, Vault status badges, and row action
   icons to use the shared larger dialog typography plus token-colored
   `@bubbles/ui` status/action variants.

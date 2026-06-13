@@ -1,0 +1,25 @@
+{
+  "name": "@bubbles/supabase-access",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "lint": "eslint",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./auth": "./src/auth/index.ts"
+  },
+  "dependencies": {
+    "next": "catalog:"
+  },
+  "devDependencies": {
+    "@bubbles/eslint-config": "workspace:*",
+    "@bubbles/typescript-config": "workspace:*",
+    "eslint": "catalog:tooling",
+    "typescript": "catalog:tooling",
+    "vitest": "catalog:testing"
+  }
+}
