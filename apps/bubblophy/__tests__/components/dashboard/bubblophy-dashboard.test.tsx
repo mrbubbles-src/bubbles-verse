@@ -37,6 +37,18 @@ const databaseSnapshot = {
   },
 } satisfies DashboardSnapshot;
 
+const databaseSnapshotWithIssueDescription = {
+  ...databaseSnapshot,
+  issues: databaseSnapshot.issues.map((issue, index) =>
+    index === 0
+      ? {
+          ...issue,
+          description: 'Beschreibung aus dem Dashboard-Snapshot.',
+        }
+      : issue
+  ),
+} satisfies DashboardSnapshot;
+
 const emptyDatabaseSnapshot = {
   ...databaseSnapshot,
   meta: {
@@ -779,6 +791,7 @@ describe('BubblophyDashboard interactions', () => {
         owner: 'Nicht zugewiesen',
         planSteps: 0,
         approvalRequired: true,
+        description: 'Direkt aus dem neuen Projekt angelegt.',
       },
     }));
 
@@ -968,6 +981,7 @@ describe('BubblophyDashboard interactions', () => {
         owner: 'Nicht zugewiesen',
         planSteps: 0,
         approvalRequired: true,
+        description: 'Dieses Issue kommt aus der Server Action.',
       },
     }));
 
@@ -1020,6 +1034,9 @@ describe('BubblophyDashboard interactions', () => {
 
     expect(within(detailPanel).getByText('BV-15')).toBeInTheDocument();
     expect(
+      within(detailPanel).getByText('Dieses Issue kommt aus der Server Action.')
+    ).toBeInTheDocument();
+    expect(
       within(detailPanel).queryByText('Lokal / nicht gespeichert')
     ).not.toBeInTheDocument();
     expect(
@@ -1029,6 +1046,18 @@ describe('BubblophyDashboard interactions', () => {
       within(detailPanel).getByText(
         /Plan-Schritte sind noch nicht ausformuliert/i
       )
+    ).toBeInTheDocument();
+  });
+
+  it('shows descriptions for existing database snapshot issues', () => {
+    render(
+      <BubblophyDashboard snapshot={databaseSnapshotWithIssueDescription} />
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    expect(
+      within(detailPanel).getByText('Beschreibung aus dem Dashboard-Snapshot.')
     ).toBeInTheDocument();
   });
 

@@ -106,6 +106,7 @@ async function createIssueWithCreatedEvent(
         id: bubblophyIssues.id,
         issueNumber: bubblophyIssues.issueNumber,
         title: bubblophyIssues.title,
+        description: bubblophyIssues.description,
         status: bubblophyIssues.status,
         priority: bubblophyIssues.priority,
         assignedAuthUserId: bubblophyIssues.assignedAuthUserId,

@@ -178,6 +178,7 @@ async function selectBubblophyProjectIssueRowsForProjectIds(
           projectId: bubblophyIssues.projectId,
           issueNumber: bubblophyIssues.issueNumber,
           title: bubblophyIssues.title,
+          description: bubblophyIssues.description,
           status: bubblophyIssues.status,
           priority: bubblophyIssues.priority,
           assignedAuthUserId: bubblophyIssues.assignedAuthUserId,
@@ -299,6 +300,7 @@ function buildMembershipRows(input: {
     projectId: string;
     issueNumber: number;
     title: string;
+    description: string;
     status: BubblophyProjectIssueMembershipRow['issueStatus'];
     priority: BubblophyProjectIssueMembershipRow['issuePriority'];
     assignedAuthUserId: string | null;
@@ -359,6 +361,7 @@ function createProjectIssueMembershipRow(input: {
     id: string;
     issueNumber: number;
     title: string;
+    description: string;
     status: BubblophyProjectIssueMembershipRow['issueStatus'];
     priority: BubblophyProjectIssueMembershipRow['issuePriority'];
     assignedAuthUserId: string | null;
@@ -377,6 +380,7 @@ function createProjectIssueMembershipRow(input: {
     issueDatabaseId: input.issue?.id ?? null,
     issueNumber: input.issue?.issueNumber ?? null,
     issueTitle: input.issue?.title ?? null,
+    issueDescription: input.issue?.description ?? null,
     issueStatus: input.issue?.status ?? null,
     issuePriority: input.issue?.priority ?? null,
     issueAssignedAuthUserId: input.issue?.assignedAuthUserId ?? null,

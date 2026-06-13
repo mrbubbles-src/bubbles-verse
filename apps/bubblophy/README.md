@@ -59,8 +59,9 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   `documentation/auth-security-plan.md`.
 - Die UI nutzt einen typisierten Dashboard-Snapshot als View Model. Der
   server-only Read-Pfad unter `lib/dashboard/data.ts` kann Datenbankzeilen
-  inklusive Projekten, Issues, öffentlichen Agent-Token-Summaries und
-  Project-Events abfragen. Er unterscheidet echte Datenbankdaten, eine
+  inklusive Projekten, Issues mit Beschreibungen, öffentlichen
+  Agent-Token-Summaries und Project-Events abfragen. Er unterscheidet echte
+  Datenbankdaten, eine
   erreichbare aber leere Datenbank und einen sicheren Setup-Zustand, wenn
   Datenbank oder Tabellen fehlen.
 

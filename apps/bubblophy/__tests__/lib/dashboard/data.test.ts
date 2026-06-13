@@ -27,6 +27,7 @@ function makeRow(
     issueDatabaseId: 'issue_bv_7',
     issueNumber: 7,
     issueTitle: 'Persistenten Read-Pfad anschließen',
+    issueDescription: 'Beschreibung aus dem Read-Pfad.',
     issueStatus: 'ready',
     issuePriority: 'high',
     issueAssignedAuthUserId: 'user_owner',
@@ -90,6 +91,7 @@ describe('getBubblophyDashboardSnapshot', () => {
         {
           id: 'BV-07',
           title: 'Persistenten Read-Pfad anschließen',
+          description: 'Beschreibung aus dem Read-Pfad.',
           priority: 'hoch',
           status: 'bereit',
         },

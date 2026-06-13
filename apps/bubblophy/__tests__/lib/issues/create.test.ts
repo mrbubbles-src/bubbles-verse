@@ -112,6 +112,7 @@ describe('createBubblophyIssueDraft', () => {
         id: 'issue_bv_15',
         issueNumber: 15,
         title: input.title,
+        description: input.description,
         status: 'triage',
         priority: input.priority,
         assignedAuthUserId: null,
@@ -135,6 +136,7 @@ describe('createBubblophyIssueDraft', () => {
       issue: {
         id: 'BV-15',
         title: 'Persistierten Draft vorbereiten',
+        description: 'Erst Issue und Event, kein Run.',
         projectKey: 'BV',
         status: 'triage',
         priority: 'hoch',
@@ -214,6 +216,7 @@ describe('mapCreatedIssueToSummary', () => {
           id: 'issue_no_3',
           issueNumber: 3,
           title: 'Mitgliedschaft prüfen',
+          description: 'Beschreibung bleibt im Create-Result erhalten.',
           status: 'triage',
           priority: 'medium',
           assignedAuthUserId: 'user_owner',
@@ -223,6 +226,7 @@ describe('mapCreatedIssueToSummary', () => {
     ).toEqual({
       id: 'NO-03',
       title: 'Mitgliedschaft prüfen',
+      description: 'Beschreibung bleibt im Create-Result erhalten.',
       projectKey: 'NO',
       status: 'triage',
       priority: 'mittel',

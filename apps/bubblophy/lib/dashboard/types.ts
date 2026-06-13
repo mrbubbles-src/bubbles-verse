@@ -29,6 +29,7 @@ export interface ProjectSummary {
 export interface IssueSummary {
   id: string;
   title: string;
+  description?: string;
   projectKey: string;
   status: IssueStatus;
   priority: IssuePriority;

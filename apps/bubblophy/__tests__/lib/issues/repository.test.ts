@@ -39,6 +39,7 @@ function makeIssueRow(
     issueDatabaseId: 'issue_bv_1',
     issueNumber: 1,
     issueTitle: 'Projekt-Issue vorbereiten',
+    issueDescription: 'Beschreibung aus der Datenbank.',
     issueStatus: 'ready',
     issuePriority: 'high',
     issueAssignedAuthUserId: 'mrbubbles',
@@ -117,6 +118,7 @@ describe('Bubblophy issue repository mapping', () => {
       {
         id: 'BV-14',
         title: 'Agent-Zugriff mit projektbezogenen Tokens',
+        description: 'Beschreibung aus der Datenbank.',
         projectKey: 'BV',
         status: 'bereit',
         priority: 'hoch',
@@ -127,6 +129,7 @@ describe('Bubblophy issue repository mapping', () => {
       {
         id: 'BV-15',
         title: 'Blockierte RLS-Frage klären',
+        description: 'Beschreibung aus der Datenbank.',
         projectKey: 'BV',
         status: 'blockiert',
         priority: 'mittel',
@@ -148,6 +151,7 @@ describe('Bubblophy issue repository mapping', () => {
         issueDatabaseId: null,
         issueNumber: null,
         issueTitle: null,
+        issueDescription: null,
         issueStatus: null,
         issuePriority: null,
       }),

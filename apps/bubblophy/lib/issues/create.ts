@@ -27,6 +27,7 @@ export interface BubblophyCreatedIssueRecord {
   id: string;
   issueNumber: number;
   title: string;
+  description: string;
   status: 'triage';
   priority: BubblophyIssuePriority;
   assignedAuthUserId: string | null;
@@ -131,6 +132,7 @@ export function mapCreatedIssueToSummary(
   return {
     id: formatBubblophyIssueKey(created.project.key, created.issue.issueNumber),
     title: created.issue.title,
+    description: created.issue.description,
     projectKey: created.project.key,
     status: status ?? 'triage',
     priority: mapBubblophyIssuePriority(created.issue.priority),

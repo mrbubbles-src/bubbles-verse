@@ -25,6 +25,7 @@ export interface BubblophyProjectIssuePersistenceRow {
   issueDatabaseId: string | null;
   issueNumber: number | null;
   issueTitle: string | null;
+  issueDescription: string | null;
   issueStatus: BubblophyIssueStatus | null;
   issuePriority: BubblophyIssuePriority | null;
   issueAssignedAuthUserId: string | null;
@@ -228,6 +229,7 @@ export function buildBubblophyProjectIssueSnapshot(
     issues.push({
       id: formatBubblophyIssueKey(row.projectKey, row.issueNumber),
       title: row.issueTitle,
+      description: row.issueDescription ?? undefined,
       projectKey: row.projectKey,
       status,
       priority: mapBubblophyIssuePriority(row.issuePriority),

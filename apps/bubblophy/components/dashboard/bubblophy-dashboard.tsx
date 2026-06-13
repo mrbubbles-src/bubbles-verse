@@ -151,12 +151,7 @@ type ProjectFilterKey = 'all' | string;
 
 type SnapshotIssue = DashboardSnapshot['issues'][number];
 
-type DashboardIssue = SnapshotIssue | ClientPersistedIssue | LocalDraftIssue;
-
-type ClientPersistedIssue = SnapshotIssue & {
-  description?: string;
-  isClientPersisted: true;
-};
+type DashboardIssue = SnapshotIssue | LocalDraftIssue;
 
 type LocalDraftIssue = SnapshotIssue & {
   createdLabel: string;
@@ -328,9 +323,7 @@ export function BubblophyDashboard({
   const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
   const [isAgentTokenDialogOpen, setIsAgentTokenDialogOpen] = useState(false);
   const [localDrafts, setLocalDrafts] = useState<LocalDraftIssue[]>([]);
-  const [persistedIssues, setPersistedIssues] = useState<
-    ClientPersistedIssue[]
-  >([]);
+  const [persistedIssues, setPersistedIssues] = useState<IssueSummary[]>([]);
   const [issuePlansById, setIssuePlansById] = useState<
     Record<string, IssuePlanDraft>
   >({});
@@ -468,7 +461,7 @@ export function BubblophyDashboard({
     setIsDraftDialogOpen(false);
   };
 
-  const handlePersistedIssueCreated = (issue: ClientPersistedIssue) => {
+  const handlePersistedIssueCreated = (issue: IssueSummary) => {
     setPersistedIssues((currentIssues) => [issue, ...currentIssues]);
     setSelectedProjectKey(issue.projectKey);
     setSelectedIssueId(issue.id);
@@ -1384,10 +1377,9 @@ function IssueDetailPanel({
     );
   }
 
-  const visibleDescription =
-    !isLocalDraftIssue(issue) && 'description' in issue
-      ? issue.description?.trim()
-      : undefined;
+  const visibleDescription = isLocalDraftIssue(issue)
+    ? undefined
+    : issue.description?.trim();
 
   return (
     <aside
@@ -2392,7 +2384,7 @@ function NewIssueDraftDialog({
     input: CreateBubblophyIssueActionInput
   ) => Promise<CreateBubblophyIssueActionResult>;
   onCreateDraft: (input: LocalDraftIssueInput) => void;
-  onPersistedIssueCreated: (issue: ClientPersistedIssue) => void;
+  onPersistedIssueCreated: (issue: IssueSummary) => void;
   onOpenChange: (open: boolean) => void;
 }) {
   const defaultProjectKey =
@@ -2449,11 +2441,7 @@ function NewIssueDraftDialog({
       const result = await createIssueAction(draftInput);
 
       if (result.status === 'created') {
-        onPersistedIssueCreated({
-          ...result.issue,
-          description: draftInput.description.trim() || undefined,
-          isClientPersisted: true,
-        });
+        onPersistedIssueCreated(result.issue);
         return;
       }
 
