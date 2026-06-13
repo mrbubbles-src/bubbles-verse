@@ -6,6 +6,7 @@ import type {
   RequestBubblophyAgentRunActionInput,
   TransitionBubblophyAgentRunActionInput,
   UpdateBubblophyAgentTokenLifecycleActionInput,
+  UpdateBubblophyIssueContentActionInput,
   UpdateBubblophyIssueStatusActionInput,
 } from '@/app/actions';
 import type { TransitionBubblophyAgentRunInput } from '@/lib/agent-runs/human-transition';
@@ -13,6 +14,7 @@ import type { RequestBubblophyAgentRunInput } from '@/lib/agent-runs/request';
 import type { CreateBubblophyAgentTokenInput } from '@/lib/agent-tokens/create';
 import type { UpdateBubblophyAgentTokenLifecycleInput } from '@/lib/agent-tokens/lifecycle';
 import type { CreateBubblophyIssueDraftInput } from '@/lib/issues/create';
+import type { UpdateBubblophyIssueContentInput } from '@/lib/issues/edit';
 import type { CreateOrUpdateBubblophyIssuePlanDraftInput } from '@/lib/issues/plans';
 import type { UpdateBubblophyIssueStatusInput } from '@/lib/issues/status';
 import type { CreateBubblophyProjectInput } from '@/lib/projects/create';
@@ -21,6 +23,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const requireBubblophySessionMock = vi.fn();
 const createBubblophyIssueDraftMock = vi.fn();
+const updateBubblophyIssueContentMock = vi.fn();
 const createBubblophyIssuePlanDraftMock = vi.fn();
 const updateBubblophyIssueStatusMock = vi.fn();
 const createBubblophyProjectMock = vi.fn();
@@ -37,6 +40,11 @@ vi.mock('@/lib/auth/session', () => ({
 vi.mock('@/lib/issues/create', () => ({
   createBubblophyIssueDraft: (input: CreateBubblophyIssueDraftInput) =>
     createBubblophyIssueDraftMock(input),
+}));
+
+vi.mock('@/lib/issues/edit', () => ({
+  updateBubblophyIssueContent: (input: UpdateBubblophyIssueContentInput) =>
+    updateBubblophyIssueContentMock(input),
 }));
 
 vi.mock('@/lib/issues/plans', () => ({
@@ -80,6 +88,7 @@ describe('createBubblophyIssueAction', () => {
   beforeEach(() => {
     requireBubblophySessionMock.mockReset();
     createBubblophyIssueDraftMock.mockReset();
+    updateBubblophyIssueContentMock.mockReset();
     createBubblophyIssuePlanDraftMock.mockReset();
     updateBubblophyIssueStatusMock.mockReset();
     createBubblophyProjectMock.mockReset();
@@ -137,6 +146,67 @@ describe('createBubblophyIssueAction', () => {
         priority: 'mittel',
         owner: 'Nicht zugewiesen',
         planSteps: 0,
+        approvalRequired: true,
+      },
+    });
+  });
+});
+
+describe('updateBubblophyIssueContentAction', () => {
+  beforeEach(() => {
+    requireBubblophySessionMock.mockReset();
+    updateBubblophyIssueContentMock.mockReset();
+  });
+
+  it('resolves the auth user server-side instead of accepting a client authUserId', async () => {
+    requireBubblophySessionMock.mockResolvedValue({
+      authUserId: 'user_server',
+      email: 'owner@example.test',
+      user: {},
+    });
+    updateBubblophyIssueContentMock.mockResolvedValue({
+      status: 'updated',
+      issue: {
+        id: 'BV-12',
+        title: 'Bearbeiteter Titel',
+        description: 'Neue Beschreibung',
+        projectKey: 'BV',
+        status: 'bereit',
+        priority: 'hoch',
+        owner: 'Nicht zugewiesen',
+        planSteps: 2,
+        approvalRequired: true,
+      },
+    });
+
+    const { updateBubblophyIssueContentAction } = await import('@/app/actions');
+    const result = await updateBubblophyIssueContentAction({
+      authUserId: 'user_client_spoof',
+      issueId: 'BV-12',
+      title: 'Bearbeiteter Titel',
+      description: 'Neue Beschreibung',
+    } as UpdateBubblophyIssueContentActionInput & { authUserId: string });
+
+    expect(requireBubblophySessionMock).toHaveBeenCalledWith({
+      nextPath: '/',
+    });
+    expect(updateBubblophyIssueContentMock).toHaveBeenCalledWith({
+      authUserId: 'user_server',
+      issueId: 'BV-12',
+      title: 'Bearbeiteter Titel',
+      description: 'Neue Beschreibung',
+    });
+    expect(result).toEqual({
+      status: 'updated',
+      issue: {
+        id: 'BV-12',
+        title: 'Bearbeiteter Titel',
+        description: 'Neue Beschreibung',
+        projectKey: 'BV',
+        status: 'bereit',
+        priority: 'hoch',
+        owner: 'Nicht zugewiesen',
+        planSteps: 2,
         approvalRequired: true,
       },
     });

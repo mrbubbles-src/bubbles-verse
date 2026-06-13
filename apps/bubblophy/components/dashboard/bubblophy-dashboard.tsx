@@ -15,6 +15,8 @@ import type {
   TransitionBubblophyAgentRunActionResult,
   UpdateBubblophyAgentTokenLifecycleActionInput,
   UpdateBubblophyAgentTokenLifecycleActionResult,
+  UpdateBubblophyIssueContentActionInput,
+  UpdateBubblophyIssueContentActionResult,
   UpdateBubblophyIssueStatusActionInput,
   UpdateBubblophyIssueStatusActionResult,
 } from '@/app/actions';
@@ -92,6 +94,9 @@ interface BubblophyDashboardProps {
   createIssueAction?: (
     input: CreateBubblophyIssueActionInput
   ) => Promise<CreateBubblophyIssueActionResult>;
+  updateIssueContentAction?: (
+    input: UpdateBubblophyIssueContentActionInput
+  ) => Promise<UpdateBubblophyIssueContentActionResult>;
   createIssuePlanAction?: (
     input: CreateBubblophyIssuePlanActionInput
   ) => Promise<CreateBubblophyIssuePlanActionResult>;
@@ -431,6 +436,7 @@ function applyIssueStatusMetricOverlays({
 export function BubblophyDashboard({
   snapshot,
   createIssueAction,
+  updateIssueContentAction,
   createIssuePlanAction,
   updateIssueStatusAction,
   requestAgentRunAction,
@@ -687,7 +693,7 @@ export function BubblophyDashboard({
     }));
   };
 
-  const handleIssueStatusUpdated = (issue: IssueSummary) => {
+  const handleIssueUpdated = (issue: IssueSummary) => {
     setUpdatedIssuesById((currentIssues) => ({
       ...currentIssues,
       [issue.id]: issue,
@@ -820,10 +826,14 @@ export function BubblophyDashboard({
                 canPersistIssuePlans={
                   canUseDatabase && Boolean(createIssuePlanAction)
                 }
+                canPersistIssueContent={
+                  canUseDatabase && Boolean(updateIssueContentAction)
+                }
                 canPersistIssueStatus={
                   canUseDatabase && Boolean(updateIssueStatusAction)
                 }
                 createIssuePlanAction={createIssuePlanAction}
+                updateIssueContentAction={updateIssueContentAction}
                 updateIssueStatusAction={updateIssueStatusAction}
                 requestAgentRunAction={requestAgentRunAction}
                 agentTokens={displayedAgentTokens}
@@ -831,7 +841,8 @@ export function BubblophyDashboard({
                 onProjectSelect={handleProjectSelect}
                 onDraftDelete={handleDeleteDraft}
                 onIssuePlanSaved={handleIssuePlanSaved}
-                onIssueStatusUpdated={handleIssueStatusUpdated}
+                onIssueContentUpdated={handleIssueUpdated}
+                onIssueStatusUpdated={handleIssueUpdated}
                 onAgentRunRequested={handleAgentRunRequested}
                 onIssueSelect={handleIssueSelect}
                 canCreateIssue={canOpenIssueDialog}
@@ -1389,8 +1400,10 @@ function IssueQueue({
   selectedIssue,
   selectedProjectKey,
   canPersistIssuePlans,
+  canPersistIssueContent,
   canPersistIssueStatus,
   createIssuePlanAction,
+  updateIssueContentAction,
   updateIssueStatusAction,
   requestAgentRunAction,
   agentTokens,
@@ -1398,6 +1411,7 @@ function IssueQueue({
   onProjectSelect,
   onDraftDelete,
   onIssuePlanSaved,
+  onIssueContentUpdated,
   onIssueStatusUpdated,
   onAgentRunRequested,
   onIssueSelect,
@@ -1410,10 +1424,14 @@ function IssueQueue({
   selectedIssue: DashboardIssue | null;
   selectedProjectKey: ProjectFilterKey;
   canPersistIssuePlans: boolean;
+  canPersistIssueContent: boolean;
   canPersistIssueStatus: boolean;
   createIssuePlanAction?: (
     input: CreateBubblophyIssuePlanActionInput
   ) => Promise<CreateBubblophyIssuePlanActionResult>;
+  updateIssueContentAction?: (
+    input: UpdateBubblophyIssueContentActionInput
+  ) => Promise<UpdateBubblophyIssueContentActionResult>;
   updateIssueStatusAction?: (
     input: UpdateBubblophyIssueStatusActionInput
   ) => Promise<UpdateBubblophyIssueStatusActionResult>;
@@ -1425,6 +1443,7 @@ function IssueQueue({
   onProjectSelect: (projectKey: ProjectFilterKey) => void;
   onDraftDelete: (issueId: string) => void;
   onIssuePlanSaved: (plan: IssuePlanDraft) => void;
+  onIssueContentUpdated: (issue: IssueSummary) => void;
   onIssueStatusUpdated: (issue: IssueSummary) => void;
   onAgentRunRequested: (run: AgentRunSummary) => void;
   onIssueSelect: (issueId: string) => void;
@@ -1583,14 +1602,17 @@ function IssueQueue({
           issue={selectedIssue}
           issuePlan={issuePlan}
           canPersistIssuePlans={canPersistIssuePlans}
+          canPersistIssueContent={canPersistIssueContent}
           canPersistIssueStatus={canPersistIssueStatus}
           createIssuePlanAction={createIssuePlanAction}
+          updateIssueContentAction={updateIssueContentAction}
           updateIssueStatusAction={updateIssueStatusAction}
           requestAgentRunAction={requestAgentRunAction}
           activeAgentTokens={activeProjectAgentTokens}
           agentRuns={agentRuns}
           onDraftDelete={onDraftDelete}
           onIssuePlanSaved={onIssuePlanSaved}
+          onIssueContentUpdated={onIssueContentUpdated}
           onIssueStatusUpdated={onIssueStatusUpdated}
           onAgentRunRequested={onAgentRunRequested}
         />
@@ -1610,14 +1632,17 @@ function IssueDetailPanel({
   issue,
   issuePlan,
   canPersistIssuePlans,
+  canPersistIssueContent,
   canPersistIssueStatus,
   createIssuePlanAction,
+  updateIssueContentAction,
   updateIssueStatusAction,
   requestAgentRunAction,
   activeAgentTokens,
   agentRuns,
   onDraftDelete,
   onIssuePlanSaved,
+  onIssueContentUpdated,
   onIssueStatusUpdated,
   onAgentRunRequested,
 }: {
@@ -1625,10 +1650,14 @@ function IssueDetailPanel({
   issue: DashboardIssue | null;
   issuePlan?: IssuePlanDraft;
   canPersistIssuePlans: boolean;
+  canPersistIssueContent: boolean;
   canPersistIssueStatus: boolean;
   createIssuePlanAction?: (
     input: CreateBubblophyIssuePlanActionInput
   ) => Promise<CreateBubblophyIssuePlanActionResult>;
+  updateIssueContentAction?: (
+    input: UpdateBubblophyIssueContentActionInput
+  ) => Promise<UpdateBubblophyIssueContentActionResult>;
   updateIssueStatusAction?: (
     input: UpdateBubblophyIssueStatusActionInput
   ) => Promise<UpdateBubblophyIssueStatusActionResult>;
@@ -1639,6 +1668,7 @@ function IssueDetailPanel({
   agentRuns: AgentRunSummary[];
   onDraftDelete: (issueId: string) => void;
   onIssuePlanSaved: (plan: IssuePlanDraft) => void;
+  onIssueContentUpdated: (issue: IssueSummary) => void;
   onIssueStatusUpdated: (issue: IssueSummary) => void;
   onAgentRunRequested: (run: AgentRunSummary) => void;
 }) {
@@ -1666,20 +1696,16 @@ function IssueDetailPanel({
     <aside
       aria-label="Issue-Details"
       className="grid content-start gap-4 rounded-md border border-border bg-muted/20 p-4">
-      <div className="grid gap-2">
-        <Badge variant="outline" className="w-fit font-mono">
-          {issue.id}
-        </Badge>
-        {isLocalDraftIssue(issue) ? (
-          <Badge variant="draft" className="w-fit">
-            Lokal / nicht gespeichert
-          </Badge>
-        ) : null}
-        <h3 className="text-base font-semibold text-pretty">{issue.title}</h3>
-        <p className="text-sm text-muted-foreground">
-          Projekt {issue.projectKey} · Owner {issue.owner}
-        </p>
-      </div>
+      <IssueContentPanel
+        key={`${issue.id}-${issue.title}-${visibleDescription ?? ''}`}
+        issue={issue}
+        visibleDescription={visibleDescription}
+        canPersistIssueContent={
+          canPersistIssueContent && !isLocalDraftIssue(issue)
+        }
+        updateIssueContentAction={updateIssueContentAction}
+        onIssueContentUpdated={onIssueContentUpdated}
+      />
 
       <div className="flex flex-wrap gap-2">
         <Badge variant={issueStatusVariant[issue.status]}>
@@ -1689,12 +1715,6 @@ function IssueDetailPanel({
           {issuePriorityLabels[issue.priority]}
         </Badge>
       </div>
-
-      {visibleDescription ? (
-        <p className="rounded-md border border-border bg-background p-3 text-sm text-muted-foreground">
-          {visibleDescription}
-        </p>
-      ) : null}
 
       <dl className="grid gap-3 text-sm">
         <div className="flex items-center justify-between gap-3">
@@ -1828,6 +1848,177 @@ function IssueDetailPanel({
         />
       ) : null}
     </aside>
+  );
+}
+
+/**
+ * Renders the selected issue title/description and optional edit form.
+ *
+ * @param props Issue content, server action, and update callback.
+ * @returns Read mode or a persisted issue edit form.
+ */
+function IssueContentPanel({
+  issue,
+  visibleDescription,
+  canPersistIssueContent,
+  updateIssueContentAction,
+  onIssueContentUpdated,
+}: {
+  issue: DashboardIssue;
+  visibleDescription?: string;
+  canPersistIssueContent: boolean;
+  updateIssueContentAction?: (
+    input: UpdateBubblophyIssueContentActionInput
+  ) => Promise<UpdateBubblophyIssueContentActionResult>;
+  onIssueContentUpdated: (issue: IssueSummary) => void;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [title, setTitle] = useState(issue.title);
+  const [description, setDescription] = useState(visibleDescription ?? '');
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  const normalizedTitle = title.trim();
+  const normalizedDescription = description.trim();
+  const hasChanges =
+    normalizedTitle !== issue.title ||
+    normalizedDescription !== (visibleDescription ?? '');
+  const canSubmit =
+    canPersistIssueContent &&
+    Boolean(updateIssueContentAction) &&
+    normalizedTitle.length > 0 &&
+    hasChanges &&
+    !isPending;
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setTitle(issue.title);
+    setDescription(visibleDescription ?? '');
+    setActionError(null);
+  };
+
+  const handleSubmit = () => {
+    if (!canSubmit || !updateIssueContentAction) {
+      return;
+    }
+
+    setActionError(null);
+    startTransition(async () => {
+      const result = await updateIssueContentAction({
+        issueId: issue.id,
+        title,
+        description,
+      });
+
+      if (result.status === 'updated') {
+        onIssueContentUpdated(result.issue);
+        setIsEditing(false);
+        return;
+      }
+
+      if (result.status === 'unchanged') {
+        setIsEditing(false);
+        return;
+      }
+
+      setActionError(getIssueContentActionErrorMessage(result));
+    });
+  };
+
+  if (isEditing) {
+    return (
+      <form
+        className="grid gap-3"
+        onSubmit={(event) => {
+          event.preventDefault();
+          handleSubmit();
+        }}>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="outline" className="w-fit font-mono">
+            {issue.id}
+          </Badge>
+          <Badge variant="secondary" className="w-fit">
+            Bearbeitung
+          </Badge>
+        </div>
+        <label className="grid gap-1.5 text-sm font-medium">
+          Titel
+          <Input
+            name="title"
+            value={title}
+            aria-invalid={normalizedTitle.length === 0}
+            onChange={(event) => setTitle(event.currentTarget.value)}
+          />
+        </label>
+        <label className="grid gap-1.5 text-sm font-medium">
+          Beschreibung
+          <Textarea
+            name="description"
+            rows={4}
+            value={description}
+            onChange={(event) => setDescription(event.currentTarget.value)}
+          />
+        </label>
+        {normalizedTitle.length === 0 ? (
+          <p className="text-xs text-destructive">
+            Der Titel darf nicht leer sein.
+          </p>
+        ) : null}
+        {actionError ? (
+          <p role="alert" className="text-sm text-destructive">
+            {actionError}
+          </p>
+        ) : null}
+        <div className="flex flex-wrap gap-2">
+          <Button type="submit" size="sm" disabled={!canSubmit}>
+            {isPending ? 'Speichert...' : 'Speichern'}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={isPending}
+            onClick={handleCancel}>
+            Abbrechen
+          </Button>
+        </div>
+      </form>
+    );
+  }
+
+  return (
+    <div className="grid gap-3">
+      <div className="grid gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Badge variant="outline" className="w-fit font-mono">
+            {issue.id}
+          </Badge>
+          {canPersistIssueContent && updateIssueContentAction ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setIsEditing(true)}>
+              Bearbeiten
+            </Button>
+          ) : null}
+        </div>
+        {isLocalDraftIssue(issue) ? (
+          <Badge variant="draft" className="w-fit">
+            Lokal / nicht gespeichert
+          </Badge>
+        ) : null}
+        <h3 className="text-base font-semibold text-pretty">{issue.title}</h3>
+        <p className="text-sm text-muted-foreground">
+          Projekt {issue.projectKey} · Owner {issue.owner}
+        </p>
+      </div>
+      {visibleDescription ? (
+        <p className="rounded-md border border-border bg-background p-3 text-sm text-muted-foreground">
+          {visibleDescription}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -3179,6 +3370,49 @@ function getIssuePlanActionErrorMessage(
   }
 
   return 'Mindestens ein nicht-leerer Schritt ist nötig.';
+}
+
+/**
+ * Converts issue content action outcomes into quiet inline feedback.
+ *
+ * @param result Result returned by the persisted issue edit action.
+ * @returns Human-readable error message for the detail editor.
+ */
+function getIssueContentActionErrorMessage(
+  result: Exclude<
+    UpdateBubblophyIssueContentActionResult,
+    { status: 'updated' }
+  >
+) {
+  if (result.status === 'unchanged') {
+    return 'Titel und Beschreibung sind unverändert. Es wurde kein Audit-Event geschrieben.';
+  }
+
+  if (result.status === 'not_found') {
+    return 'Dieses Issue wurde nicht gefunden. Die Änderung wurde nicht gespeichert.';
+  }
+
+  if (result.status === 'forbidden') {
+    return 'Du darfst dieses Issue nicht bearbeiten. Die Änderung wurde nicht gespeichert.';
+  }
+
+  if (result.status === 'database_unavailable') {
+    return 'Die Datenbank ist gerade nicht verfügbar. Die Änderung wurde nicht gespeichert.';
+  }
+
+  if (result.reason === 'empty_issue') {
+    return 'Wähle ein Issue aus, bevor du Änderungen speicherst.';
+  }
+
+  if (result.reason === 'title_too_long') {
+    return 'Der Titel ist zu lang.';
+  }
+
+  if (result.reason === 'description_too_long') {
+    return 'Die Beschreibung ist zu lang.';
+  }
+
+  return 'Gib einen Titel ein, bevor du speicherst.';
 }
 
 /**

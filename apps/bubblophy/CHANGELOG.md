@@ -91,3 +91,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   routes on their route-specific auth contracts.
 - Kept Bubblophy OAuth callback redirects on the Bubblophy app origin when the
   local environment would otherwise point at the dashboard host.
+- Added server-backed issue title and description editing with contributor role
+  checks, no-op protection, explicit issue update audit metadata, and inline
+  dashboard feedback for forbidden saves.

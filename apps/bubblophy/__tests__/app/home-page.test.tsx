@@ -3,6 +3,7 @@ import type {
   createBubblophyIssueAction,
   createBubblophyIssuePlanAction,
   createBubblophyProjectAction,
+  updateBubblophyIssueContentAction,
   updateBubblophyAgentTokenLifecycleAction,
   updateBubblophyIssueStatusAction,
 } from '@/app/actions';
@@ -17,6 +18,7 @@ const BubblophyDashboardMock = vi.fn(
   (props: {
     snapshot: DashboardSnapshot;
     createIssueAction?: typeof createBubblophyIssueAction;
+    updateIssueContentAction?: typeof updateBubblophyIssueContentAction;
     createIssuePlanAction?: typeof createBubblophyIssuePlanAction;
     updateIssueStatusAction?: typeof updateBubblophyIssueStatusAction;
     createProjectAction?: typeof createBubblophyProjectAction;
@@ -48,6 +50,7 @@ vi.mock('@/components/dashboard/bubblophy-dashboard', () => ({
   BubblophyDashboard: (props: {
     snapshot: DashboardSnapshot;
     createIssueAction?: typeof createBubblophyIssueAction;
+    updateIssueContentAction?: typeof updateBubblophyIssueContentAction;
     createIssuePlanAction?: typeof createBubblophyIssuePlanAction;
     updateIssueStatusAction?: typeof updateBubblophyIssueStatusAction;
     createProjectAction?: typeof createBubblophyProjectAction;
@@ -111,6 +114,7 @@ describe('Bubblophy home page', () => {
     });
     expect(element.props.snapshot).toBe(snapshot);
     expect(element.props.createIssueAction).toEqual(expect.any(Function));
+    expect(element.props.updateIssueContentAction).toEqual(expect.any(Function));
     expect(element.props.createIssuePlanAction).toEqual(expect.any(Function));
     expect(element.props.updateIssueStatusAction).toEqual(expect.any(Function));
     expect(element.props.createProjectAction).toEqual(expect.any(Function));

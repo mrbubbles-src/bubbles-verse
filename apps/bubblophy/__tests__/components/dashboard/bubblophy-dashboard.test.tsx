@@ -13,6 +13,8 @@ import type {
   TransitionBubblophyAgentRunActionResult,
   UpdateBubblophyAgentTokenLifecycleActionInput,
   UpdateBubblophyAgentTokenLifecycleActionResult,
+  UpdateBubblophyIssueContentActionInput,
+  UpdateBubblophyIssueContentActionResult,
   UpdateBubblophyIssueStatusActionInput,
   UpdateBubblophyIssueStatusActionResult,
 } from '@/app/actions';
@@ -456,6 +458,159 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       within(detailPanel).queryByRole('button', { name: 'Status speichern' })
     ).not.toBeInTheDocument();
+    expect(
+      within(detailPanel).queryByRole('button', { name: 'Bearbeiten' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('persists human issue edits and keeps the selected issue stable', async () => {
+    const updateIssueContentAction = vi.fn<
+      (
+        input: UpdateBubblophyIssueContentActionInput
+      ) => Promise<UpdateBubblophyIssueContentActionResult>
+    >(async () => ({
+      status: 'updated',
+      issue: {
+        id: 'BV-12',
+        title: 'Plan-Notiz persistent nachschärfen',
+        description: 'Beschreibung wurde über die Server-Action gespeichert.',
+        projectKey: 'BV',
+        status: 'geplant',
+        priority: 'hoch',
+        owner: 'mrbubbles',
+        planSteps: 3,
+        approvalRequired: true,
+      },
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        updateIssueContentAction={updateIssueContentAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    fireEvent.click(within(detailPanel).getByRole('button', { name: 'Bearbeiten' }));
+    fireEvent.change(within(detailPanel).getByLabelText('Titel'), {
+      target: { value: 'Plan-Notiz persistent nachschärfen' },
+    });
+    fireEvent.change(within(detailPanel).getByLabelText('Beschreibung'), {
+      target: {
+        value: 'Beschreibung wurde über die Server-Action gespeichert.',
+      },
+    });
+    fireEvent.click(within(detailPanel).getByRole('button', { name: 'Speichern' }));
+
+    await waitFor(() => {
+      expect(updateIssueContentAction).toHaveBeenCalledWith({
+        issueId: 'BV-12',
+        title: 'Plan-Notiz persistent nachschärfen',
+        description: 'Beschreibung wurde über die Server-Action gespeichert.',
+      });
+    });
+    expect(updateIssueContentAction.mock.calls[0]?.[0]).not.toHaveProperty(
+      'authUserId'
+    );
+
+    await waitFor(() => {
+      expect(
+        within(detailPanel).getByText('Plan-Notiz persistent nachschärfen')
+      ).toBeInTheDocument();
+    });
+    expect(
+      within(detailPanel).getByText(
+        'Beschreibung wurde über die Server-Action gespeichert.'
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('BV-12');
+    expect(
+      screen.getByRole('button', { name: 'Plan-Notiz persistent nachschärfen' })
+    ).toBeInTheDocument();
+  });
+
+  it('cancels human issue edits without calling the server action', () => {
+    const updateIssueContentAction = vi.fn<
+      (
+        input: UpdateBubblophyIssueContentActionInput
+      ) => Promise<UpdateBubblophyIssueContentActionResult>
+    >();
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithIssueDescription}
+        updateIssueContentAction={updateIssueContentAction}
+      />
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    fireEvent.click(within(detailPanel).getByRole('button', { name: 'Bearbeiten' }));
+    fireEvent.change(within(detailPanel).getByLabelText('Titel'), {
+      target: { value: 'Nicht speichern' },
+    });
+    fireEvent.change(within(detailPanel).getByLabelText('Beschreibung'), {
+      target: { value: 'Wird verworfen.' },
+    });
+    fireEvent.click(within(detailPanel).getByRole('button', { name: 'Abbrechen' }));
+
+    expect(updateIssueContentAction).not.toHaveBeenCalled();
+    expect(within(detailPanel).queryByText('Nicht speichern')).not.toBeInTheDocument();
+    expect(
+      within(detailPanel).getByText('Beschreibung aus dem Dashboard-Snapshot.')
+    ).toBeInTheDocument();
+  });
+
+  it('shows forbidden issue edit errors without discarding the edit state', async () => {
+    const updateIssueContentAction = vi.fn<
+      (
+        input: UpdateBubblophyIssueContentActionInput
+      ) => Promise<UpdateBubblophyIssueContentActionResult>
+    >(async () => ({
+      status: 'forbidden',
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        updateIssueContentAction={updateIssueContentAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    fireEvent.click(within(detailPanel).getByRole('button', { name: 'Bearbeiten' }));
+    fireEvent.change(within(detailPanel).getByLabelText('Titel'), {
+      target: { value: 'Nicht erlaubt' },
+    });
+    fireEvent.click(within(detailPanel).getByRole('button', { name: 'Speichern' }));
+
+    await waitFor(() => {
+      expect(updateIssueContentAction).toHaveBeenCalledWith({
+        issueId: 'BV-12',
+        title: 'Nicht erlaubt',
+        description: '',
+      });
+    });
+    expect(await within(detailPanel).findByRole('alert')).toHaveTextContent(
+      'Du darfst dieses Issue nicht bearbeiten'
+    );
+    expect(within(detailPanel).getByLabelText('Titel')).toHaveValue(
+      'Nicht erlaubt'
+    );
   });
 
   it('persists a human issue status transition and resets the target state', async () => {

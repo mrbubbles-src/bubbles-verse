@@ -20,6 +20,9 @@ dauerhaften Autopilot-Rechte.
 - Projektzugriff kommt aus `bubblophy_project_members`.
 - Server-seitige Datenzugriffe prüfen immer die Supabase-User-ID und die
   Projektrolle, bevor DTOs an React-Komponenten gehen.
+- Issue-Inhaltsänderungen sind serverseitig an die Issue-Projektbindung
+  gekoppelt. Owner, Maintainer:innen und Members dürfen Titel/Beschreibung
+  ändern; Viewer bleiben lesend.
 - Request-bezogene Session-Checks dürfen React `cache()` nutzen, aber nicht in
   `use cache` landen.
 - Die aktuelle MVP-Route `/` nutzt noch Snapshot-Daten, ist aber nicht mehr
@@ -59,6 +62,9 @@ dauerhaften Autopilot-Rechte.
 ## Audit und RLS
 
 - Issue- und Plan-Änderungen landen in `bubblophy_issue_events`.
+- Issue-Inhaltsänderungen nutzen den vorhandenen `commented`-Eventtyp mit
+  eindeutiger Payload (`entity: "issue"`, `action: "updated"`,
+  `changedFields`) statt stiller Datenänderung.
 - Projektweite Änderungen wie `agent_token_created`, spätere Token-Revoke- und
   Run-Freigabe-Ereignisse landen in `bubblophy_project_events`.
 - `bubblophy_project_events` ist projektgebunden (`project_id NOT NULL`) und

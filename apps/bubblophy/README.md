@@ -46,6 +46,10 @@ einem bewusst human-gesteuerten Kontrollzentrum.
 - Im Issue-Detail können Menschen bei aktiver Datenbankquelle den Status eines
   gespeicherten Issues ändern. Die Änderung schreibt ein `status_changed`-Event
   und startet keinen Agent-Run.
+- Im Issue-Detail können Menschen bei aktiver Datenbankquelle Titel und
+  Beschreibung eines gespeicherten Issues bearbeiten. Die Änderung prüft
+  Projektrolle, schreibt ein eindeutig als Issue-Update markiertes
+  `commented`-Audit-Event und startet keinen Agent-Run.
 - Im Issue-Detail können Menschen bei aktiver Datenbankquelle einen Agent-Run
   anfragen, wenn ein aktives Projekt-Token existiert. Die RunQueue zeigt den
   neuen Eintrag lokal als wartend; es wird kein Agent gestartet.
@@ -126,6 +130,12 @@ bun run build
   schreibt nur den neuen Status plus `status_changed`-Event und startet keine
   Agent-Runs. Identische Zielstatus werden als No-op behandelt, damit keine
   Audit-Events gespammt werden.
+- Persistierte Issue-Inhaltsänderungen laufen serverseitig über
+  Projektmitgliedschaft und erlauben Ownern, Maintainer:innen und Members das
+  Bearbeiten von Titel/Beschreibung. Viewer erhalten `forbidden`. Identische
+  Inhalte werden als No-op behandelt. Issue-Archivierung ist noch nicht
+  implementiert, weil `bubblophy_issues` aktuell kein `archived_at` oder
+  `is_archived` besitzt.
 - Persistierte Agent-Run-Anfragen laufen serverseitig über
   Projektmitgliedschaft und aktive Same-Project-Tokens. Sie schreiben nur einen
   wartenden Run plus `agent_run_requested`-Event; es gibt keinen Worker,

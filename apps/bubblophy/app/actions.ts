@@ -21,6 +21,10 @@ import type {
   CreateBubblophyIssueDraftResult,
 } from '@/lib/issues/create';
 import type {
+  UpdateBubblophyIssueContentInput,
+  UpdateBubblophyIssueContentResult,
+} from '@/lib/issues/edit';
+import type {
   CreateOrUpdateBubblophyIssuePlanDraftInput,
   CreateOrUpdateBubblophyIssuePlanDraftResult,
 } from '@/lib/issues/plans';
@@ -39,6 +43,7 @@ import { createBubblophyAgentToken } from '@/lib/agent-tokens/create';
 import { updateBubblophyAgentTokenLifecycle } from '@/lib/agent-tokens/lifecycle';
 import { requireBubblophySession } from '@/lib/auth/session';
 import { createBubblophyIssueDraft } from '@/lib/issues/create';
+import { updateBubblophyIssueContent } from '@/lib/issues/edit';
 import { createOrUpdateBubblophyIssuePlanDraft } from '@/lib/issues/plans';
 import { updateBubblophyIssueStatus } from '@/lib/issues/status';
 import { createBubblophyProject } from '@/lib/projects/create';
@@ -49,6 +54,14 @@ export type CreateBubblophyIssueActionInput = Omit<
 >;
 
 export type CreateBubblophyIssueActionResult = CreateBubblophyIssueDraftResult;
+
+export type UpdateBubblophyIssueContentActionInput = Omit<
+  UpdateBubblophyIssueContentInput,
+  'authUserId'
+>;
+
+export type UpdateBubblophyIssueContentActionResult =
+  UpdateBubblophyIssueContentResult;
 
 export type CreateBubblophyIssuePlanActionInput = Omit<
   CreateOrUpdateBubblophyIssuePlanDraftInput,
@@ -121,6 +134,27 @@ export async function createBubblophyIssueAction(
   const session = await requireBubblophySession({ nextPath: '/' });
 
   return createBubblophyIssueDraft({
+    ...input,
+    authUserId: session.authUserId,
+  });
+}
+
+/**
+ * Persists human edits to a Bubblophy issue for the current session.
+ *
+ * The client never provides an auth user ID. The action resolves the
+ * authorized human session server-side, then delegates object ownership,
+ * role checks, no-op detection, and audit writing to the issue edit service.
+ *
+ * @param input Issue key, title, and optional description.
+ * @returns Structured result for the dashboard detail editor.
+ */
+export async function updateBubblophyIssueContentAction(
+  input: UpdateBubblophyIssueContentActionInput
+): Promise<UpdateBubblophyIssueContentActionResult> {
+  const session = await requireBubblophySession({ nextPath: '/' });
+
+  return updateBubblophyIssueContent({
     ...input,
     authUserId: session.authUserId,
   });
