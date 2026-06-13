@@ -3,6 +3,8 @@
 import type {
   CreateBubblophyIssueActionInput,
   CreateBubblophyIssueActionResult,
+  CreateBubblophyProjectActionInput,
+  CreateBubblophyProjectActionResult,
 } from '@/app/actions';
 import type {
   AgentRunState,
@@ -12,6 +14,7 @@ import type {
   IssueStatus,
   IssueSummary,
   ProjectHealth,
+  ProjectSummary,
 } from '@/lib/dashboard/types';
 
 import {
@@ -73,6 +76,9 @@ interface BubblophyDashboardProps {
   createIssueAction?: (
     input: CreateBubblophyIssueActionInput
   ) => Promise<CreateBubblophyIssueActionResult>;
+  createProjectAction?: (
+    input: CreateBubblophyProjectActionInput
+  ) => Promise<CreateBubblophyProjectActionResult>;
 }
 
 const issueStatusVariant = {
@@ -146,6 +152,13 @@ interface PersistedIssueInput {
   title: string;
 }
 
+interface PersistedProjectInput {
+  description: string;
+  key: string;
+  name: string;
+  repositoryUrl: string;
+}
+
 /**
  * Checks whether an issue row is a local-only draft.
  *
@@ -168,6 +181,7 @@ function isLocalDraftIssue(issue: DashboardIssue): issue is LocalDraftIssue {
 export function BubblophyDashboard({
   snapshot,
   createIssueAction,
+  createProjectAction,
 }: BubblophyDashboardProps) {
   const [selectedProjectKey, setSelectedProjectKey] =
     useState<ProjectFilterKey>('all');
@@ -175,9 +189,18 @@ export function BubblophyDashboard({
     snapshot.issues[0]?.id ?? ''
   );
   const [isDraftDialogOpen, setIsDraftDialogOpen] = useState(false);
+  const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
   const [localDrafts, setLocalDrafts] = useState<LocalDraftIssue[]>([]);
   const [persistedIssues, setPersistedIssues] = useState<IssueSummary[]>([]);
+  const [persistedProjects, setPersistedProjects] = useState<ProjectSummary[]>(
+    []
+  );
   const [draftSequence, setDraftSequence] = useState(1);
+
+  const allProjects = useMemo(
+    () => [...persistedProjects, ...snapshot.projects],
+    [persistedProjects, snapshot.projects]
+  );
 
   const allIssues = useMemo<DashboardIssue[]>(
     () => [...localDrafts, ...persistedIssues, ...snapshot.issues],
@@ -196,15 +219,15 @@ export function BubblophyDashboard({
     filteredIssues.find((issue) => issue.id === selectedIssueId) ??
     filteredIssues[0] ??
     null;
-  const openIssues = snapshot.projects.reduce(
+  const openIssues = allProjects.reduce(
     (sum, project) => sum + project.openIssues,
     0
   );
-  const readyIssues = snapshot.projects.reduce(
+  const readyIssues = allProjects.reduce(
     (sum, project) => sum + project.readyIssues,
     0
   );
-  const blockedIssues = snapshot.projects.reduce(
+  const blockedIssues = allProjects.reduce(
     (sum, project) => sum + project.blockedIssues,
     0
   );
@@ -254,6 +277,13 @@ export function BubblophyDashboard({
     setSelectedProjectKey(issue.projectKey);
     setSelectedIssueId(issue.id);
     setIsDraftDialogOpen(false);
+  };
+
+  const handlePersistedProjectCreated = (project: ProjectSummary) => {
+    setPersistedProjects((currentProjects) => [project, ...currentProjects]);
+    setSelectedProjectKey(project.key);
+    setSelectedIssueId('');
+    setIsProjectDialogOpen(false);
   };
 
   const handleDeleteDraft = (issueId: string) => {
@@ -336,9 +366,14 @@ export function BubblophyDashboard({
           <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
             <div className="grid gap-5">
               <ProjectOverview
-                snapshot={snapshot}
+                projects={allProjects}
+                canCreateProject={
+                  snapshot.meta.dataSource === 'database' &&
+                  Boolean(createProjectAction)
+                }
                 readiness={readiness}
                 selectedProjectKey={selectedProjectKey}
+                onCreateProject={() => setIsProjectDialogOpen(true)}
                 onProjectSelect={handleProjectSelect}
               />
               <IssueQueue
@@ -362,7 +397,7 @@ export function BubblophyDashboard({
       </main>
       {isDraftDialogOpen ? (
         <NewIssueDraftDialog
-          projects={snapshot.projects}
+          projects={allProjects}
           open={isDraftDialogOpen}
           selectedProjectKey={selectedProjectKey}
           canPersistToDatabase={
@@ -373,6 +408,14 @@ export function BubblophyDashboard({
           onCreateDraft={handleCreateDraft}
           onPersistedIssueCreated={handlePersistedIssueCreated}
           onOpenChange={setIsDraftDialogOpen}
+        />
+      ) : null}
+      {isProjectDialogOpen ? (
+        <NewProjectDialog
+          open={isProjectDialogOpen}
+          createProjectAction={createProjectAction}
+          onOpenChange={setIsProjectDialogOpen}
+          onPersistedProjectCreated={handlePersistedProjectCreated}
         />
       ) : null}
     </BubblesSidebarLayout>
@@ -487,13 +530,18 @@ function MetricCard({
  * @returns Project overview panel.
  */
 function ProjectOverview({
-  snapshot,
+  projects,
+  canCreateProject,
   readiness,
   selectedProjectKey,
+  onCreateProject,
   onProjectSelect,
-}: BubblophyDashboardProps & {
+}: {
+  projects: ProjectSummary[];
+  canCreateProject: boolean;
   readiness: number;
   selectedProjectKey: ProjectFilterKey;
+  onCreateProject: () => void;
   onProjectSelect: (projectKey: ProjectFilterKey) => void;
 }) {
   return (
@@ -504,21 +552,42 @@ function ProjectOverview({
           Arbeitslast, Blocker und begrenzte Agent-Zugänge pro Projekt.
         </CardDescription>
         <CardAction>
-          <button type="button" onClick={() => onProjectSelect('all')}>
-            <Badge
-              variant={selectedProjectKey === 'all' ? 'default' : 'outline'}>
-              Alle · {readiness}% bereit
-            </Badge>
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {canCreateProject ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={onCreateProject}>
+                Neues Projekt
+              </Button>
+            ) : null}
+            <button type="button" onClick={() => onProjectSelect('all')}>
+              <Badge
+                variant={selectedProjectKey === 'all' ? 'default' : 'outline'}>
+                Alle · {readiness}% bereit
+              </Badge>
+            </button>
+          </div>
         </CardAction>
       </CardHeader>
       <CardContent className="grid gap-3 md:grid-cols-3">
-        {snapshot.projects.length === 0 ? (
+        {projects.length === 0 ? (
           <div className="rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground md:col-span-3">
             Noch keine Projekte für diesen User.
+            {canCreateProject ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="mt-3"
+                onClick={onCreateProject}>
+                Neues Projekt
+              </Button>
+            ) : null}
           </div>
         ) : null}
-        {snapshot.projects.map((project) => (
+        {projects.map((project) => (
           <button
             key={project.id}
             type="button"
@@ -557,6 +626,155 @@ function ProjectOverview({
         ))}
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * Renders a database-backed project creation dialog.
+ *
+ * @param props Open state, server action, and success callback.
+ * @returns Dialog for creating a project plus owner membership.
+ */
+function NewProjectDialog({
+  open,
+  createProjectAction,
+  onOpenChange,
+  onPersistedProjectCreated,
+}: {
+  open: boolean;
+  createProjectAction?: (
+    input: CreateBubblophyProjectActionInput
+  ) => Promise<CreateBubblophyProjectActionResult>;
+  onOpenChange: (open: boolean) => void;
+  onPersistedProjectCreated: (project: ProjectSummary) => void;
+}) {
+  const [name, setName] = useState('');
+  const [key, setKey] = useState('');
+  const [description, setDescription] = useState('');
+  const [repositoryUrl, setRepositoryUrl] = useState('');
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const canSubmit =
+    Boolean(createProjectAction) &&
+    name.trim().length > 0 &&
+    key.trim().length > 0 &&
+    !isPending;
+
+  const projectInput = {
+    name,
+    key,
+    description,
+    repositoryUrl,
+  } satisfies PersistedProjectInput;
+
+  const handleSubmit = () => {
+    if (!canSubmit || !createProjectAction) {
+      return;
+    }
+
+    setActionError(null);
+    startTransition(async () => {
+      const result = await createProjectAction(projectInput);
+
+      if (result.status === 'created') {
+        onPersistedProjectCreated(result.project);
+        return;
+      }
+
+      setActionError(getCreateProjectActionErrorMessage(result));
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Neues Projekt</DialogTitle>
+          <DialogDescription>
+            Erstellt ein Projekt und trägt dich als Owner ein. Es entstehen
+            keine Issues, Agent-Tokens oder Runs.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form
+          className="grid gap-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleSubmit();
+          }}>
+          <label className="grid gap-1.5 text-sm font-medium">
+            Name
+            <Input
+              name="name"
+              placeholder="Bubblesverse"
+              value={name}
+              onChange={(event) => setName(event.currentTarget.value)}
+            />
+          </label>
+
+          <label className="grid gap-1.5 text-sm font-medium">
+            Key
+            <Input
+              name="key"
+              placeholder="BV"
+              value={key}
+              onChange={(event) => setKey(event.currentTarget.value)}
+            />
+          </label>
+
+          <label className="grid gap-1.5 text-sm font-medium">
+            Beschreibung
+            <Textarea
+              name="description"
+              placeholder="Worum geht es in diesem Projekt?"
+              value={description}
+              onChange={(event) => setDescription(event.currentTarget.value)}
+            />
+          </label>
+
+          <label className="grid gap-1.5 text-sm font-medium">
+            Repository URL
+            <Input
+              name="repositoryUrl"
+              placeholder="https://github.com/org/repo"
+              value={repositoryUrl}
+              onChange={(event) => setRepositoryUrl(event.currentTarget.value)}
+            />
+          </label>
+
+          <div className="rounded-md border border-dashed border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+            Der Server normalisiert den Key und prüft Duplikate. Die Repository
+            URL ist optional, muss aber mit https:// beginnen.
+          </div>
+
+          {actionError ? (
+            <p role="alert" className="text-sm text-destructive">
+              {actionError}
+            </p>
+          ) : null}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isPending}
+              onClick={() => onOpenChange(false)}>
+              Schließen
+            </Button>
+            <Button type="submit" disabled={!canSubmit}>
+              {isPending ? 'Erstellt...' : 'Projekt erstellen'}
+            </Button>
+          </DialogFooter>
+
+          {!canSubmit ? (
+            <p className="text-xs text-muted-foreground">
+              Name und Key sind nötig. Der Key darf 2 bis 8 Zeichen enthalten:
+              A-Z und 0-9.
+            </p>
+          ) : null}
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -1208,4 +1426,36 @@ function getCreateIssueActionErrorMessage(
   }
 
   return 'Gib einen Titel ein, bevor du speicherst.';
+}
+
+/**
+ * Converts project create outcomes into quiet dialog feedback.
+ *
+ * @param result Result returned by the persisted project action.
+ * @returns Human-readable error message for the project dialog.
+ */
+function getCreateProjectActionErrorMessage(
+  result: Exclude<CreateBubblophyProjectActionResult, { status: 'created' }>
+) {
+  if (result.status === 'duplicate') {
+    return 'Dieser Projekt-Key ist schon vergeben. Wähle einen anderen Key.';
+  }
+
+  if (result.status === 'database_unavailable') {
+    return 'Die Datenbank ist gerade nicht verfügbar. Das Projekt wurde nicht erstellt.';
+  }
+
+  if (result.reason === 'empty_name') {
+    return 'Gib einen Projektnamen ein.';
+  }
+
+  if (result.reason === 'empty_key') {
+    return 'Gib einen Projekt-Key ein.';
+  }
+
+  if (result.reason === 'invalid_repository_url') {
+    return 'Die Repository URL muss leer sein oder mit https:// beginnen.';
+  }
+
+  return 'Der Projekt-Key darf nur A-Z, 0-9 und 2 bis 8 Zeichen enthalten.';
 }

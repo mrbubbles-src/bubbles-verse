@@ -1,6 +1,8 @@
 import type {
   CreateBubblophyIssueActionInput,
   CreateBubblophyIssueActionResult,
+  CreateBubblophyProjectActionInput,
+  CreateBubblophyProjectActionResult,
 } from '@/app/actions';
 import type { DashboardSnapshot } from '@/lib/dashboard/types';
 import type React from 'react';
@@ -25,6 +27,12 @@ const databaseSnapshot = {
     label: 'Datenbankdaten',
     description: 'Read-only Testdaten.',
   },
+} satisfies DashboardSnapshot;
+
+const emptyDatabaseSnapshot = {
+  ...databaseSnapshot,
+  projects: [],
+  issues: [],
 } satisfies DashboardSnapshot;
 
 vi.mock('next/navigation', () => ({
@@ -244,6 +252,141 @@ describe('BubblophyDashboard interactions', () => {
 
     expect(
       screen.queryByRole('button', { name: 'Lokaler Test-Draft' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not show the database project create action for sample snapshots', () => {
+    render(<BubblophyDashboard snapshot={dashboardSnapshot} />);
+
+    expect(
+      screen.queryByRole('button', { name: 'Neues Projekt' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('creates and selects a database project from the projects panel', async () => {
+    const createProjectAction = vi.fn<
+      (
+        input: CreateBubblophyProjectActionInput
+      ) => Promise<CreateBubblophyProjectActionResult>
+    >(async () => ({
+      status: 'created',
+      project: {
+        id: 'project_zen',
+        name: 'Zentrum',
+        key: 'ZEN',
+        health: 'stabil',
+        openIssues: 0,
+        readyIssues: 0,
+        blockedIssues: 0,
+        memberCount: 1,
+        agentTokenCount: 0,
+      },
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        createProjectAction={createProjectAction}
+      />
+    );
+
+    const projectsSection = document.getElementById('projects');
+
+    expect(projectsSection).toBeInstanceOf(HTMLElement);
+
+    if (!projectsSection) {
+      throw new Error('Expected the projects section to render.');
+    }
+
+    expect(
+      within(projectsSection).getAllByRole('button', { name: 'Neues Projekt' })
+    ).toHaveLength(1);
+    fireEvent.click(
+      within(projectsSection).getByRole('button', { name: 'Neues Projekt' })
+    );
+    fireEvent.change(screen.getByLabelText('Name'), {
+      target: { value: 'Zentrum' },
+    });
+    fireEvent.change(screen.getByLabelText('Key'), {
+      target: { value: 'zen' },
+    });
+    fireEvent.change(screen.getByLabelText('Beschreibung'), {
+      target: { value: 'Neue Projektarbeit.' },
+    });
+    fireEvent.change(screen.getByLabelText('Repository URL'), {
+      target: { value: 'https://github.com/mrbubbles/zentrum' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Projekt erstellen' }));
+
+    await waitFor(() => {
+      expect(createProjectAction).toHaveBeenCalledWith({
+        name: 'Zentrum',
+        key: 'zen',
+        description: 'Neue Projektarbeit.',
+        repositoryUrl: 'https://github.com/mrbubbles/zentrum',
+      });
+    });
+    expect(createProjectAction.mock.calls[0]?.[0]).not.toHaveProperty(
+      'authUserId'
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    const createdProject = within(projectsSection).getByRole('button', {
+      name: /^Zentrum\s+ZEN\s+Stabil/i,
+    });
+
+    expect(createdProject).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Gefiltert auf Projekt ZEN.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Noch keine Issues für diesen Filter.')
+    ).toBeInTheDocument();
+  });
+
+  it('keeps the project dialog open and shows duplicate errors', async () => {
+    const createProjectAction = vi.fn<
+      (
+        input: CreateBubblophyProjectActionInput
+      ) => Promise<CreateBubblophyProjectActionResult>
+    >(async () => ({
+      status: 'duplicate',
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={emptyDatabaseSnapshot}
+        createProjectAction={createProjectAction}
+      />
+    );
+
+    const projectCreateButtons = screen.getAllByRole('button', {
+      name: 'Neues Projekt',
+    });
+
+    expect(projectCreateButtons).toHaveLength(2);
+    const projectCreateButton = projectCreateButtons[0];
+
+    if (!projectCreateButton) {
+      throw new Error('Expected a project create button.');
+    }
+
+    fireEvent.click(projectCreateButton);
+    fireEvent.change(screen.getByLabelText('Name'), {
+      target: { value: 'Doppeltes Projekt' },
+    });
+    fireEvent.change(screen.getByLabelText('Key'), {
+      target: { value: 'DP' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Projekt erstellen' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Dieser Projekt-Key ist schon vergeben.'
+    );
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /^Doppeltes Projekt\s+DP/i })
     ).not.toBeInTheDocument();
   });
 

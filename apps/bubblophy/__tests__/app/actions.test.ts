@@ -1,10 +1,15 @@
-import type { CreateBubblophyIssueActionInput } from '@/app/actions';
+import type {
+  CreateBubblophyIssueActionInput,
+  CreateBubblophyProjectActionInput,
+} from '@/app/actions';
 import type { CreateBubblophyIssueDraftInput } from '@/lib/issues/create';
+import type { CreateBubblophyProjectInput } from '@/lib/projects/create';
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const requireBubblophySessionMock = vi.fn();
 const createBubblophyIssueDraftMock = vi.fn();
+const createBubblophyProjectMock = vi.fn();
 
 vi.mock('@/lib/auth/session', () => ({
   requireBubblophySession: (options: { nextPath?: string }) =>
@@ -16,10 +21,16 @@ vi.mock('@/lib/issues/create', () => ({
     createBubblophyIssueDraftMock(input),
 }));
 
+vi.mock('@/lib/projects/create', () => ({
+  createBubblophyProject: (input: CreateBubblophyProjectInput) =>
+    createBubblophyProjectMock(input),
+}));
+
 describe('createBubblophyIssueAction', () => {
   beforeEach(() => {
     requireBubblophySessionMock.mockReset();
     createBubblophyIssueDraftMock.mockReset();
+    createBubblophyProjectMock.mockReset();
   });
 
   it('resolves the auth user server-side instead of accepting a client authUserId', async () => {
@@ -72,6 +83,70 @@ describe('createBubblophyIssueAction', () => {
         owner: 'Nicht zugewiesen',
         planSteps: 0,
         approvalRequired: true,
+      },
+    });
+  });
+});
+
+describe('createBubblophyProjectAction', () => {
+  beforeEach(() => {
+    requireBubblophySessionMock.mockReset();
+    createBubblophyIssueDraftMock.mockReset();
+    createBubblophyProjectMock.mockReset();
+  });
+
+  it('resolves the auth user server-side instead of accepting a client authUserId', async () => {
+    requireBubblophySessionMock.mockResolvedValue({
+      authUserId: 'user_server',
+      email: 'owner@example.test',
+      user: {},
+    });
+    createBubblophyProjectMock.mockResolvedValue({
+      status: 'created',
+      project: {
+        id: 'project_bv',
+        name: 'Bubblesverse',
+        key: 'BV',
+        health: 'stabil',
+        openIssues: 0,
+        readyIssues: 0,
+        blockedIssues: 0,
+        memberCount: 1,
+        agentTokenCount: 0,
+      },
+    });
+
+    const { createBubblophyProjectAction } = await import('@/app/actions');
+    const result = await createBubblophyProjectAction({
+      authUserId: 'user_client_spoof',
+      name: 'Bubblesverse',
+      key: 'BV',
+      description: 'Projektarbeit',
+      repositoryUrl: 'https://github.com/mrbubbles/bubbles-verse',
+    } as CreateBubblophyProjectActionInput & { authUserId: string });
+
+    expect(requireBubblophySessionMock).toHaveBeenCalledWith({
+      nextPath: '/',
+    });
+    expect(createBubblophyProjectMock).toHaveBeenCalledWith({
+      authUserId: 'user_server',
+      name: 'Bubblesverse',
+      key: 'BV',
+      description: 'Projektarbeit',
+      repositoryUrl: 'https://github.com/mrbubbles/bubbles-verse',
+    });
+    expect(result).toEqual({
+      status: 'created',
+      project: {
+        id: 'project_bv',
+        name: 'Bubblesverse',
+        key: 'BV',
+        health: 'stabil',
+        openIssues: 0,
+        readyIssues: 0,
+        blockedIssues: 0,
+        memberCount: 1,
+        agentTokenCount: 0,
       },
     });
   });

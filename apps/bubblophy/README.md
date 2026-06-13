@@ -22,19 +22,23 @@ einem bewusst human-gesteuerten Kontrollzentrum.
 - Das Drizzle-Grundschema liegt unter `drizzle/db/schema.ts`.
 - Eine erste server-only Repository-/Mapper-Grenze für Projekt-/Issue-Zeilen
   liegt unter `lib/issues/repository.ts`.
+- Ein server-only Create-Vertrag für Projekte liegt unter
+  `lib/projects/create.ts`; er erstellt Projekt plus Owner-Mitgliedschaft ohne
+  Issues, Agent-Tokens oder Runs als Nebeneffekt.
 - Ein server-only Create-Vertrag für persistierte menschliche Issue-Drafts
   liegt unter `lib/issues/create.ts`; die UI nutzt bis zur expliziten Anbindung
   weiter klar markierte lokale Drafts.
+- Der Projektbereich bietet bei aktiver Datenbankquelle `Neues Projekt`; bei
+  Sample- oder Fallback-Daten wird kein DB-Projektbutton angeboten.
 - Der Issue-Dialog bietet bei aktiver Datenbankquelle zusätzlich
   `In Datenbank speichern`; bei Sample- oder Fallback-Daten bleibt er bewusst
   lokal und markiert Drafts als nicht gespeichert.
 - Der Auth- und Sicherheitsplan liegt in
   `documentation/auth-security-plan.md`.
-- Die UI nutzt aktuell einen typisierten lokalen Snapshot als View Model; die
-  spätere Datenzugriffsschicht soll dieselbe server-only DTO-Grenze unter
-  `lib/dashboard/data.ts` bedienen. Die neue Issue-Repository-Grenze bereitet
-  diese Umstellung vor, ist aber noch nicht an echte Drizzle-Abfragen oder die
-  UI angeschlossen.
+- Die UI nutzt einen typisierten Dashboard-Snapshot als View Model. Der
+  server-only Read-Pfad unter `lib/dashboard/data.ts` kann Datenbankzeilen
+  abfragen und fällt in Dev kontrolliert auf Sample-Daten zurück, wenn die
+  Datenbank nicht verfügbar ist.
 
 ## Lokal starten
 
@@ -78,6 +82,9 @@ bun run build
   die echte Prüfung bleibt serverseitig.
 - Persistierte Issue-Erfassung läuft serverseitig über Projektmitgliedschaft,
   schreibt nur Issue plus `created`-Event und startet keine Agent-Runs.
+- Persistierte Projekt-Erfassung läuft serverseitig über die menschliche
+  Session, schreibt Projekt plus Owner-Mitgliedschaft und startet keine
+  Agent-Runs.
 - Agenten nutzen eingeschränkte Bubblophy-Agent-Tokens mit Hash, Scopes,
   Projektgrenze, Status und Ablaufdatum.
 - Agenten erhalten keine Mensch-Logins und keinen Supabase-Service-Role-Key.

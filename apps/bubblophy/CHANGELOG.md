@@ -32,3 +32,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   starting agent runs.
 - Added the dashboard dialog wiring for database-backed issue creation while
   preserving explicit local-only drafts for sample and fallback data sources.
+- Added a server-only project create contract, authenticated server action, and
+  minimal dashboard dialog for database-backed project creation.
