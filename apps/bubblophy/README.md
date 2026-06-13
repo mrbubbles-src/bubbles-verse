@@ -37,6 +37,12 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   sowie Projekte über `is_archived` archivieren oder wiederherstellen.
   Archivierte Projekte bleiben sichtbar markiert, wirken aber nicht als aktive
   Arbeitsfläche für neue Issues, Run-Anfragen oder Agent-Token-Aktionen.
+- Der Projektbereich zeigt Mitglieder eines ausgewählten Projekts aus
+  `bubblophy_project_members`. Ohne Profil- oder Invite-Modell zeigt die UI die
+  technische Auth-User-ID als Fallback und bietet noch kein Add-by-E-Mail an.
+- Owner und Maintainer können Nicht-Owner-Mitglieder zwischen `maintainer`,
+  `member` und `viewer` umstellen oder entfernen. Owner-Rollen, Owner-Removal
+  und Self-Removal bleiben im MVP konservativ gesperrt.
 - In einer leeren Datenbank führt der UI-Flow von `Neues Projekt` direkt in
   den ausgewählten Projektkontext und bietet dort das erste persistierte Issue
   für dieses Projekt an.
@@ -161,6 +167,12 @@ bun run build
   Owner/Maintainer-Mitgliedschaft. Sie schreiben `project_updated`-Events mit
   klarer Payload (`entity: "project"`, `action`, `changedFields`) ohne
   Inhaltsduplikate.
+- Persistierte Projektmitgliedschaftsänderungen laufen serverseitig über
+  Owner/Maintainer-Mitgliedschaft und sind für archivierte Projekte gesperrt.
+  Rollenänderungen betreffen nur Nicht-Owner-Rollen; Entfernen löscht mangels
+  Statusfeld die Mitgliedschaftszeile hart und schreibt ein
+  `project_updated`-Event mit `entity: "project_member"` ohne E-Mail- oder
+  Profilfelder.
 - Archivierte Projekte werden serverseitig für operative Mutationen
   ausgeschlossen: Issue Create/Edit/Status/Plan, Run Request/Human Transition,
   Agent-Run-Tokenupdates und Agent-Token Create/Lifecycle prüfen vorhandene

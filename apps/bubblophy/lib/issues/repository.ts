@@ -18,6 +18,8 @@ import type {
   IssueStatus,
   IssueSummary,
   ProjectHealth,
+  ProjectMemberRole,
+  ProjectMemberSummary,
   ProjectSummary,
 } from '@/lib/dashboard/types';
 
@@ -29,6 +31,7 @@ export interface BubblophyProjectIssuePersistenceRow {
   projectIsArchived: boolean;
   projectMemberCount: number;
   activeAgentTokenCount: number;
+  projectCurrentUserRole?: ProjectMemberRole;
   issueDatabaseId: string | null;
   issueNumber: number | null;
   issueTitle: string | null;
@@ -65,6 +68,13 @@ export interface BubblophyAgentRunPersistenceRow {
   agentTokenLabel: string;
   state: BubblophyAgentRunState;
   updatedAt: string;
+}
+
+export interface BubblophyProjectMemberPersistenceRow {
+  projectKey: string;
+  authUserId: string;
+  role: ProjectMemberRole;
+  createdAt: string;
 }
 
 export interface BubblophyActivityPersistenceRow {
@@ -134,6 +144,7 @@ interface MutableProjectSummary {
   blockedIssues: number;
   memberCount: number;
   agentTokenCount: number;
+  currentUserRole?: ProjectMemberRole;
 }
 
 /**
@@ -435,6 +446,57 @@ export function buildBubblophyAgentTokenSummaries(
 }
 
 /**
+ * Converts membership rows into public project member summaries.
+ *
+ * The MVP has no profile or invite lookup, so the Auth user ID is the explicit
+ * technical fallback label and no email-like fields are invented.
+ *
+ * @param rows Membership rows already constrained to visible projects.
+ * @returns Public project member summaries for the dashboard.
+ */
+export function buildBubblophyProjectMemberSummaries(
+  rows: BubblophyProjectMemberPersistenceRow[]
+): ProjectMemberSummary[] {
+  return rows
+    .map((row) => ({
+      id: formatBubblophyProjectMemberId(row.projectKey, row.authUserId),
+      projectKey: row.projectKey,
+      authUserId: row.authUserId,
+      label: row.authUserId,
+      role: row.role,
+      createdAt: row.createdAt,
+    }))
+    .sort(
+      (left, right) =>
+        left.projectKey.localeCompare(right.projectKey) ||
+        projectMemberRoleSortOrder[left.role] -
+          projectMemberRoleSortOrder[right.role] ||
+        left.authUserId.localeCompare(right.authUserId)
+    );
+}
+
+/**
+ * Builds the stable dashboard key for one project membership row.
+ *
+ * @param projectKey Short project key.
+ * @param authUserId Supabase Auth user ID from the membership row.
+ * @returns Stable client-side membership ID.
+ */
+export function formatBubblophyProjectMemberId(
+  projectKey: string,
+  authUserId: string
+) {
+  return `${projectKey}:${authUserId}`;
+}
+
+const projectMemberRoleSortOrder = {
+  owner: 0,
+  maintainer: 1,
+  member: 2,
+  viewer: 3,
+} satisfies Record<ProjectMemberRole, number>;
+
+/**
  * Detects ISO timestamp expiry using the current server clock.
  *
  * @param expiresAt Nullable persisted expiry timestamp.
@@ -514,6 +576,7 @@ function createMutableProjectSummary(
     blockedIssues: 0,
     memberCount: Math.max(0, row.projectMemberCount),
     agentTokenCount: Math.max(0, row.activeAgentTokenCount),
+    currentUserRole: row.projectCurrentUserRole,
   };
 }
 

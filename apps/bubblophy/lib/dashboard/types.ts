@@ -26,6 +26,8 @@ export type AgentTokenState =
   | 'widerrufen'
   | 'abgelaufen';
 
+export type ProjectMemberRole = 'owner' | 'maintainer' | 'member' | 'viewer';
+
 export interface ProjectSummary {
   id: string;
   name: string;
@@ -38,6 +40,7 @@ export interface ProjectSummary {
   blockedIssues: number;
   memberCount: number;
   agentTokenCount: number;
+  currentUserRole?: ProjectMemberRole;
 }
 
 export interface IssueSummary {
@@ -72,6 +75,15 @@ export interface AgentTokenSummary {
   state: AgentTokenState;
   lastUsedAt: string;
   expiresAt: string;
+}
+
+export interface ProjectMemberSummary {
+  id: string;
+  projectKey: string;
+  authUserId: string;
+  label: string;
+  role: ProjectMemberRole;
+  createdAt: string;
 }
 
 export interface AgentRunSummary {
@@ -116,6 +128,7 @@ export interface DashboardSnapshot {
   meta: DashboardSnapshotMeta;
   projects: ProjectSummary[];
   issues: IssueSummary[];
+  projectMembers: ProjectMemberSummary[];
   agentTokens: AgentTokenSummary[];
   agentRuns: AgentRunSummary[];
   activity: ActivityEvent[];

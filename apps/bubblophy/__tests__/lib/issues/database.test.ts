@@ -82,6 +82,26 @@ const tableRows = {
       total: 1,
     },
   ],
+  memberRoles: [
+    {
+      projectId: 'project_visible',
+      role: 'owner',
+    },
+  ],
+  projectMembers: [
+    {
+      projectKey: 'BV',
+      authUserId: 'user_owner',
+      role: 'owner',
+      createdAt: '2026-06-13T10:00:00.000Z',
+    },
+    {
+      projectKey: 'BV',
+      authUserId: 'user_viewer',
+      role: 'viewer',
+      createdAt: '2026-06-13T11:00:00.000Z',
+    },
+  ],
   memberships: [
     {
       projectId: 'project_visible',
@@ -201,6 +221,18 @@ vi.mock('@/drizzle/db', () => ({
  */
 function rowsForCall(call: QueryCall): MockRow[] {
   if (call.tableName === 'bubblophy_project_members') {
+    if (call.groupByCalled) {
+      return tableRows.memberCounts;
+    }
+
+    if (call.selectedKeys.includes('role') && call.selectedKeys.length === 2) {
+      return tableRows.memberRoles;
+    }
+
+    if (call.selectedKeys.includes('authUserId')) {
+      return tableRows.projectMembers;
+    }
+
     return tableRows.memberships;
   }
 
@@ -234,7 +266,7 @@ function rowsForCall(call: QueryCall): MockRow[] {
     return tableRows.issueEvents;
   }
 
-  return tableRows.memberCounts;
+  return [];
 }
 
 describe('selectBubblophyDashboardRowsForUser', () => {
@@ -271,6 +303,7 @@ describe('selectBubblophyDashboardRowsForUser', () => {
     ]);
     expect(rows.projectIssueRows).toEqual([
       expect.objectContaining({
+        projectCurrentUserRole: 'owner',
         issuePlanStepCount: 2,
         issuePlanVersion: 2,
         issuePlanSummary: 'Reload-fähiger Plan.',
@@ -279,6 +312,20 @@ describe('selectBubblophyDashboardRowsForUser', () => {
           { id: 'step_2', text: 'Detailpanel prüfen' },
         ],
       }),
+    ]);
+    expect(rows.projectMemberRows).toEqual([
+      {
+        projectKey: 'BV',
+        authUserId: 'user_owner',
+        role: 'owner',
+        createdAt: '2026-06-13T10:00:00.000Z',
+      },
+      {
+        projectKey: 'BV',
+        authUserId: 'user_viewer',
+        role: 'viewer',
+        createdAt: '2026-06-13T11:00:00.000Z',
+      },
     ]);
 
     const projectEventCall = calls.find(

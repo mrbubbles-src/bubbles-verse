@@ -6,8 +6,10 @@ import {
   buildBubblophyAgentTokenSummaries,
   buildBubblophyProjectIssueSnapshot,
   buildBubblophyProjectIssueSnapshotForUser,
+  buildBubblophyProjectMemberSummaries,
   deriveBubblophyProjectHealth,
   formatBubblophyIssueKey,
+  formatBubblophyProjectMemberId,
   mapBubblophyAgentRunState,
   mapBubblophyAgentTokenState,
   mapBubblophyIssuePriority,
@@ -86,6 +88,45 @@ describe('Bubblophy issue repository mapping', () => {
   it('formats stable human-facing issue keys', () => {
     expect(formatBubblophyIssueKey('BV', 1)).toBe('BV-01');
     expect(formatBubblophyIssueKey('BV', 14)).toBe('BV-14');
+  });
+
+  it('maps project member rows without inventing profile or email fields', () => {
+    expect(formatBubblophyProjectMemberId('BV', 'user_martin')).toBe(
+      'BV:user_martin'
+    );
+    expect(
+      buildBubblophyProjectMemberSummaries([
+        {
+          projectKey: 'BV',
+          authUserId: 'user_viewer',
+          role: 'viewer',
+          createdAt: '2026-06-13T11:00:00.000Z',
+        },
+        {
+          projectKey: 'BV',
+          authUserId: 'user_owner',
+          role: 'owner',
+          createdAt: '2026-06-13T10:00:00.000Z',
+        },
+      ])
+    ).toEqual([
+      {
+        id: 'BV:user_owner',
+        projectKey: 'BV',
+        authUserId: 'user_owner',
+        label: 'user_owner',
+        role: 'owner',
+        createdAt: '2026-06-13T10:00:00.000Z',
+      },
+      {
+        id: 'BV:user_viewer',
+        projectKey: 'BV',
+        authUserId: 'user_viewer',
+        label: 'user_viewer',
+        role: 'viewer',
+        createdAt: '2026-06-13T11:00:00.000Z',
+      },
+    ]);
   });
 
   it('builds project and issue summaries without opening a database connection', () => {

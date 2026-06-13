@@ -46,6 +46,20 @@ function makeDatabaseRows(
 ): BubblophyDashboardPersistenceRows {
   return {
     projectIssueRows: [makeRow()],
+    projectMemberRows: [
+      {
+        projectKey: 'BV',
+        authUserId: 'user_owner',
+        role: 'owner',
+        createdAt: '2026-06-13T10:00:00.000Z',
+      },
+      {
+        projectKey: 'BV',
+        authUserId: 'user_martin',
+        role: 'viewer',
+        createdAt: '2026-06-13T11:00:00.000Z',
+      },
+    ],
     agentTokenRows: [
       {
         id: 'token_codex',
@@ -122,6 +136,20 @@ describe('getBubblophyDashboardSnapshot', () => {
           status: 'bereit',
         },
       ],
+      projectMembers: [
+        {
+          id: 'BV:user_owner',
+          authUserId: 'user_owner',
+          role: 'owner',
+          label: 'user_owner',
+        },
+        {
+          id: 'BV:user_martin',
+          authUserId: 'user_martin',
+          role: 'viewer',
+          label: 'user_martin',
+        },
+      ],
       agentTokens: [
         {
           id: 'token_codex',
@@ -182,7 +210,15 @@ describe('getBubblophyDashboardSnapshot', () => {
     expect(serializedSnapshot).not.toContain('plaintextToken');
     expect(serializedSnapshot).not.toContain('requestedByAuthUserId');
     expect(serializedSnapshot).not.toContain('actorAuthUserId');
-    expect(serializedSnapshot).not.toContain('user_owner');
+    expect(snapshot.issues[0]?.owner).toBe('Mensch');
+    expect(snapshot.projectMembers).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          authUserId: 'user_owner',
+          label: 'user_owner',
+        }),
+      ])
+    );
   });
 
   it('marks an available but empty database without using sample data', async () => {
@@ -192,6 +228,7 @@ describe('getBubblophyDashboardSnapshot', () => {
         loadRows: async () =>
           makeDatabaseRows({
             projectIssueRows: [],
+            projectMemberRows: [],
             agentTokenRows: [],
             agentRunRows: [],
             activityRows: [],
@@ -204,6 +241,7 @@ describe('getBubblophyDashboardSnapshot', () => {
       },
       projects: [],
       issues: [],
+      projectMembers: [],
       agentTokens: [],
       agentRuns: [],
       activity: [],

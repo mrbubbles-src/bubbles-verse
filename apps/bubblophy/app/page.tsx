@@ -10,6 +10,7 @@ import {
   createBubblophyIssueAction,
   createBubblophyIssuePlanAction,
   createBubblophyProjectAction,
+  removeBubblophyProjectMemberAction,
   requestBubblophyAgentRunAction,
   transitionBubblophyAgentRunAction,
   transitionBubblophyProjectArchiveAction,
@@ -17,6 +18,7 @@ import {
   updateBubblophyIssueContentAction,
   updateBubblophyIssueStatusAction,
   updateBubblophyProjectContentAction,
+  updateBubblophyProjectMemberRoleAction,
 } from '@/app/actions';
 import { BubblophyDashboard } from '@/components/dashboard/bubblophy-dashboard';
 
@@ -81,6 +83,8 @@ export async function ProtectedBubblophyDashboard() {
       createProjectAction={createBubblophyProjectAction}
       updateProjectContentAction={updateBubblophyProjectContentAction}
       transitionProjectArchiveAction={transitionBubblophyProjectArchiveAction}
+      updateProjectMemberRoleAction={updateBubblophyProjectMemberRoleAction}
+      removeProjectMemberAction={removeBubblophyProjectMemberAction}
       createAgentTokenAction={createBubblophyAgentTokenAction}
       updateAgentTokenLifecycleAction={updateBubblophyAgentTokenLifecycleAction}
     />

@@ -42,6 +42,12 @@ import type {
   UpdateBubblophyProjectContentInput,
   UpdateBubblophyProjectContentResult,
 } from '@/lib/projects/manage';
+import type {
+  RemoveBubblophyProjectMemberInput,
+  RemoveBubblophyProjectMemberResult,
+  UpdateBubblophyProjectMemberRoleInput,
+  UpdateBubblophyProjectMemberRoleResult,
+} from '@/lib/projects/members';
 
 import { transitionBubblophyAgentRun } from '@/lib/agent-runs/human-transition';
 import { requestBubblophyAgentRun } from '@/lib/agent-runs/request';
@@ -57,6 +63,10 @@ import {
   transitionBubblophyProjectArchive,
   updateBubblophyProjectContent,
 } from '@/lib/projects/manage';
+import {
+  removeBubblophyProjectMember,
+  updateBubblophyProjectMemberRole,
+} from '@/lib/projects/members';
 
 export type CreateBubblophyIssueActionInput = Omit<
   CreateBubblophyIssueDraftInput,
@@ -111,6 +121,22 @@ export type TransitionBubblophyProjectArchiveActionInput = Omit<
 
 export type TransitionBubblophyProjectArchiveActionResult =
   TransitionBubblophyProjectArchiveResult;
+
+export type UpdateBubblophyProjectMemberRoleActionInput = Omit<
+  UpdateBubblophyProjectMemberRoleInput,
+  'authUserId'
+>;
+
+export type UpdateBubblophyProjectMemberRoleActionResult =
+  UpdateBubblophyProjectMemberRoleResult;
+
+export type RemoveBubblophyProjectMemberActionInput = Omit<
+  RemoveBubblophyProjectMemberInput,
+  'authUserId'
+>;
+
+export type RemoveBubblophyProjectMemberActionResult =
+  RemoveBubblophyProjectMemberResult;
 
 export type CreateBubblophyAgentTokenActionInput = Omit<
   CreateBubblophyAgentTokenInput,
@@ -284,6 +310,47 @@ export async function transitionBubblophyProjectArchiveAction(
   const session = await requireBubblophySession({ nextPath: '/' });
 
   return transitionBubblophyProjectArchive({
+    ...input,
+    authUserId: session.authUserId,
+  });
+}
+
+/**
+ * Updates a non-owner project member role for the current human session.
+ *
+ * The client never provides an auth user ID. The service enforces project
+ * membership, owner/maintainer roles, archived-project blocking, and audit
+ * metadata without accepting profile or email data from the browser.
+ *
+ * @param input Project key, target member user ID, and next non-owner role.
+ * @returns Structured result for project member controls.
+ */
+export async function updateBubblophyProjectMemberRoleAction(
+  input: UpdateBubblophyProjectMemberRoleActionInput
+): Promise<UpdateBubblophyProjectMemberRoleActionResult> {
+  const session = await requireBubblophySession({ nextPath: '/' });
+
+  return updateBubblophyProjectMemberRole({
+    ...input,
+    authUserId: session.authUserId,
+  });
+}
+
+/**
+ * Removes a non-owner project member for the current human session.
+ *
+ * The current schema has no soft-disable field, so the service performs a
+ * guarded hard membership removal and blocks self-removal.
+ *
+ * @param input Project key and target member user ID.
+ * @returns Structured result for project member controls.
+ */
+export async function removeBubblophyProjectMemberAction(
+  input: RemoveBubblophyProjectMemberActionInput
+): Promise<RemoveBubblophyProjectMemberActionResult> {
+  const session = await requireBubblophySession({ nextPath: '/' });
+
+  return removeBubblophyProjectMember({
     ...input,
     authUserId: session.authUserId,
   });

@@ -7,6 +7,8 @@ import type {
   CreateBubblophyIssuePlanActionResult,
   CreateBubblophyProjectActionInput,
   CreateBubblophyProjectActionResult,
+  RemoveBubblophyProjectMemberActionInput,
+  RemoveBubblophyProjectMemberActionResult,
   RequestBubblophyAgentRunActionInput,
   RequestBubblophyAgentRunActionResult,
   TransitionBubblophyAgentRunActionInput,
@@ -21,6 +23,8 @@ import type {
   UpdateBubblophyIssueStatusActionResult,
   UpdateBubblophyProjectContentActionInput,
   UpdateBubblophyProjectContentActionResult,
+  UpdateBubblophyProjectMemberRoleActionInput,
+  UpdateBubblophyProjectMemberRoleActionResult,
 } from '@/app/actions';
 import type { DashboardSnapshot } from '@/lib/dashboard/types';
 import type React from 'react';
@@ -50,6 +54,44 @@ const databaseSnapshot = {
     label: 'Datenbankdaten',
     description: 'Read-only Testdaten.',
   },
+} satisfies DashboardSnapshot;
+
+const databaseSnapshotWithManageableMembers = {
+  ...databaseSnapshot,
+  projects: databaseSnapshot.projects.map((project) =>
+    project.key === 'BV'
+      ? {
+          ...project,
+          currentUserRole: 'owner',
+        }
+      : project
+  ),
+  projectMembers: [
+    {
+      id: 'BV:user_owner',
+      projectKey: 'BV',
+      authUserId: 'user_owner',
+      label: 'user_owner',
+      role: 'owner',
+      createdAt: '2026-06-13T10:00:00.000Z',
+    },
+    {
+      id: 'BV:user_martin',
+      projectKey: 'BV',
+      authUserId: 'user_martin',
+      label: 'user_martin',
+      role: 'member',
+      createdAt: '2026-06-13T11:00:00.000Z',
+    },
+    {
+      id: 'BV:user_viewer',
+      projectKey: 'BV',
+      authUserId: 'user_viewer',
+      label: 'user_viewer',
+      role: 'viewer',
+      createdAt: '2026-06-13T12:00:00.000Z',
+    },
+  ],
 } satisfies DashboardSnapshot;
 
 const databaseSnapshotWithIssueDescription = {
@@ -94,6 +136,7 @@ const emptyDatabaseSnapshot = {
   },
   projects: [],
   issues: [],
+  projectMembers: [],
   agentTokens: [],
   agentRuns: [],
   activity: [],
@@ -1498,6 +1541,268 @@ describe('BubblophyDashboard interactions', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('lists project members and updates non-owner roles through the server action', async () => {
+    const updateProjectMemberRoleAction = vi.fn<
+      (
+        input: UpdateBubblophyProjectMemberRoleActionInput
+      ) => Promise<UpdateBubblophyProjectMemberRoleActionResult>
+    >(async () => ({
+      status: 'updated',
+      member: {
+        id: 'BV:user_martin',
+        projectKey: 'BV',
+        authUserId: 'user_martin',
+        label: 'user_martin',
+        role: 'viewer',
+        createdAt: '2026-06-13T11:00:00.000Z',
+      },
+      memberCount: 3,
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithManageableMembers}
+        updateProjectMemberRoleAction={updateProjectMemberRoleAction}
+      />
+    );
+
+    const projectsSection = document.getElementById('projects');
+
+    expect(projectsSection).toBeInstanceOf(HTMLElement);
+
+    if (!projectsSection) {
+      throw new Error('Expected the projects section to render.');
+    }
+
+    fireEvent.click(
+      within(projectsSection).getByRole('button', {
+        name: 'Projekt Bubblesverse (BV) auswählen',
+      })
+    );
+
+    expect(within(projectsSection).getByText('Mitglieder')).toBeInTheDocument();
+    expect(within(projectsSection).getByText('user_owner')).toBeInTheDocument();
+    expect(
+      within(projectsSection).getByText('Owner geschützt')
+    ).toBeInTheDocument();
+    expect(
+      within(projectsSection).getByText(/Einladungen brauchen später/)
+    ).toBeInTheDocument();
+
+    fireEvent.change(
+      within(projectsSection).getByLabelText('Rolle für user_martin'),
+      {
+        target: { value: 'viewer' },
+      }
+    );
+
+    await waitFor(() => {
+      expect(updateProjectMemberRoleAction).toHaveBeenCalledWith({
+        projectKey: 'BV',
+        memberAuthUserId: 'user_martin',
+        role: 'viewer',
+      });
+    });
+    expect(updateProjectMemberRoleAction.mock.calls[0]?.[0]).not.toHaveProperty(
+      'authUserId'
+    );
+    await waitFor(() => {
+      expect(
+        within(projectsSection).getAllByText('Viewer').length
+      ).toBeGreaterThan(0);
+    });
+  });
+
+  it('keeps member management available after project content updates', async () => {
+    const updateProjectContentAction = vi.fn<
+      (
+        input: UpdateBubblophyProjectContentActionInput
+      ) => Promise<UpdateBubblophyProjectContentActionResult>
+    >(async () => ({
+      status: 'updated',
+      project: {
+        id: 'project_bubblesverse',
+        name: 'Bubblesverse lokal',
+        key: 'BV',
+        description: 'Projektsteuerung geschärft.',
+        isArchived: false,
+        health: 'stabil',
+        openIssues: 12,
+        readyIssues: 4,
+        blockedIssues: 2,
+        memberCount: 3,
+        agentTokenCount: 1,
+      },
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithManageableMembers}
+        updateProjectContentAction={updateProjectContentAction}
+        transitionProjectArchiveAction={async () => ({ status: 'unchanged' })}
+        updateProjectMemberRoleAction={async () => ({ status: 'unchanged' })}
+      />
+    );
+
+    const projectsSection = document.getElementById('projects');
+
+    expect(projectsSection).toBeInstanceOf(HTMLElement);
+
+    if (!projectsSection) {
+      throw new Error('Expected the projects section to render.');
+    }
+
+    fireEvent.click(
+      within(projectsSection).getByRole('button', {
+        name: 'Projekt Bubblesverse (BV) auswählen',
+      })
+    );
+    expect(
+      within(projectsSection).getByLabelText('Rolle für user_martin')
+    ).toBeInTheDocument();
+
+    fireEvent.change(within(projectsSection).getByLabelText('Name'), {
+      target: { value: 'Bubblesverse lokal' },
+    });
+    fireEvent.click(
+      within(projectsSection).getByRole('button', { name: 'Speichern' })
+    );
+
+    await waitFor(() => {
+      expect(
+        within(projectsSection).getByText('Bubblesverse lokal')
+      ).toBeInTheDocument();
+    });
+    expect(
+      within(projectsSection).getByLabelText('Rolle für user_martin')
+    ).toBeInTheDocument();
+  });
+
+  it('requires confirmation before removing a project member', async () => {
+    const removeProjectMemberAction = vi.fn<
+      (
+        input: RemoveBubblophyProjectMemberActionInput
+      ) => Promise<RemoveBubblophyProjectMemberActionResult>
+    >(async () => ({
+      status: 'removed',
+      projectKey: 'BV',
+      memberAuthUserId: 'user_martin',
+      memberCount: 2,
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithManageableMembers}
+        removeProjectMemberAction={removeProjectMemberAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Projekt Bubblesverse (BV) auswählen',
+      })
+    );
+
+    const martinRow = screen.getByText('user_martin').closest('tr');
+
+    expect(martinRow).toBeInstanceOf(HTMLTableRowElement);
+
+    if (!martinRow) {
+      throw new Error('Expected Martin member row.');
+    }
+
+    fireEvent.click(
+      within(martinRow).getByRole('button', { name: 'Entfernen' })
+    );
+    expect(removeProjectMemberAction).not.toHaveBeenCalled();
+    fireEvent.click(
+      within(martinRow).getByRole('button', {
+        name: 'Endgültig entfernen',
+      })
+    );
+
+    await waitFor(() => {
+      expect(removeProjectMemberAction).toHaveBeenCalledWith({
+        projectKey: 'BV',
+        memberAuthUserId: 'user_martin',
+      });
+    });
+    await waitFor(() => {
+      expect(screen.queryByText('user_martin')).not.toBeInTheDocument();
+    });
+  });
+
+  it('shows project member forbidden and archived states without fake controls', async () => {
+    const forbiddenRoleAction = vi.fn<
+      (
+        input: UpdateBubblophyProjectMemberRoleActionInput
+      ) => Promise<UpdateBubblophyProjectMemberRoleActionResult>
+    >(async () => ({ status: 'forbidden' }));
+
+    const { unmount } = render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithManageableMembers}
+        updateProjectMemberRoleAction={forbiddenRoleAction}
+      />
+    );
+
+    const projectsSection = document.getElementById('projects');
+
+    expect(projectsSection).toBeInstanceOf(HTMLElement);
+
+    if (!projectsSection) {
+      throw new Error('Expected the projects section to render.');
+    }
+
+    fireEvent.click(
+      within(projectsSection).getByRole('button', {
+        name: 'Projekt Bubblesverse (BV) auswählen',
+      })
+    );
+
+    fireEvent.change(
+      within(projectsSection).getByLabelText('Rolle für user_martin'),
+      {
+        target: { value: 'viewer' },
+      }
+    );
+
+    expect(await within(projectsSection).findByRole('alert')).toHaveTextContent(
+      'Nur Owner und Maintainer können Rollen verwalten.'
+    );
+
+    const archivedSnapshot = {
+      ...databaseSnapshotWithManageableMembers,
+      projects: databaseSnapshotWithManageableMembers.projects.map((project) =>
+        project.key === 'BV'
+          ? {
+              ...project,
+              isArchived: true,
+            }
+          : project
+      ),
+    } satisfies DashboardSnapshot;
+
+    unmount();
+    render(<BubblophyDashboard snapshot={archivedSnapshot} />);
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Projekt Bubblesverse (BV) auswählen',
+      })
+    );
+
+    expect(
+      screen.getByText('Archivierte Projekte zeigen Mitglieder nur lesend an.')
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText('Rolle für user_martin')
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Entfernen' })
+    ).not.toBeInTheDocument();
+  });
+
   it('keeps the project dialog open and shows duplicate errors', async () => {
     const createProjectAction = vi.fn<
       (
@@ -2435,9 +2740,11 @@ describe('BubblophyDashboard interactions', () => {
     expect(await within(runsSection).findByRole('alert')).toHaveTextContent(
       'Du bist kein Mitglied dieses Projekts.'
     );
-    expect(
-      within(runsSection).getByRole('button', { name: 'Freigeben' })
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        within(runsSection).getByRole('button', { name: 'Freigeben' })
+      ).toBeInTheDocument();
+    });
   });
 
   it('blocks run requests for database issues without active project tokens', () => {

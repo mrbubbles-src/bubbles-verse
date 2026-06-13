@@ -95,6 +95,7 @@ describe('Bubblophy home page', () => {
         },
       ],
       issues: [],
+      projectMembers: [],
       agentTokens: [],
       agentRuns: [],
       activity: [],

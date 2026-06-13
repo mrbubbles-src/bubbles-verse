@@ -3,6 +3,7 @@ import type {
   CreateBubblophyIssueActionInput,
   CreateBubblophyIssuePlanActionInput,
   CreateBubblophyProjectActionInput,
+  RemoveBubblophyProjectMemberActionInput,
   RequestBubblophyAgentRunActionInput,
   TransitionBubblophyAgentRunActionInput,
   TransitionBubblophyProjectArchiveActionInput,
@@ -10,6 +11,7 @@ import type {
   UpdateBubblophyIssueContentActionInput,
   UpdateBubblophyIssueStatusActionInput,
   UpdateBubblophyProjectContentActionInput,
+  UpdateBubblophyProjectMemberRoleActionInput,
 } from '@/app/actions';
 import type { TransitionBubblophyAgentRunInput } from '@/lib/agent-runs/human-transition';
 import type { RequestBubblophyAgentRunInput } from '@/lib/agent-runs/request';
@@ -24,6 +26,10 @@ import type {
   TransitionBubblophyProjectArchiveInput,
   UpdateBubblophyProjectContentInput,
 } from '@/lib/projects/manage';
+import type {
+  RemoveBubblophyProjectMemberInput,
+  UpdateBubblophyProjectMemberRoleInput,
+} from '@/lib/projects/members';
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -35,6 +41,8 @@ const updateBubblophyIssueStatusMock = vi.fn();
 const createBubblophyProjectMock = vi.fn();
 const updateBubblophyProjectContentMock = vi.fn();
 const transitionBubblophyProjectArchiveMock = vi.fn();
+const updateBubblophyProjectMemberRoleMock = vi.fn();
+const removeBubblophyProjectMemberMock = vi.fn();
 const createBubblophyAgentTokenMock = vi.fn();
 const updateBubblophyAgentTokenLifecycleMock = vi.fn();
 const requestBubblophyAgentRunMock = vi.fn();
@@ -79,6 +87,14 @@ vi.mock('@/lib/projects/manage', () => ({
   ) => transitionBubblophyProjectArchiveMock(input),
 }));
 
+vi.mock('@/lib/projects/members', () => ({
+  updateBubblophyProjectMemberRole: (
+    input: UpdateBubblophyProjectMemberRoleInput
+  ) => updateBubblophyProjectMemberRoleMock(input),
+  removeBubblophyProjectMember: (input: RemoveBubblophyProjectMemberInput) =>
+    removeBubblophyProjectMemberMock(input),
+}));
+
 vi.mock('@/lib/agent-tokens/create', () => ({
   createBubblophyAgentToken: (input: CreateBubblophyAgentTokenInput) =>
     createBubblophyAgentTokenMock(input),
@@ -110,6 +126,8 @@ describe('createBubblophyIssueAction', () => {
     createBubblophyProjectMock.mockReset();
     updateBubblophyProjectContentMock.mockReset();
     transitionBubblophyProjectArchiveMock.mockReset();
+    updateBubblophyProjectMemberRoleMock.mockReset();
+    removeBubblophyProjectMemberMock.mockReset();
     createBubblophyAgentTokenMock.mockReset();
     updateBubblophyAgentTokenLifecycleMock.mockReset();
     transitionBubblophyAgentRunMock.mockReset();
@@ -551,6 +569,96 @@ describe('transitionBubblophyProjectArchiveAction', () => {
         memberCount: 2,
         agentTokenCount: 1,
       },
+    });
+  });
+});
+
+describe('project member actions', () => {
+  beforeEach(() => {
+    requireBubblophySessionMock.mockReset();
+    updateBubblophyProjectMemberRoleMock.mockReset();
+    removeBubblophyProjectMemberMock.mockReset();
+  });
+
+  it('resolves the auth user server-side for role changes', async () => {
+    requireBubblophySessionMock.mockResolvedValue({
+      authUserId: 'user_server',
+      email: 'owner@example.test',
+      user: {},
+    });
+    updateBubblophyProjectMemberRoleMock.mockResolvedValue({
+      status: 'updated',
+      member: {
+        id: 'BV:user_martin',
+        projectKey: 'BV',
+        authUserId: 'user_martin',
+        label: 'user_martin',
+        role: 'viewer',
+        createdAt: '2026-06-13T10:00:00.000Z',
+      },
+      memberCount: 2,
+    });
+
+    const { updateBubblophyProjectMemberRoleAction } =
+      await import('@/app/actions');
+    const result = await updateBubblophyProjectMemberRoleAction({
+      authUserId: 'user_client_spoof',
+      projectKey: 'BV',
+      memberAuthUserId: 'user_martin',
+      role: 'viewer',
+    } as UpdateBubblophyProjectMemberRoleActionInput & {
+      authUserId: string;
+    });
+
+    expect(requireBubblophySessionMock).toHaveBeenCalledWith({
+      nextPath: '/',
+    });
+    expect(updateBubblophyProjectMemberRoleMock).toHaveBeenCalledWith({
+      authUserId: 'user_server',
+      projectKey: 'BV',
+      memberAuthUserId: 'user_martin',
+      role: 'viewer',
+    });
+    expect(result).toMatchObject({
+      status: 'updated',
+      member: {
+        authUserId: 'user_martin',
+        role: 'viewer',
+      },
+    });
+  });
+
+  it('resolves the auth user server-side for member removal', async () => {
+    requireBubblophySessionMock.mockResolvedValue({
+      authUserId: 'user_server',
+      email: 'owner@example.test',
+      user: {},
+    });
+    removeBubblophyProjectMemberMock.mockResolvedValue({
+      status: 'removed',
+      projectKey: 'BV',
+      memberAuthUserId: 'user_martin',
+      memberCount: 1,
+    });
+
+    const { removeBubblophyProjectMemberAction } =
+      await import('@/app/actions');
+    const result = await removeBubblophyProjectMemberAction({
+      authUserId: 'user_client_spoof',
+      projectKey: 'BV',
+      memberAuthUserId: 'user_martin',
+    } as RemoveBubblophyProjectMemberActionInput & { authUserId: string });
+
+    expect(removeBubblophyProjectMemberMock).toHaveBeenCalledWith({
+      authUserId: 'user_server',
+      projectKey: 'BV',
+      memberAuthUserId: 'user_martin',
+    });
+    expect(result).toEqual({
+      status: 'removed',
+      projectKey: 'BV',
+      memberAuthUserId: 'user_martin',
+      memberCount: 1,
     });
   });
 });

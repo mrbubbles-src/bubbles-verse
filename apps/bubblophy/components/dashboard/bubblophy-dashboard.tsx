@@ -9,6 +9,8 @@ import type {
   CreateBubblophyIssuePlanActionResult,
   CreateBubblophyProjectActionInput,
   CreateBubblophyProjectActionResult,
+  RemoveBubblophyProjectMemberActionInput,
+  RemoveBubblophyProjectMemberActionResult,
   RequestBubblophyAgentRunActionInput,
   RequestBubblophyAgentRunActionResult,
   TransitionBubblophyAgentRunActionInput,
@@ -23,6 +25,8 @@ import type {
   UpdateBubblophyIssueStatusActionResult,
   UpdateBubblophyProjectContentActionInput,
   UpdateBubblophyProjectContentActionResult,
+  UpdateBubblophyProjectMemberRoleActionInput,
+  UpdateBubblophyProjectMemberRoleActionResult,
 } from '@/app/actions';
 import type {
   AgentRunState,
@@ -34,6 +38,8 @@ import type {
   IssueStatus,
   IssueSummary,
   ProjectHealth,
+  ProjectMemberRole,
+  ProjectMemberSummary,
   ProjectSummary,
 } from '@/lib/dashboard/types';
 import type { KeyboardEvent } from 'react';
@@ -122,6 +128,12 @@ interface BubblophyDashboardProps {
   transitionProjectArchiveAction?: (
     input: TransitionBubblophyProjectArchiveActionInput
   ) => Promise<TransitionBubblophyProjectArchiveActionResult>;
+  updateProjectMemberRoleAction?: (
+    input: UpdateBubblophyProjectMemberRoleActionInput
+  ) => Promise<UpdateBubblophyProjectMemberRoleActionResult>;
+  removeProjectMemberAction?: (
+    input: RemoveBubblophyProjectMemberActionInput
+  ) => Promise<RemoveBubblophyProjectMemberActionResult>;
   createAgentTokenAction?: (
     input: CreateBubblophyAgentTokenActionInput
   ) => Promise<CreateBubblophyAgentTokenActionResult>;
@@ -167,6 +179,29 @@ const tokenVariant = {
   AgentTokenState,
   React.ComponentProps<typeof Badge>['variant']
 >;
+
+const projectMemberRoleLabels = {
+  owner: 'Owner',
+  maintainer: 'Maintainer',
+  member: 'Member',
+  viewer: 'Viewer',
+} satisfies Record<ProjectMemberRole, string>;
+
+const projectMemberRoleVariant = {
+  owner: 'default',
+  maintainer: 'published',
+  member: 'secondary',
+  viewer: 'outline',
+} satisfies Record<
+  ProjectMemberRole,
+  React.ComponentProps<typeof Badge>['variant']
+>;
+
+const mutableProjectMemberRoles = [
+  'maintainer',
+  'member',
+  'viewer',
+] satisfies ProjectMemberRole[];
 
 const runVariant = {
   wartet: 'draft',
@@ -454,6 +489,8 @@ export function BubblophyDashboard({
   createProjectAction,
   updateProjectContentAction,
   transitionProjectArchiveAction,
+  updateProjectMemberRoleAction,
+  removeProjectMemberAction,
   createAgentTokenAction,
   updateAgentTokenLifecycleAction,
 }: BubblophyDashboardProps) {
@@ -490,6 +527,12 @@ export function BubblophyDashboard({
   const [updatedProjectsByKey, setUpdatedProjectsByKey] = useState<
     Record<string, ProjectSummary>
   >({});
+  const [updatedProjectMembersById, setUpdatedProjectMembersById] = useState<
+    Record<string, ProjectMemberSummary>
+  >({});
+  const [removedProjectMemberIds, setRemovedProjectMemberIds] = useState<
+    string[]
+  >([]);
   const [persistedAgentTokens, setPersistedAgentTokens] = useState<
     AgentTokenSummary[]
   >([]);
@@ -531,6 +574,17 @@ export function BubblophyDashboard({
         (run) => updatedAgentRunsById[run.id] ?? run
       ),
     [persistedAgentRuns, snapshot.agentRuns, updatedAgentRunsById]
+  );
+  const allProjectMembers = useMemo(
+    () =>
+      snapshot.projectMembers
+        .filter((member) => !removedProjectMemberIds.includes(member.id))
+        .map((member) => updatedProjectMembersById[member.id] ?? member),
+    [
+      removedProjectMemberIds,
+      snapshot.projectMembers,
+      updatedProjectMembersById,
+    ]
   );
   const displayedAgentTokens = useMemo(() => {
     if (selectedProjectKey === 'all') {
@@ -609,6 +663,11 @@ export function BubblophyDashboard({
       : (allProjects.find((project) => project.key === selectedProjectKey) ??
         null);
   const isSelectedProjectArchived = selectedProject?.isArchived ?? false;
+  const selectedProjectMembers = selectedProject
+    ? allProjectMembers.filter(
+        (member) => member.projectKey === selectedProject.key
+      )
+    : [];
 
   const selectedIssue = isSelectedProjectArchived
     ? null
@@ -717,10 +776,59 @@ export function BubblophyDashboard({
   };
 
   const handleProjectUpdated = (project: ProjectSummary) => {
+    const currentProject = allProjects.find(
+      (candidate) => candidate.key === project.key
+    );
+
     setUpdatedProjectsByKey((currentProjects) => ({
       ...currentProjects,
-      [project.key]: project,
+      [project.key]: {
+        ...project,
+        currentUserRole:
+          project.currentUserRole ?? currentProject?.currentUserRole,
+      },
     }));
+  };
+
+  const handleProjectMemberRoleUpdated = (
+    member: ProjectMemberSummary,
+    memberCount: number
+  ) => {
+    setUpdatedProjectMembersById((currentMembers) => ({
+      ...currentMembers,
+      [member.id]: member,
+    }));
+
+    const project = allProjects.find(
+      (currentProject) => currentProject.key === member.projectKey
+    );
+
+    if (project) {
+      handleProjectUpdated({ ...project, memberCount });
+    }
+  };
+
+  const handleProjectMemberRemoved = (input: {
+    projectKey: string;
+    memberAuthUserId: string;
+    memberCount: number;
+  }) => {
+    const memberId = `${input.projectKey}:${input.memberAuthUserId}`;
+
+    setRemovedProjectMemberIds((currentIds) =>
+      currentIds.includes(memberId) ? currentIds : [...currentIds, memberId]
+    );
+
+    const project = allProjects.find(
+      (currentProject) => currentProject.key === input.projectKey
+    );
+
+    if (project) {
+      handleProjectUpdated({
+        ...project,
+        memberCount: input.memberCount,
+      });
+    }
   };
 
   const handleIssuePlanSaved = (plan: IssuePlanDraft) => {
@@ -850,6 +958,7 @@ export function BubblophyDashboard({
               <ProjectOverview
                 meta={snapshot.meta}
                 projects={allProjects}
+                projectMembers={selectedProjectMembers}
                 canCreateProject={
                   canUseDatabase && Boolean(createProjectAction)
                 }
@@ -862,8 +971,12 @@ export function BubblophyDashboard({
                 selectedProjectKey={selectedProjectKey}
                 updateProjectContentAction={updateProjectContentAction}
                 transitionProjectArchiveAction={transitionProjectArchiveAction}
+                updateProjectMemberRoleAction={updateProjectMemberRoleAction}
+                removeProjectMemberAction={removeProjectMemberAction}
                 onCreateProject={() => setIsProjectDialogOpen(true)}
                 onProjectUpdated={handleProjectUpdated}
+                onProjectMemberRoleUpdated={handleProjectMemberRoleUpdated}
+                onProjectMemberRemoved={handleProjectMemberRemoved}
                 onProjectSelect={handleProjectSelect}
               />
               <IssueQueue
@@ -1091,18 +1204,24 @@ function MetricCard({
 function ProjectOverview({
   meta,
   projects,
+  projectMembers,
   canCreateProject,
   canManageProjects,
   readiness,
   selectedProjectKey,
   updateProjectContentAction,
   transitionProjectArchiveAction,
+  updateProjectMemberRoleAction,
+  removeProjectMemberAction,
   onCreateProject,
   onProjectUpdated,
+  onProjectMemberRoleUpdated,
+  onProjectMemberRemoved,
   onProjectSelect,
 }: {
   meta: DashboardSnapshot['meta'];
   projects: ProjectSummary[];
+  projectMembers: ProjectMemberSummary[];
   canCreateProject: boolean;
   canManageProjects: boolean;
   readiness: number;
@@ -1113,8 +1232,23 @@ function ProjectOverview({
   transitionProjectArchiveAction?: (
     input: TransitionBubblophyProjectArchiveActionInput
   ) => Promise<TransitionBubblophyProjectArchiveActionResult>;
+  updateProjectMemberRoleAction?: (
+    input: UpdateBubblophyProjectMemberRoleActionInput
+  ) => Promise<UpdateBubblophyProjectMemberRoleActionResult>;
+  removeProjectMemberAction?: (
+    input: RemoveBubblophyProjectMemberActionInput
+  ) => Promise<RemoveBubblophyProjectMemberActionResult>;
   onCreateProject: () => void;
   onProjectUpdated: (project: ProjectSummary) => void;
+  onProjectMemberRoleUpdated: (
+    member: ProjectMemberSummary,
+    memberCount: number
+  ) => void;
+  onProjectMemberRemoved: (input: {
+    projectKey: string;
+    memberAuthUserId: string;
+    memberCount: number;
+  }) => void;
   onProjectSelect: (projectKey: ProjectFilterKey) => void;
 }) {
   const isDatabaseUnavailable = meta.dataSource === 'database_unavailable';
@@ -1270,6 +1404,16 @@ function ProjectOverview({
             updateProjectContentAction={updateProjectContentAction}
             transitionProjectArchiveAction={transitionProjectArchiveAction}
             onProjectUpdated={onProjectUpdated}
+          />
+        ) : null}
+        {selectedProject ? (
+          <ProjectMembersPanel
+            project={selectedProject}
+            members={projectMembers}
+            updateProjectMemberRoleAction={updateProjectMemberRoleAction}
+            removeProjectMemberAction={removeProjectMemberAction}
+            onProjectMemberRoleUpdated={onProjectMemberRoleUpdated}
+            onProjectMemberRemoved={onProjectMemberRemoved}
           />
         ) : null}
       </CardContent>
@@ -1619,6 +1763,253 @@ function ProjectManagementPanel({
           </Button>
         ) : null}
       </div>
+    </section>
+  );
+}
+
+/**
+ * Renders membership controls for one selected project.
+ *
+ * @param props Selected project, public member rows, server actions, and callbacks.
+ * @returns Project member list with guarded role and removal actions.
+ */
+function ProjectMembersPanel({
+  project,
+  members,
+  updateProjectMemberRoleAction,
+  removeProjectMemberAction,
+  onProjectMemberRoleUpdated,
+  onProjectMemberRemoved,
+}: {
+  project: ProjectSummary;
+  members: ProjectMemberSummary[];
+  updateProjectMemberRoleAction?: (
+    input: UpdateBubblophyProjectMemberRoleActionInput
+  ) => Promise<UpdateBubblophyProjectMemberRoleActionResult>;
+  removeProjectMemberAction?: (
+    input: RemoveBubblophyProjectMemberActionInput
+  ) => Promise<RemoveBubblophyProjectMemberActionResult>;
+  onProjectMemberRoleUpdated: (
+    member: ProjectMemberSummary,
+    memberCount: number
+  ) => void;
+  onProjectMemberRemoved: (input: {
+    projectKey: string;
+    memberAuthUserId: string;
+    memberCount: number;
+  }) => void;
+}) {
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [confirmRemoveMemberId, setConfirmRemoveMemberId] = useState<
+    string | null
+  >(null);
+  const [isPending, startTransition] = useTransition();
+  const canManageMembers =
+    !project.isArchived &&
+    (project.currentUserRole === 'owner' ||
+      project.currentUserRole === 'maintainer') &&
+    Boolean(updateProjectMemberRoleAction || removeProjectMemberAction);
+
+  const handleRoleChange = (
+    member: ProjectMemberSummary,
+    role: UpdateBubblophyProjectMemberRoleActionInput['role']
+  ) => {
+    if (
+      !canManageMembers ||
+      !updateProjectMemberRoleAction ||
+      member.role === 'owner' ||
+      isPending
+    ) {
+      return;
+    }
+
+    setActionError(null);
+    startTransition(async () => {
+      const result = await updateProjectMemberRoleAction({
+        projectKey: project.key,
+        memberAuthUserId: member.authUserId,
+        role,
+      });
+
+      if (result.status === 'updated') {
+        onProjectMemberRoleUpdated(result.member, result.memberCount);
+        return;
+      }
+
+      if (result.status === 'unchanged') {
+        return;
+      }
+
+      setActionError(getProjectMemberRoleActionErrorMessage(result));
+    });
+  };
+
+  const handleRemove = (member: ProjectMemberSummary) => {
+    if (
+      !canManageMembers ||
+      !removeProjectMemberAction ||
+      member.role === 'owner' ||
+      isPending
+    ) {
+      return;
+    }
+
+    if (confirmRemoveMemberId !== member.id) {
+      setConfirmRemoveMemberId(member.id);
+      return;
+    }
+
+    setActionError(null);
+    startTransition(async () => {
+      const result = await removeProjectMemberAction({
+        projectKey: project.key,
+        memberAuthUserId: member.authUserId,
+      });
+
+      if (result.status === 'removed') {
+        onProjectMemberRemoved(result);
+        setConfirmRemoveMemberId(null);
+        return;
+      }
+
+      setActionError(getProjectMemberRemovalActionErrorMessage(result));
+    });
+  };
+
+  return (
+    <section className="grid gap-3 rounded-md border border-border bg-muted/20 p-4 md:col-span-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="grid gap-1">
+          <h3 className="text-sm font-medium">Mitglieder</h3>
+          <p className="text-xs text-muted-foreground">
+            {project.isArchived
+              ? 'Archivierte Projekte zeigen Mitglieder nur lesend an.'
+              : 'Rollenverwaltung nutzt vorhandene Projektmitgliedschaften. Einladungen brauchen später einen echten User- oder Invite-Lookup.'}
+          </p>
+        </div>
+        <Badge variant="outline">{members.length} sichtbar</Badge>
+      </div>
+
+      {members.length === 0 ? (
+        <p className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
+          Für dieses Projekt sind im aktuellen Snapshot keine Mitglieder
+          sichtbar.
+        </p>
+      ) : (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>User-ID</TableHead>
+                <TableHead>Rolle</TableHead>
+                <TableHead>Seit</TableHead>
+                <TableHead className="text-right">Aktionen</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {members.map((member) => {
+                const canChangeThisMember =
+                  canManageMembers &&
+                  member.role !== 'owner' &&
+                  Boolean(updateProjectMemberRoleAction);
+                const canRemoveThisMember =
+                  canManageMembers &&
+                  member.role !== 'owner' &&
+                  Boolean(removeProjectMemberAction);
+                const isConfirmingRemoval = confirmRemoveMemberId === member.id;
+
+                return (
+                  <TableRow key={member.id}>
+                    <TableCell className="max-w-[14rem]">
+                      <span className="block truncate font-mono text-xs">
+                        {member.label}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      {canChangeThisMember ? (
+                        <select
+                          aria-label={`Rolle für ${member.label}`}
+                          className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                          value={member.role}
+                          disabled={isPending}
+                          onChange={(event) =>
+                            handleRoleChange(
+                              member,
+                              event.currentTarget
+                                .value as UpdateBubblophyProjectMemberRoleActionInput['role']
+                            )
+                          }>
+                          {mutableProjectMemberRoles.map((role) => (
+                            <option key={role} value={role}>
+                              {projectMemberRoleLabels[role]}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <Badge variant={projectMemberRoleVariant[member.role]}>
+                          {projectMemberRoleLabels[member.role]}
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {member.createdAt}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {canRemoveThisMember ? (
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={
+                              isConfirmingRemoval ? 'destructive' : 'outline'
+                            }
+                            disabled={isPending}
+                            onClick={() => handleRemove(member)}>
+                            {isConfirmingRemoval
+                              ? 'Endgültig entfernen'
+                              : 'Entfernen'}
+                          </Button>
+                          {isConfirmingRemoval ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={isPending}
+                              onClick={() => setConfirmRemoveMemberId(null)}>
+                              Abbrechen
+                            </Button>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">
+                          {member.role === 'owner'
+                            ? 'Owner geschützt'
+                            : project.isArchived
+                              ? 'Archiviert'
+                              : 'Nur lesend'}
+                        </span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {actionError ? (
+        <p role="alert" className="text-sm text-destructive">
+          {actionError}
+        </p>
+      ) : null}
+
+      {!project.isArchived && !canManageMembers ? (
+        <p className="text-xs text-muted-foreground">
+          Rollenänderungen und Entfernen sind nur für Owner und Maintainer mit
+          aktiver Server-Action verfügbar.
+        </p>
+      ) : null}
     </section>
   );
 }
@@ -4034,6 +4425,92 @@ function getProjectArchiveActionErrorMessage(
   }
 
   return 'Die Archiventscheidung ist nicht gültig.';
+}
+
+/**
+ * Converts project member role outcomes into quiet inline feedback.
+ *
+ * @param result Result returned by the persisted member role action.
+ * @returns Human-readable error message for the members panel.
+ */
+function getProjectMemberRoleActionErrorMessage(
+  result: Exclude<
+    UpdateBubblophyProjectMemberRoleActionResult,
+    { status: 'updated' } | { status: 'unchanged' }
+  >
+) {
+  if (result.status === 'not_found') {
+    return 'Projekt oder Mitglied wurde nicht gefunden.';
+  }
+
+  if (result.status === 'forbidden') {
+    return 'Nur Owner und Maintainer können Rollen verwalten.';
+  }
+
+  if (result.status === 'archived_project') {
+    return 'Archivierte Projekte erlauben keine Rollenänderungen.';
+  }
+
+  if (result.status === 'owner_protected') {
+    return 'Owner-Rollen werden in diesem MVP nicht über die Oberfläche geändert.';
+  }
+
+  if (result.status === 'database_unavailable') {
+    return 'Die Datenbank ist gerade nicht verfügbar. Die Rolle wurde nicht geändert.';
+  }
+
+  if (result.reason === 'empty_project') {
+    return 'Wähle ein Projekt aus.';
+  }
+
+  if (result.reason === 'empty_member') {
+    return 'Wähle ein Mitglied aus.';
+  }
+
+  return 'Diese Rolle ist nicht gültig.';
+}
+
+/**
+ * Converts project member removal outcomes into quiet inline feedback.
+ *
+ * @param result Result returned by the persisted member removal action.
+ * @returns Human-readable error message for the members panel.
+ */
+function getProjectMemberRemovalActionErrorMessage(
+  result: Exclude<
+    RemoveBubblophyProjectMemberActionResult,
+    { status: 'removed' }
+  >
+) {
+  if (result.status === 'not_found') {
+    return 'Projekt oder Mitglied wurde nicht gefunden.';
+  }
+
+  if (result.status === 'forbidden') {
+    return 'Nur Owner und Maintainer können Mitglieder entfernen.';
+  }
+
+  if (result.status === 'archived_project') {
+    return 'Archivierte Projekte erlauben keine Mitgliederänderungen.';
+  }
+
+  if (result.status === 'owner_protected') {
+    return 'Owner können in diesem MVP nicht entfernt werden.';
+  }
+
+  if (result.status === 'self_removal') {
+    return 'Selbst-Entfernung ist in diesem MVP gesperrt.';
+  }
+
+  if (result.status === 'database_unavailable') {
+    return 'Die Datenbank ist gerade nicht verfügbar. Das Mitglied wurde nicht entfernt.';
+  }
+
+  if (result.reason === 'empty_project') {
+    return 'Wähle ein Projekt aus.';
+  }
+
+  return 'Wähle ein Mitglied aus.';
 }
 
 /**

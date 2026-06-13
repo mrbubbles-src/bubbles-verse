@@ -8,6 +8,7 @@ import type {
   BubblophyProjectIssueMembershipRow,
   BubblophyProjectIssuePersistenceRow,
   BubblophyProjectIssueRepositorySnapshot,
+  BubblophyProjectMemberPersistenceRow,
 } from '@/lib/issues/repository';
 
 import { buildBubblophyProjectIssueSnapshotForUser } from '@/lib/issues/repository';
@@ -34,6 +35,10 @@ type LatestPlanByIssueId = Record<
     summary: string;
     steps: BubblophyProjectIssueMembershipRow['issuePlanSteps'];
   }
+>;
+type RoleByProjectId = Record<
+  string,
+  BubblophyProjectIssueMembershipRow['projectCurrentUserRole']
 >;
 
 /**
@@ -77,22 +82,30 @@ export async function selectBubblophyDashboardRowsForUser(
   if (projectIds.length === 0) {
     return {
       projectIssueRows: [],
+      projectMemberRows: [],
       agentTokenRows: [],
       agentRunRows: [],
       activityRows: [],
     };
   }
 
-  const [projectIssueRows, agentTokenRows, agentRunRows, activityRows] =
-    await Promise.all([
-      selectBubblophyProjectIssueRowsForProjectIds(authUserId, projectIds),
-      selectBubblophyAgentTokenRowsForProjectIds(projectIds),
-      selectBubblophyAgentRunRowsForProjectIds(projectIds),
-      selectBubblophyProjectActivityRowsForProjectIds(projectIds),
-    ]);
+  const [
+    projectIssueRows,
+    projectMemberRows,
+    agentTokenRows,
+    agentRunRows,
+    activityRows,
+  ] = await Promise.all([
+    selectBubblophyProjectIssueRowsForProjectIds(authUserId, projectIds),
+    selectBubblophyProjectMemberRowsForProjectIds(projectIds),
+    selectBubblophyAgentTokenRowsForProjectIds(projectIds),
+    selectBubblophyAgentRunRowsForProjectIds(projectIds),
+    selectBubblophyProjectActivityRowsForProjectIds(projectIds),
+  ]);
 
   return {
     projectIssueRows,
+    projectMemberRows,
     agentTokenRows,
     agentRunRows,
     activityRows,
@@ -148,8 +161,8 @@ async function selectBubblophyProjectIssueRowsForProjectIds(
   authUserId: string,
   projectIds: string[]
 ): Promise<BubblophyProjectIssuePersistenceRow[]> {
-  const [projectRows, memberCounts, tokenCounts, issueRows] = await Promise.all(
-    [
+  const [projectRows, currentUserRoles, memberCounts, tokenCounts, issueRows] =
+    await Promise.all([
       db
         .select({
           id: bubblophyProjects.id,
@@ -161,6 +174,18 @@ async function selectBubblophyProjectIssueRowsForProjectIds(
         .from(bubblophyProjects)
         .where(inArray(bubblophyProjects.id, projectIds))
         .orderBy(asc(bubblophyProjects.key)),
+      db
+        .select({
+          projectId: bubblophyProjectMembers.projectId,
+          role: bubblophyProjectMembers.role,
+        })
+        .from(bubblophyProjectMembers)
+        .where(
+          and(
+            inArray(bubblophyProjectMembers.projectId, projectIds),
+            eq(bubblophyProjectMembers.authUserId, authUserId)
+          )
+        ),
       db
         .select({
           projectId: bubblophyProjectMembers.projectId,
@@ -200,8 +225,7 @@ async function selectBubblophyProjectIssueRowsForProjectIds(
           asc(bubblophyIssues.projectId),
           asc(bubblophyIssues.issueNumber)
         ),
-    ]
-  );
+    ]);
 
   const visibleProjectIds = projectRows
     .filter((project) => !project.isArchived)
@@ -234,6 +258,7 @@ async function selectBubblophyProjectIssueRowsForProjectIds(
     authUserId,
     projects: projectRows,
     issues: issueRows,
+    currentUserRoles: toProjectRoleMap(currentUserRoles),
     memberCounts: toProjectCountMap(memberCounts),
     tokenCounts: toProjectCountMap(tokenCounts),
     latestPlans,
@@ -270,6 +295,38 @@ async function selectBubblophyAgentTokenRowsForProjectIds(
     )
     .where(inArray(bubblophyAgentTokens.projectId, projectIds))
     .orderBy(asc(bubblophyProjects.key), asc(bubblophyAgentTokens.label));
+}
+
+/**
+ * Selects public project member rows for visible projects.
+ *
+ * The row has no profile lookup in this schema, so only the technical Auth
+ * user ID, role, and membership timestamp cross the read boundary.
+ *
+ * @param projectIds Project IDs already constrained by membership.
+ * @returns Public membership rows for the dashboard.
+ */
+async function selectBubblophyProjectMemberRowsForProjectIds(
+  projectIds: string[]
+): Promise<BubblophyProjectMemberPersistenceRow[]> {
+  return db
+    .select({
+      projectKey: bubblophyProjects.key,
+      authUserId: bubblophyProjectMembers.authUserId,
+      role: bubblophyProjectMembers.role,
+      createdAt: bubblophyProjectMembers.createdAt,
+    })
+    .from(bubblophyProjectMembers)
+    .innerJoin(
+      bubblophyProjects,
+      eq(bubblophyProjects.id, bubblophyProjectMembers.projectId)
+    )
+    .where(inArray(bubblophyProjectMembers.projectId, projectIds))
+    .orderBy(
+      asc(bubblophyProjects.key),
+      asc(bubblophyProjectMembers.role),
+      asc(bubblophyProjectMembers.authUserId)
+    );
 }
 
 /**
@@ -438,6 +495,7 @@ function buildMembershipRows(input: {
     assignedAuthUserId: string | null;
     requiresHumanApproval: boolean;
   }[];
+  currentUserRoles: RoleByProjectId;
   memberCounts: CountByProjectId;
   tokenCounts: CountByProjectId;
   latestPlans: LatestPlanByIssueId;
@@ -452,6 +510,7 @@ function buildMembershipRows(input: {
         createProjectIssueMembershipRow({
           authUserId: input.authUserId,
           project,
+          currentUserRole: input.currentUserRoles[project.id],
           memberCount: input.memberCounts[project.id] ?? 0,
           tokenCount: input.tokenCounts[project.id] ?? 0,
           issue: null,
@@ -464,6 +523,7 @@ function buildMembershipRows(input: {
       createProjectIssueMembershipRow({
         authUserId: input.authUserId,
         project,
+        currentUserRole: input.currentUserRoles[project.id],
         memberCount: input.memberCounts[project.id] ?? 0,
         tokenCount: input.tokenCounts[project.id] ?? 0,
         issue,
@@ -488,6 +548,7 @@ function createProjectIssueMembershipRow(input: {
     description: string;
     isArchived: boolean;
   };
+  currentUserRole: BubblophyProjectIssueMembershipRow['projectCurrentUserRole'];
   memberCount: number;
   tokenCount: number;
   issue: {
@@ -511,6 +572,7 @@ function createProjectIssueMembershipRow(input: {
     projectIsArchived: input.project.isArchived,
     projectMemberCount: input.memberCount,
     activeAgentTokenCount: input.tokenCount,
+    projectCurrentUserRole: input.currentUserRole,
     issueDatabaseId: input.issue?.id ?? null,
     issueNumber: input.issue?.issueNumber ?? null,
     issueTitle: input.issue?.title ?? null,
@@ -538,6 +600,24 @@ function toProjectCountMap(rows: { projectId: string; total: number }[]) {
   return rows.reduce<CountByProjectId>((counts, row) => {
     counts[row.projectId] = row.total;
     return counts;
+  }, {});
+}
+
+/**
+ * Converts current-user membership rows into a project role lookup.
+ *
+ * @param rows Rows containing project IDs and the current user's role.
+ * @returns Role lookup keyed by project ID.
+ */
+function toProjectRoleMap(
+  rows: {
+    projectId: string;
+    role: BubblophyProjectIssueMembershipRow['projectCurrentUserRole'];
+  }[]
+) {
+  return rows.reduce<RoleByProjectId>((roles, row) => {
+    roles[row.projectId] = row.role;
+    return roles;
   }, {});
 }
 

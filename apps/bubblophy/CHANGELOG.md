@@ -98,3 +98,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   owner/maintainer users, with visible archived-project state, explicit
   `project_updated` audit metadata, and UI/server guards that keep archived
   projects out of operative issue, run, and token mutation paths.
+- Added a conservative project member management MVP: dashboard member lists,
+  owner/maintainer-only non-owner role changes, guarded hard removal, explicit
+  project-member audit metadata, and no fake Add-by-E-Mail flow before a real
+  profile or invite model exists.
