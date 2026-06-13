@@ -65,12 +65,21 @@ export interface ActivityEvent {
 export type DashboardDataSource =
   | 'sample'
   | 'database'
+  | 'empty_database'
   | 'database_unavailable';
+
+export type DashboardUnavailableReason =
+  | 'not_configured'
+  | 'schema_missing'
+  | 'connection_failed'
+  | 'unknown';
 
 export interface DashboardSnapshotMeta {
   dataSource: DashboardDataSource;
   label: string;
   description: string;
+  reason?: DashboardUnavailableReason;
+  hint?: string;
 }
 
 export interface DashboardSnapshot {

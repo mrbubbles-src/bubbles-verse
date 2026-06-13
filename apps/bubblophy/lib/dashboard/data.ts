@@ -1,14 +1,16 @@
 import 'server-only';
 
 import type { BubblophySession } from '@/lib/auth/session';
-import type { DashboardSnapshot } from '@/lib/dashboard/types';
+import type {
+  DashboardSnapshot,
+  DashboardUnavailableReason,
+} from '@/lib/dashboard/types';
 import type {
   BubblophyActivityPersistenceRow,
   BubblophyAgentTokenPersistenceRow,
   BubblophyProjectIssuePersistenceRow,
 } from '@/lib/issues/repository';
 
-import { dashboardSnapshot } from '@/lib/dashboard/sample-data';
 import {
   buildBubblophyActivityEvents,
   buildBubblophyAgentTokenSummaries,
@@ -73,12 +75,19 @@ export async function loadBubblophyProjectIssueDashboardSnapshot({
   const { projects, issues } = buildBubblophyProjectIssueSnapshot(
     rows.projectIssueRows
   );
+  const isEmptyDatabase =
+    projects.length === 0 &&
+    issues.length === 0 &&
+    rows.agentTokenRows.length === 0 &&
+    rows.activityRows.length === 0;
 
   return {
     meta: {
-      dataSource: 'database',
-      label: 'Datenbankdaten',
-      description: 'Read-only aus Projekten mit menschlicher Mitgliedschaft.',
+      dataSource: isEmptyDatabase ? 'empty_database' : 'database',
+      label: isEmptyDatabase ? 'Leere Datenbank' : 'Datenbankdaten',
+      description: isEmptyDatabase
+        ? 'Datenbank erreichbar, aber für diesen User gibt es noch keine Projekte.'
+        : 'Read-only aus Projekten mit menschlicher Mitgliedschaft.',
     },
     projects,
     issues,
@@ -92,8 +101,8 @@ export async function loadBubblophyProjectIssueDashboardSnapshot({
  * Loads the dashboard DTO for the Bubblophy command center.
  *
  * The preferred path reads Bubblophy rows through a server-only Drizzle adapter.
- * During the MVP, unavailable local database configuration falls back to sample
- * data with an explicit `database_unavailable` source marker.
+ * During the MVP, unavailable local database configuration returns an explicit
+ * empty setup state instead of silently hiding the problem behind sample data.
  *
  * @param input Authorized human session and optional injected row loader.
  * @returns Snapshot of projects, issues, agent tokens, runs, and activity.
@@ -105,7 +114,7 @@ export async function getBubblophyDashboardSnapshot(
     input.loadRows ?? (await getDefaultProjectIssueRowSelector());
 
   if (!loadRows) {
-    return cloneSampleFallbackSnapshot();
+    return createDatabaseUnavailableSnapshot('not_configured');
   }
 
   try {
@@ -113,8 +122,12 @@ export async function getBubblophyDashboardSnapshot(
       authUserId: input.session.authUserId,
       selectRows: loadRows,
     });
-  } catch {
-    return cloneSampleFallbackSnapshot();
+  } catch (error) {
+    return createDatabaseUnavailableSnapshot(
+      error instanceof Error
+        ? classifyDatabaseUnavailableReason(error)
+        : 'unknown'
+    );
   }
 }
 
@@ -135,17 +148,83 @@ async function getDefaultProjectIssueRowSelector() {
 }
 
 /**
- * Clones sample data while marking the database as unavailable.
+ * Creates an empty setup snapshot when database reads cannot run.
  *
- * @returns Detached sample snapshot with explicit fallback metadata.
+ * @param reason Safe high-level reason for the unavailable state.
+ * @returns Empty dashboard snapshot with explicit setup metadata.
  */
-function cloneSampleFallbackSnapshot(): DashboardSnapshot {
+function createDatabaseUnavailableSnapshot(
+  reason: DashboardUnavailableReason
+): DashboardSnapshot {
   return {
-    ...cloneDashboardSnapshot(dashboardSnapshot),
     meta: {
       dataSource: 'database_unavailable',
-      label: 'Sample-Fallback',
-      description: 'Datenbank gerade nicht verfügbar, Beispiel-Daten aktiv.',
+      label: 'Datenbank nicht bereit',
+      description:
+        'Bubblophy kann die Datenbank oder Tabellen gerade nicht lesen.',
+      reason,
+      hint: getDatabaseUnavailableHint(reason),
     },
+    projects: [],
+    issues: [],
+    agentTokens: [],
+    agentRuns: [],
+    activity: [],
   };
+}
+
+/**
+ * Classifies database read failures into UI-safe setup reasons.
+ *
+ * @param error Thrown database or adapter error.
+ * @returns Safe reason without stack traces, SQL, URLs, or credentials.
+ */
+function classifyDatabaseUnavailableReason(
+  error: Error
+): DashboardUnavailableReason {
+  const message = error.message.toLowerCase();
+
+  if (
+    message.includes('does not exist') ||
+    message.includes('relation') ||
+    message.includes('schema') ||
+    ('code' in error &&
+      typeof error.code === 'string' &&
+      error.code.toUpperCase() === '42P01')
+  ) {
+    return 'schema_missing';
+  }
+
+  if (
+    message.includes('connect') ||
+    message.includes('connection') ||
+    message.includes('timeout') ||
+    message.includes('econnrefused')
+  ) {
+    return 'connection_failed';
+  }
+
+  return 'unknown';
+}
+
+/**
+ * Provides a short setup hint for the dashboard without leaking internals.
+ *
+ * @param reason Safe unavailable reason.
+ * @returns Human-readable setup hint.
+ */
+function getDatabaseUnavailableHint(reason: DashboardUnavailableReason) {
+  if (reason === 'not_configured') {
+    return 'DATABASE_URL ist nicht gesetzt. Konfiguriere die lokale Env und starte den Dev-Server neu.';
+  }
+
+  if (reason === 'schema_missing') {
+    return 'Die Bubblophy-Tabellen scheinen zu fehlen. Prüfe die lokale Strukturmigration.';
+  }
+
+  if (reason === 'connection_failed') {
+    return 'Die Datenbank ist nicht erreichbar. Prüfe Verbindung, Host und lokale Supabase/Postgres-Umgebung.';
+  }
+
+  return 'Prüfe Datenbank-Konfiguration und Migration, ohne Secrets in Logs oder UI auszugeben.';
 }

@@ -127,7 +127,7 @@ describe('getBubblophyDashboardSnapshot', () => {
     expect(serializedSnapshot).not.toContain('plaintextToken');
   });
 
-  it('keeps an available but empty database empty instead of using sample data', async () => {
+  it('marks an available but empty database without using sample data', async () => {
     await expect(
       getBubblophyDashboardSnapshot({
         session,
@@ -140,7 +140,8 @@ describe('getBubblophyDashboardSnapshot', () => {
       })
     ).resolves.toMatchObject({
       meta: {
-        dataSource: 'database',
+        dataSource: 'empty_database',
+        label: 'Leere Datenbank',
       },
       projects: [],
       issues: [],
@@ -150,26 +151,50 @@ describe('getBubblophyDashboardSnapshot', () => {
     });
   });
 
-  it('falls back to explicit sample data when the database is not configured', async () => {
+  it('returns a safe setup state when the database is not configured', async () => {
     vi.stubEnv('DATABASE_URL', '');
 
     const snapshot = await getBubblophyDashboardSnapshot({ session });
 
     expect(snapshot.meta.dataSource).toBe('database_unavailable');
-    expect(snapshot.meta.label).toBe('Sample-Fallback');
-    expect(snapshot.projects).toEqual(dashboardSnapshot.projects);
+    expect(snapshot.meta.label).toBe('Datenbank nicht bereit');
+    expect(snapshot.meta.reason).toBe('not_configured');
+    expect(snapshot.meta.hint).toContain('DATABASE_URL');
+    expect(snapshot.projects).toEqual([]);
+    expect(snapshot.issues).toEqual([]);
+    expect(snapshot.agentTokens).toEqual([]);
+    expect(snapshot.activity).toEqual([]);
   });
 
-  it('falls back to explicit sample data when the loader throws', async () => {
+  it('returns a safe schema setup state when the loader reports missing tables', async () => {
     const snapshot = await getBubblophyDashboardSnapshot({
       session,
       loadRows: async () => {
-        throw new Error('database unavailable');
+        throw new Error('relation "bubblophy_projects" does not exist');
       },
     });
 
     expect(snapshot.meta.dataSource).toBe('database_unavailable');
-    expect(snapshot.issues).toEqual(dashboardSnapshot.issues);
+    expect(snapshot.meta.reason).toBe('schema_missing');
+    expect(snapshot.meta.hint).toContain('Bubblophy-Tabellen');
+    expect(snapshot.issues).toEqual([]);
+    expect(JSON.stringify(snapshot)).not.toContain('bubblophy_projects');
+  });
+
+  it('returns a safe connection setup state when the loader cannot connect', async () => {
+    const snapshot = await getBubblophyDashboardSnapshot({
+      session,
+      loadRows: async () => {
+        throw new Error('connect ECONNREFUSED postgres://secret@example');
+      },
+    });
+
+    const serializedSnapshot = JSON.stringify(snapshot);
+
+    expect(snapshot.meta.dataSource).toBe('database_unavailable');
+    expect(snapshot.meta.reason).toBe('connection_failed');
+    expect(snapshot.projects).toEqual([]);
+    expect(serializedSnapshot).not.toContain('secret@example');
   });
 });
 

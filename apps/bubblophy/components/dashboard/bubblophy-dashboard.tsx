@@ -234,6 +234,9 @@ export function BubblophyDashboard({
     AgentTokenSummary[]
   >([]);
   const [draftSequence, setDraftSequence] = useState(1);
+  const canUseDatabase =
+    snapshot.meta.dataSource === 'database' ||
+    snapshot.meta.dataSource === 'empty_database';
 
   const allProjects = useMemo(
     () => [...persistedProjects, ...snapshot.projects],
@@ -435,10 +438,10 @@ export function BubblophyDashboard({
           <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
             <div className="grid gap-5">
               <ProjectOverview
+                meta={snapshot.meta}
                 projects={allProjects}
                 canCreateProject={
-                  snapshot.meta.dataSource === 'database' &&
-                  Boolean(createProjectAction)
+                  canUseDatabase && Boolean(createProjectAction)
                 }
                 readiness={readiness}
                 selectedProjectKey={selectedProjectKey}
@@ -452,8 +455,7 @@ export function BubblophyDashboard({
                 selectedIssue={selectedIssue}
                 selectedProjectKey={selectedProjectKey}
                 canPersistIssuePlans={
-                  snapshot.meta.dataSource === 'database' &&
-                  Boolean(createIssuePlanAction)
+                  canUseDatabase && Boolean(createIssuePlanAction)
                 }
                 createIssuePlanAction={createIssuePlanAction}
                 onProjectSelect={handleProjectSelect}
@@ -468,7 +470,8 @@ export function BubblophyDashboard({
                 dataSource={snapshot.meta.dataSource}
                 agentTokens={allAgentTokens}
                 canCreateAgentToken={
-                  snapshot.meta.dataSource === 'database' &&
+                  canUseDatabase &&
+                  allProjects.length > 0 &&
                   Boolean(createAgentTokenAction)
                 }
                 onCreateAgentToken={() => setIsAgentTokenDialogOpen(true)}
@@ -485,7 +488,8 @@ export function BubblophyDashboard({
           open={isDraftDialogOpen}
           selectedProjectKey={selectedProjectKey}
           canPersistToDatabase={
-            snapshot.meta.dataSource === 'database' &&
+            canUseDatabase &&
+            allProjects.length > 0 &&
             Boolean(createIssueAction)
           }
           createIssueAction={createIssueAction}
@@ -525,6 +529,7 @@ function DataSourceStatus({ snapshot }: BubblophyDashboardProps) {
   const variant = {
     sample: 'outline',
     database: 'published',
+    empty_database: 'secondary',
     database_unavailable: 'draft',
   } satisfies Record<
     DashboardSnapshot['meta']['dataSource'],
@@ -537,6 +542,7 @@ function DataSourceStatus({ snapshot }: BubblophyDashboardProps) {
         {snapshot.meta.label}
       </Badge>
       <span>{snapshot.meta.description}</span>
+      {snapshot.meta.hint ? <span>{snapshot.meta.hint}</span> : null}
     </div>
   );
 }
@@ -608,6 +614,7 @@ function MetricCard({
  * @returns Project overview panel.
  */
 function ProjectOverview({
+  meta,
   projects,
   canCreateProject,
   readiness,
@@ -615,6 +622,7 @@ function ProjectOverview({
   onCreateProject,
   onProjectSelect,
 }: {
+  meta: DashboardSnapshot['meta'];
   projects: ProjectSummary[];
   canCreateProject: boolean;
   readiness: number;
@@ -622,12 +630,17 @@ function ProjectOverview({
   onCreateProject: () => void;
   onProjectSelect: (projectKey: ProjectFilterKey) => void;
 }) {
+  const isDatabaseUnavailable = meta.dataSource === 'database_unavailable';
+  const isEmptyDatabase = meta.dataSource === 'empty_database';
+
   return (
     <Card id="projects" className="scroll-mt-24">
       <CardHeader>
         <CardTitle>Projekte</CardTitle>
         <CardDescription>
-          Arbeitslast, Blocker und begrenzte Agent-Zugänge pro Projekt.
+          {isDatabaseUnavailable
+            ? 'Datenbank oder Tabellen sind noch nicht bereit.'
+            : 'Arbeitslast, Blocker und begrenzte Agent-Zugänge pro Projekt.'}
         </CardDescription>
         <CardAction>
           <div className="flex flex-wrap items-center gap-2">
@@ -655,7 +668,31 @@ function ProjectOverview({
       <CardContent className="grid gap-3 md:grid-cols-3">
         {projects.length === 0 ? (
           <div className="rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground md:col-span-3">
-            Noch keine Projekte für diesen User.
+            {isDatabaseUnavailable ? (
+              <div className="grid gap-2">
+                <p className="font-medium text-foreground">
+                  Datenbank-Setup erforderlich.
+                </p>
+                <p>
+                  Bubblophy konnte keine Projekt-Tabellen lesen. Es werden hier
+                  keine Beispielprojekte als Ersatz angezeigt.
+                </p>
+                {meta.hint ? <p>{meta.hint}</p> : null}
+              </div>
+            ) : (
+              <div className="grid gap-2">
+                <p className="font-medium text-foreground">
+                  {isEmptyDatabase
+                    ? 'Noch keine Projekte in der Datenbank.'
+                    : 'Noch keine Projekte für diesen User.'}
+                </p>
+                <p>
+                  {isEmptyDatabase
+                    ? 'Erstelle das erste Projekt, um echte Issues und Agent-Tokens zu verwalten.'
+                    : 'Sobald du Mitglied eines Projekts bist, erscheint es hier.'}
+                </p>
+              </div>
+            )}
             {canCreateProject ? (
               <Button
                 type="button"
@@ -1186,7 +1223,7 @@ function IssueDetailPanel({
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
-            {dataSource === 'database'
+            {dataSource === 'database' || dataSource === 'empty_database'
               ? 'Plan-Schritte sind noch nicht ausformuliert. Die Planungsansicht folgt als nächster Schritt.'
               : `Sample-Daten enthalten aktuell ${issue.planSteps} Plan-Schritte als Zähler. Die ausformulierten Schritte folgen mit der Datenanbindung.`}
           </p>
@@ -1407,7 +1444,8 @@ function AgentAccess({
   canCreateAgentToken: boolean;
   onCreateAgentToken: () => void;
 }) {
-  const isDatabaseSource = dataSource === 'database';
+  const isDatabaseSource =
+    dataSource === 'database' || dataSource === 'empty_database';
 
   return (
     <Card id="agents" className="scroll-mt-24">
@@ -1666,7 +1704,9 @@ function NewAgentTokenDialog({
  * @returns Run queue panel.
  */
 function RunQueue({ snapshot }: BubblophyDashboardProps) {
-  const isDatabaseSource = snapshot.meta.dataSource === 'database';
+  const isDatabaseSource =
+    snapshot.meta.dataSource === 'database' ||
+    snapshot.meta.dataSource === 'empty_database';
 
   return (
     <Card id="runs" className="scroll-mt-24">
@@ -1730,7 +1770,9 @@ function RunQueue({ snapshot }: BubblophyDashboardProps) {
  * @returns Activity timeline panel.
  */
 function ActivityFeed({ snapshot }: BubblophyDashboardProps) {
-  const isDatabaseSource = snapshot.meta.dataSource === 'database';
+  const isDatabaseSource =
+    snapshot.meta.dataSource === 'database' ||
+    snapshot.meta.dataSource === 'empty_database';
 
   return (
     <Card id="activity" className="scroll-mt-24">

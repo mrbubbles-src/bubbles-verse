@@ -90,6 +90,24 @@ in dieser Zielumgebung aktiviert werden, bevor die Strukturmigration läuft.
 Das ist eine Datenbank-Setup-Aufgabe und gehört nicht in Frontend-Code oder
 Browser-seitige Service-Role-Konfiguration.
 
+## Setup-Zustand im Dashboard erkennen
+
+Das Dashboard unterscheidet beim server-only Read-Pfad drei operative Zustände:
+
+- `database`: Tabellen sind lesbar und es gibt Daten für Projekte, Issues,
+  Agent-Token-Summaries oder Projekt-Events.
+- `empty_database`: Die Datenbank ist erreichbar, aber der eingeloggte Mensch
+  hat noch keine Projekte. Das ist der echte Erstbenutzungszustand; die UI zeigt
+  `Neues Projekt`.
+- `database_unavailable`: `DATABASE_URL` fehlt, die Verbindung schlägt fehl
+  oder die Bubblophy-Tabellen wirken noch nicht vorhanden. Die UI zeigt einen
+  sicheren Setup-Hinweis und keine Beispielprojekte als Ersatz.
+
+Wenn nach Login `Datenbank nicht bereit` erscheint, zuerst lokale Env und
+Dev-Server-Neustart prüfen. Bei `schema_missing` danach die oben genannten
+Migrationen gegen die bewusst ausgewählte Zielumgebung anwenden. Fehlerdetails,
+Stacktraces und Datenbank-URLs werden nicht an die UI weitergegeben.
+
 ## Phase 2: RLS und Zugriff
 
 Die Initialmigration stellt nur die Struktur bereit. RLS wird separat

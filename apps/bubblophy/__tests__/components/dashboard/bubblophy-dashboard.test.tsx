@@ -35,8 +35,29 @@ const databaseSnapshot = {
 
 const emptyDatabaseSnapshot = {
   ...databaseSnapshot,
+  meta: {
+    dataSource: 'empty_database',
+    label: 'Leere Datenbank',
+    description:
+      'Datenbank erreichbar, aber für diesen User gibt es noch keine Projekte.',
+  },
   projects: [],
   issues: [],
+  agentTokens: [],
+  agentRuns: [],
+  activity: [],
+} satisfies DashboardSnapshot;
+
+const databaseUnavailableSnapshot = {
+  ...emptyDatabaseSnapshot,
+  meta: {
+    dataSource: 'database_unavailable',
+    label: 'Datenbank nicht bereit',
+    description:
+      'Bubblophy kann die Datenbank oder Tabellen gerade nicht lesen.',
+    reason: 'schema_missing',
+    hint: 'Die Bubblophy-Tabellen scheinen zu fehlen. Prüfe die lokale Strukturmigration.',
+  },
 } satisfies DashboardSnapshot;
 
 const databaseSnapshotWithEmptyRuns = {
@@ -370,6 +391,40 @@ describe('BubblophyDashboard interactions', () => {
 
     expect(
       screen.queryByRole('button', { name: 'Neues Projekt' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows a database setup state without project creation when the database is unavailable', () => {
+    render(
+      <BubblophyDashboard
+        snapshot={databaseUnavailableSnapshot}
+        createProjectAction={async () => ({
+          status: 'database_unavailable',
+        })}
+      />
+    );
+
+    const projectsSection = document.getElementById('projects');
+
+    expect(projectsSection).toBeInstanceOf(HTMLElement);
+
+    if (!projectsSection) {
+      throw new Error('Expected the projects section to render.');
+    }
+
+    expect(
+      within(projectsSection).getByText('Datenbank-Setup erforderlich.')
+    ).toBeInTheDocument();
+    expect(
+      within(projectsSection).getByText(
+        /Bubblophy-Tabellen scheinen zu fehlen/i
+      )
+    ).toBeInTheDocument();
+    expect(
+      within(projectsSection).queryByRole('button', { name: 'Neues Projekt' })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Agent-Token erstellen' })
     ).not.toBeInTheDocument();
   });
 

@@ -50,8 +50,9 @@ einem bewusst human-gesteuerten Kontrollzentrum.
 - Die UI nutzt einen typisierten Dashboard-Snapshot als View Model. Der
   server-only Read-Pfad unter `lib/dashboard/data.ts` kann Datenbankzeilen
   inklusive Projekten, Issues, öffentlichen Agent-Token-Summaries und
-  Project-Events abfragen. Er fällt in Dev kontrolliert auf Sample-Daten
-  zurück, wenn die Datenbank nicht verfügbar ist.
+  Project-Events abfragen. Er unterscheidet echte Datenbankdaten, eine
+  erreichbare aber leere Datenbank und einen sicheren Setup-Zustand, wenn
+  Datenbank oder Tabellen fehlen.
 
 ## Lokal starten
 
@@ -108,9 +109,10 @@ bun run build
 - Der Datenbank-Snapshot liest Agent-Token-Summaries und Project-Events nur für
   Projekte mit menschlicher Mitgliedschaft. Token-Plaintext und `token_hash`
   werden nicht selektiert und nicht an die UI gegeben.
-- Sample- und Fallback-Daten markieren Agent-Tokens und Audit-Aktivität als
-  Beispielvorschau. Der Run-Bereich zeigt dort keine operative Queue und keine
-  Run-Start- oder Prüfaktion.
+- Sample-Daten markieren Agent-Tokens und Audit-Aktivität als Beispielvorschau.
+  Wenn die Datenbank nicht bereit ist, bleibt der Snapshot leer und zeigt einen
+  Setup-Hinweis statt Beispielprojekte als stillen Ersatz. Der Run-Bereich zeigt
+  dort keine operative Queue und keine Run-Start- oder Prüfaktion.
 - Agenten nutzen eingeschränkte Bubblophy-Agent-Tokens mit Hash, Scopes,
   Projektgrenze, Status und Ablaufdatum.
 - Agenten erhalten keine Mensch-Logins und keinen Supabase-Service-Role-Key.
