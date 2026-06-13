@@ -801,6 +801,17 @@ function ProjectOverview({
 }) {
   const isDatabaseUnavailable = meta.dataSource === 'database_unavailable';
   const isEmptyDatabase = meta.dataSource === 'empty_database';
+  const handleProjectKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>,
+    projectKey: ProjectFilterKey
+  ) => {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+      return;
+    }
+
+    event.preventDefault();
+    onProjectSelect(projectKey);
+  };
 
   return (
     <Card id="projects" className="scroll-mt-24">
@@ -825,7 +836,9 @@ function ProjectOverview({
             <button
               type="button"
               aria-pressed={selectedProjectKey === 'all'}
-              onClick={() => onProjectSelect('all')}>
+              aria-label={`Alle Projekte auswählen, ${readiness}% bereit`}
+              onClick={() => onProjectSelect('all')}
+              onKeyDown={(event) => handleProjectKeyDown(event, 'all')}>
               <Badge
                 variant={selectedProjectKey === 'all' ? 'default' : 'outline'}>
                 Alle · {readiness}% bereit
@@ -874,43 +887,50 @@ function ProjectOverview({
             ) : null}
           </div>
         ) : null}
-        {projects.map((project) => (
-          <button
-            key={project.id}
-            type="button"
-            aria-pressed={selectedProjectKey === project.key}
-            onClick={() => onProjectSelect(project.key)}
-            className="grid min-h-44 gap-4 rounded-md border border-border bg-background p-4 text-left transition-colors hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:outline-none aria-pressed:border-primary aria-pressed:bg-primary/5">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h2 className="truncate text-sm font-semibold">
-                  {project.name}
-                </h2>
-                <p className="mt-1 font-mono text-xs text-muted-foreground">
-                  {project.key}
-                </p>
+        <nav
+          aria-label="Projektfilter"
+          className="contents"
+          data-slot="bubblophy-project-navigation">
+          {projects.map((project) => (
+            <button
+              key={project.id}
+              type="button"
+              aria-pressed={selectedProjectKey === project.key}
+              aria-label={`Projekt ${project.name} (${project.key}) auswählen`}
+              onClick={() => onProjectSelect(project.key)}
+              onKeyDown={(event) => handleProjectKeyDown(event, project.key)}
+              className="grid min-h-44 gap-4 rounded-md border border-border bg-background p-4 text-left transition-colors hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:outline-none aria-pressed:border-primary aria-pressed:bg-primary/5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 className="truncate text-sm font-semibold">
+                    {project.name}
+                  </h2>
+                  <p className="mt-1 font-mono text-xs text-muted-foreground">
+                    {project.key}
+                  </p>
+                </div>
+                <Badge variant={healthVariant[project.health]}>
+                  {projectHealthLabels[project.health]}
+                </Badge>
               </div>
-              <Badge variant={healthVariant[project.health]}>
-                {projectHealthLabels[project.health]}
-              </Badge>
-            </div>
 
-            <ReadinessBar
-              label={`${project.readyIssues} bereit`}
-              totalLabel={`${project.openIssues} offen`}
-              value={getIssueReadinessPercent({
-                readyIssues: project.readyIssues,
-                openIssues: project.openIssues,
-              })}
-            />
+              <ReadinessBar
+                label={`${project.readyIssues} bereit`}
+                totalLabel={`${project.openIssues} offen`}
+                value={getIssueReadinessPercent({
+                  readyIssues: project.readyIssues,
+                  openIssues: project.openIssues,
+                })}
+              />
 
-            <div className="grid grid-cols-3 gap-1.5 text-xs sm:gap-2">
-              <ProjectStat label="Blocker" value={project.blockedIssues} />
-              <ProjectStat label="Team" value={project.memberCount} />
-              <ProjectStat label="Tokens" value={project.agentTokenCount} />
-            </div>
-          </button>
-        ))}
+              <div className="grid grid-cols-3 gap-1.5 text-xs sm:gap-2">
+                <ProjectStat label="Blocker" value={project.blockedIssues} />
+                <ProjectStat label="Team" value={project.memberCount} />
+                <ProjectStat label="Tokens" value={project.agentTokenCount} />
+              </div>
+            </button>
+          ))}
+        </nav>
       </CardContent>
     </Card>
   );

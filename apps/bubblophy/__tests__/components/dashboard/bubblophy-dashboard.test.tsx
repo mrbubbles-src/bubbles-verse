@@ -233,13 +233,14 @@ describe('BubblophyDashboard interactions', () => {
     }
 
     const novariProjectButton = within(projectsSection).getByRole('button', {
-      name: /^Novari\s+NO\s+Stabil/i,
+      name: 'Projekt Novari (NO) auswählen',
     });
 
     fireEvent.click(novariProjectButton);
 
     expect(screen.getByText('Gefiltert auf Projekt NO.')).toBeInTheDocument();
     expect(novariProjectButton).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('NO-08');
     expect(
       screen.getByRole('button', {
         name: 'Novari-Projekte für externe Mitarbeit freigeben',
@@ -250,6 +251,47 @@ describe('BubblophyDashboard interactions', () => {
         name: 'Agent-Zugriff mit projektbezogenen Tokens',
       })
     ).not.toBeInTheDocument();
+  });
+
+  it('filters projects from the keyboard and restores all projects', () => {
+    render(<BubblophyDashboard snapshot={dashboardSnapshot} />);
+
+    const projectsSection = document.getElementById('projects');
+
+    expect(projectsSection).toBeInstanceOf(HTMLElement);
+
+    if (!projectsSection) {
+      throw new Error('Expected the projects section to render.');
+    }
+
+    const yoinkProjectButton = within(projectsSection).getByRole('button', {
+      name: 'Projekt Yoink (YK) auswählen',
+    });
+
+    fireEvent.keyDown(yoinkProjectButton, { key: 'Enter' });
+
+    expect(yoinkProjectButton).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Gefiltert auf Projekt YK.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('YK-03');
+    expect(
+      screen.queryByRole('button', {
+        name: 'Agent-Zugriff mit projektbezogenen Tokens',
+      })
+    ).not.toBeInTheDocument();
+
+    const allProjectsButton = within(projectsSection).getByRole('button', {
+      name: 'Alle Projekte auswählen, 29% bereit',
+    });
+
+    fireEvent.keyDown(allProjectsButton, { key: ' ' });
+
+    expect(allProjectsButton).toHaveAttribute('aria-pressed', 'true');
+    expect(
+      screen.getByText(
+        'Alle Projekte, priorisiert nach Freigabe, Planstand und Blockern.'
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('BV-14');
   });
 
   it('shows issue details when an issue is clicked', () => {
@@ -818,7 +860,7 @@ describe('BubblophyDashboard interactions', () => {
     });
 
     const createdProject = within(projectsSection).getByRole('button', {
-      name: /^Zentrum\s+ZEN\s+Stabil/i,
+      name: 'Projekt Zentrum (ZEN) auswählen',
     });
 
     expect(createdProject).toHaveAttribute('aria-pressed', 'true');
