@@ -15,6 +15,41 @@
         "typescript": "catalog:tooling",
       },
     },
+    "apps/bubblophy": {
+      "name": "bubblophy",
+      "version": "0.1.0",
+      "dependencies": {
+        "@bubbles/theme": "workspace:*",
+        "@bubbles/ui": "workspace:*",
+        "@supabase/ssr": "catalog:supabase",
+        "@supabase/supabase-js": "catalog:supabase",
+        "drizzle-orm": "catalog:database",
+        "next": "catalog:",
+        "postgres": "catalog:database",
+        "react": "catalog:",
+        "react-dom": "catalog:",
+        "zod": "catalog:forms-validation",
+      },
+      "devDependencies": {
+        "@bubbles/eslint-config": "workspace:*",
+        "@bubbles/typescript-config": "workspace:*",
+        "@tailwindcss/postcss": "catalog:tooling",
+        "@testing-library/jest-dom": "catalog:testing",
+        "@testing-library/react": "catalog:testing",
+        "@types/node": "catalog:node-types",
+        "@types/react": "catalog:",
+        "@types/react-dom": "catalog:",
+        "@vitejs/plugin-react": "catalog:testing",
+        "babel-plugin-react-compiler": "catalog:",
+        "drizzle-kit": "catalog:database",
+        "eslint": "catalog:tooling",
+        "eslint-config-next": "catalog:",
+        "jsdom": "catalog:testing",
+        "tailwindcss": "catalog:tooling",
+        "typescript": "catalog:tooling",
+        "vitest": "catalog:testing",
+      },
+    },
     "apps/dashboard": {
       "name": "dashboard",
       "version": "1.0.0",
@@ -1321,6 +1356,8 @@
     "braces": ["braces@3.0.3", "", { "dependencies": { "fill-range": "^7.1.1" } }, "sha512-yQbXgO/OSZVD2IsiLlro+7Hf6Q18EJrKSEsdoMzKePKXct3gvD8oLcOQdIzGupr5Fj+EDe8gO/lxc1BzfMpxvA=="],
 
     "browserslist": ["browserslist@4.28.1", "", { "dependencies": { "baseline-browser-mapping": "^2.9.0", "caniuse-lite": "^1.0.30001759", "electron-to-chromium": "^1.5.263", "node-releases": "^2.0.27", "update-browserslist-db": "^1.2.0" }, "bin": { "browserslist": "cli.js" } }, "sha512-ZC5Bd0LgJXgwGqUknZY/vkUQ04r8NXnJZ3yYi4vDmSiZmC/pdSN0NbNRPxZpbtO4uAfDUAFffO8IZoM3Gj8IkA=="],
+
+    "bubblophy": ["bubblophy@workspace:apps/bubblophy"],
 
     "buffer-from": ["buffer-from@1.1.2", "", {}, "sha512-E+XQCRwSbaaiChtv6k6Dwgc+bx+Bs6vuKJHHl5kox/BaKbhiXzqQOwK4cO22yElGp2OCmjwVhT3HmxgyPGnJfQ=="],
 

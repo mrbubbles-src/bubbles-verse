@@ -61,6 +61,33 @@ describe('BubblesAppHeader', () => {
     expect(screen.getAllByRole('button', { name: 'Timer' })).toHaveLength(2);
   });
 
+  it('uses responsive-only flex classes for mobile action wrappers', () => {
+    renderHeader(
+      <BubblesAppHeader
+        mobileTopActions={<button type="button">Theme</button>}
+        actions={<button type="button">Timer</button>}
+        classNames={{
+          mobileTopActions: 'header-mobile-top-actions',
+          actions: 'header-actions',
+        }}
+      />
+    );
+
+    const mobileTopActions = document.querySelector(
+      '.header-mobile-top-actions'
+    );
+    const actionContainers = document.querySelectorAll('.header-actions');
+    const mobileActions = [...actionContainers].find((container) =>
+      container.className.includes('max-md:flex')
+    );
+
+    expect(mobileTopActions).toHaveClass('max-md:flex', 'md:hidden');
+    expect(mobileTopActions).not.toHaveClass('flex');
+    expect(mobileActions).toBeDefined();
+    expect(mobileActions).toHaveClass('max-md:flex', 'md:hidden');
+    expect(mobileActions).not.toHaveClass('flex');
+  });
+
   it('merges header class name hooks onto the expected wrappers', () => {
     renderHeader(
       <BubblesAppHeader

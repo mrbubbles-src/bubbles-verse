@@ -91,7 +91,7 @@ export function BubblesAppHeader({
           {mobileTopActions ? (
             <div
               className={cn(
-                'flex shrink-0 items-center gap-3 self-center md:hidden',
+                'shrink-0 items-center gap-3 self-center max-md:flex md:hidden',
                 classNames?.mobileTopActions
               )}>
               {mobileTopActions}
@@ -112,7 +112,7 @@ export function BubblesAppHeader({
         {actions ? (
           <div
             className={cn(
-              'flex justify-center md:hidden',
+              'justify-center max-md:flex md:hidden',
               classNames?.actions
             )}>
             {actions}
