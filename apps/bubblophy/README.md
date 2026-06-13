@@ -72,6 +72,9 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   `running`, `needs_review`, `completed` und `failed`, prüft Token-Hash,
   Scope `runs:update`, Projektbindung, Token-Status/Ablauf und schreibt
   `last_used_at` plus Audit-Event.
+- Der Agent-Token-Bereich zeigt einen lokalen Handoff für diesen bestehenden
+  Statusupdate-Pfad. Andere Scope-Werte im Schema sind reserviert, bis eigene
+  sichere Agent-API-Endpunkte existieren.
 - Im Issue-Detailpanel können Menschen bei aktiver Datenbankquelle einen
   Plan-Entwurf speichern. Der server-only Plan-Service schreibt eine neue
   Planversion plus `plan_updated`-Event, normalisiert leere Schritte weg und
@@ -194,6 +197,10 @@ bun run build
 - Agenten nutzen eingeschränkte Bubblophy-Agent-Tokens mit Hash, Scopes,
   Projektgrenze, Status und Ablaufdatum.
 - Agenten erhalten keine Mensch-Logins und keinen Supabase-Service-Role-Key.
+- Der aktuell nutzbare Agent-API-Vertrag ist eng: Lokale Agenten können mit
+  Scope `runs:update` Status, Message und Result-JSON für freigegebene Runs an
+  `PATCH /api/agent-runs/[runId]` melden. Lesen, Planen, Issue-Schreiben und
+  Run-Erstellen haben noch keinen Agent-Endpoint und bleiben human-in-the-loop.
 - Alles bleibt human-in-the-loop; Agent-Runs brauchen explizite Freigabe.
 - Datenzugriff auf `DATABASE_URL` ist in `drizzle/db/index.ts` durch
   `server-only` auf Server-Bundles begrenzt.

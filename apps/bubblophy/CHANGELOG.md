@@ -102,3 +102,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   owner/maintainer-only non-owner role changes, guarded hard removal, explicit
   project-member audit metadata, and no fake Add-by-E-Mail flow before a real
   profile or invite model exists.
+- Added local agent handoff guidance for active `runs:update` tokens, including
+  one-time token copy UX and placeholder curl examples for the existing agent
+  run update endpoint without introducing read APIs or automation.

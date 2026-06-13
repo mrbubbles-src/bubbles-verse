@@ -164,6 +164,21 @@ const databaseSnapshotWithoutAgentTokens = {
   agentTokens: [],
 } satisfies DashboardSnapshot;
 
+const databaseSnapshotWithRunUpdateToken = {
+  ...databaseSnapshot,
+  agentTokens: [
+    {
+      id: 'token_runner',
+      label: 'Codex Runner',
+      projectKey: 'BV',
+      scopes: ['runs:update'],
+      state: 'aktiv',
+      lastUsedAt: 'noch nie verwendet',
+      expiresAt: 'läuft nicht automatisch ab',
+    },
+  ],
+} satisfies DashboardSnapshot;
+
 vi.mock('next/navigation', () => ({
   usePathname: () => '/',
   useRouter: () => ({
@@ -298,6 +313,12 @@ function getMetricCaption(label: string) {
 describe('BubblophyDashboard interactions', () => {
   beforeEach(() => {
     window.HTMLElement.prototype.scrollIntoView = vi.fn();
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: vi.fn(async () => undefined),
+      },
+    });
     navigationMocks.routerPush.mockClear();
     navigationMocks.searchParams.mockReset();
     navigationMocks.searchParams.mockReturnValue(new URLSearchParams());
@@ -2001,7 +2022,7 @@ describe('BubblophyDashboard interactions', () => {
         state: 'aktiv',
         lastUsedAt: 'noch nie verwendet',
         expiresAt: 'läuft nicht automatisch ab',
-        plaintextToken: 'bubblophy_agent_plaintext_once',
+        plaintextToken: 'test_plaintext_token_once',
       },
     }));
 
@@ -2044,22 +2065,99 @@ describe('BubblophyDashboard interactions', () => {
     const dialog = await screen.findByRole('dialog');
 
     expect(
-      within(dialog).getByText('bubblophy_agent_plaintext_once')
+      within(dialog).getByText('test_plaintext_token_once')
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(
+        /\$BUBBLOPHY_BASE_URL\/api\/agent-runs\/<run-id>/
+      )
     ).toBeInTheDocument();
     expect(
       within(dialog).getByText(/später nicht wieder sichtbar/i)
     ).toBeInTheDocument();
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Token kopieren' })
+    );
+    await waitFor(() => {
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+        'test_plaintext_token_once'
+      );
+    });
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Curl-Beispiel kopieren' })
+    );
+    await waitFor(() => {
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+        expect.stringContaining('Authorization: Bearer <agent-token>')
+      );
+    });
     expect(within(agentSection).getByText('Codex lokal')).toBeInTheDocument();
     expect(
-      within(agentSection).queryByText('bubblophy_agent_plaintext_once')
+      within(agentSection).queryByText('test_plaintext_token_once')
     ).not.toBeInTheDocument();
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Fertig' }));
 
     expect(
-      screen.queryByText('bubblophy_agent_plaintext_once')
+      screen.queryByText('test_plaintext_token_once')
     ).not.toBeInTheDocument();
     expect(within(agentSection).getByText('Codex lokal')).toBeInTheDocument();
+  });
+
+  it('shows local agent handoff only for active runs:update tokens', () => {
+    render(
+      <BubblophyDashboard snapshot={databaseSnapshotWithRunUpdateToken} />
+    );
+
+    const agentSection = document.getElementById('agents');
+
+    expect(agentSection).toBeInstanceOf(HTMLElement);
+
+    if (!agentSection) {
+      throw new Error('Expected the agent token section to render.');
+    }
+
+    expect(
+      within(agentSection).getByText('Lokaler Agent-Handoff')
+    ).toBeInTheDocument();
+    expect(
+      within(agentSection).getByText('/api/agent-runs/<run-id>')
+    ).toBeInTheDocument();
+    expect(
+      within(agentSection).getByText(/Authorization: Bearer <agent-token>/)
+    ).toBeInTheDocument();
+    expect(
+      within(agentSection).queryByText(/test_plaintext_token/)
+    ).not.toBeInTheDocument();
+    expect(
+      within(agentSection).getByText(/Lesen, Planen, Run-Erstellen/)
+    ).toBeInTheDocument();
+  });
+
+  it('does not offer the curl handoff for tokens without runs:update', () => {
+    render(<BubblophyDashboard snapshot={databaseSnapshot} />);
+
+    const agentSection = document.getElementById('agents');
+
+    expect(agentSection).toBeInstanceOf(HTMLElement);
+
+    if (!agentSection) {
+      throw new Error('Expected the agent token section to render.');
+    }
+
+    expect(
+      within(agentSection).getAllByText('Lokaler Agent-Handoff').length
+    ).toBeGreaterThan(0);
+    expect(
+      within(agentSection).getAllByText(/kann keine Agent-Run-Statusupdates/)
+        .length
+    ).toBeGreaterThan(0);
+    expect(
+      within(agentSection).getAllByText('runs:update').length
+    ).toBeGreaterThan(0);
+    expect(
+      within(agentSection).queryByText(/Authorization: Bearer <agent-token>/)
+    ).not.toBeInTheDocument();
   });
 
   it('keeps the token dialog open on denied agent token creation', async () => {

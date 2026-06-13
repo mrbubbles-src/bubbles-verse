@@ -53,8 +53,13 @@ dauerhaften Autopilot-Rechte.
   ein starker Hash in `bubblophy_agent_tokens.token_hash`.
 - Jedes Token ist auf genau ein Projekt begrenzt.
 - Scopes sind explizit und klein: `projects:read`, `issues:read`,
-  `issues:write`, `plans:write`, `runs:create`, `runs:update`.
+  `issues:write`, `plans:write`, `runs:create`, `runs:update`. Im aktuellen
+  MVP hat nur `runs:update` einen operativen Agent-API-Pfad:
+  `PATCH /api/agent-runs/[runId]`. Die übrigen Scope-Werte sind reserviert,
+  bis es eigene sichere Read-/Write-Endpunkte gibt.
 - Tokens können pausiert, widerrufen und mit Ablaufdatum versehen werden.
+- Lokale Handoff-Beispiele nutzen Platzhalter wie `<agent-token>` und sollen
+  keine echten Tokens in Shell-History, Logs, README oder Snapshots schreiben.
 
 ## Human-in-the-loop
 

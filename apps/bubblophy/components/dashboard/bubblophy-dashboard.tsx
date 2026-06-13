@@ -268,6 +268,13 @@ const agentTokenScopeOptions = [
   'runs:update',
 ];
 
+const agentRunUpdateEndpointExample = '/api/agent-runs/<run-id>';
+
+const agentRunUpdateCurlExample = `curl -X PATCH "$BUBBLOPHY_BASE_URL/api/agent-runs/<run-id>" \\
+  -H "Authorization: Bearer <agent-token>" \\
+  -H "Content-Type: application/json" \\
+  -d '{"state":"running","message":"Lokaler Agent hat begonnen."}'`;
+
 /**
  * Checks whether an issue row is a local-only draft.
  *
@@ -3240,10 +3247,121 @@ function AgentAccess({
                 onAgentTokenLifecycleUpdated={onAgentTokenLifecycleUpdated}
               />
             ) : null}
+            {isDatabaseSource ? <AgentTokenHandoff token={token} /> : null}
           </div>
         ))}
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * Renders local-agent usage details for one public token row.
+ *
+ * @param props Public token summary from the dashboard snapshot.
+ * @returns Narrow handoff guide for the existing agent run update endpoint.
+ */
+function AgentTokenHandoff({ token }: { token: AgentTokenSummary }) {
+  const canUpdateRuns =
+    token.state === 'aktiv' && token.scopes.includes('runs:update');
+
+  return (
+    <div className="mt-3 grid gap-2 rounded-md border border-dashed border-border bg-muted/20 p-3">
+      <div className="grid gap-1">
+        <p className="text-sm font-medium">Lokaler Agent-Handoff</p>
+        <p className="text-xs text-muted-foreground">
+          Der nutzbare Agent-API-Pfad ist aktuell nur Status-Update für
+          freigegebene Runs. Lesen, Planen, Run-Erstellen und Issue-Schreiben
+          bleiben bis zu eigenen Endpunkten in der App beim Menschen.
+        </p>
+      </div>
+
+      <dl className="grid gap-2 text-xs sm:grid-cols-2">
+        <div>
+          <dt className="text-muted-foreground">Endpoint</dt>
+          <dd className="font-mono break-all">
+            {agentRunUpdateEndpointExample}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">Benötigter Scope</dt>
+          <dd className="font-mono">runs:update</dd>
+        </div>
+      </dl>
+
+      {canUpdateRuns ? (
+        <CopyableCommandBlock
+          label="Curl-Beispiel kopieren"
+          value={agentRunUpdateCurlExample}
+        />
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          Dieses Token kann keine Agent-Run-Statusupdates schreiben, weil es
+          nicht aktiv ist oder der Scope{' '}
+          <span className="font-mono">runs:update</span> fehlt.
+        </p>
+      )}
+
+      <p className="text-xs text-muted-foreground">
+        <span className="font-mono">running</span>,{' '}
+        <span className="font-mono">needs_review</span>,{' '}
+        <span className="font-mono">completed</span> und{' '}
+        <span className="font-mono">failed</span> speichern nur Status, Message
+        und Result-JSON. Bubblophy führt dadurch keinen Code aus und startet
+        keinen Hintergrundprozess.
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Renders a copyable command or secret block without persisting its value.
+ *
+ * @param props Button label and text value to copy.
+ * @returns Code block with optional clipboard feedback.
+ */
+function CopyableCommandBlock({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>(
+    'idle'
+  );
+
+  const handleCopy = () => {
+    if (!navigator.clipboard) {
+      setCopyState('failed');
+      return;
+    }
+
+    void navigator.clipboard
+      .writeText(value)
+      .then(() => setCopyState('copied'))
+      .catch(() => setCopyState('failed'));
+  };
+
+  return (
+    <div className="grid gap-2">
+      <pre className="overflow-x-auto rounded-md bg-background p-3 text-xs">
+        <code>{value}</code>
+      </pre>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button type="button" size="sm" variant="outline" onClick={handleCopy}>
+          {label}
+        </Button>
+        {copyState === 'copied' ? (
+          <span className="text-xs text-muted-foreground">Kopiert.</span>
+        ) : null}
+        {copyState === 'failed' ? (
+          <span className="text-xs text-muted-foreground">
+            Manuell kopieren.
+          </span>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
@@ -3457,9 +3575,28 @@ function NewAgentTokenDialog({
                 nicht in localStorage und teile ihn nur mit dem vorgesehenen
                 Agent-Prozess.
               </p>
-              <code className="mt-3 block rounded-md bg-background p-3 text-xs break-all">
-                {createdToken.plaintextToken}
-              </code>
+              <div className="mt-3">
+                <CopyableCommandBlock
+                  label="Token kopieren"
+                  value={createdToken.plaintextToken}
+                />
+              </div>
+            </div>
+            <div className="rounded-md border border-dashed border-border bg-muted/20 p-3">
+              <p className="text-sm font-medium">
+                Statusupdate für lokale Agenten
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Nutze das Token als Bearer Secret für freigegebene Runs. Das
+                Beispiel bleibt bei Platzhaltern, damit keine echten Secrets in
+                Logs oder Dokumentation landen.
+              </p>
+              <div className="mt-3">
+                <CopyableCommandBlock
+                  label="Curl-Beispiel kopieren"
+                  value={agentRunUpdateCurlExample}
+                />
+              </div>
             </div>
             <DialogFooter>
               <Button type="button" onClick={() => onOpenChange(false)}>
