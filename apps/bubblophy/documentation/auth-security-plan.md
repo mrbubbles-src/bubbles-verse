@@ -55,11 +55,21 @@ dauerhaften Autopilot-Rechte.
 ## Audit und RLS
 
 - Issue- und Plan-Änderungen landen in `bubblophy_issue_events`.
-- Projektweite Änderungen wie `agent_token_created` brauchen noch ein eigenes
-  Audit-Modell, damit spätere RLS-Policies nicht an issue-zentrierten Events
-  vorbeigebogen werden.
+- Projektweite Änderungen wie `agent_token_created`, spätere Token-Revoke- und
+  Run-Freigabe-Ereignisse landen in `bubblophy_project_events`.
+- `bubblophy_project_events` ist projektgebunden (`project_id NOT NULL`) und
+  hält nur öffentliche Metadaten. Token-Plaintext und Token-Hash gehören weder
+  in Audit-Payloads noch in Logs.
 - Events erfassen entweder `actor_auth_user_id` oder `actor_agent_token_id`.
-- RLS-Policies sollen Projektmitgliedschaften für Menschen und Projektgrenzen
-  für Agent-Tokens erzwingen.
+- Geplante RLS-Lesepolicies: Projektmitglieder lesen Projekte, Issues, Pläne,
+  Agent-Token-Summaries und Project Events nur für ihre Projekte.
+- Geplante RLS-Schreibpolicies für Menschen: Issue-/Plan-Schreibpfade prüfen
+  Projektmitgliedschaft; Token-Erstellung bleibt Owner/Maintainer-only über
+  serverseitige Actions.
+- Geplante Agent-Token-Policies: Agenten nutzen nur projektbegrenzte API-Pfade
+  mit Hash-Token, Status, Scopes und Ablaufdatum. Sie erhalten keine
+  Mensch-Session und keinen Service-Role-Key.
+- Project Events werden nur über serverseitige Mutationen oder spätere
+  agentische API-Grenzen geschrieben, nicht direkt aus dem Browser.
 - Service-Role-Zugriff bleibt ausschließlich serverseitiger Infrastruktur
   vorbehalten und wird nicht an lokale Agenten weitergegeben.

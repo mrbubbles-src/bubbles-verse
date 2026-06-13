@@ -40,7 +40,8 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   Planversion plus `plan_updated`-Event und startet keinen Agent-Run.
 - Im Agent-Token-Bereich können Owner/Maintainer bei aktiver Datenbankquelle
   ein projektbegrenztes Token erstellen. Der Klartext wird nur einmal gezeigt;
-  gespeichert wird ausschließlich der Hash.
+  gespeichert wird ausschließlich der Hash. Die Erstellung schreibt zusätzlich
+  ein projektweites Audit-Event ohne Plaintext oder Hash.
 - Der Auth- und Sicherheitsplan liegt in
   `documentation/auth-security-plan.md`.
 - Die UI nutzt einen typisierten Dashboard-Snapshot als View Model. Der
@@ -98,9 +99,8 @@ bun run build
   Agent-Runs.
 - Persistierte Agent-Token-Erstellung läuft serverseitig über Owner- oder
   Maintainer-Mitgliedschaft, schreibt nur den Token-Hash und startet keine
-  Agent-Runs. Projektweite `agent_token_created`-Audit-Events folgen in einer
-  eigenen Schema-/RLS-Scheibe; sie werden bewusst nicht in issue-zentrierte
-  Events hineingetrickst.
+  Agent-Runs. Projektweite `agent_token_created`-Audit-Events landen in
+  `bubblophy_project_events`, nicht in issue-zentrierten Events.
 - Agenten nutzen eingeschränkte Bubblophy-Agent-Tokens mit Hash, Scopes,
   Projektgrenze, Status und Ablaufdatum.
 - Agenten erhalten keine Mensch-Logins und keinen Supabase-Service-Role-Key.

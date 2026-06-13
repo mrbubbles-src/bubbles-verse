@@ -6,6 +6,7 @@ import {
   bubblophyIssueEvents,
   bubblophyIssuePlans,
   bubblophyIssues,
+  bubblophyProjectEvents,
   bubblophyProjectMembers,
   bubblophyProjects,
 } from '@/drizzle/db/schema';
@@ -16,6 +17,7 @@ export const bubblophyProjectRelations = relations(
     members: many(bubblophyProjectMembers),
     issues: many(bubblophyIssues),
     agentTokens: many(bubblophyAgentTokens),
+    events: many(bubblophyProjectEvents),
   })
 );
 
@@ -60,7 +62,8 @@ export const bubblophyAgentTokenRelations = relations(
       references: [bubblophyProjects.id],
     }),
     runs: many(bubblophyAgentRuns),
-    events: many(bubblophyIssueEvents),
+    issueEvents: many(bubblophyIssueEvents),
+    projectEvents: many(bubblophyProjectEvents),
   })
 );
 
@@ -76,6 +79,7 @@ export const bubblophyAgentRunRelations = relations(
       references: [bubblophyAgentTokens.id],
     }),
     events: many(bubblophyIssueEvents),
+    projectEvents: many(bubblophyProjectEvents),
   })
 );
 
@@ -92,6 +96,24 @@ export const bubblophyIssueEventRelations = relations(
     }),
     agentRun: one(bubblophyAgentRuns, {
       fields: [bubblophyIssueEvents.agentRunId],
+      references: [bubblophyAgentRuns.id],
+    }),
+  })
+);
+
+export const bubblophyProjectEventRelations = relations(
+  bubblophyProjectEvents,
+  ({ one }) => ({
+    project: one(bubblophyProjects, {
+      fields: [bubblophyProjectEvents.projectId],
+      references: [bubblophyProjects.id],
+    }),
+    agentToken: one(bubblophyAgentTokens, {
+      fields: [bubblophyProjectEvents.actorAgentTokenId],
+      references: [bubblophyAgentTokens.id],
+    }),
+    agentRun: one(bubblophyAgentRuns, {
+      fields: [bubblophyProjectEvents.agentRunId],
       references: [bubblophyAgentRuns.id],
     }),
   })

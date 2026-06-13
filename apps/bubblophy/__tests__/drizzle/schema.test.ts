@@ -7,6 +7,7 @@ import {
   bubblophyIssueEvents,
   bubblophyIssuePlans,
   bubblophyIssues,
+  bubblophyProjectEvents,
   bubblophyProjectMembers,
   bubblophyProjects,
 } from '@/drizzle/db/schema';
@@ -20,6 +21,9 @@ describe('bubblophy schema', () => {
     expect(getTableName(bubblophyIssues)).toBe('bubblophy_issues');
     expect(getTableName(bubblophyIssuePlans)).toBe('bubblophy_issue_plans');
     expect(getTableName(bubblophyIssueEvents)).toBe('bubblophy_issue_events');
+    expect(getTableName(bubblophyProjectEvents)).toBe(
+      'bubblophy_project_events'
+    );
     expect(getTableName(bubblophyAgentTokens)).toBe('bubblophy_agent_tokens');
   });
 

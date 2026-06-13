@@ -17,13 +17,14 @@ Supabase-Datenbank verändert.
 
 ## Vorbereitete Migration
 
-Die Initialmigration liegt in:
+Die Struktur liegt aktuell in zwei lokalen Migrationen:
 
 ```text
 apps/bubblophy/drizzle/0000_premium_psynapse.sql
+apps/bubblophy/drizzle/0001_chilly_hiroim.sql
 ```
 
-Sie erzeugt:
+`0000_premium_psynapse.sql` erzeugt:
 
 - Enums: Projektrollen, Issue-Status, Issue-Prioritäten, Issue-Event-Typen,
   Agent-Token-Status und Agent-Run-Status.
@@ -36,6 +37,21 @@ Sie erzeugt:
   Agent-Token-Hash.
 - Query-Indexes für Projektmitgliedschaften, Issue-Status, zugewiesene User,
   Agent-Runs, Agent-Token-State und Issue-Events.
+
+`0001_chilly_hiroim.sql` ergänzt:
+
+- `bubblophy_project_event_type` für projektweite Audit-Ereignisse wie
+  `agent_token_created`, Token-Revoke- und spätere Run-Freigabe-Ereignisse.
+- `bubblophy_project_events` mit `project_id NOT NULL`, Actor-Feldern,
+  optionaler Run-Referenz, Summary, Payload und Zeitstempel.
+- Foreign Keys auf Projekt, optionales Actor-Agent-Token und optionalen Run.
+- Query-Indexes für Projekt-Zeitachse, menschliche Actor, Agent-Token-Actor und
+  Agent-Run-Bezug.
+
+Der alte Issue-Event-Enum-Wert `agent_token_created` bleibt aus
+Migrationskompatibilität im Baseline-Enum, wird aber nicht mehr als aktiver
+Schreibpfad genutzt. Neue Token-Audit-Ereignisse gehören in
+`bubblophy_project_events`.
 
 Prüfung der generierten Migration:
 
@@ -99,8 +115,11 @@ Offene RLS-TODOs:
 - `alter table ... enable row level security` für alle Bubblophy-Tabellen in
   einer separaten Migration aktivieren.
 - Policies für Menschen und Agent-Token-Pfade getrennt definieren.
-- Audit-Schreibpfade für `bubblophy_issue_events` so begrenzen, dass entweder
-  ein menschlicher Actor oder ein gültiges Agent-Token nachvollziehbar ist.
+- `bubblophy_project_events` für Projektmitglieder lesbar machen; direkte
+  Browser-Writes nicht erlauben.
+- Audit-Schreibpfade für `bubblophy_issue_events` und
+  `bubblophy_project_events` so begrenzen, dass entweder ein menschlicher Actor
+  oder ein gültiges Agent-Token nachvollziehbar ist.
 - Entscheiden, ob Server-internes `DATABASE_URL` als privileged Backend-Pfad
   zusätzlich zu RLS verwendet wird oder ob alle App-Zugriffe strict durch RLS
   laufen sollen.

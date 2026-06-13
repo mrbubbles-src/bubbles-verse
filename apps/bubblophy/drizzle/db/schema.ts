@@ -66,6 +66,17 @@ export const bubblophyIssueEventType = pgEnum('bubblophy_issue_event_type', [
   'commented',
 ]);
 
+export const bubblophyProjectEventType = pgEnum(
+  'bubblophy_project_event_type',
+  [
+    'agent_token_created',
+    'agent_token_revoked',
+    'agent_run_requested',
+    'agent_run_approved',
+    'project_updated',
+  ]
+);
+
 export const bubblophyAgentTokenState = pgEnum('bubblophy_agent_token_state', [
   'active',
   'paused',
@@ -327,6 +338,47 @@ export const bubblophyIssueEvents = pgTable(
       'bubblophy_issue_events_actor_agent_token_idx'
     ).on(table.actorAgentTokenId),
     agentRunIdx: index('bubblophy_issue_events_agent_run_idx').on(
+      table.agentRunId
+    ),
+  })
+);
+
+export const bubblophyProjectEvents = pgTable(
+  'bubblophy_project_events',
+  {
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => bubblophyProjects.id, { onDelete: 'cascade' }),
+    eventType: bubblophyProjectEventType('event_type').notNull(),
+    actorAuthUserId: text('actor_auth_user_id'),
+    actorAgentTokenId: text('actor_agent_token_id').references(
+      () => bubblophyAgentTokens.id,
+      { onDelete: 'set null' }
+    ),
+    agentRunId: text('agent_run_id').references(() => bubblophyAgentRuns.id, {
+      onDelete: 'set null',
+    }),
+    summary: text().notNull(),
+    payload: jsonb().$type<JsonValue>().notNull().default({}),
+    createdAt: timestamp('created_at', { mode: 'string', precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    projectCreatedIdx: index('bubblophy_project_events_project_created_idx').on(
+      table.projectId,
+      table.createdAt
+    ),
+    actorAuthUserIdx: index('bubblophy_project_events_actor_auth_user_idx').on(
+      table.actorAuthUserId
+    ),
+    actorAgentTokenIdx: index(
+      'bubblophy_project_events_actor_agent_token_idx'
+    ).on(table.actorAgentTokenId),
+    agentRunIdx: index('bubblophy_project_events_agent_run_idx').on(
       table.agentRunId
     ),
   })

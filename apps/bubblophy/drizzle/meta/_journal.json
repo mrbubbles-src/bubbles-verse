@@ -8,6 +8,13 @@
       "when": 1781367641704,
       "tag": "0000_premium_psynapse",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1781369778358,
+      "tag": "0001_chilly_hiroim",
+      "breakpoints": true
     }
   ]
 }

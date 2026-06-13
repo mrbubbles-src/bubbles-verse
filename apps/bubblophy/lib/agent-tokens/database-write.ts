@@ -1,5 +1,6 @@
 import 'server-only';
 
+import type { JsonObject } from '@/drizzle/db/schema';
 import type {
   BubblophyAgentTokenCreateStore,
   BubblophyAgentTokenCreateStoreInput,
@@ -9,16 +10,27 @@ import { and, eq, inArray } from 'drizzle-orm';
 
 import {
   bubblophyAgentTokens,
+  bubblophyProjectEvents,
   bubblophyProjectMembers,
   bubblophyProjects,
 } from '@/drizzle/db/schema';
 
+export interface BubblophyAgentTokenCreatedProjectEventInsert {
+  projectId: string;
+  eventType: 'agent_token_created';
+  actorAuthUserId: string;
+  actorAgentTokenId: null;
+  agentRunId: null;
+  summary: string;
+  payload: JsonObject;
+}
+
 /**
  * Creates the Drizzle-backed store for human-created agent tokens.
  *
- * Authorization is limited to project owners and maintainers. This store writes
- * only the hashed token row; project-level audit events need a dedicated event
- * model and are intentionally not faked through issue-scoped events.
+ * Authorization is limited to project owners and maintainers. Token insert and
+ * project-level audit event are written in one transaction. The event payload
+ * contains public token metadata only, never plaintext or token hash.
  *
  * @returns Store implementation for server actions.
  */
@@ -90,6 +102,18 @@ async function createAgentToken(
         throw new Error('Bubblophy agent token insert did not return a row.');
       }
 
+      await tx.insert(bubblophyProjectEvents).values(
+        buildBubblophyAgentTokenCreatedProjectEventInsert({
+          projectId: project.id,
+          authUserId: input.authUserId,
+          projectKey: project.key,
+          tokenId: token.id,
+          tokenLabel: token.label,
+          scopes: token.scopes,
+          expiresAt: input.expiresAt,
+        })
+      );
+
       return {
         status: 'created',
         token: {
@@ -108,6 +132,42 @@ async function createAgentToken(
 
     throw error;
   }
+}
+
+/**
+ * Builds a project-level `agent_token_created` audit event.
+ *
+ * The payload intentionally contains only public metadata. Token plaintext and
+ * hash stay outside audit rows, logs, and client-visible summaries.
+ *
+ * @param input Project, actor, token, scope, and optional expiry metadata.
+ * @returns Insert values for `bubblophy_project_events`.
+ */
+export function buildBubblophyAgentTokenCreatedProjectEventInsert(input: {
+  projectId: string;
+  authUserId: string;
+  projectKey: string;
+  tokenId: string;
+  tokenLabel: string;
+  scopes: string[];
+  expiresAt: string | null;
+}): BubblophyAgentTokenCreatedProjectEventInsert {
+  return {
+    projectId: input.projectId,
+    eventType: 'agent_token_created',
+    actorAuthUserId: input.authUserId,
+    actorAgentTokenId: null,
+    agentRunId: null,
+    summary: `Agent-Token "${input.tokenLabel}" für ${input.projectKey} erstellt.`,
+    payload: {
+      source: 'human',
+      projectKey: input.projectKey,
+      tokenId: input.tokenId,
+      tokenLabel: input.tokenLabel,
+      scopes: input.scopes,
+      expiresAt: input.expiresAt,
+    },
+  };
 }
 
 /**

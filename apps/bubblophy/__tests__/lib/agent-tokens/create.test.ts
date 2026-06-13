@@ -10,6 +10,7 @@ import {
   mapCreatedAgentTokenToSummary,
   normalizeBubblophyAgentTokenScopes,
 } from '@/lib/agent-tokens/create';
+import { buildBubblophyAgentTokenCreatedProjectEventInsert } from '@/lib/agent-tokens/database-write';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -289,5 +290,38 @@ describe('Bubblophy agent token helpers', () => {
       state: 'aktiv',
       lastUsedAt: 'noch nie verwendet',
     });
+  });
+
+  it('builds project audit events without token secrets or runs', () => {
+    const event = buildBubblophyAgentTokenCreatedProjectEventInsert({
+      projectId: 'project_bv',
+      authUserId: 'user_owner',
+      projectKey: 'BV',
+      tokenId: 'token_codex',
+      tokenLabel: 'Codex lokal',
+      scopes: ['projects:read', 'issues:read'],
+      expiresAt: '2026-12-31T23:00:00.000Z',
+    });
+
+    expect(event).toEqual({
+      projectId: 'project_bv',
+      eventType: 'agent_token_created',
+      actorAuthUserId: 'user_owner',
+      actorAgentTokenId: null,
+      agentRunId: null,
+      summary: 'Agent-Token "Codex lokal" für BV erstellt.',
+      payload: {
+        source: 'human',
+        projectKey: 'BV',
+        tokenId: 'token_codex',
+        tokenLabel: 'Codex lokal',
+        scopes: ['projects:read', 'issues:read'],
+        expiresAt: '2026-12-31T23:00:00.000Z',
+      },
+    });
+    expect(event).not.toHaveProperty('tokenHash');
+    expect(event).not.toHaveProperty('plaintextToken');
+    expect(event.payload).not.toHaveProperty('tokenHash');
+    expect(event.payload).not.toHaveProperty('plaintextToken');
   });
 });
