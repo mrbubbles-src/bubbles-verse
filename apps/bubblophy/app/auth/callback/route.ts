@@ -1,5 +1,6 @@
 import {
   buildBubblophyLogoutPath,
+  getBubblophyAuthRedirectOrigin,
   getSafeBubblophyRedirectPath,
 } from '@/lib/auth/redirects';
 import { getAllowedBubblophySessionForUser } from '@/lib/auth/session';
@@ -22,10 +23,14 @@ export async function GET(request: NextRequest) {
   const nextPath = getSafeBubblophyRedirectPath(
     request.nextUrl.searchParams.get('next')
   );
+  const redirectOrigin = getBubblophyAuthRedirectOrigin({
+    requestUrl: request.url,
+    configuredAppUrl: env.NEXT_PUBLIC_APP_URL,
+  });
 
   if (!code) {
     return NextResponse.redirect(
-      new URL('/login?error=server_error', env.NEXT_PUBLIC_APP_URL)
+      new URL('/login?error=server_error', redirectOrigin)
     );
   }
 
@@ -34,7 +39,7 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     return NextResponse.redirect(
-      new URL('/login?error=server_error', env.NEXT_PUBLIC_APP_URL)
+      new URL('/login?error=server_error', redirectOrigin)
     );
   }
 
@@ -47,10 +52,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(
       new URL(
         buildBubblophyLogoutPath('/login?error=access_denied'),
-        env.NEXT_PUBLIC_APP_URL
+        redirectOrigin
       )
     );
   }
 
-  return NextResponse.redirect(new URL(nextPath, env.NEXT_PUBLIC_APP_URL));
+  return NextResponse.redirect(new URL(nextPath, redirectOrigin));
 }

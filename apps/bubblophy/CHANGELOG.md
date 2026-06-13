@@ -86,3 +86,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added server-backed agent token lifecycle controls for pause, resume, and
   guarded revoke, including owner/maintainer checks, explicit audit metadata,
   expiry-aware token states, and no token hash or plaintext exposure.
+- Expanded the optimistic Bubblophy auth proxy to protected browser page paths,
+  preserving deep-link `next` values while keeping agent/API and auth callback
+  routes on their route-specific auth contracts.
+- Kept Bubblophy OAuth callback redirects on the Bubblophy app origin when the
+  local environment would otherwise point at the dashboard host.

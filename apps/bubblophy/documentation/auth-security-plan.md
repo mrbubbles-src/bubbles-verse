@@ -13,9 +13,10 @@ dauerhaften Autopilot-Rechte.
 - Bis Projektmitgliedschaft und RLS angebunden sind, bleibt die Autorisierung
   fail-closed über die server-only Komma-Liste
   `BUBBLOPHY_ALLOWED_AUTH_EMAILS`.
-- Ein optimistischer Proxy läuft nur für die expliziten Page-Pfade `/` und
-  `/login`. Er prüft nur Supabase-Session-Cookie-Präsenz, verhindert
-  Login-UI-Flashes und ersetzt keine serverseitige Autorisierung.
+- Ein optimistischer Proxy läuft nur für explizite Browser-Page-Pfade und
+  `/login`. Er prüft nur Supabase-Session-Cookie-Präsenz, erhält sichere
+  Deep-Link-`next`-Werte, verhindert Login-UI-Flashes und ersetzt keine
+  serverseitige Autorisierung.
 - Projektzugriff kommt aus `bubblophy_project_members`.
 - Server-seitige Datenzugriffe prüfen immer die Supabase-User-ID und die
   Projektrolle, bevor DTOs an React-Komponenten gehen.
@@ -35,6 +36,9 @@ dauerhaften Autopilot-Rechte.
 
 - Agenten authentifizieren sich über Bubblophy-Agent-Tokens, nicht über
   Supabase Auth.
+- Agent/API-Routen bleiben außerhalb des menschlichen Login-Proxys. Fehlende
+  oder ungültige Bearer-Tokens müssen als route-spezifische JSON/Auth-Fehler
+  zurückkommen, nicht als Redirect zu `/login`.
 - Agenten verwenden weder die Supabase-Browsercookies noch die
   Supabase-Service-Role. Login/Callback nutzen ausschließlich öffentliche
   Supabase-Anon-Konfiguration.

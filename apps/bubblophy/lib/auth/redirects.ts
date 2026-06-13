@@ -1,4 +1,5 @@
 const DEFAULT_BUBBLOPHY_REDIRECT_PATH = '/';
+const LOCAL_BUBBLOPHY_HOSTNAME = 'bubblophy.mrbubbles.test';
 
 /**
  * Normalizes a Bubblophy redirect target to a safe same-origin path.
@@ -42,4 +43,28 @@ export function buildBubblophyLogoutPath(nextPath = '/login') {
   const safeNextPath = getSafeBubblophyRedirectPath(nextPath, '/login');
 
   return `/auth/logout?next=${encodeURIComponent(safeNextPath)}`;
+}
+
+/**
+ * Resolves the redirect origin for Bubblophy auth responses.
+ *
+ * @param input.requestUrl Current request URL.
+ * @param input.configuredAppUrl Public app URL from environment.
+ * @returns A Bubblophy app origin, preferring the known local request origin.
+ */
+export function getBubblophyAuthRedirectOrigin({
+  requestUrl,
+  configuredAppUrl,
+}: {
+  requestUrl: string | URL;
+  configuredAppUrl: string;
+}) {
+  const request = new URL(requestUrl);
+  const configured = new URL(configuredAppUrl);
+
+  if (request.hostname === LOCAL_BUBBLOPHY_HOSTNAME) {
+    return request.origin;
+  }
+
+  return configured.origin;
 }

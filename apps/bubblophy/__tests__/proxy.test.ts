@@ -23,6 +23,14 @@ describe('proxy', () => {
     );
   });
 
+  it('redirects anonymous browser pages to login with the full next path', () => {
+    const response = proxy(createRequest('/issues/issue-1?project=alpha'));
+
+    expect(response.headers.get('location')).toBe(
+      'http://bubblophy.mrbubbles.test:3005/login?next=%2Fissues%2Fissue-1%3Fproject%3Dalpha'
+    );
+  });
+
   it('redirects optimistic session login requests to home by default', () => {
     const response = proxy(createRequest('/login', 'token'));
 
@@ -85,7 +93,28 @@ describe('proxy', () => {
     expect(response.status).toBe(200);
   });
 
+  it('does not redirect agent API routes into the human login flow', () => {
+    const response = proxy(createRequest('/api/agent-runs/run-1'));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('location')).toBeNull();
+  });
+
+  it('does not redirect auth callback routes into the human login flow', () => {
+    const response = proxy(createRequest('/auth/callback?code=test-code'));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('location')).toBeNull();
+  });
+
   it('matches only current Bubblophy page routes', () => {
-    expect(config.matcher).toEqual(['/', '/login']);
+    expect(config.matcher).toEqual([
+      '/',
+      '/login',
+      '/projects/:path*',
+      '/issues/:path*',
+      '/runs/:path*',
+      '/agent-tokens/:path*',
+    ]);
   });
 });

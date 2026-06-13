@@ -5,7 +5,6 @@ import {
   getBubblophyLoginErrorMessage,
 } from '@/lib/auth/login-feedback';
 import { getSafeBubblophyRedirectPath } from '@/lib/auth/redirects';
-import { getPublicBubblophyEnv } from '@/lib/env';
 import { createBubblophyBrowserSupabaseClient } from '@/lib/supabase/client';
 
 import { useEffect, useState } from 'react';
@@ -45,11 +44,10 @@ export function BubblophyLoginClient() {
 
     try {
       const supabase = createBubblophyBrowserSupabaseClient();
-      const env = getPublicBubblophyEnv();
       const nextPath = getSafeBubblophyRedirectPath(
         new URLSearchParams(window.location.search).get('next')
       );
-      const callbackUrl = new URL('/auth/callback', env.NEXT_PUBLIC_APP_URL);
+      const callbackUrl = new URL('/auth/callback', window.location.origin);
 
       callbackUrl.searchParams.set('next', nextPath);
 

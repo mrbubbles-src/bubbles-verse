@@ -1,6 +1,7 @@
 import {
   buildBubblophyLoginPath,
   buildBubblophyLogoutPath,
+  getBubblophyAuthRedirectOrigin,
   getSafeBubblophyRedirectPath,
 } from '@/lib/auth/redirects';
 
@@ -28,5 +29,29 @@ describe('Bubblophy auth redirects', () => {
     expect(buildBubblophyLogoutPath('//evil.test')).toBe(
       '/auth/logout?next=%2Flogin'
     );
+  });
+
+  it('uses the Bubblophy request origin when the configured app URL points elsewhere', () => {
+    expect(
+      getBubblophyAuthRedirectOrigin({
+        requestUrl: 'http://bubblophy.mrbubbles.test:3005/auth/callback',
+        configuredAppUrl: 'http://dashboard.mrbubbles.test:3004',
+      })
+    ).toBe('http://bubblophy.mrbubbles.test:3005');
+  });
+
+  it('does not trust arbitrary request hosts for auth redirect origins', () => {
+    expect(
+      getBubblophyAuthRedirectOrigin({
+        requestUrl: 'http://evil.test/auth/callback',
+        configuredAppUrl: 'http://bubblophy.mrbubbles.test:3005',
+      })
+    ).toBe('http://bubblophy.mrbubbles.test:3005');
+    expect(
+      getBubblophyAuthRedirectOrigin({
+        requestUrl: 'http://bubblophy.evil.test/auth/callback',
+        configuredAppUrl: 'http://bubblophy.mrbubbles.test:3005',
+      })
+    ).toBe('http://bubblophy.mrbubbles.test:3005');
   });
 });

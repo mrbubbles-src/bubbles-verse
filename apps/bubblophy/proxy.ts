@@ -8,6 +8,41 @@ import { getOptimisticBubblophySession } from '@/lib/supabase/proxy';
 
 import { NextResponse } from 'next/server';
 
+const BUBBLOPHY_PAGE_MATCHER = [
+  '/',
+  '/login',
+  '/projects/:path*',
+  '/issues/:path*',
+  '/runs/:path*',
+  '/agent-tokens/:path*',
+];
+
+/**
+ * Returns the path that should survive an auth redirect.
+ *
+ * @param request Incoming Bubblophy page request.
+ * @returns Relative path including the query string.
+ */
+function getBubblophyRequestPath(request: NextRequest) {
+  return `${request.nextUrl.pathname}${request.nextUrl.search}`;
+}
+
+/**
+ * Keeps route-specific auth contracts out of the browser login proxy.
+ *
+ * @param pathname Incoming request pathname.
+ * @returns `true` when the proxy must not issue human-login redirects.
+ */
+function isBubblophyProxyBypassPath(pathname: string) {
+  return (
+    pathname.startsWith('/api/') ||
+    pathname.startsWith('/auth/') ||
+    pathname.startsWith('/_next/') ||
+    pathname === '/icon.svg' ||
+    pathname === '/favicon.ico'
+  );
+}
+
 /**
  * Applies optimistic Bubblophy auth redirects before page routes render.
  *
@@ -22,6 +57,10 @@ export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const { hasSession, response } = getOptimisticBubblophySession(request);
 
+  if (isBubblophyProxyBypassPath(pathname)) {
+    return response;
+  }
+
   if (pathname === '/login' && hasSession) {
     const nextPath = getSafeBubblophyRedirectPath(
       request.nextUrl.searchParams.get('next')
@@ -32,9 +71,9 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL(loginRedirectPath, request.url));
   }
 
-  if (pathname === '/' && !hasSession) {
+  if (pathname !== '/login' && !hasSession) {
     return NextResponse.redirect(
-      new URL(buildBubblophyLoginPath('/'), request.url)
+      new URL(buildBubblophyLoginPath(getBubblophyRequestPath(request)), request.url)
     );
   }
 
@@ -42,5 +81,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/login'],
+  matcher: BUBBLOPHY_PAGE_MATCHER,
 };

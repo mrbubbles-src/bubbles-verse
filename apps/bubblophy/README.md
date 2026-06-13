@@ -116,9 +116,10 @@ bun run build
 - Das Dashboard unter `/` verlangt eine Supabase-Session und prüft temporär
   `BUBBLOPHY_ALLOWED_AUTH_EMAILS` serverseitig fail-closed, bis
   Projektmitgliedschaften und RLS diese Sperre ersetzen.
-- Ein optimistischer Proxy für `/` und `/login` verhindert Login-UI-Flashes
-  anhand vorhandener Supabase-Session-Cookies. Er ersetzt keine Autorisierung;
-  die echte Prüfung bleibt serverseitig.
+- Ein optimistischer Proxy für geschützte Browserseiten und `/login`
+  verhindert Login-UI-Flashes anhand vorhandener Supabase-Session-Cookies. Er
+  erhält Deep-Link-`next`-Werte, ersetzt keine Autorisierung und lässt
+  `/api/*` sowie `/auth/*` bei ihren route-spezifischen Auth-Verträgen.
 - Persistierte Issue-Erfassung läuft serverseitig über Projektmitgliedschaft,
   schreibt nur Issue plus `created`-Event und startet keine Agent-Runs.
 - Persistierte Issue-Statuspflege läuft serverseitig über Projektmitgliedschaft,
@@ -134,7 +135,8 @@ bun run build
 - Agent-Statusupdates laufen über gehashte Bearer-Tokens mit Scope
   `runs:update`, Projektbindung, aktivem/nicht abgelaufenem Token und enger
   State-Machine. Der Endpoint speichert nur Status, Message, Result-JSON,
-  `last_used_at` und Audit-Events; er führt keinen Code aus.
+  `last_used_at` und Audit-Events; er führt keinen Code aus und wird nicht in
+  den menschlichen Login-Redirect-Flow umgebogen.
 - Persistierte Plan-Erfassung läuft serverseitig über Issue-Projektmitgliedschaft,
   schreibt eine neue Planversion plus `plan_updated`-Event und startet keine
   Agent-Runs.

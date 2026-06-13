@@ -8,12 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BubblophyLoginClient } from '@/app/login/login-client';
 
 const signInWithOAuthMock = vi.fn();
-const getPublicBubblophyEnvMock = vi.fn();
 const toastErrorMock = vi.fn<(message: string) => void>();
-
-vi.mock('@/lib/env', () => ({
-  getPublicBubblophyEnv: () => getPublicBubblophyEnvMock(),
-}));
 
 vi.mock('@/lib/supabase/client', () => ({
   createBubblophyBrowserSupabaseClient: () => ({
@@ -43,11 +38,7 @@ vi.mock('@bubbles/ui/shadcn/button', () => ({
 describe('BubblophyLoginPanel', () => {
   beforeEach(() => {
     signInWithOAuthMock.mockReset();
-    getPublicBubblophyEnvMock.mockReset();
     toastErrorMock.mockReset();
-    getPublicBubblophyEnvMock.mockReturnValue({
-      NEXT_PUBLIC_APP_URL: 'http://bubblophy.mrbubbles.test:3005',
-    });
     signInWithOAuthMock.mockResolvedValue({ error: null });
     window.localStorage.clear();
     window.history.replaceState({}, '', '/login');
@@ -71,7 +62,7 @@ describe('BubblophyLoginPanel', () => {
         provider: 'github',
         options: {
           redirectTo:
-            'http://bubblophy.mrbubbles.test:3005/auth/callback?next=%2Fissues%3Fstatus%3Dready',
+            `${window.location.origin}/auth/callback?next=%2Fissues%3Fstatus%3Dready`,
         },
       });
     });
@@ -99,7 +90,26 @@ describe('BubblophyLoginPanel', () => {
         provider: 'github',
         options: {
           redirectTo:
-            'http://bubblophy.mrbubbles.test:3005/auth/callback?next=%2F',
+            `${window.location.origin}/auth/callback?next=%2F`,
+        },
+      });
+    });
+  });
+
+  it('keeps OAuth callback redirects on the current app origin', async () => {
+    window.history.replaceState({}, '', '/login?next=/');
+
+    render(<BubblophyLoginClient />);
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /mit github anmelden/i })
+    );
+
+    await waitFor(() => {
+      expect(signInWithOAuthMock).toHaveBeenCalledWith({
+        provider: 'github',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=%2F`,
         },
       });
     });
@@ -116,13 +126,13 @@ describe('BubblophyLoginPanel', () => {
     expect(toastErrorMock).not.toHaveBeenCalled();
   });
 
-  it('resets pending state when public env validation fails', async () => {
+  it('resets pending state when GitHub OAuth cannot start', async () => {
     const consoleErrorSpy = vi
       .spyOn(console, 'error')
       .mockImplementation(() => undefined);
 
-    getPublicBubblophyEnvMock.mockImplementation(() => {
-      throw new Error('missing env');
+    signInWithOAuthMock.mockResolvedValue({
+      error: new Error('OAuth failed'),
     });
 
     render(<BubblophyLoginClient />);
