@@ -130,3 +130,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   invalid agent updates stay on explicit JSON errors.
 - Hardened issue edit and status controls so thrown server actions show inline
   errors without losing the edited draft, selected status, or current issue.
+- Hardened agent-token lifecycle controls so thrown pause/resume/revoke actions
+  show generic inline errors without exposing token internals or changing state.

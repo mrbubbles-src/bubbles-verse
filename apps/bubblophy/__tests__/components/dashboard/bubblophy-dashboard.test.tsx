@@ -2906,6 +2906,69 @@ describe('BubblophyDashboard interactions', () => {
     );
   });
 
+  it('shows lifecycle action exceptions without leaking token data', async () => {
+    const updateAgentTokenLifecycleAction = vi.fn<
+      (
+        input: UpdateBubblophyAgentTokenLifecycleActionInput
+      ) => Promise<UpdateBubblophyAgentTokenLifecycleActionResult>
+    >(async () => {
+      throw new Error(
+        'tokenHash=<token-hash> Authorization: Bearer <agent-token>'
+      );
+    });
+    const firstToken = databaseSnapshot.agentTokens[0];
+
+    if (!firstToken) {
+      throw new Error('Expected a token fixture.');
+    }
+
+    const singleTokenSnapshot = {
+      ...databaseSnapshot,
+      agentTokens: [firstToken],
+    } satisfies DashboardSnapshot;
+
+    render(
+      <BubblophyDashboard
+        snapshot={singleTokenSnapshot}
+        updateAgentTokenLifecycleAction={updateAgentTokenLifecycleAction}
+      />
+    );
+
+    const agentSection = document.getElementById('agents');
+
+    expect(agentSection).toBeInstanceOf(HTMLElement);
+
+    if (!agentSection) {
+      throw new Error('Expected the agent token section to render.');
+    }
+
+    const pauseButton = within(agentSection).getByRole('button', {
+      name: 'Pausieren',
+    });
+
+    fireEvent.click(pauseButton);
+
+    await waitFor(() => {
+      expect(updateAgentTokenLifecycleAction).toHaveBeenCalledWith({
+        tokenId: 'token_codex_bv',
+        decision: 'pause',
+      });
+    });
+    const alert = await within(agentSection).findByRole('alert');
+
+    expect(alert).toHaveTextContent(
+      'Das Agent-Token konnte gerade nicht geändert werden'
+    );
+    expect(within(agentSection).getAllByText('Aktiv').length).toBeGreaterThan(
+      0
+    );
+    expect(
+      within(agentSection).getByRole('button', { name: 'Pausieren' })
+    ).toBeInTheDocument();
+    expect(agentSection.textContent).not.toContain('<token-hash>');
+    expect(alert.textContent).not.toContain('<agent-token>');
+  });
+
   it('persists an issue from the dialog when database data and an action are available', async () => {
     const createIssueAction = vi.fn<
       (

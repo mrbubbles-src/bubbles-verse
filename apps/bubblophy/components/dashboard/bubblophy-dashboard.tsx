@@ -3679,10 +3679,19 @@ function AgentTokenLifecycleControls({
 
     setActionError(null);
     startTransition(async () => {
-      const result = await updateAgentTokenLifecycleAction({
-        tokenId: token.id,
-        decision,
-      });
+      let result: UpdateBubblophyAgentTokenLifecycleActionResult;
+
+      try {
+        result = await updateAgentTokenLifecycleAction({
+          tokenId: token.id,
+          decision,
+        });
+      } catch {
+        setActionError(
+          'Das Agent-Token konnte gerade nicht geändert werden. Versuche es erneut.'
+        );
+        return;
+      }
 
       if (result.status === 'updated' || result.status === 'unchanged') {
         onAgentTokenLifecycleUpdated(result.token);
