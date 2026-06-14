@@ -2462,6 +2462,69 @@ describe('BubblophyDashboard interactions', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('shows project archive action exceptions without changing archive state', async () => {
+    const transitionProjectArchiveAction = vi.fn<
+      (
+        input: TransitionBubblophyProjectArchiveActionInput
+      ) => Promise<TransitionBubblophyProjectArchiveActionResult>
+    >(async () => {
+      throw new Error('internal archive project trace');
+    });
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        updateProjectContentAction={async () => ({ status: 'unchanged' })}
+        transitionProjectArchiveAction={transitionProjectArchiveAction}
+      />
+    );
+
+    const projectsSection = document.getElementById('projects');
+
+    expect(projectsSection).toBeInstanceOf(HTMLElement);
+
+    if (!projectsSection) {
+      throw new Error('Expected the projects section to render.');
+    }
+
+    const selectedProjectButton = within(projectsSection).getByRole('button', {
+      name: 'Projekt Bubblesverse (BV) auswählen',
+    });
+
+    fireEvent.click(selectedProjectButton);
+    fireEvent.click(
+      within(projectsSection).getByRole('button', {
+        name: 'Projekt archivieren',
+      })
+    );
+    fireEvent.click(
+      within(projectsSection).getByRole('button', {
+        name: 'Endgültig archivieren',
+      })
+    );
+
+    await waitFor(() => {
+      expect(transitionProjectArchiveAction).toHaveBeenCalledWith({
+        projectKey: 'BV',
+        decision: 'archive',
+      });
+    });
+
+    const alert = await within(projectsSection).findByRole('alert');
+
+    expect(alert).toHaveTextContent(
+      'Der Projektstatus konnte gerade nicht geändert werden. Versuche es erneut.'
+    );
+    expect(alert.textContent).not.toContain('archive project');
+    expect(selectedProjectButton).toHaveAttribute('aria-pressed', 'true');
+    expect(
+      within(projectsSection).getByRole('button', {
+        name: 'Endgültig archivieren',
+      })
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Neues Issue/i })).toBeEnabled();
+  });
+
   it('restores an archived project without changing the selected project', async () => {
     const archivedSnapshot = {
       ...databaseSnapshot,
@@ -2584,6 +2647,73 @@ describe('BubblophyDashboard interactions', () => {
     );
     expect(
       within(projectsSection).queryByText('Verbotene Änderung')
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows project content action exceptions without mutating local project state', async () => {
+    const updateProjectContentAction = vi.fn<
+      (
+        input: UpdateBubblophyProjectContentActionInput
+      ) => Promise<UpdateBubblophyProjectContentActionResult>
+    >(async () => {
+      throw new Error('internal project update trace');
+    });
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        updateProjectContentAction={updateProjectContentAction}
+        transitionProjectArchiveAction={async () => ({ status: 'unchanged' })}
+      />
+    );
+
+    const projectsSection = document.getElementById('projects');
+
+    expect(projectsSection).toBeInstanceOf(HTMLElement);
+
+    if (!projectsSection) {
+      throw new Error('Expected the projects section to render.');
+    }
+
+    fireEvent.click(
+      within(projectsSection).getByRole('button', {
+        name: 'Projekt Bubblesverse (BV) auswählen',
+      })
+    );
+    fireEvent.change(within(projectsSection).getByLabelText('Name'), {
+      target: { value: 'Bubblesverse nicht gespeichert' },
+    });
+    fireEvent.change(within(projectsSection).getByLabelText('Beschreibung'), {
+      target: { value: 'Bleibt nur im Formular.' },
+    });
+    fireEvent.click(
+      within(projectsSection).getByRole('button', { name: 'Speichern' })
+    );
+
+    await waitFor(() => {
+      expect(updateProjectContentAction).toHaveBeenCalledWith({
+        projectKey: 'BV',
+        name: 'Bubblesverse nicht gespeichert',
+        description: 'Bleibt nur im Formular.',
+      });
+    });
+
+    const alert = await within(projectsSection).findByRole('alert');
+
+    expect(alert).toHaveTextContent(
+      'Die Projektänderung konnte gerade nicht gespeichert werden. Versuche es erneut.'
+    );
+    expect(alert.textContent).not.toContain('project update');
+    expect(within(projectsSection).getByLabelText('Name')).toHaveValue(
+      'Bubblesverse nicht gespeichert'
+    );
+    expect(
+      within(projectsSection).getByRole('button', {
+        name: 'Projekt Bubblesverse (BV) auswählen',
+      })
+    ).toBeInTheDocument();
+    expect(
+      within(projectsSection).queryByText('Bleibt nur im Formular.')
     ).not.toBeInTheDocument();
   });
 
@@ -3014,6 +3144,76 @@ describe('BubblophyDashboard interactions', () => {
     ).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: /^Doppeltes Projekt\s+DP/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows project create action exceptions without losing dialog input', async () => {
+    const createProjectAction = vi.fn<
+      (
+        input: CreateBubblophyProjectActionInput
+      ) => Promise<CreateBubblophyProjectActionResult>
+    >(async () => {
+      throw new Error('internal create project trace');
+    });
+
+    render(
+      <BubblophyDashboard
+        snapshot={emptyDatabaseSnapshot}
+        createProjectAction={createProjectAction}
+      />
+    );
+
+    const projectCreateButton = screen.getAllByRole('button', {
+      name: 'Neues Projekt',
+    })[0];
+
+    if (!projectCreateButton) {
+      throw new Error('Expected a project create button.');
+    }
+
+    fireEvent.click(projectCreateButton);
+    fireEvent.change(screen.getByLabelText('Name'), {
+      target: { value: 'Fehlerfestes Projekt' },
+    });
+    fireEvent.change(screen.getByLabelText('Key'), {
+      target: { value: 'FF' },
+    });
+    fireEvent.change(screen.getByLabelText('Beschreibung'), {
+      target: { value: 'Eingaben bleiben erhalten.' },
+    });
+    fireEvent.change(screen.getByLabelText('Repository URL'), {
+      target: { value: 'https://github.com/mrbubbles/fehlerfest' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Projekt erstellen' }));
+
+    await waitFor(() => {
+      expect(createProjectAction).toHaveBeenCalledWith({
+        name: 'Fehlerfestes Projekt',
+        key: 'FF',
+        description: 'Eingaben bleiben erhalten.',
+        repositoryUrl: 'https://github.com/mrbubbles/fehlerfest',
+      });
+    });
+
+    const dialog = screen.getByRole('dialog', { name: 'Projekt erstellen' });
+    const alert = await within(dialog).findByRole('alert');
+
+    expect(alert).toHaveTextContent(
+      'Das Projekt konnte gerade nicht erstellt werden. Versuche es erneut.'
+    );
+    expect(alert.textContent).not.toContain('create project');
+    expect(within(dialog).getByLabelText('Name')).toHaveValue(
+      'Fehlerfestes Projekt'
+    );
+    expect(within(dialog).getByLabelText('Key')).toHaveValue('FF');
+    expect(within(dialog).getByLabelText('Beschreibung')).toHaveValue(
+      'Eingaben bleiben erhalten.'
+    );
+    expect(within(dialog).getByLabelText('Repository URL')).toHaveValue(
+      'https://github.com/mrbubbles/fehlerfest'
+    );
+    expect(
+      screen.queryByRole('button', { name: /^Fehlerfestes Projekt\s+FF/i })
     ).not.toBeInTheDocument();
   });
 

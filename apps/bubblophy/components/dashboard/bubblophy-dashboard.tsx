@@ -1583,7 +1583,16 @@ function NewProjectDialog({
 
     setActionError(null);
     startTransition(async () => {
-      const result = await createProjectAction(projectInput);
+      let result: CreateBubblophyProjectActionResult;
+
+      try {
+        result = await createProjectAction(projectInput);
+      } catch {
+        setActionError(
+          'Das Projekt konnte gerade nicht erstellt werden. Versuche es erneut.'
+        );
+        return;
+      }
 
       if (result.status === 'created') {
         onPersistedProjectCreated(result.project);
@@ -1733,11 +1742,20 @@ function ProjectManagementPanel({
 
     setActionError(null);
     startTransition(async () => {
-      const result = await updateProjectContentAction({
-        projectKey: project.key,
-        name,
-        description,
-      });
+      let result: UpdateBubblophyProjectContentActionResult;
+
+      try {
+        result = await updateProjectContentAction({
+          projectKey: project.key,
+          name,
+          description,
+        });
+      } catch {
+        setActionError(
+          'Die Projektänderung konnte gerade nicht gespeichert werden. Versuche es erneut.'
+        );
+        return;
+      }
 
       if (result.status === 'updated') {
         onProjectUpdated(result.project);
@@ -1765,10 +1783,19 @@ function ProjectManagementPanel({
 
     setActionError(null);
     startTransition(async () => {
-      const result = await transitionProjectArchiveAction({
-        projectKey: project.key,
-        decision: project.isArchived ? 'restore' : 'archive',
-      });
+      let result: TransitionBubblophyProjectArchiveActionResult;
+
+      try {
+        result = await transitionProjectArchiveAction({
+          projectKey: project.key,
+          decision: project.isArchived ? 'restore' : 'archive',
+        });
+      } catch {
+        setActionError(
+          'Der Projektstatus konnte gerade nicht geändert werden. Versuche es erneut.'
+        );
+        return;
+      }
 
       if (result.status === 'updated') {
         onProjectUpdated(result.project);
