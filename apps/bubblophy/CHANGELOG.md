@@ -117,3 +117,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   keep actions reachable.
 - Changed the empty-database header CTA from a disabled issue button to the
   real project creation action so first use starts with an actionable step.
+- Inlined the Bubblophy proxy matcher configuration so Next.js can statically
+  parse the protected browser-page routes during local development.

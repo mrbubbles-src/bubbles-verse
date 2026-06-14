@@ -8,15 +8,6 @@ import { getOptimisticBubblophySession } from '@/lib/supabase/proxy';
 
 import { NextResponse } from 'next/server';
 
-const BUBBLOPHY_PAGE_MATCHER = [
-  '/',
-  '/login',
-  '/projects/:path*',
-  '/issues/:path*',
-  '/runs/:path*',
-  '/agent-tokens/:path*',
-];
-
 /**
  * Returns the path that should survive an auth redirect.
  *
@@ -81,5 +72,12 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: BUBBLOPHY_PAGE_MATCHER,
+  matcher: [
+    '/',
+    '/login',
+    '/projects/:path*',
+    '/issues/:path*',
+    '/runs/:path*',
+    '/agent-tokens/:path*',
+  ],
 };
