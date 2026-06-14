@@ -494,6 +494,35 @@ describe('Bubblophy issue repository mapping', () => {
     ]);
   });
 
+  it('maps member-added project events into safe activity', () => {
+    const activity = buildBubblophyActivityEvents([
+      {
+        id: 'event_member_added',
+        summary: 'Projekt BV: Mitglied added.',
+        actorAuthUserId: 'user_owner',
+        actorAgentTokenLabel: null,
+        createdAt: '2026-06-14T10:00:00.000Z',
+        projectKey: 'BV',
+        issueNumber: null,
+      },
+    ]);
+
+    expect(activity).toEqual([
+      {
+        id: 'event_member_added',
+        label: 'Projekt BV: Mitglied added.',
+        actor: 'Mensch',
+        occurredAt: '2026-06-14T10:00:00.000Z',
+        projectKey: 'BV',
+      },
+    ]);
+    expect(JSON.stringify(activity)).not.toContain('user_owner');
+    expect(JSON.stringify(activity)).not.toContain('@');
+    expect(JSON.stringify(activity)).not.toContain('profile');
+    expect(JSON.stringify(activity)).not.toContain('tokenHash');
+    expect(JSON.stringify(activity)).not.toContain('plaintextToken');
+  });
+
   it('derives stable, attentive, and blocked project health', () => {
     expect(
       deriveBubblophyProjectHealth({
