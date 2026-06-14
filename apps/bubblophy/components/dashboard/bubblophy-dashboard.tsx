@@ -1948,11 +1948,20 @@ function ProjectMembersPanel({
 
     setActionError(null);
     startTransition(async () => {
-      const result = await updateProjectMemberRoleAction({
-        projectKey: project.key,
-        memberAuthUserId: member.authUserId,
-        role,
-      });
+      let result: UpdateBubblophyProjectMemberRoleActionResult;
+
+      try {
+        result = await updateProjectMemberRoleAction({
+          projectKey: project.key,
+          memberAuthUserId: member.authUserId,
+          role,
+        });
+      } catch {
+        setActionError(
+          'Die Rolle konnte gerade nicht geändert werden. Versuche es erneut.'
+        );
+        return;
+      }
 
       if (result.status === 'updated') {
         onProjectMemberRoleUpdated(result.member, result.memberCount);
@@ -1984,10 +1993,19 @@ function ProjectMembersPanel({
 
     setActionError(null);
     startTransition(async () => {
-      const result = await removeProjectMemberAction({
-        projectKey: project.key,
-        memberAuthUserId: member.authUserId,
-      });
+      let result: RemoveBubblophyProjectMemberActionResult;
+
+      try {
+        result = await removeProjectMemberAction({
+          projectKey: project.key,
+          memberAuthUserId: member.authUserId,
+        });
+      } catch {
+        setActionError(
+          'Das Mitglied konnte gerade nicht entfernt werden. Versuche es erneut.'
+        );
+        return;
+      }
 
       if (result.status === 'removed') {
         onProjectMemberRemoved(result);

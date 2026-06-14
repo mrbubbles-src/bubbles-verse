@@ -2644,6 +2644,64 @@ describe('BubblophyDashboard interactions', () => {
     });
   });
 
+  it('shows role action exceptions without changing the member row', async () => {
+    const updateProjectMemberRoleAction = vi.fn<
+      (
+        input: UpdateBubblophyProjectMemberRoleActionInput
+      ) => Promise<UpdateBubblophyProjectMemberRoleActionResult>
+    >(async () => {
+      throw new Error('internal membership mutation stack');
+    });
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithManageableMembers}
+        updateProjectMemberRoleAction={updateProjectMemberRoleAction}
+      />
+    );
+
+    const projectsSection = document.getElementById('projects');
+
+    expect(projectsSection).toBeInstanceOf(HTMLElement);
+
+    if (!projectsSection) {
+      throw new Error('Expected the projects section to render.');
+    }
+
+    fireEvent.click(
+      within(projectsSection).getByRole('button', {
+        name: 'Projekt Bubblesverse (BV) auswählen',
+      })
+    );
+
+    const martinRoleSelect = within(projectsSection).getByLabelText(
+      'Rolle für user_martin'
+    );
+
+    fireEvent.change(martinRoleSelect, {
+      target: { value: 'viewer' },
+    });
+
+    await waitFor(() => {
+      expect(updateProjectMemberRoleAction).toHaveBeenCalledWith({
+        projectKey: 'BV',
+        memberAuthUserId: 'user_martin',
+        role: 'viewer',
+      });
+    });
+
+    const alert = await within(projectsSection).findByRole('alert');
+
+    expect(alert).toHaveTextContent(
+      'Die Rolle konnte gerade nicht geändert werden. Versuche es erneut.'
+    );
+    expect(alert.textContent).not.toContain('membership mutation');
+    expect(
+      within(projectsSection).getByLabelText('Rolle für user_martin')
+    ).toHaveValue('member');
+    expect(within(projectsSection).getByText('user_martin')).toBeInTheDocument();
+  });
+
   it('keeps member management available after project content updates', async () => {
     const updateProjectContentAction = vi.fn<
       (
@@ -2761,6 +2819,66 @@ describe('BubblophyDashboard interactions', () => {
     await waitFor(() => {
       expect(screen.queryByText('user_martin')).not.toBeInTheDocument();
     });
+  });
+
+  it('shows removal action exceptions without removing the member row', async () => {
+    const removeProjectMemberAction = vi.fn<
+      (
+        input: RemoveBubblophyProjectMemberActionInput
+      ) => Promise<RemoveBubblophyProjectMemberActionResult>
+    >(async () => {
+      throw new Error('internal member delete trace');
+    });
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithManageableMembers}
+        removeProjectMemberAction={removeProjectMemberAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Projekt Bubblesverse (BV) auswählen',
+      })
+    );
+
+    const martinRow = screen.getByText('user_martin').closest('tr');
+
+    expect(martinRow).toBeInstanceOf(HTMLTableRowElement);
+
+    if (!martinRow) {
+      throw new Error('Expected Martin member row.');
+    }
+
+    fireEvent.click(
+      within(martinRow).getByRole('button', { name: 'Entfernen' })
+    );
+    fireEvent.click(
+      within(martinRow).getByRole('button', {
+        name: 'Endgültig entfernen',
+      })
+    );
+
+    await waitFor(() => {
+      expect(removeProjectMemberAction).toHaveBeenCalledWith({
+        projectKey: 'BV',
+        memberAuthUserId: 'user_martin',
+      });
+    });
+
+    const alert = await screen.findByRole('alert');
+
+    expect(alert).toHaveTextContent(
+      'Das Mitglied konnte gerade nicht entfernt werden. Versuche es erneut.'
+    );
+    expect(alert.textContent).not.toContain('member delete');
+    expect(screen.getByText('user_martin')).toBeInTheDocument();
+    expect(
+      within(martinRow).getByRole('button', {
+        name: 'Endgültig entfernen',
+      })
+    ).toBeInTheDocument();
   });
 
   it('shows project member forbidden and archived states without fake controls', async () => {
