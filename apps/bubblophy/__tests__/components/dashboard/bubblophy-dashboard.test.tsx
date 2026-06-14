@@ -161,6 +161,21 @@ const databaseSnapshotWithIssueNote = {
   ),
 } satisfies DashboardSnapshot;
 
+const databaseSnapshotWithIssueNoteActivity = {
+  ...databaseSnapshotWithIssueNote,
+  activity: [
+    {
+      id: 'event_issue_note',
+      label: 'Plan-Review als Issue-Notiz festgehalten.',
+      actor: 'Mensch',
+      occurredAt: '2026-06-14T10:00:00.000Z',
+      projectKey: 'BV',
+      issueId: 'BV-12',
+    },
+    ...databaseSnapshot.activity,
+  ],
+} satisfies DashboardSnapshot;
+
 const databaseSnapshotWithDoneIssue = {
   ...databaseSnapshot,
   issues: databaseSnapshot.issues.map((issue) =>
@@ -1899,6 +1914,45 @@ describe('BubblophyDashboard interactions', () => {
       within(notesRegion).getByText('Bestehende Review-Notiz aus dem Reload.')
     ).toBeInTheDocument();
     expect(within(notesRegion).getByText(/Mensch · 2026-06-14/)).toBeInTheDocument();
+  });
+
+  it('shows issue note events in activity without duplicating audit events as notes', () => {
+    render(
+      <BubblophyDashboard snapshot={databaseSnapshotWithIssueNoteActivity} />
+    );
+
+    const activitySection = document.getElementById('activity');
+
+    expect(activitySection).toBeInstanceOf(HTMLElement);
+
+    if (!activitySection) {
+      throw new Error('Expected the activity section to render.');
+    }
+
+    expect(
+      within(activitySection).getByText(
+        'Plan-Review als Issue-Notiz festgehalten.'
+      )
+    ).toBeInTheDocument();
+    expect(within(activitySection).getAllByText('Mensch').length).toBeGreaterThan(
+      0
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+    const notesRegion = within(detailPanel).getByLabelText('Notizen für BV-12');
+
+    expect(
+      within(notesRegion).getByText('Bestehende Review-Notiz aus dem Reload.')
+    ).toBeInTheDocument();
+    expect(
+      within(notesRegion).queryByText('Plan für BV-12 aktualisiert')
+    ).not.toBeInTheDocument();
   });
 
   it('appends a human issue note without starting an agent run', async () => {

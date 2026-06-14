@@ -6,12 +6,14 @@ type MockPlanStep = {
   id: string;
   text: string;
 };
+type MockPayload = Record<string, string>;
 type MockRowValue =
   | string
   | number
   | boolean
   | string[]
   | MockPlanStep[]
+  | MockPayload
   | null;
 type MockRow = Record<string, MockRowValue>;
 
@@ -67,6 +69,15 @@ const tableRows = {
   ],
   issueEvents: [
     {
+      id: 'event_issue_note',
+      summary: 'Plan-Review als Issue-Notiz festgehalten.',
+      actorAuthUserId: 'user_owner',
+      actorAgentTokenLabel: null,
+      createdAt: '2026-06-13T16:06:00.000Z',
+      projectKey: 'BV',
+      issueNumber: 7,
+    },
+    {
       id: 'event_issue_ready',
       summary: 'Issue BV-07 auf bereit gesetzt.',
       actorAuthUserId: null,
@@ -74,6 +85,36 @@ const tableRows = {
       createdAt: '2026-06-13T16:05:00.000Z',
       projectKey: 'BV',
       issueNumber: 7,
+    },
+  ],
+  issueNoteEvents: [
+    {
+      id: 'event_issue_note',
+      issueId: 'issue_visible',
+      summary: 'Plan-Review als Issue-Notiz festgehalten.',
+      payload: {
+        source: 'human',
+        entity: 'issue_note',
+        action: 'created',
+        issueId: 'BV-07',
+      },
+      actorAuthUserId: 'user_owner',
+      actorAgentTokenLabel: null,
+      createdAt: '2026-06-13T16:06:00.000Z',
+    },
+    {
+      id: 'event_issue_ready',
+      issueId: 'issue_visible',
+      summary: 'Issue BV-07 auf bereit gesetzt.',
+      payload: {
+        source: 'human',
+        entity: 'issue',
+        action: 'status_changed',
+        issueId: 'BV-07',
+      },
+      actorAuthUserId: 'user_owner',
+      actorAgentTokenLabel: null,
+      createdAt: '2026-06-13T16:05:00.000Z',
     },
   ],
   memberCounts: [
@@ -263,7 +304,9 @@ function rowsForCall(call: QueryCall): MockRow[] {
   }
 
   if (call.tableName === 'bubblophy_issue_events') {
-    return tableRows.issueEvents;
+    return call.selectedKeys.includes('payload')
+      ? tableRows.issueNoteEvents
+      : tableRows.issueEvents;
   }
 
   return [];
@@ -282,6 +325,15 @@ describe('selectBubblophyDashboardRowsForUser', () => {
     const rows = await selectBubblophyDashboardRowsForUser('user_owner');
 
     expect(rows.activityRows).toEqual([
+      {
+        id: 'event_issue_note',
+        summary: 'Plan-Review als Issue-Notiz festgehalten.',
+        actorAuthUserId: 'user_owner',
+        actorAgentTokenLabel: null,
+        createdAt: '2026-06-13T16:06:00.000Z',
+        projectKey: 'BV',
+        issueNumber: 7,
+      },
       {
         id: 'event_issue_ready',
         summary: 'Issue BV-07 auf bereit gesetzt.',
@@ -310,6 +362,14 @@ describe('selectBubblophyDashboardRowsForUser', () => {
         issuePlanSteps: [
           { id: 'step_1', text: 'Gespeicherten Plan laden' },
           { id: 'step_2', text: 'Detailpanel prüfen' },
+        ],
+        issueNotes: [
+          {
+            id: 'event_issue_note',
+            note: 'Plan-Review als Issue-Notiz festgehalten.',
+            actor: 'Mensch',
+            createdAt: '2026-06-13T16:06:00.000Z',
+          },
         ],
       }),
     ]);
