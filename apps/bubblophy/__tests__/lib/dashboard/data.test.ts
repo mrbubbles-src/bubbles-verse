@@ -111,7 +111,21 @@ describe('getBubblophyDashboardSnapshot', () => {
   });
 
   it('returns database metadata and mapped rows when the loader succeeds', async () => {
-    const selectRows = vi.fn(async () => makeDatabaseRows());
+    const selectRows = vi.fn(async () =>
+      makeDatabaseRows({
+        projectIssueRows: [
+          makeRow({
+            issuePlanStepCount: 99,
+            issuePlanVersion: 3,
+            issuePlanSummary: 'Reload lädt den neuesten Plan.',
+            issuePlanSteps: [
+              { id: 'step_1', text: 'Summary aus DB lesen' },
+              { id: 'step_2', text: 'Schritte im Detail zeigen' },
+            ],
+          }),
+        ],
+      })
+    );
 
     await expect(
       getBubblophyDashboardSnapshot({ session, loadRows: selectRows })
@@ -134,6 +148,15 @@ describe('getBubblophyDashboardSnapshot', () => {
           description: 'Beschreibung aus dem Read-Pfad.',
           priority: 'hoch',
           status: 'bereit',
+          planSteps: 2,
+          latestPlan: {
+            version: 3,
+            summary: 'Reload lädt den neuesten Plan.',
+            steps: [
+              { id: 'step_1', text: 'Summary aus DB lesen' },
+              { id: 'step_2', text: 'Schritte im Detail zeigen' },
+            ],
+          },
         },
       ],
       projectMembers: [

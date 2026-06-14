@@ -1155,6 +1155,102 @@ describe('BubblophyDashboard interactions', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('edits a reloaded latest plan as a new persisted plan version', async () => {
+    const createIssuePlanAction = vi.fn<
+      (
+        input: CreateBubblophyIssuePlanActionInput
+      ) => Promise<CreateBubblophyIssuePlanActionResult>
+    >(async () => ({
+      status: 'created',
+      plan: {
+        issueId: 'BV-12',
+        version: 5,
+        summary: 'Reload-Plan wurde nachgeschärft.',
+        steps: [
+          { id: 'step_1', text: 'Persistierten Plan lesen' },
+          { id: 'step_2', text: 'Detailpanel verifizieren' },
+          { id: 'step_3', text: 'Neue Planversion speichern' },
+        ],
+      },
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithReloadedPlan}
+        createIssuePlanAction={createIssuePlanAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Plan bearbeiten' })
+    );
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByLabelText('Plan-Zusammenfassung')).toHaveValue(
+      'Reload zeigt den gespeicherten Plan.'
+    );
+    expect(screen.getByLabelText('Schritt 1')).toHaveValue(
+      'Persistierten Plan lesen'
+    );
+    expect(screen.getByLabelText('Schritt 2')).toHaveValue(
+      'Detailpanel verifizieren'
+    );
+
+    fireEvent.change(screen.getByLabelText('Plan-Zusammenfassung'), {
+      target: { value: 'Reload-Plan wurde nachgeschärft.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Schritt hinzufügen' }));
+    fireEvent.change(screen.getByLabelText('Schritt 3'), {
+      target: { value: 'Neue Planversion speichern' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Plan speichern' }));
+
+    await waitFor(() => {
+      expect(createIssuePlanAction).toHaveBeenCalledWith({
+        issueId: 'BV-12',
+        summary: 'Reload-Plan wurde nachgeschärft.',
+        steps: [
+          'Persistierten Plan lesen',
+          'Detailpanel verifizieren',
+          'Neue Planversion speichern',
+        ],
+      });
+    });
+    expect(createIssuePlanAction.mock.calls[0]?.[0]).not.toHaveProperty(
+      'authUserId'
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    const updatedDetailPanel = screen.getByLabelText('Issue-Details');
+
+    expect(
+      within(updatedDetailPanel).getByText('Reload-Plan wurde nachgeschärft.')
+    ).toBeInTheDocument();
+    expect(
+      within(updatedDetailPanel).getByText('Neue Planversion speichern')
+    ).toBeInTheDocument();
+    expect(
+      within(updatedDetailPanel).getByText(
+        'Plan v5, menschlich gespeichert. Es wurde kein Agent-Run gestartet.'
+      )
+    ).toBeInTheDocument();
+    expect(
+      within(updatedDetailPanel).getByText('3 Schritte')
+    ).toBeInTheDocument();
+    expect(screen.getAllByText('3 Schritte').length).toBeGreaterThanOrEqual(2);
+  });
+
   it('keeps the plan dialog open and shows denied plan save errors', async () => {
     const createIssuePlanAction = vi.fn<
       (
@@ -1205,6 +1301,54 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       screen.queryByText('Plan v2, menschlich gespeichert')
     ).not.toBeInTheDocument();
+  });
+
+  it('keeps the plan dialog open when the plan action throws', async () => {
+    const createIssuePlanAction = vi.fn<
+      (
+        input: CreateBubblophyIssuePlanActionInput
+      ) => Promise<CreateBubblophyIssuePlanActionResult>
+    >(async () => {
+      throw new Error('plan action failed');
+    });
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithReloadedPlan}
+        createIssuePlanAction={createIssuePlanAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Plan bearbeiten' })
+    );
+    fireEvent.change(screen.getByLabelText('Plan-Zusammenfassung'), {
+      target: { value: 'Plan bleibt im Dialog.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Plan speichern' }));
+
+    await waitFor(() => {
+      expect(createIssuePlanAction).toHaveBeenCalledWith({
+        issueId: 'BV-12',
+        summary: 'Plan bleibt im Dialog.',
+        steps: ['Persistierten Plan lesen', 'Detailpanel verifizieren'],
+      });
+    });
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Der Plan konnte gerade nicht gespeichert werden'
+    );
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByLabelText('Plan-Zusammenfassung')).toHaveValue(
+      'Plan bleibt im Dialog.'
+    );
   });
 
   it('opens a local draft dialog from the new issue action', () => {

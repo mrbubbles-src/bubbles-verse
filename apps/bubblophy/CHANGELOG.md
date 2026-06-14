@@ -122,3 +122,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added server-backed issue priority updates with contributor checks,
   `priority_changed` audit metadata, and dashboard feedback that keeps issue
   lists and detail panels consistent after saving.
+- Pinned persisted issue plan reload behavior so latest plan summary and steps
+  stay visible/editable after dashboard load, and kept failed plan saves inside
+  the dialog without losing the draft.

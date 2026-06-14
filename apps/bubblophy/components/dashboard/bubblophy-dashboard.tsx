@@ -3256,19 +3256,25 @@ function IssuePlanDraftDialog({
 
     setActionError(null);
     startTransition(async () => {
-      const result = await createIssuePlanAction({
-        issueId: issue.id,
-        summary,
-        steps: normalizedSteps,
-      });
+      try {
+        const result = await createIssuePlanAction({
+          issueId: issue.id,
+          summary,
+          steps: normalizedSteps,
+        });
 
-      if (result.status === 'created') {
-        onIssuePlanSaved(result.plan);
-        onOpenChange(false);
-        return;
+        if (result.status === 'created') {
+          onIssuePlanSaved(result.plan);
+          onOpenChange(false);
+          return;
+        }
+
+        setActionError(getIssuePlanActionErrorMessage(result));
+      } catch {
+        setActionError(
+          'Der Plan konnte gerade nicht gespeichert werden. Versuche es erneut.'
+        );
       }
-
-      setActionError(getIssuePlanActionErrorMessage(result));
     });
   };
 
