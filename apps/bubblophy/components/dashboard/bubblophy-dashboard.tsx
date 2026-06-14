@@ -582,6 +582,9 @@ export function BubblophyDashboard({
   const [updatedAgentRunsById, setUpdatedAgentRunsById] = useState<
     Record<string, AgentRunSummary>
   >({});
+  const [recentMutationFeedback, setRecentMutationFeedback] = useState<
+    string | null
+  >(null);
   const [draftSequence, setDraftSequence] = useState(1);
   const canUseDatabase =
     snapshot.meta.dataSource === 'database' ||
@@ -850,6 +853,7 @@ export function BubblophyDashboard({
     setSelectedProjectKey(issue.projectKey);
     setSelectedIssueId(issue.id);
     updateSelectionUrl(issue.projectKey, issue.id);
+    setRecentMutationFeedback(`Issue ${issue.id} wurde erstellt.`);
     setIsDraftDialogOpen(false);
   };
 
@@ -858,6 +862,7 @@ export function BubblophyDashboard({
     setSelectedProjectKey(project.key);
     setSelectedIssueId('');
     updateSelectionUrl(project.key, '');
+    setRecentMutationFeedback(`Projekt ${project.key} wurde erstellt.`);
     setIsProjectDialogOpen(false);
   };
 
@@ -874,6 +879,7 @@ export function BubblophyDashboard({
           project.currentUserRole ?? currentProject?.currentUserRole,
       },
     }));
+    setRecentMutationFeedback(`Projekt ${project.key} wurde aktualisiert.`);
   };
 
   const handleProjectMemberAdded = (
@@ -900,6 +906,10 @@ export function BubblophyDashboard({
     if (project) {
       handleProjectUpdated({ ...project, memberCount });
     }
+
+    setRecentMutationFeedback(
+      `Mitglied ${member.authUserId} wurde zu ${member.projectKey} hinzugefügt.`
+    );
   };
 
   const handleProjectMemberRoleUpdated = (
@@ -918,6 +928,10 @@ export function BubblophyDashboard({
     if (project) {
       handleProjectUpdated({ ...project, memberCount });
     }
+
+    setRecentMutationFeedback(
+      `Mitglied ${member.authUserId} wurde in ${member.projectKey} aktualisiert.`
+    );
   };
 
   const handleProjectMemberRemoved = (input: {
@@ -941,6 +955,10 @@ export function BubblophyDashboard({
         memberCount: input.memberCount,
       });
     }
+
+    setRecentMutationFeedback(
+      `Mitglied ${input.memberAuthUserId} wurde aus ${input.projectKey} entfernt.`
+    );
   };
 
   const handleIssuePlanSaved = (plan: IssuePlanDraft) => {
@@ -948,6 +966,7 @@ export function BubblophyDashboard({
       ...currentPlans,
       [plan.issueId]: plan,
     }));
+    setRecentMutationFeedback(`Plan für ${plan.issueId} wurde gespeichert.`);
   };
 
   const handleIssueNoteCreated = (issueId: string, note: IssueNoteSummary) => {
@@ -957,6 +976,7 @@ export function BubblophyDashboard({
       ...currentNotes,
       [issueId]: [note, ...(currentNotes[issueId] ?? currentIssue?.notes ?? [])],
     }));
+    setRecentMutationFeedback(`Notiz für ${issueId} wurde gespeichert.`);
   };
 
   const handleIssueUpdated = (issue: IssueSummary) => {
@@ -964,6 +984,7 @@ export function BubblophyDashboard({
       ...currentIssues,
       [issue.id]: issue,
     }));
+    setRecentMutationFeedback(`Issue ${issue.id} wurde aktualisiert.`);
   };
 
   const handleAgentTokenCreated = (token: CreatedAgentToken) => {
@@ -978,6 +999,7 @@ export function BubblophyDashboard({
     };
 
     setPersistedAgentTokens((currentTokens) => [summary, ...currentTokens]);
+    setRecentMutationFeedback(`Agent-Token ${summary.label} wurde erstellt.`);
   };
 
   const handleAgentTokenLifecycleUpdated = (token: AgentTokenSummary) => {
@@ -985,10 +1007,12 @@ export function BubblophyDashboard({
       ...currentTokens,
       [token.id]: token,
     }));
+    setRecentMutationFeedback(`Agent-Token ${token.label} wurde aktualisiert.`);
   };
 
   const handleAgentRunRequested = (run: AgentRunSummary) => {
     setPersistedAgentRuns((currentRuns) => [run, ...currentRuns]);
+    setRecentMutationFeedback(`Run ${run.id} wurde angefragt.`);
   };
 
   const handleAgentRunTransitioned = (run: AgentRunSummary) => {
@@ -996,6 +1020,7 @@ export function BubblophyDashboard({
       ...currentRuns,
       [run.id]: run,
     }));
+    setRecentMutationFeedback(`Run ${run.id} wurde aktualisiert.`);
   };
 
   const handleDeleteDraft = (issueId: string) => {
@@ -1075,6 +1100,22 @@ export function BubblophyDashboard({
               caption="brauchen menschliche Entscheidung"
             />
           </div>
+
+          {recentMutationFeedback ? (
+            <div
+              role="status"
+              aria-label="Letzte bestätigte Aktion"
+              className="mb-5 rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">
+                Zuletzt lokal bestätigt:
+              </span>{' '}
+              {recentMutationFeedback}{' '}
+              <span>
+                Temporäres Feedback aus dieser Sitzung; gespeicherte Daten
+                bleiben die Quelle der Wahrheit.
+              </span>
+            </div>
+          ) : null}
 
           <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
             <div className="grid gap-5">

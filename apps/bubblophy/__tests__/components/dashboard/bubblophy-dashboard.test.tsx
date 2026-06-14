@@ -3556,6 +3556,165 @@ describe('BubblophyDashboard interactions', () => {
     ).toBeInTheDocument();
   });
 
+  it('shows recent successful mutation feedback after issue creation', async () => {
+    const createIssueAction = vi.fn<
+      (
+        input: CreateBubblophyIssueActionInput
+      ) => Promise<CreateBubblophyIssueActionResult>
+    >(async (input) => ({
+      status: 'created',
+      issue: {
+        id: 'BV-15',
+        title: input.title,
+        projectKey: input.projectKey,
+        status: 'triage',
+        priority: input.priority ?? 'mittel',
+        owner: 'Nicht zugewiesen',
+        planSteps: 0,
+        approvalRequired: true,
+        description: input.description,
+      },
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        createIssueAction={createIssueAction}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Neues Issue/i }));
+    fireEvent.change(screen.getByLabelText('Titel'), {
+      target: { value: 'Feedback sichtbarer machen' },
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Issue erstellen' })
+    );
+
+    await waitFor(() => {
+      expect(createIssueAction).toHaveBeenCalledWith({
+        projectKey: 'BV',
+        title: 'Feedback sichtbarer machen',
+        description: '',
+        priority: 'mittel',
+      });
+    });
+
+    const recentFeedback = await screen.findByRole('status', {
+      name: 'Letzte bestätigte Aktion',
+    });
+
+    expect(recentFeedback).toHaveTextContent('Zuletzt lokal bestätigt:');
+    expect(recentFeedback).toHaveTextContent('Issue BV-15 wurde erstellt.');
+    expect(recentFeedback).toHaveTextContent(
+      'Temporäres Feedback aus dieser Sitzung; gespeicherte Daten bleiben die Quelle der Wahrheit.'
+    );
+    expect(
+      screen.queryByText(/persistente Aktivität erscheint/i)
+    ).not.toBeInTheDocument();
+
+    const activitySection = document.getElementById('activity');
+
+    expect(activitySection).toBeInstanceOf(HTMLElement);
+
+    if (!activitySection) {
+      throw new Error('Expected the activity section to render.');
+    }
+
+    expect(
+      within(activitySection).queryByText(/Issue BV-15 wurde erstellt/i)
+    ).not.toBeInTheDocument();
+  });
+
+  it('updates recent mutation feedback after a later successful action', async () => {
+    const createIssueAction = vi.fn<
+      (
+        input: CreateBubblophyIssueActionInput
+      ) => Promise<CreateBubblophyIssueActionResult>
+    >(async (input) => ({
+      status: 'created',
+      issue: {
+        id: 'BV-15',
+        title: input.title,
+        projectKey: input.projectKey,
+        status: 'triage',
+        priority: input.priority ?? 'mittel',
+        owner: 'Nicht zugewiesen',
+        planSteps: 0,
+        approvalRequired: true,
+        description: input.description,
+      },
+    }));
+    const requestAgentRunAction = vi.fn<
+      (
+        input: RequestBubblophyAgentRunActionInput
+      ) => Promise<RequestBubblophyAgentRunActionResult>
+    >(async () => ({
+      status: 'requested',
+      run: {
+        id: 'run_bv_15_requested',
+        issueId: 'BV-15',
+        agentLabel: 'codex-local-lio',
+        state: 'wartet',
+        requestedBy: 'Mensch',
+        lastEvent: 'Anfrage gespeichert: Feedback-Flow prüfen.',
+      },
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        createIssueAction={createIssueAction}
+        requestAgentRunAction={requestAgentRunAction}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Neues Issue/i }));
+    fireEvent.change(screen.getByLabelText('Titel'), {
+      target: { value: 'Feedback später überschreiben' },
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Issue erstellen' })
+    );
+
+    expect(
+      await screen.findByText('Issue BV-15 wurde erstellt.')
+    ).toBeInTheDocument();
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    fireEvent.change(within(detailPanel).getByLabelText('Agent-Token'), {
+      target: { value: 'token_codex_bv' },
+    });
+    fireEvent.change(within(detailPanel).getByLabelText('Auftrag'), {
+      target: { value: 'Bitte nur lokal prüfen.' },
+    });
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Run anfragen' })
+    );
+
+    await waitFor(() => {
+      expect(requestAgentRunAction).toHaveBeenCalledWith({
+        issueId: 'BV-15',
+        agentTokenId: 'token_codex_bv',
+        instructions: 'Bitte nur lokal prüfen.',
+      });
+    });
+
+    const recentFeedback = await screen.findByRole('status', {
+      name: 'Letzte bestätigte Aktion',
+    });
+
+    await waitFor(() => {
+      expect(recentFeedback).toHaveTextContent(
+        'Run run_bv_15_requested wurde angefragt.'
+      );
+    });
+    expect(recentFeedback).not.toHaveTextContent(
+      'Issue BV-15 wurde erstellt.'
+    );
+  });
+
   it('plans a newly created title-only database issue without starting a run', async () => {
     const createIssueAction = vi.fn<
       (
