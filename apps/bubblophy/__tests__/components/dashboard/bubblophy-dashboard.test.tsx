@@ -5626,6 +5626,42 @@ describe('BubblophyDashboard interactions', () => {
     ).toBeInTheDocument();
   });
 
+  it('keeps agent run result summaries within responsive run cards', () => {
+    render(<BubblophyDashboard snapshot={databaseSnapshotWithReviewRun} />);
+
+    const runsSection = document.getElementById('runs');
+
+    expect(runsSection).toBeInstanceOf(HTMLElement);
+
+    if (!runsSection) {
+      throw new Error('Expected the runs section to render.');
+    }
+
+    const runCard =
+      within(runsSection).getByText('run_bv_14').closest('dl')?.parentElement;
+
+    expect(runCard).toBeInstanceOf(HTMLElement);
+
+    if (!runCard) {
+      throw new Error('Expected the BV run card to render.');
+    }
+
+    const resultText = within(runCard).getByText(
+      'Diff ist bereit für menschliche Prüfung.'
+    );
+    const resultBlock = resultText.closest('div');
+
+    expect(resultBlock).toBeInstanceOf(HTMLElement);
+
+    if (!resultBlock) {
+      throw new Error('Expected the run result block to render.');
+    }
+
+    expect(runCard).toHaveClass('min-w-0');
+    expect(resultBlock).toHaveClass('min-w-0');
+    expect(resultText).toHaveClass('break-words');
+  });
+
   it('shows failure run result message', () => {
     render(
       <BubblophyDashboard snapshot={databaseSnapshotWithFailedRunResult} />

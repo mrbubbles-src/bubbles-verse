@@ -5045,7 +5045,7 @@ function RunQueue({
               return (
                 <div
                   key={run.id}
-                  className="grid gap-2 rounded-md bg-muted/30 p-3">
+                  className="grid min-w-0 gap-2 rounded-md bg-muted/30 p-3">
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <p className="text-sm font-medium">{run.issueId}</p>
@@ -5124,9 +5124,9 @@ function RunQueue({
 
 function AgentRunResultSummary({ summary }: { summary: string }) {
   return (
-    <div className="rounded-md border border-border bg-background/60 p-2 text-xs">
+    <div className="min-w-0 rounded-md border border-border bg-background/60 p-2 text-xs">
       <p className="font-medium text-foreground">Agent-Ergebnis</p>
-      <p className="mt-1 text-muted-foreground">{summary}</p>
+      <p className="mt-1 break-words text-muted-foreground">{summary}</p>
     </div>
   );
 }
