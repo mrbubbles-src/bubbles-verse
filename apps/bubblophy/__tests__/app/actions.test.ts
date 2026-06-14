@@ -9,6 +9,7 @@ import type {
   TransitionBubblophyProjectArchiveActionInput,
   UpdateBubblophyAgentTokenLifecycleActionInput,
   UpdateBubblophyIssueContentActionInput,
+  UpdateBubblophyIssuePriorityActionInput,
   UpdateBubblophyIssueStatusActionInput,
   UpdateBubblophyProjectContentActionInput,
   UpdateBubblophyProjectMemberRoleActionInput,
@@ -20,6 +21,7 @@ import type { UpdateBubblophyAgentTokenLifecycleInput } from '@/lib/agent-tokens
 import type { CreateBubblophyIssueDraftInput } from '@/lib/issues/create';
 import type { UpdateBubblophyIssueContentInput } from '@/lib/issues/edit';
 import type { CreateOrUpdateBubblophyIssuePlanDraftInput } from '@/lib/issues/plans';
+import type { UpdateBubblophyIssuePriorityInput } from '@/lib/issues/priority';
 import type { UpdateBubblophyIssueStatusInput } from '@/lib/issues/status';
 import type { CreateBubblophyProjectInput } from '@/lib/projects/create';
 import type {
@@ -37,6 +39,7 @@ const requireBubblophySessionMock = vi.fn();
 const createBubblophyIssueDraftMock = vi.fn();
 const updateBubblophyIssueContentMock = vi.fn();
 const createBubblophyIssuePlanDraftMock = vi.fn();
+const updateBubblophyIssuePriorityMock = vi.fn();
 const updateBubblophyIssueStatusMock = vi.fn();
 const createBubblophyProjectMock = vi.fn();
 const updateBubblophyProjectContentMock = vi.fn();
@@ -67,6 +70,11 @@ vi.mock('@/lib/issues/plans', () => ({
   createOrUpdateBubblophyIssuePlanDraft: (
     input: CreateOrUpdateBubblophyIssuePlanDraftInput
   ) => createBubblophyIssuePlanDraftMock(input),
+}));
+
+vi.mock('@/lib/issues/priority', () => ({
+  updateBubblophyIssuePriority: (input: UpdateBubblophyIssuePriorityInput) =>
+    updateBubblophyIssuePriorityMock(input),
 }));
 
 vi.mock('@/lib/issues/status', () => ({
@@ -122,6 +130,7 @@ describe('createBubblophyIssueAction', () => {
     createBubblophyIssueDraftMock.mockReset();
     updateBubblophyIssueContentMock.mockReset();
     createBubblophyIssuePlanDraftMock.mockReset();
+    updateBubblophyIssuePriorityMock.mockReset();
     updateBubblophyIssueStatusMock.mockReset();
     createBubblophyProjectMock.mockReset();
     updateBubblophyProjectContentMock.mockReset();
@@ -254,6 +263,7 @@ describe('createBubblophyIssuePlanAction', () => {
     requireBubblophySessionMock.mockReset();
     createBubblophyIssueDraftMock.mockReset();
     createBubblophyIssuePlanDraftMock.mockReset();
+    updateBubblophyIssuePriorityMock.mockReset();
     updateBubblophyIssueStatusMock.mockReset();
     createBubblophyProjectMock.mockReset();
     createBubblophyAgentTokenMock.mockReset();
@@ -358,6 +368,66 @@ describe('updateBubblophyIssueStatusAction', () => {
       issue: {
         id: 'BV-12',
         title: 'Status pflegen',
+        projectKey: 'BV',
+        status: 'bereit',
+        priority: 'hoch',
+        owner: 'Nicht zugewiesen',
+        planSteps: 2,
+        approvalRequired: true,
+      },
+    });
+  });
+});
+
+describe('updateBubblophyIssuePriorityAction', () => {
+  beforeEach(() => {
+    requireBubblophySessionMock.mockReset();
+    updateBubblophyIssuePriorityMock.mockReset();
+  });
+
+  it('resolves the auth user server-side instead of accepting a client authUserId', async () => {
+    requireBubblophySessionMock.mockResolvedValue({
+      authUserId: 'user_server',
+      email: 'owner@example.test',
+      user: {},
+    });
+    updateBubblophyIssuePriorityMock.mockResolvedValue({
+      status: 'updated',
+      issue: {
+        id: 'BV-12',
+        title: 'Priorität pflegen',
+        description: 'Eine wichtige Änderung.',
+        projectKey: 'BV',
+        status: 'bereit',
+        priority: 'hoch',
+        owner: 'Nicht zugewiesen',
+        planSteps: 2,
+        approvalRequired: true,
+      },
+    });
+
+    const { updateBubblophyIssuePriorityAction } =
+      await import('@/app/actions');
+    const result = await updateBubblophyIssuePriorityAction({
+      authUserId: 'user_client_spoof',
+      issueId: 'BV-12',
+      priority: 'hoch',
+    } as UpdateBubblophyIssuePriorityActionInput & { authUserId: string });
+
+    expect(requireBubblophySessionMock).toHaveBeenCalledWith({
+      nextPath: '/',
+    });
+    expect(updateBubblophyIssuePriorityMock).toHaveBeenCalledWith({
+      authUserId: 'user_server',
+      issueId: 'BV-12',
+      priority: 'hoch',
+    });
+    expect(result).toEqual({
+      status: 'updated',
+      issue: {
+        id: 'BV-12',
+        title: 'Priorität pflegen',
+        description: 'Eine wichtige Änderung.',
         projectKey: 'BV',
         status: 'bereit',
         priority: 'hoch',

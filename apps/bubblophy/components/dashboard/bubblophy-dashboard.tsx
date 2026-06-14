@@ -21,6 +21,8 @@ import type {
   UpdateBubblophyAgentTokenLifecycleActionResult,
   UpdateBubblophyIssueContentActionInput,
   UpdateBubblophyIssueContentActionResult,
+  UpdateBubblophyIssuePriorityActionInput,
+  UpdateBubblophyIssuePriorityActionResult,
   UpdateBubblophyIssueStatusActionInput,
   UpdateBubblophyIssueStatusActionResult,
   UpdateBubblophyProjectContentActionInput,
@@ -113,6 +115,9 @@ interface BubblophyDashboardProps {
   updateIssueStatusAction?: (
     input: UpdateBubblophyIssueStatusActionInput
   ) => Promise<UpdateBubblophyIssueStatusActionResult>;
+  updateIssuePriorityAction?: (
+    input: UpdateBubblophyIssuePriorityActionInput
+  ) => Promise<UpdateBubblophyIssuePriorityActionResult>;
   requestAgentRunAction?: (
     input: RequestBubblophyAgentRunActionInput
   ) => Promise<RequestBubblophyAgentRunActionResult>;
@@ -495,6 +500,7 @@ export function BubblophyDashboard({
   updateIssueContentAction,
   createIssuePlanAction,
   updateIssueStatusAction,
+  updateIssuePriorityAction,
   requestAgentRunAction,
   transitionAgentRunAction,
   createProjectAction,
@@ -1017,9 +1023,15 @@ export function BubblophyDashboard({
                   !isSelectedProjectArchived &&
                   Boolean(updateIssueStatusAction)
                 }
+                canPersistIssuePriority={
+                  canUseDatabase &&
+                  !isSelectedProjectArchived &&
+                  Boolean(updateIssuePriorityAction)
+                }
                 createIssuePlanAction={createIssuePlanAction}
                 updateIssueContentAction={updateIssueContentAction}
                 updateIssueStatusAction={updateIssueStatusAction}
+                updateIssuePriorityAction={updateIssuePriorityAction}
                 requestAgentRunAction={requestAgentRunAction}
                 agentTokens={displayedAgentTokens}
                 agentRuns={selectedIssueRuns}
@@ -1028,6 +1040,7 @@ export function BubblophyDashboard({
                 onIssuePlanSaved={handleIssuePlanSaved}
                 onIssueContentUpdated={handleIssueUpdated}
                 onIssueStatusUpdated={handleIssueUpdated}
+                onIssuePriorityUpdated={handleIssueUpdated}
                 onAgentRunRequested={handleAgentRunRequested}
                 onIssueSelect={handleIssueSelect}
                 canCreateIssue={canOpenIssueDialog}
@@ -2110,9 +2123,11 @@ function IssueQueue({
   canPersistIssuePlans,
   canPersistIssueContent,
   canPersistIssueStatus,
+  canPersistIssuePriority,
   createIssuePlanAction,
   updateIssueContentAction,
   updateIssueStatusAction,
+  updateIssuePriorityAction,
   requestAgentRunAction,
   agentTokens,
   agentRuns,
@@ -2121,6 +2136,7 @@ function IssueQueue({
   onIssuePlanSaved,
   onIssueContentUpdated,
   onIssueStatusUpdated,
+  onIssuePriorityUpdated,
   onAgentRunRequested,
   onIssueSelect,
   canCreateIssue,
@@ -2134,6 +2150,7 @@ function IssueQueue({
   canPersistIssuePlans: boolean;
   canPersistIssueContent: boolean;
   canPersistIssueStatus: boolean;
+  canPersistIssuePriority: boolean;
   createIssuePlanAction?: (
     input: CreateBubblophyIssuePlanActionInput
   ) => Promise<CreateBubblophyIssuePlanActionResult>;
@@ -2143,6 +2160,9 @@ function IssueQueue({
   updateIssueStatusAction?: (
     input: UpdateBubblophyIssueStatusActionInput
   ) => Promise<UpdateBubblophyIssueStatusActionResult>;
+  updateIssuePriorityAction?: (
+    input: UpdateBubblophyIssuePriorityActionInput
+  ) => Promise<UpdateBubblophyIssuePriorityActionResult>;
   requestAgentRunAction?: (
     input: RequestBubblophyAgentRunActionInput
   ) => Promise<RequestBubblophyAgentRunActionResult>;
@@ -2153,6 +2173,7 @@ function IssueQueue({
   onIssuePlanSaved: (plan: IssuePlanDraft) => void;
   onIssueContentUpdated: (issue: IssueSummary) => void;
   onIssueStatusUpdated: (issue: IssueSummary) => void;
+  onIssuePriorityUpdated: (issue: IssueSummary) => void;
   onAgentRunRequested: (run: AgentRunSummary) => void;
   onIssueSelect: (issueId: string) => void;
   canCreateIssue: boolean;
@@ -2312,9 +2333,11 @@ function IssueQueue({
           canPersistIssuePlans={canPersistIssuePlans}
           canPersistIssueContent={canPersistIssueContent}
           canPersistIssueStatus={canPersistIssueStatus}
+          canPersistIssuePriority={canPersistIssuePriority}
           createIssuePlanAction={createIssuePlanAction}
           updateIssueContentAction={updateIssueContentAction}
           updateIssueStatusAction={updateIssueStatusAction}
+          updateIssuePriorityAction={updateIssuePriorityAction}
           requestAgentRunAction={requestAgentRunAction}
           activeAgentTokens={activeProjectAgentTokens}
           agentRuns={agentRuns}
@@ -2322,6 +2345,7 @@ function IssueQueue({
           onIssuePlanSaved={onIssuePlanSaved}
           onIssueContentUpdated={onIssueContentUpdated}
           onIssueStatusUpdated={onIssueStatusUpdated}
+          onIssuePriorityUpdated={onIssuePriorityUpdated}
           onAgentRunRequested={onAgentRunRequested}
         />
       </CardContent>
@@ -2342,9 +2366,11 @@ function IssueDetailPanel({
   canPersistIssuePlans,
   canPersistIssueContent,
   canPersistIssueStatus,
+  canPersistIssuePriority,
   createIssuePlanAction,
   updateIssueContentAction,
   updateIssueStatusAction,
+  updateIssuePriorityAction,
   requestAgentRunAction,
   activeAgentTokens,
   agentRuns,
@@ -2352,6 +2378,7 @@ function IssueDetailPanel({
   onIssuePlanSaved,
   onIssueContentUpdated,
   onIssueStatusUpdated,
+  onIssuePriorityUpdated,
   onAgentRunRequested,
 }: {
   dataSource: DashboardSnapshot['meta']['dataSource'];
@@ -2360,6 +2387,7 @@ function IssueDetailPanel({
   canPersistIssuePlans: boolean;
   canPersistIssueContent: boolean;
   canPersistIssueStatus: boolean;
+  canPersistIssuePriority: boolean;
   createIssuePlanAction?: (
     input: CreateBubblophyIssuePlanActionInput
   ) => Promise<CreateBubblophyIssuePlanActionResult>;
@@ -2369,6 +2397,9 @@ function IssueDetailPanel({
   updateIssueStatusAction?: (
     input: UpdateBubblophyIssueStatusActionInput
   ) => Promise<UpdateBubblophyIssueStatusActionResult>;
+  updateIssuePriorityAction?: (
+    input: UpdateBubblophyIssuePriorityActionInput
+  ) => Promise<UpdateBubblophyIssuePriorityActionResult>;
   requestAgentRunAction?: (
     input: RequestBubblophyAgentRunActionInput
   ) => Promise<RequestBubblophyAgentRunActionResult>;
@@ -2378,6 +2409,7 @@ function IssueDetailPanel({
   onIssuePlanSaved: (plan: IssuePlanDraft) => void;
   onIssueContentUpdated: (issue: IssueSummary) => void;
   onIssueStatusUpdated: (issue: IssueSummary) => void;
+  onIssuePriorityUpdated: (issue: IssueSummary) => void;
   onAgentRunRequested: (run: AgentRunSummary) => void;
 }) {
   const [isPlanDialogOpen, setIsPlanDialogOpen] = useState(false);
@@ -2447,6 +2479,16 @@ function IssueDetailPanel({
         }
         updateIssueStatusAction={updateIssueStatusAction}
         onIssueStatusUpdated={onIssueStatusUpdated}
+      />
+
+      <IssuePriorityUpdatePanel
+        key={issue.id}
+        issue={issue}
+        canPersistIssuePriority={
+          canPersistIssuePriority && !isLocalDraftIssue(issue)
+        }
+        updateIssuePriorityAction={updateIssuePriorityAction}
+        onIssuePriorityUpdated={onIssuePriorityUpdated}
       />
 
       <AgentRunRequestPanel
@@ -2854,6 +2896,172 @@ function IssueStatusTransitionPanel({
       ) : (
         <p className="text-sm text-muted-foreground">
           Persistente Statusänderungen sind nur für gespeicherte Issues bei
+          aktiver Datenbank verfügbar.
+        </p>
+      )}
+    </div>
+  );
+}
+
+const issuePriorityOptions = [
+  'niedrig',
+  'mittel',
+  'hoch',
+] satisfies IssuePriority[];
+
+/**
+ * Picks the first selectable priority different from the current issue value.
+ *
+ * @param priority Current issue priority.
+ * @returns A valid target priority for the priority update form.
+ */
+function getDefaultNextIssuePriority(priority: IssuePriority) {
+  return (
+    issuePriorityOptions.find((option) => option !== priority) ?? priority
+  );
+}
+
+/**
+ * Checks whether a form value is a supported issue priority.
+ *
+ * @param value Form value from the native select.
+ * @returns True when the value can be sent to the priority action.
+ */
+function isIssuePriorityOption(value: string): value is IssuePriority {
+  return issuePriorityOptions.includes(value as IssuePriority);
+}
+
+/**
+ * Renders a human-only issue priority update control.
+ *
+ * @param props Selected issue, priority action, and success callback.
+ * @returns Compact priority form or non-persistent explanation.
+ */
+function IssuePriorityUpdatePanel({
+  issue,
+  canPersistIssuePriority,
+  updateIssuePriorityAction,
+  onIssuePriorityUpdated,
+}: {
+  issue: DashboardIssue;
+  canPersistIssuePriority: boolean;
+  updateIssuePriorityAction?: (
+    input: UpdateBubblophyIssuePriorityActionInput
+  ) => Promise<UpdateBubblophyIssuePriorityActionResult>;
+  onIssuePriorityUpdated: (issue: IssueSummary) => void;
+}) {
+  const availablePriorities = issuePriorityOptions.filter(
+    (priority) => priority !== issue.priority
+  );
+  const [nextPriority, setNextPriority] = useState<IssuePriority>(
+    getDefaultNextIssuePriority(issue.priority)
+  );
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const selectedNextPriority = availablePriorities.includes(nextPriority)
+    ? nextPriority
+    : getDefaultNextIssuePriority(issue.priority);
+  const canSubmit =
+    canPersistIssuePriority &&
+    Boolean(updateIssuePriorityAction) &&
+    isIssuePriorityOption(selectedNextPriority) &&
+    selectedNextPriority !== issue.priority &&
+    !isPending;
+
+  const handleSubmit = () => {
+    if (!canSubmit || !updateIssuePriorityAction) {
+      return;
+    }
+
+    setActionError(null);
+    setActionSuccess(null);
+    startTransition(async () => {
+      try {
+        const result = await updateIssuePriorityAction({
+          issueId: issue.id,
+          priority: selectedNextPriority,
+        });
+
+        if (result.status === 'updated') {
+          onIssuePriorityUpdated(result.issue);
+          setNextPriority(getDefaultNextIssuePriority(result.issue.priority));
+          setActionSuccess('Priorität gespeichert.');
+          return;
+        }
+
+        if (result.status === 'unchanged') {
+          setActionSuccess('Priorität gespeichert.');
+          return;
+        }
+
+        setActionError(getIssuePriorityActionErrorMessage(result));
+      } catch {
+        setActionError(
+          'Die Priorität konnte gerade nicht gespeichert werden. Versuche es erneut.'
+        );
+      }
+    });
+  };
+
+  return (
+    <div className="grid gap-3 rounded-md border border-border bg-background p-3">
+      <div className="grid gap-1">
+        <h4 className="text-sm font-medium">Priorität pflegen</h4>
+        <p className="text-xs text-muted-foreground">
+          Menschliche Prioritätsänderung ohne Agent-Run oder automatische
+          Ausführung.
+        </p>
+      </div>
+
+      {canPersistIssuePriority && updateIssuePriorityAction ? (
+        <form
+          className="grid gap-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleSubmit();
+          }}>
+          <label className="grid gap-1.5 text-sm font-medium">
+            Neue Priorität
+            <select
+              name="priority"
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+              value={selectedNextPriority}
+              onChange={(event) => {
+                const priority = event.currentTarget.value;
+
+                if (!isIssuePriorityOption(priority)) {
+                  return;
+                }
+
+                setNextPriority(priority);
+                setActionError(null);
+                setActionSuccess(null);
+              }}>
+              {availablePriorities.map((priority) => (
+                <option key={priority} value={priority}>
+                  {issuePriorityLabels[priority]}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {actionError ? (
+            <p role="alert" className="text-sm text-destructive">
+              {actionError}
+            </p>
+          ) : null}
+          {actionSuccess ? (
+            <p className="text-sm text-muted-foreground">{actionSuccess}</p>
+          ) : null}
+
+          <Button type="submit" size="sm" disabled={!canSubmit}>
+            {isPending ? 'Speichert...' : 'Priorität speichern'}
+          </Button>
+        </form>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Persistente Prioritätsänderungen sind nur für gespeicherte Issues bei
           aktiver Datenbank verfügbar.
         </p>
       )}
@@ -4322,6 +4530,37 @@ function getIssueStatusActionErrorMessage(
   }
 
   return 'Der gewählte Status ist nicht gültig.';
+}
+
+/**
+ * Converts issue priority action outcomes into quiet inline feedback.
+ *
+ * @param result Result returned by the persisted issue priority action.
+ * @returns Human-readable error message for the detail panel.
+ */
+function getIssuePriorityActionErrorMessage(
+  result: Exclude<
+    UpdateBubblophyIssuePriorityActionResult,
+    { status: 'updated' } | { status: 'unchanged' }
+  >
+) {
+  if (result.status === 'not_found') {
+    return 'Dieses Issue wurde nicht gefunden. Die Priorität wurde nicht geändert.';
+  }
+
+  if (result.status === 'forbidden') {
+    return 'Du bist kein Mitglied dieses Projekts. Die Priorität wurde nicht geändert.';
+  }
+
+  if (result.status === 'database_unavailable') {
+    return 'Die Datenbank ist gerade nicht verfügbar. Die Priorität wurde nicht geändert.';
+  }
+
+  if (result.reason === 'empty_issue') {
+    return 'Wähle ein Issue aus, bevor du die Priorität speicherst.';
+  }
+
+  return 'Die gewählte Priorität ist nicht gültig.';
 }
 
 /**

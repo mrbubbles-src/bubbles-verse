@@ -29,6 +29,10 @@ import type {
   CreateOrUpdateBubblophyIssuePlanDraftResult,
 } from '@/lib/issues/plans';
 import type {
+  UpdateBubblophyIssuePriorityInput,
+  UpdateBubblophyIssuePriorityResult,
+} from '@/lib/issues/priority';
+import type {
   UpdateBubblophyIssueStatusInput,
   UpdateBubblophyIssueStatusResult,
 } from '@/lib/issues/status';
@@ -57,6 +61,7 @@ import { requireBubblophySession } from '@/lib/auth/session';
 import { createBubblophyIssueDraft } from '@/lib/issues/create';
 import { updateBubblophyIssueContent } from '@/lib/issues/edit';
 import { createOrUpdateBubblophyIssuePlanDraft } from '@/lib/issues/plans';
+import { updateBubblophyIssuePriority } from '@/lib/issues/priority';
 import { updateBubblophyIssueStatus } from '@/lib/issues/status';
 import { createBubblophyProject } from '@/lib/projects/create';
 import {
@@ -98,6 +103,14 @@ export type UpdateBubblophyIssueStatusActionInput = Omit<
 
 export type UpdateBubblophyIssueStatusActionResult =
   UpdateBubblophyIssueStatusResult;
+
+export type UpdateBubblophyIssuePriorityActionInput = Omit<
+  UpdateBubblophyIssuePriorityInput,
+  'authUserId'
+>;
+
+export type UpdateBubblophyIssuePriorityActionResult =
+  UpdateBubblophyIssuePriorityResult;
 
 export type CreateBubblophyProjectActionInput = Omit<
   CreateBubblophyProjectInput,
@@ -249,6 +262,27 @@ export async function updateBubblophyIssueStatusAction(
   const session = await requireBubblophySession({ nextPath: '/' });
 
   return updateBubblophyIssueStatus({
+    ...input,
+    authUserId: session.authUserId,
+  });
+}
+
+/**
+ * Persists a human issue priority change for the current session.
+ *
+ * The client never provides an auth user ID. The action resolves the
+ * authorized human session server-side, then delegates issue membership and
+ * audit event writing to the priority service. It does not start an agent run.
+ *
+ * @param input Issue key and target priority.
+ * @returns Structured result for the dashboard detail panel.
+ */
+export async function updateBubblophyIssuePriorityAction(
+  input: UpdateBubblophyIssuePriorityActionInput
+): Promise<UpdateBubblophyIssuePriorityActionResult> {
+  const session = await requireBubblophySession({ nextPath: '/' });
+
+  return updateBubblophyIssuePriority({
     ...input,
     authUserId: session.authUserId,
   });

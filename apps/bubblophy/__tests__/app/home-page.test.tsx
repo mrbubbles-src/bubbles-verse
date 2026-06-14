@@ -6,6 +6,7 @@ import type {
   transitionBubblophyProjectArchiveAction,
   updateBubblophyAgentTokenLifecycleAction,
   updateBubblophyIssueContentAction,
+  updateBubblophyIssuePriorityAction,
   updateBubblophyIssueStatusAction,
   updateBubblophyProjectContentAction,
 } from '@/app/actions';
@@ -23,6 +24,7 @@ const BubblophyDashboardMock = vi.fn(
     updateIssueContentAction?: typeof updateBubblophyIssueContentAction;
     createIssuePlanAction?: typeof createBubblophyIssuePlanAction;
     updateIssueStatusAction?: typeof updateBubblophyIssueStatusAction;
+    updateIssuePriorityAction?: typeof updateBubblophyIssuePriorityAction;
     createProjectAction?: typeof createBubblophyProjectAction;
     updateProjectContentAction?: typeof updateBubblophyProjectContentAction;
     transitionProjectArchiveAction?: typeof transitionBubblophyProjectArchiveAction;
@@ -57,6 +59,7 @@ vi.mock('@/components/dashboard/bubblophy-dashboard', () => ({
     updateIssueContentAction?: typeof updateBubblophyIssueContentAction;
     createIssuePlanAction?: typeof createBubblophyIssuePlanAction;
     updateIssueStatusAction?: typeof updateBubblophyIssueStatusAction;
+    updateIssuePriorityAction?: typeof updateBubblophyIssuePriorityAction;
     createProjectAction?: typeof createBubblophyProjectAction;
     updateProjectContentAction?: typeof updateBubblophyProjectContentAction;
     transitionProjectArchiveAction?: typeof transitionBubblophyProjectArchiveAction;
@@ -128,6 +131,9 @@ describe('Bubblophy home page', () => {
     );
     expect(element.props.createIssuePlanAction).toEqual(expect.any(Function));
     expect(element.props.updateIssueStatusAction).toEqual(expect.any(Function));
+    expect(element.props.updateIssuePriorityAction).toEqual(
+      expect.any(Function)
+    );
     expect(element.props.createProjectAction).toEqual(expect.any(Function));
     expect(element.props.updateProjectContentAction).toEqual(
       expect.any(Function)

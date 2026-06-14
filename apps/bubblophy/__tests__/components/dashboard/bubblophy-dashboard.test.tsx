@@ -19,6 +19,8 @@ import type {
   UpdateBubblophyAgentTokenLifecycleActionResult,
   UpdateBubblophyIssueContentActionInput,
   UpdateBubblophyIssueContentActionResult,
+  UpdateBubblophyIssuePriorityActionInput,
+  UpdateBubblophyIssuePriorityActionResult,
   UpdateBubblophyIssueStatusActionInput,
   UpdateBubblophyIssueStatusActionResult,
   UpdateBubblophyProjectContentActionInput,
@@ -810,6 +812,115 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       screen.getByRole('progressbar', { name: '5 bereit, 12 offen' })
     ).toBeInTheDocument();
+  });
+
+  it('persists a human issue priority update and keeps list and detail state consistent', async () => {
+    const updateIssuePriorityAction = vi.fn<
+      (
+        input: UpdateBubblophyIssuePriorityActionInput
+      ) => Promise<UpdateBubblophyIssuePriorityActionResult>
+    >(async () => ({
+      status: 'updated',
+      issue: {
+        id: 'BV-12',
+        title: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+        projectKey: 'BV',
+        status: 'geplant',
+        priority: 'mittel',
+        owner: 'mrbubbles',
+        planSteps: 3,
+        approvalRequired: true,
+      },
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        updateIssuePriorityAction={updateIssuePriorityAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+    const prioritySelect = within(detailPanel).getByLabelText('Neue Priorität');
+
+    expect(prioritySelect).toBeInstanceOf(HTMLSelectElement);
+
+    if (!(prioritySelect instanceof HTMLSelectElement)) {
+      throw new Error('Expected the priority select to render.');
+    }
+
+    fireEvent.change(prioritySelect, {
+      target: { value: 'mittel' },
+    });
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Priorität speichern' })
+    );
+
+    await waitFor(() => {
+      expect(updateIssuePriorityAction).toHaveBeenCalledWith({
+        issueId: 'BV-12',
+        priority: 'mittel',
+      });
+    });
+    expect(updateIssuePriorityAction.mock.calls[0]?.[0]).not.toHaveProperty(
+      'authUserId'
+    );
+
+    expect(
+      await within(detailPanel).findByText('Priorität gespeichert.')
+    ).toBeInTheDocument();
+    expect(within(detailPanel).getByText('Mittel')).toBeInTheDocument();
+    expect(
+      within(
+        screen.getByRole('row', {
+          name: 'Issue BV-12: Issue-Plan als strukturierte Arbeitsnotiz speichern auswählen',
+        })
+      ).getByText('Mittel')
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('BV-12');
+  });
+
+  it('shows priority action exceptions without changing the selected issue', async () => {
+    const updateIssuePriorityAction = vi.fn<
+      (
+        input: UpdateBubblophyIssuePriorityActionInput
+      ) => Promise<UpdateBubblophyIssuePriorityActionResult>
+    >(async () => {
+      throw new Error('server action failed');
+    });
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        updateIssuePriorityAction={updateIssuePriorityAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    fireEvent.change(within(detailPanel).getByLabelText('Neue Priorität'), {
+      target: { value: 'hoch' },
+    });
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Priorität speichern' })
+    );
+
+    expect(await within(detailPanel).findByRole('alert')).toHaveTextContent(
+      'Die Priorität konnte gerade nicht gespeichert werden'
+    );
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('BV-12');
   });
 
   it('updates project blocker metrics after a human status transition', async () => {

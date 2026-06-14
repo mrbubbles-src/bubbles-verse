@@ -119,3 +119,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   real project creation action so first use starts with an actionable step.
 - Inlined the Bubblophy proxy matcher configuration so Next.js can statically
   parse the protected browser-page routes during local development.
+- Added server-backed issue priority updates with contributor checks,
+  `priority_changed` audit metadata, and dashboard feedback that keeps issue
+  lists and detail panels consistent after saving.
