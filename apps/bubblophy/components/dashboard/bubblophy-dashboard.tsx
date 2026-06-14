@@ -4755,6 +4755,7 @@ function NewAgentTokenDialog({
     'projects:read',
     'issues:read',
   ]);
+  const [expiresAt, setExpiresAt] = useState('');
   const [createdToken, setCreatedToken] = useState<CreatedAgentToken | null>(
     null
   );
@@ -4790,6 +4791,7 @@ function NewAgentTokenDialog({
           projectKey,
           label,
           scopes,
+          ...(expiresAt ? { expiresAt } : {}),
         });
       } catch {
         setActionError(
@@ -4834,6 +4836,9 @@ function NewAgentTokenDialog({
                   value={createdToken.plaintextToken}
                 />
               </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Ablauf: {createdToken.expiresAt}
+              </p>
             </div>
             <div className="rounded-md border border-dashed border-border bg-muted/20 p-3">
               <p className="text-sm font-medium">
@@ -4914,6 +4919,21 @@ function NewAgentTokenDialog({
                 ))}
               </div>
             </fieldset>
+
+            <label className="grid gap-1.5 text-sm font-medium">
+              Ablauf
+              <Input
+                name="expiresAt"
+                type="datetime-local"
+                value={expiresAt}
+                onChange={(event) => setExpiresAt(event.currentTarget.value)}
+              />
+              <span className="text-xs font-normal text-muted-foreground">
+                Optional. Leer bedeutet, dass das Token nicht automatisch
+                abläuft. Der Ablauf muss in der Zukunft liegen und maximal 366
+                Tage entfernt sein.
+              </span>
+            </label>
 
             <div className="rounded-md border border-dashed border-border bg-muted/30 p-3 text-xs text-muted-foreground">
               Token-Erstellung prüft serverseitig Owner/Maintainer-Rollen,

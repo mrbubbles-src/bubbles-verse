@@ -4147,6 +4147,9 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       within(dialog).getByText(/später nicht wieder sichtbar/i)
     ).toBeInTheDocument();
+    expect(
+      within(dialog).getByText('Ablauf: läuft nicht automatisch ab')
+    ).toBeInTheDocument();
     fireEvent.click(
       within(dialog).getByRole('button', { name: 'Token kopieren' })
     );
@@ -4179,6 +4182,188 @@ describe('BubblophyDashboard interactions', () => {
       screen.queryByText('test_plaintext_token_once')
     ).not.toBeInTheDocument();
     expect(within(agentSection).getByText('Codex lokal')).toBeInTheDocument();
+  });
+
+  it('creates agent token with optional expiry', async () => {
+    const createAgentTokenAction = vi.fn<
+      (
+        input: CreateBubblophyAgentTokenActionInput
+      ) => Promise<CreateBubblophyAgentTokenActionResult>
+    >(async () => ({
+      status: 'created',
+      token: {
+        id: 'token_codex_expiring',
+        label: 'Codex mit Ablauf',
+        projectKey: 'BV',
+        scopes: ['projects:read', 'issues:read'],
+        state: 'aktiv',
+        lastUsedAt: 'noch nie verwendet',
+        expiresAt: '2026-07-01T09:30',
+        plaintextToken: 'test_plaintext_token_expiring',
+      },
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        createAgentTokenAction={createAgentTokenAction}
+      />
+    );
+
+    const agentSection = document.getElementById('agents');
+
+    expect(agentSection).toBeInstanceOf(HTMLElement);
+
+    if (!agentSection) {
+      throw new Error('Expected the agent token section to render.');
+    }
+
+    fireEvent.click(
+      within(agentSection).getByRole('button', {
+        name: 'Agent-Token erstellen',
+      })
+    );
+    fireEvent.change(screen.getByLabelText('Label'), {
+      target: { value: 'Codex mit Ablauf' },
+    });
+    fireEvent.change(screen.getByLabelText(/^Ablauf/), {
+      target: { value: '2026-07-01T09:30' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Token erstellen' }));
+
+    await waitFor(() => {
+      expect(createAgentTokenAction).toHaveBeenCalledWith({
+        projectKey: 'BV',
+        label: 'Codex mit Ablauf',
+        scopes: ['projects:read', 'issues:read'],
+        expiresAt: '2026-07-01T09:30',
+      });
+    });
+    expect(createAgentTokenAction.mock.calls[0]?.[0]).not.toHaveProperty(
+      'authUserId'
+    );
+
+    const dialog = await screen.findByRole('dialog');
+
+    expect(
+      within(dialog).getByText('Ablauf: 2026-07-01T09:30')
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByText('test_plaintext_token_expiring')
+    ).toBeInTheDocument();
+  });
+
+  it('creates agent token without expiry when expiry field is empty', async () => {
+    const createAgentTokenAction = vi.fn<
+      (
+        input: CreateBubblophyAgentTokenActionInput
+      ) => Promise<CreateBubblophyAgentTokenActionResult>
+    >(async () => ({
+      status: 'created',
+      token: {
+        id: 'token_codex_no_expiry',
+        label: 'Codex ohne Ablauf',
+        projectKey: 'BV',
+        scopes: ['projects:read', 'issues:read'],
+        state: 'aktiv',
+        lastUsedAt: 'noch nie verwendet',
+        expiresAt: 'läuft nicht automatisch ab',
+        plaintextToken: 'test_plaintext_token_no_expiry',
+      },
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        createAgentTokenAction={createAgentTokenAction}
+      />
+    );
+
+    const agentSection = document.getElementById('agents');
+
+    expect(agentSection).toBeInstanceOf(HTMLElement);
+
+    if (!agentSection) {
+      throw new Error('Expected the agent token section to render.');
+    }
+
+    fireEvent.click(
+      within(agentSection).getByRole('button', {
+        name: 'Agent-Token erstellen',
+      })
+    );
+    fireEvent.change(screen.getByLabelText('Label'), {
+      target: { value: 'Codex ohne Ablauf' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Token erstellen' }));
+
+    await waitFor(() => {
+      expect(createAgentTokenAction).toHaveBeenCalledWith({
+        projectKey: 'BV',
+        label: 'Codex ohne Ablauf',
+        scopes: ['projects:read', 'issues:read'],
+      });
+    });
+    expect(createAgentTokenAction.mock.calls[0]?.[0]).not.toHaveProperty(
+      'expiresAt'
+    );
+  });
+
+  it('shows invalid expiry feedback from the server action', async () => {
+    const createAgentTokenAction = vi.fn<
+      (
+        input: CreateBubblophyAgentTokenActionInput
+      ) => Promise<CreateBubblophyAgentTokenActionResult>
+    >(async () => ({
+      status: 'invalid',
+      reason: 'invalid_expires_at',
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        createAgentTokenAction={createAgentTokenAction}
+      />
+    );
+
+    const agentSection = document.getElementById('agents');
+
+    expect(agentSection).toBeInstanceOf(HTMLElement);
+
+    if (!agentSection) {
+      throw new Error('Expected the agent token section to render.');
+    }
+
+    fireEvent.click(
+      within(agentSection).getByRole('button', {
+        name: 'Agent-Token erstellen',
+      })
+    );
+    fireEvent.change(screen.getByLabelText('Label'), {
+      target: { value: 'Codex mit falschem Ablauf' },
+    });
+    fireEvent.change(screen.getByLabelText(/^Ablauf/), {
+      target: { value: '2000-01-01T00:00' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Token erstellen' }));
+
+    await waitFor(() => {
+      expect(createAgentTokenAction).toHaveBeenCalledWith({
+        projectKey: 'BV',
+        label: 'Codex mit falschem Ablauf',
+        scopes: ['projects:read', 'issues:read'],
+        expiresAt: '2000-01-01T00:00',
+      });
+    });
+
+    const dialog = await screen.findByRole('dialog');
+
+    expect(within(dialog).getByRole('alert')).toHaveTextContent(
+      'Das Ablaufdatum ist nicht gültig.'
+    );
+    expect(
+      within(dialog).queryByText(/Token jetzt kopieren/i)
+    ).not.toBeInTheDocument();
   });
 
   it('shows PATCH handoff only for active runs:update tokens', () => {
