@@ -2488,6 +2488,160 @@ describe('BubblophyDashboard interactions', () => {
     ).toBeInTheDocument();
   });
 
+  it('plans a newly created title-only database issue without starting a run', async () => {
+    const createIssueAction = vi.fn<
+      (
+        input: CreateBubblophyIssueActionInput
+      ) => Promise<CreateBubblophyIssueActionResult>
+    >(async (input) => ({
+      status: 'created',
+      issue: {
+        id: 'BV-15',
+        title: input.title,
+        projectKey: input.projectKey,
+        status: 'triage',
+        priority: input.priority ?? 'mittel',
+        owner: 'Nicht zugewiesen',
+        planSteps: 0,
+        approvalRequired: true,
+        description: input.description,
+      },
+    }));
+    const createIssuePlanAction = vi.fn<
+      (
+        input: CreateBubblophyIssuePlanActionInput
+      ) => Promise<CreateBubblophyIssuePlanActionResult>
+    >(async (input) => ({
+      status: 'created',
+      plan: {
+        issueId: input.issueId,
+        version: 1,
+        summary: input.summary ?? '',
+        steps: input.steps.map((step, index) => ({
+          id: `step_${index + 1}`,
+          text: step,
+        })),
+      },
+    }));
+    const requestAgentRunAction = vi.fn<
+      (
+        input: RequestBubblophyAgentRunActionInput
+      ) => Promise<RequestBubblophyAgentRunActionResult>
+    >(async () => ({
+      status: 'token_unavailable',
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        createIssueAction={createIssueAction}
+        createIssuePlanAction={createIssuePlanAction}
+        requestAgentRunAction={requestAgentRunAction}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Neues Issue/i }));
+
+    expect(screen.getByRole('dialog')).toHaveTextContent('Neues Issue');
+    expect(screen.getByLabelText('Projekt')).toHaveValue('BV');
+    fireEvent.change(screen.getByLabelText('Titel'), {
+      target: { value: 'Frisches Plan-Issue' },
+    });
+    fireEvent.change(screen.getByLabelText('Priorität'), {
+      target: { value: 'hoch' },
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Issue erstellen' })
+    );
+
+    await waitFor(() => {
+      expect(createIssueAction).toHaveBeenCalledWith({
+        projectKey: 'BV',
+        title: 'Frisches Plan-Issue',
+        description: '',
+        priority: 'hoch',
+      });
+    });
+    expect(createIssueAction.mock.calls[0]?.[0]).not.toHaveProperty(
+      'authUserId'
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+    expect(navigationMocks.routerPush).toHaveBeenLastCalledWith(
+      '/?project=BV&issue=BV-15'
+    );
+    expect(
+      screen.getByRole('button', { name: 'Frisches Plan-Issue' })
+    ).toHaveAttribute('aria-pressed', 'true');
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    expect(within(detailPanel).getByText('BV-15')).toBeInTheDocument();
+    expect(
+      within(detailPanel).getByText('Frisches Plan-Issue')
+    ).toBeInTheDocument();
+    expect(
+      within(detailPanel).getByText(
+        /Nutze „Plan entwerfen“/i
+      )
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Plan entwerfen' })
+    );
+    fireEvent.change(screen.getByLabelText('Plan-Zusammenfassung'), {
+      target: { value: 'Frisches Issue ruhig planen.' },
+    });
+    fireEvent.change(screen.getByLabelText('Schritt 1'), {
+      target: { value: 'Kontext sammeln' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Schritt hinzufügen' }));
+    fireEvent.change(screen.getByLabelText('Schritt 2'), {
+      target: { value: 'Nächste menschliche Entscheidung festhalten' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Plan speichern' }));
+
+    await waitFor(() => {
+      expect(createIssuePlanAction).toHaveBeenCalledWith({
+        issueId: 'BV-15',
+        summary: 'Frisches Issue ruhig planen.',
+        steps: [
+          'Kontext sammeln',
+          'Nächste menschliche Entscheidung festhalten',
+        ],
+      });
+    });
+    expect(createIssuePlanAction.mock.calls[0]?.[0]).not.toHaveProperty(
+      'authUserId'
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    const plannedDetailPanel = screen.getByLabelText('Issue-Details');
+
+    expect(
+      within(plannedDetailPanel).getByText('Frisches Issue ruhig planen.')
+    ).toBeInTheDocument();
+    expect(
+      within(plannedDetailPanel).getByText('Kontext sammeln')
+    ).toBeInTheDocument();
+    expect(
+      within(plannedDetailPanel).getByText(
+        'Nächste menschliche Entscheidung festhalten'
+      )
+    ).toBeInTheDocument();
+    expect(
+      within(plannedDetailPanel).getByText(
+        'Plan v1, menschlich gespeichert. Es wurde kein Agent-Run gestartet.'
+      )
+    ).toBeInTheDocument();
+    expect(requestAgentRunAction).not.toHaveBeenCalled();
+  });
+
   it('creates an agent token and shows the plaintext only in the dialog', async () => {
     const createAgentTokenAction = vi.fn<
       (
