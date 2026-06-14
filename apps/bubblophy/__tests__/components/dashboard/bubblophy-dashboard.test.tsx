@@ -728,6 +728,62 @@ describe('BubblophyDashboard interactions', () => {
     );
   });
 
+  it('shows issue edit action exceptions without discarding the edit state', async () => {
+    const updateIssueContentAction = vi.fn<
+      (
+        input: UpdateBubblophyIssueContentActionInput
+      ) => Promise<UpdateBubblophyIssueContentActionResult>
+    >(async () => {
+      throw new Error('server action failed');
+    });
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        updateIssueContentAction={updateIssueContentAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Bearbeiten' })
+    );
+    fireEvent.change(within(detailPanel).getByLabelText('Titel'), {
+      target: { value: 'Nicht gespeichert' },
+    });
+    fireEvent.change(within(detailPanel).getByLabelText('Beschreibung'), {
+      target: { value: 'Dieser Entwurf bleibt im Formular.' },
+    });
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Speichern' })
+    );
+
+    await waitFor(() => {
+      expect(updateIssueContentAction).toHaveBeenCalledWith({
+        issueId: 'BV-12',
+        title: 'Nicht gespeichert',
+        description: 'Dieser Entwurf bleibt im Formular.',
+      });
+    });
+    expect(await within(detailPanel).findByRole('alert')).toHaveTextContent(
+      'Die Änderung konnte gerade nicht gespeichert werden'
+    );
+    expect(within(detailPanel).getByLabelText('Titel')).toHaveValue(
+      'Nicht gespeichert'
+    );
+    expect(within(detailPanel).getByLabelText('Beschreibung')).toHaveValue(
+      'Dieser Entwurf bleibt im Formular.'
+    );
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('BV-12');
+  });
+
   it('persists a human issue status transition and resets the target state', async () => {
     const updateIssueStatusAction = vi.fn<
       (
@@ -920,6 +976,60 @@ describe('BubblophyDashboard interactions', () => {
     expect(await within(detailPanel).findByRole('alert')).toHaveTextContent(
       'Die Priorität konnte gerade nicht gespeichert werden'
     );
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('BV-12');
+  });
+
+  it('shows status action exceptions without changing the selected issue', async () => {
+    const updateIssueStatusAction = vi.fn<
+      (
+        input: UpdateBubblophyIssueStatusActionInput
+      ) => Promise<UpdateBubblophyIssueStatusActionResult>
+    >(async () => {
+      throw new Error('server action failed');
+    });
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        updateIssueStatusAction={updateIssueStatusAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+    const statusSelect = within(detailPanel).getByLabelText('Neuer Status');
+
+    fireEvent.change(statusSelect, {
+      target: { value: 'erledigt' },
+    });
+    fireEvent.change(within(detailPanel).getByLabelText('Grund'), {
+      target: { value: 'Soll abgeschlossen werden.' },
+    });
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Status speichern' })
+    );
+
+    await waitFor(() => {
+      expect(updateIssueStatusAction).toHaveBeenCalledWith({
+        issueId: 'BV-12',
+        status: 'erledigt',
+        reason: 'Soll abgeschlossen werden.',
+      });
+    });
+    expect(await within(detailPanel).findByRole('alert')).toHaveTextContent(
+      'Der Status konnte gerade nicht gespeichert werden'
+    );
+    expect(statusSelect).toHaveValue('erledigt');
+    expect(within(detailPanel).getByLabelText('Grund')).toHaveValue(
+      'Soll abgeschlossen werden.'
+    );
+    expect(within(detailPanel).getByText('Geplant')).toBeInTheDocument();
+    expect(getMetricValue('Offene Issues')).toHaveTextContent('24');
     expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('BV-12');
   });
 

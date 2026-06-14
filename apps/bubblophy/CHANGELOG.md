@@ -128,3 +128,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Hardened the human run decision controls and agent run update route tests so
   failed approve/cancel actions keep visible controls and revoked, expired, or
   invalid agent updates stay on explicit JSON errors.
+- Hardened issue edit and status controls so thrown server actions show inline
+  errors without losing the edited draft, selected status, or current issue.

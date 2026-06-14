@@ -2654,11 +2654,20 @@ function IssueContentPanel({
 
     setActionError(null);
     startTransition(async () => {
-      const result = await updateIssueContentAction({
-        issueId: issue.id,
-        title,
-        description,
-      });
+      let result: UpdateBubblophyIssueContentActionResult;
+
+      try {
+        result = await updateIssueContentAction({
+          issueId: issue.id,
+          title,
+          description,
+        });
+      } catch {
+        setActionError(
+          'Die Änderung konnte gerade nicht gespeichert werden. Versuche es erneut.'
+        );
+        return;
+      }
 
       if (result.status === 'updated') {
         onIssueContentUpdated(result.issue);
@@ -2823,11 +2832,20 @@ function IssueStatusTransitionPanel({
 
     setActionError(null);
     startTransition(async () => {
-      const result = await updateIssueStatusAction({
-        issueId: issue.id,
-        status: nextStatus,
-        reason,
-      });
+      let result: UpdateBubblophyIssueStatusActionResult;
+
+      try {
+        result = await updateIssueStatusAction({
+          issueId: issue.id,
+          status: nextStatus,
+          reason,
+        });
+      } catch {
+        setActionError(
+          'Der Status konnte gerade nicht gespeichert werden. Versuche es erneut.'
+        );
+        return;
+      }
 
       if (result.status === 'updated') {
         onIssueStatusUpdated(result.issue);
