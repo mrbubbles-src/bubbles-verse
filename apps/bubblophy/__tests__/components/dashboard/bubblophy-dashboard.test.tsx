@@ -241,6 +241,19 @@ const databaseSnapshotWithRunUpdateToken = {
   ],
 } satisfies DashboardSnapshot;
 
+const databaseSnapshotWithApprovedRunUpdateToken = {
+  ...databaseSnapshotWithRunUpdateToken,
+  agentRuns: databaseSnapshot.agentRuns.map((run) =>
+    run.id === 'run_bv_14'
+      ? {
+          ...run,
+          state: 'freigegeben',
+          lastEvent: 'Run BV-14 wurde menschlich freigegeben.',
+        }
+      : run
+  ),
+} satisfies DashboardSnapshot;
+
 const databaseSnapshotWithIssueReadToken = {
   ...databaseSnapshot,
   agentTokens: [
@@ -4603,11 +4616,85 @@ describe('BubblophyDashboard interactions', () => {
     }
 
     expect(within(runsSection).getByText('BV-14')).toBeInTheDocument();
+    expect(within(runsSection).getByText('run_bv_14')).toBeInTheDocument();
     expect(
       within(runsSection).queryByRole('button', { name: 'Freigeben' })
     ).not.toBeInTheDocument();
     expect(
       within(runsSection).queryByRole('button', { name: 'Abbrechen' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('copies a concrete run PATCH handoff for approved runs with an active update token', () => {
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithApprovedRunUpdateToken}
+      />
+    );
+
+    const runsSection = document.getElementById('runs');
+
+    expect(runsSection).toBeInstanceOf(HTMLElement);
+
+    if (!runsSection) {
+      throw new Error('Expected the runs section to render.');
+    }
+
+    expect(within(runsSection).getByText('run_bv_14')).toBeInTheDocument();
+    expect(
+      within(runsSection).getByText(
+        /\$BUBBLOPHY_BASE_URL\/api\/agent-runs\/run_bv_14/
+      )
+    ).toBeInTheDocument();
+    expect(
+      within(runsSection).queryByText(
+        /\$BUBBLOPHY_BASE_URL\/api\/agent-runs\/<run-id>/
+      )
+    ).not.toBeInTheDocument();
+    expect(
+      within(runsSection).getByText(/Authorization: Bearer <agent-token>/)
+    ).toBeInTheDocument();
+    expect(within(runsSection).queryByText(/test_plaintext_token/)).not.toBeInTheDocument();
+    expect(within(runsSection).queryByText(/tokenHash/)).not.toBeInTheDocument();
+
+    fireEvent.click(
+      within(runsSection).getByRole('button', {
+        name: 'PATCH für run_bv_14 kopieren',
+      })
+    );
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringContaining('/api/agent-runs/run_bv_14')
+    );
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringContaining('Authorization: Bearer <agent-token>')
+    );
+    expect(navigator.clipboard.writeText).not.toHaveBeenCalledWith(
+      expect.stringContaining('<run-id>')
+    );
+  });
+
+  it('does not show concrete run PATCH handoff without a matching active update token', () => {
+    render(<BubblophyDashboard snapshot={databaseSnapshot} />);
+
+    const runsSection = document.getElementById('runs');
+
+    expect(runsSection).toBeInstanceOf(HTMLElement);
+
+    if (!runsSection) {
+      throw new Error('Expected the runs section to render.');
+    }
+
+    expect(within(runsSection).getByText('run_no_08')).toBeInTheDocument();
+    expect(
+      within(runsSection).queryByRole('button', {
+        name: 'PATCH für run_no_08 kopieren',
+      })
+    ).not.toBeInTheDocument();
+    expect(
+      within(runsSection).queryByText(
+        /\$BUBBLOPHY_BASE_URL\/api\/agent-runs\/run_no_08/
+      )
     ).not.toBeInTheDocument();
   });
 

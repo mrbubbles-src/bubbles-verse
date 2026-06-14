@@ -284,12 +284,11 @@ const agentTokenScopeOptions = [
   'runs:update',
 ];
 
-const agentRunUpdateEndpointExample = '/api/agent-runs/<run-id>';
-
-const agentRunUpdateCurlExample = `curl -X PATCH "$BUBBLOPHY_BASE_URL/api/agent-runs/<run-id>" \\
-  -H "Authorization: Bearer <agent-token>" \\
-  -H "Content-Type: application/json" \\
-  -d '{"state":"running","message":"Lokaler Agent hat begonnen."}'`;
+const agentUpdateableRunStates: readonly AgentRunState[] = [
+  'freigegeben',
+  'läuft',
+  'review',
+];
 
 /**
  * Checks whether an issue row is a local-only draft.
@@ -1153,6 +1152,7 @@ export function BubblophyDashboard({
               <RunQueue
                 dataSource={snapshot.meta.dataSource}
                 agentRuns={displayedAgentRuns}
+                agentTokens={displayedAgentTokens}
                 transitionAgentRunAction={
                   isSelectedProjectArchived
                     ? undefined
@@ -4098,7 +4098,7 @@ function AgentTokenHandoff({
             <div>
               <dt className="text-muted-foreground">PATCH Status</dt>
               <dd className="font-mono break-all">
-                {agentRunUpdateEndpointExample}
+                {buildAgentRunUpdateEndpoint()}
               </dd>
             </div>
             <div>
@@ -4110,7 +4110,7 @@ function AgentTokenHandoff({
           {canUpdateRuns ? (
             <CopyableCommandBlock
               label="PATCH-Beispiel kopieren"
-              value={agentRunUpdateCurlExample}
+              value={buildAgentRunUpdateCurlExample()}
             />
           ) : (
             <p className="text-xs text-muted-foreground">
@@ -4153,6 +4153,49 @@ function buildAgentProjectIssuesEndpoint(projectId?: string) {
 function buildAgentProjectIssuesCurlExample(projectId?: string) {
   return `curl -X GET "$BUBBLOPHY_BASE_URL${buildAgentProjectIssuesEndpoint(projectId)}" \\
   -H "Authorization: Bearer <agent-token>"`;
+}
+
+/**
+ * Builds the agent run update endpoint with a concrete run ID when available.
+ *
+ * @param runId Agent run database ID for a concrete local handoff.
+ * @returns Endpoint path with a real run ID or the safe placeholder.
+ */
+function buildAgentRunUpdateEndpoint(runId?: string) {
+  return `/api/agent-runs/${runId ?? '<run-id>'}`;
+}
+
+/**
+ * Builds the copyable run update command for local agents.
+ *
+ * @param runId Agent run database ID for a concrete local handoff.
+ * @returns Curl example with a real run ID or the safe placeholder.
+ */
+function buildAgentRunUpdateCurlExample(runId?: string) {
+  return `curl -X PATCH "$BUBBLOPHY_BASE_URL${buildAgentRunUpdateEndpoint(runId)}" \\
+  -H "Authorization: Bearer <agent-token>" \\
+  -H "Content-Type: application/json" \\
+  -d '{"state":"running","message":"Lokaler Agent hat begonnen."}'`;
+}
+
+/**
+ * Checks whether a run state can accept scoped agent status updates.
+ *
+ * @param state Dashboard run state.
+ * @returns True when a local agent handoff is meaningful for this state.
+ */
+function canShowConcreteAgentRunHandoff(state: AgentRunState) {
+  return agentUpdateableRunStates.includes(state);
+}
+
+/**
+ * Extracts the project key prefix from a dashboard issue ID.
+ *
+ * @param issueId Public issue ID such as `BV-12`.
+ * @returns Project key prefix or an empty string.
+ */
+function getProjectKeyFromIssueId(issueId: string) {
+  return issueId.split('-')[0] ?? '';
 }
 
 /**
@@ -4460,7 +4503,7 @@ function NewAgentTokenDialog({
                 {createdToken.scopes.includes('runs:update') ? (
                   <CopyableCommandBlock
                     label="PATCH-Beispiel kopieren"
-                    value={agentRunUpdateCurlExample}
+                    value={buildAgentRunUpdateCurlExample()}
                   />
                 ) : null}
               </div>
@@ -4567,11 +4610,13 @@ function NewAgentTokenDialog({
 function RunQueue({
   dataSource,
   agentRuns,
+  agentTokens,
   transitionAgentRunAction,
   onAgentRunTransitioned,
 }: {
   dataSource: DashboardSnapshot['meta']['dataSource'];
   agentRuns: AgentRunSummary[];
+  agentTokens: AgentTokenSummary[];
   transitionAgentRunAction?: (
     input: TransitionBubblophyAgentRunActionInput
   ) => Promise<TransitionBubblophyAgentRunActionResult>;
@@ -4612,31 +4657,62 @@ function RunQueue({
           </div>
         ) : null}
         {isDatabaseSource
-          ? agentRuns.map((run) => (
-              <div
-                key={run.id}
-                className="grid gap-2 rounded-md bg-muted/30 p-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-medium">{run.issueId}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {run.agentLabel} · angefragt von {run.requestedBy}
-                    </p>
+          ? agentRuns.map((run) => {
+              const runProjectKey = getProjectKeyFromIssueId(run.issueId);
+              const canUpdateThisRun = agentTokens.some(
+                (token) =>
+                  token.state === 'aktiv' &&
+                  token.projectKey === runProjectKey &&
+                  token.scopes.includes('runs:update')
+              );
+
+              return (
+                <div
+                  key={run.id}
+                  className="grid gap-2 rounded-md bg-muted/30 p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-medium">{run.issueId}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {run.agentLabel} · angefragt von {run.requestedBy}
+                      </p>
+                    </div>
+                    <Badge variant={runVariant[run.state]}>
+                      {agentRunStateLabels[run.state]}
+                    </Badge>
                   </div>
-                  <Badge variant={runVariant[run.state]}>
-                    {agentRunStateLabels[run.state]}
-                  </Badge>
+                  <dl className="grid gap-1 text-xs sm:grid-cols-2">
+                    <div>
+                      <dt className="text-muted-foreground">Run-ID</dt>
+                      <dd className="font-mono break-all">{run.id}</dd>
+                    </div>
+                  </dl>
+                  <p className="text-xs text-muted-foreground">
+                    {run.lastEvent}
+                  </p>
+                  {canShowConcreteAgentRunHandoff(run.state) &&
+                  canUpdateThisRun ? (
+                    <div className="grid gap-2 rounded-md border border-border bg-background/60 p-2">
+                      <p className="text-xs text-muted-foreground">
+                        Lokaler Agent kann für diesen Run Status melden. Kein
+                        Autostart, nur PATCH mit Token-Platzhalter.
+                      </p>
+                      <CopyableCommandBlock
+                        label={`PATCH für ${run.id} kopieren`}
+                        value={buildAgentRunUpdateCurlExample(run.id)}
+                      />
+                    </div>
+                  ) : null}
+                  {run.state === 'wartet' && transitionAgentRunAction ? (
+                    <RunDecisionControls
+                      run={run}
+                      transitionAgentRunAction={transitionAgentRunAction}
+                      onAgentRunTransitioned={onAgentRunTransitioned}
+                    />
+                  ) : null}
                 </div>
-                <p className="text-xs text-muted-foreground">{run.lastEvent}</p>
-                {run.state === 'wartet' && transitionAgentRunAction ? (
-                  <RunDecisionControls
-                    run={run}
-                    transitionAgentRunAction={transitionAgentRunAction}
-                    onAgentRunTransitioned={onAgentRunTransitioned}
-                  />
-                ) : null}
-              </div>
-            ))
+              );
+            })
           : null}
       </CardContent>
     </Card>
