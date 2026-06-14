@@ -49,6 +49,7 @@ export function cloneDashboardSnapshot(
 ): DashboardSnapshot {
   return {
     meta: { ...snapshot.meta },
+    currentUser: { ...snapshot.currentUser },
     projects: snapshot.projects.map((project) => ({ ...project })),
     issues: snapshot.issues.map((issue) => ({
       ...issue,
@@ -106,6 +107,9 @@ export async function loadBubblophyProjectIssueDashboardSnapshot({
         ? 'Datenbank erreichbar, aber für diesen User gibt es noch keine Projekte.'
         : 'Read-only aus Projekten mit menschlicher Mitgliedschaft.',
     },
+    currentUser: {
+      authUserId,
+    },
     projects,
     issues,
     projectMembers: buildBubblophyProjectMemberSummaries(
@@ -134,7 +138,10 @@ export async function getBubblophyDashboardSnapshot(
     input.loadRows ?? (await getDefaultProjectIssueRowSelector());
 
   if (!loadRows) {
-    return createDatabaseUnavailableSnapshot('not_configured');
+    return createDatabaseUnavailableSnapshot(
+      input.session.authUserId,
+      'not_configured'
+    );
   }
 
   try {
@@ -144,6 +151,7 @@ export async function getBubblophyDashboardSnapshot(
     });
   } catch (error) {
     return createDatabaseUnavailableSnapshot(
+      input.session.authUserId,
       error instanceof Error
         ? classifyDatabaseUnavailableReason(error)
         : 'unknown'
@@ -174,6 +182,7 @@ async function getDefaultProjectIssueRowSelector() {
  * @returns Empty dashboard snapshot with explicit setup metadata.
  */
 function createDatabaseUnavailableSnapshot(
+  authUserId: string,
   reason: DashboardUnavailableReason
 ): DashboardSnapshot {
   return {
@@ -184,6 +193,9 @@ function createDatabaseUnavailableSnapshot(
         'Bubblophy kann die Datenbank oder Tabellen gerade nicht lesen.',
       reason,
       hint: getDatabaseUnavailableHint(reason),
+    },
+    currentUser: {
+      authUserId,
     },
     projects: [],
     issues: [],

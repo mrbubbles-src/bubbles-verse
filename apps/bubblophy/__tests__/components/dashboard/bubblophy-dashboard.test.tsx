@@ -3068,6 +3068,81 @@ describe('BubblophyDashboard interactions', () => {
     expect(within(projectsSection).getByText('4 sichtbar')).toBeInTheDocument();
   });
 
+  it('copies own auth user id for member handoff', async () => {
+    render(
+      <BubblophyDashboard snapshot={databaseSnapshotWithManageableMembers} />
+    );
+
+    const projectsSection = document.getElementById('projects');
+
+    expect(projectsSection).toBeInstanceOf(HTMLElement);
+
+    if (!projectsSection) {
+      throw new Error('Expected the projects section to render.');
+    }
+
+    fireEvent.click(
+      within(projectsSection).getByRole('button', {
+        name: 'Projekt Bubblesverse (BV) auswählen',
+      })
+    );
+
+    const handoff = within(projectsSection).getByLabelText(
+      'Eigene Auth-ID für Mitglieder-Handoff'
+    );
+
+    expect(within(handoff).getByText('user_mrbubbles')).toBeInTheDocument();
+    expect(
+      within(handoff).getByText(/Owner oder Maintainer/)
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      within(handoff).getByRole('button', {
+        name: 'Eigene Auth-ID kopieren',
+      })
+    );
+
+    await waitFor(() => {
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+        'user_mrbubbles'
+      );
+    });
+    expect(await within(handoff).findByRole('status')).toHaveTextContent(
+      'Eigene Auth-ID wurde kopiert.'
+    );
+  });
+
+  it('does not expose profile lookup or invitation language for own auth id copy', () => {
+    render(
+      <BubblophyDashboard snapshot={databaseSnapshotWithManageableMembers} />
+    );
+
+    const projectsSection = document.getElementById('projects');
+
+    expect(projectsSection).toBeInstanceOf(HTMLElement);
+
+    if (!projectsSection) {
+      throw new Error('Expected the projects section to render.');
+    }
+
+    fireEvent.click(
+      within(projectsSection).getByRole('button', {
+        name: 'Projekt Bubblesverse (BV) auswählen',
+      })
+    );
+
+    const handoff = within(projectsSection).getByLabelText(
+      'Eigene Auth-ID für Mitglieder-Handoff'
+    );
+
+    expect(
+      within(handoff).queryByText(/Profil-Lookup|E-Mail|Einladung/i)
+    ).not.toBeInTheDocument();
+    expect(
+      within(handoff).queryByText(/automatische Freigabe/i)
+    ).toBeInTheDocument();
+  });
+
   it('shows duplicate add-member feedback without fake invite behavior', async () => {
     const addProjectMemberAction = vi.fn<
       (

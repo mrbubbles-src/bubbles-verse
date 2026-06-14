@@ -135,6 +135,9 @@ export interface DashboardSnapshotMeta {
 
 export interface DashboardSnapshot {
   meta: DashboardSnapshotMeta;
+  currentUser: {
+    authUserId: string;
+  };
   projects: ProjectSummary[];
   issues: IssueSummary[];
   projectMembers: ProjectMemberSummary[];

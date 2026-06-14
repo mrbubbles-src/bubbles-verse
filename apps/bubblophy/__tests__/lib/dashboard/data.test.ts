@@ -135,6 +135,9 @@ describe('getBubblophyDashboardSnapshot', () => {
       meta: {
         dataSource: 'database',
       },
+      currentUser: {
+        authUserId: 'user_owner',
+      },
       projects: [
         {
           id: 'project_bubblesverse',
@@ -217,6 +220,19 @@ describe('getBubblophyDashboardSnapshot', () => {
     expect(selectRows).toHaveBeenCalledWith('user_owner');
   });
 
+  it('includes current auth user id in database snapshots', async () => {
+    const snapshot = await getBubblophyDashboardSnapshot({
+      session,
+      loadRows: async () => makeDatabaseRows(),
+    });
+
+    expect(snapshot.currentUser).toEqual({
+      authUserId: 'user_owner',
+    });
+    expect(JSON.stringify(snapshot.currentUser)).not.toContain('email');
+    expect(JSON.stringify(snapshot.currentUser)).not.toContain('profile');
+  });
+
   it('does not expose token secrets in database snapshots', async () => {
     const snapshot = await getBubblophyDashboardSnapshot({
       session,
@@ -282,6 +298,7 @@ describe('getBubblophyDashboardSnapshot', () => {
     expect(snapshot.meta.label).toBe('Datenbank nicht bereit');
     expect(snapshot.meta.reason).toBe('not_configured');
     expect(snapshot.meta.hint).toContain('DATABASE_URL');
+    expect(snapshot.currentUser.authUserId).toBe('user_owner');
     expect(snapshot.projects).toEqual([]);
     expect(snapshot.issues).toEqual([]);
     expect(snapshot.agentTokens).toEqual([]);
@@ -343,9 +360,20 @@ describe('cloneDashboardSnapshot', () => {
 
     expect(clone.meta).toEqual(dashboardSnapshot.meta);
     expect(clone.meta).not.toBe(dashboardSnapshot.meta);
+    expect(clone.currentUser).toEqual(dashboardSnapshot.currentUser);
+    expect(clone.currentUser).not.toBe(dashboardSnapshot.currentUser);
     expect(clone.agentTokens[0]).not.toBe(dashboardSnapshot.agentTokens[0]);
     expect(clone.agentTokens[0]?.scopes).not.toBe(
       dashboardSnapshot.agentTokens[0]?.scopes
     );
+  });
+
+  it('clones current user identity without sharing references', () => {
+    const clone = cloneDashboardSnapshot(dashboardSnapshot);
+
+    clone.currentUser.authUserId = 'changed_user';
+
+    expect(dashboardSnapshot.currentUser.authUserId).toBe('user_mrbubbles');
+    expect(clone.currentUser.authUserId).toBe('changed_user');
   });
 });

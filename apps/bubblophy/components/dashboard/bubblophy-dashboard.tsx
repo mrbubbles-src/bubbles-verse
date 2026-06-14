@@ -1133,6 +1133,7 @@ export function BubblophyDashboard({
                 }
                 readiness={readiness}
                 selectedProjectKey={selectedProjectKey}
+                currentUser={snapshot.currentUser}
                 updateProjectContentAction={updateProjectContentAction}
                 transitionProjectArchiveAction={transitionProjectArchiveAction}
                 addProjectMemberAction={addProjectMemberAction}
@@ -1417,6 +1418,7 @@ function ProjectOverview({
   canManageProjects,
   readiness,
   selectedProjectKey,
+  currentUser,
   updateProjectContentAction,
   transitionProjectArchiveAction,
   addProjectMemberAction,
@@ -1436,6 +1438,7 @@ function ProjectOverview({
   canManageProjects: boolean;
   readiness: number;
   selectedProjectKey: ProjectFilterKey;
+  currentUser: DashboardSnapshot['currentUser'];
   updateProjectContentAction?: (
     input: UpdateBubblophyProjectContentActionInput
   ) => Promise<UpdateBubblophyProjectContentActionResult>;
@@ -1617,6 +1620,7 @@ function ProjectOverview({
           <ProjectMembersPanel
             project={selectedProject}
             members={projectMembers}
+            currentUser={currentUser}
             addProjectMemberAction={addProjectMemberAction}
             updateProjectMemberRoleAction={updateProjectMemberRoleAction}
             removeProjectMemberAction={removeProjectMemberAction}
@@ -2014,6 +2018,7 @@ function ProjectManagementPanel({
 function ProjectMembersPanel({
   project,
   members,
+  currentUser,
   addProjectMemberAction,
   updateProjectMemberRoleAction,
   removeProjectMemberAction,
@@ -2023,6 +2028,7 @@ function ProjectMembersPanel({
 }: {
   project: ProjectSummary;
   members: ProjectMemberSummary[];
+  currentUser: DashboardSnapshot['currentUser'];
   addProjectMemberAction?: (
     input: AddBubblophyProjectMemberActionInput
   ) => Promise<AddBubblophyProjectMemberActionResult>;
@@ -2048,6 +2054,9 @@ function ProjectMembersPanel({
 }) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [copyOwnAuthIdStatus, setCopyOwnAuthIdStatus] = useState<
+    'idle' | 'copied' | 'failed'
+  >('idle');
   const [addMemberAuthUserId, setAddMemberAuthUserId] = useState('');
   const [addMemberRole, setAddMemberRole] =
     useState<AddBubblophyProjectMemberActionInput['role']>('member');
@@ -2102,6 +2111,18 @@ function ProjectMembersPanel({
 
       setActionError(getProjectMemberAddActionErrorMessage(result));
     });
+  };
+
+  const handleCopyOwnAuthUserId = () => {
+    if (!navigator.clipboard) {
+      setCopyOwnAuthIdStatus('failed');
+      return;
+    }
+
+    void navigator.clipboard
+      .writeText(currentUser.authUserId)
+      .then(() => setCopyOwnAuthIdStatus('copied'))
+      .catch(() => setCopyOwnAuthIdStatus('failed'));
   };
 
   const handleRoleChange = (
@@ -2253,6 +2274,42 @@ function ProjectMembersPanel({
           </div>
         </div>
       ) : null}
+
+      <div
+        aria-label="Eigene Auth-ID für Mitglieder-Handoff"
+        className="grid gap-2 rounded-md border border-dashed border-border p-3">
+        <div className="grid gap-1">
+          <h4 className="text-sm font-medium">Eigene Auth-ID weitergeben</h4>
+          <p className="text-xs text-muted-foreground">
+            Gib diese ID an einen Owner oder Maintainer weiter, damit du direkt
+            zu einem Projekt hinzugefügt werden kannst. Das löst keine Suche und
+            keine automatische Freigabe aus.
+          </p>
+        </div>
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <code className="min-w-0 rounded bg-background px-2 py-1 font-mono text-xs break-all">
+            {currentUser.authUserId}
+          </code>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={handleCopyOwnAuthUserId}>
+            Eigene Auth-ID kopieren
+          </Button>
+        </div>
+        {copyOwnAuthIdStatus === 'copied' ? (
+          <p role="status" className="text-xs text-muted-foreground">
+            Eigene Auth-ID wurde kopiert.
+          </p>
+        ) : null}
+        {copyOwnAuthIdStatus === 'failed' ? (
+          <p role="status" className="text-xs text-muted-foreground">
+            Konnte nicht automatisch kopieren. Markiere die ID und kopiere sie
+            manuell.
+          </p>
+        ) : null}
+      </div>
 
       {members.length === 0 ? (
         <p className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">

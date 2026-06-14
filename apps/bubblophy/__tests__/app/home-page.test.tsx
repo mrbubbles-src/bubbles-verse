@@ -82,6 +82,9 @@ describe('Bubblophy home page', () => {
         label: 'Datenbankdaten',
         description: 'Read-only Testdaten.',
       },
+      currentUser: {
+        authUserId: 'user_owner',
+      },
       projects: [
         {
           id: 'project',

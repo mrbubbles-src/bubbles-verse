@@ -6,6 +6,9 @@ export const dashboardSnapshot = {
     label: 'Sample-Daten',
     description: 'Lokaler Beispiel-Snapshot, keine echten Projekt-Daten.',
   },
+  currentUser: {
+    authUserId: 'user_mrbubbles',
+  },
   projects: [
     {
       id: 'project_bubblesverse',
