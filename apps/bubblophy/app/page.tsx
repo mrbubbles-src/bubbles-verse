@@ -8,6 +8,7 @@ import { connection } from 'next/server';
 import {
   createBubblophyAgentTokenAction,
   createBubblophyIssueAction,
+  createBubblophyIssueNoteAction,
   createBubblophyIssuePlanAction,
   createBubblophyProjectAction,
   removeBubblophyProjectMemberAction,
@@ -80,6 +81,7 @@ export async function ProtectedBubblophyDashboard() {
       updateIssueContentAction={updateBubblophyIssueContentAction}
       updateIssueAssigneeAction={updateBubblophyIssueAssigneeAction}
       createIssuePlanAction={createBubblophyIssuePlanAction}
+      createIssueNoteAction={createBubblophyIssueNoteAction}
       updateIssueStatusAction={updateBubblophyIssueStatusAction}
       updateIssuePriorityAction={updateBubblophyIssuePriorityAction}
       requestAgentRunAction={requestBubblophyAgentRunAction}

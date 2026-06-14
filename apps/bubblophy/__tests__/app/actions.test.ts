@@ -1,6 +1,7 @@
 import type {
   CreateBubblophyAgentTokenActionInput,
   CreateBubblophyIssueActionInput,
+  CreateBubblophyIssueNoteActionInput,
   CreateBubblophyIssuePlanActionInput,
   CreateBubblophyProjectActionInput,
   RemoveBubblophyProjectMemberActionInput,
@@ -23,6 +24,7 @@ import type { UpdateBubblophyIssueAssigneeInput } from '@/lib/issues/assignment'
 import type { CreateBubblophyIssueDraftInput } from '@/lib/issues/create';
 import type { UpdateBubblophyIssueContentInput } from '@/lib/issues/edit';
 import type { CreateOrUpdateBubblophyIssuePlanDraftInput } from '@/lib/issues/plans';
+import type { CreateBubblophyIssueNoteInput } from '@/lib/issues/notes';
 import type { UpdateBubblophyIssuePriorityInput } from '@/lib/issues/priority';
 import type { UpdateBubblophyIssueStatusInput } from '@/lib/issues/status';
 import type { CreateBubblophyProjectInput } from '@/lib/projects/create';
@@ -42,6 +44,7 @@ const createBubblophyIssueDraftMock = vi.fn();
 const updateBubblophyIssueAssigneeMock = vi.fn();
 const updateBubblophyIssueContentMock = vi.fn();
 const createBubblophyIssuePlanDraftMock = vi.fn();
+const createBubblophyIssueNoteMock = vi.fn();
 const updateBubblophyIssuePriorityMock = vi.fn();
 const updateBubblophyIssueStatusMock = vi.fn();
 const createBubblophyProjectMock = vi.fn();
@@ -78,6 +81,11 @@ vi.mock('@/lib/issues/plans', () => ({
   createOrUpdateBubblophyIssuePlanDraft: (
     input: CreateOrUpdateBubblophyIssuePlanDraftInput
   ) => createBubblophyIssuePlanDraftMock(input),
+}));
+
+vi.mock('@/lib/issues/notes', () => ({
+  createBubblophyIssueNote: (input: CreateBubblophyIssueNoteInput) =>
+    createBubblophyIssueNoteMock(input),
 }));
 
 vi.mock('@/lib/issues/priority', () => ({
@@ -139,6 +147,7 @@ describe('createBubblophyIssueAction', () => {
     updateBubblophyIssueAssigneeMock.mockReset();
     updateBubblophyIssueContentMock.mockReset();
     createBubblophyIssuePlanDraftMock.mockReset();
+    createBubblophyIssueNoteMock.mockReset();
     updateBubblophyIssuePriorityMock.mockReset();
     updateBubblophyIssueStatusMock.mockReset();
     createBubblophyProjectMock.mockReset();
@@ -410,6 +419,83 @@ describe('createBubblophyIssuePlanAction', () => {
         steps: [{ id: 'step_1', text: 'Kontext lesen' }],
       },
     });
+  });
+});
+
+describe('createBubblophyIssueNoteAction', () => {
+  beforeEach(() => {
+    requireBubblophySessionMock.mockReset();
+    createBubblophyIssueNoteMock.mockReset();
+  });
+
+  it('resolves the auth user server-side instead of accepting a client authUserId', async () => {
+    requireBubblophySessionMock.mockResolvedValue({
+      authUserId: 'user_server',
+      email: 'owner@example.test',
+      user: {},
+    });
+    createBubblophyIssueNoteMock.mockResolvedValue({
+      status: 'created',
+      note: {
+        id: 'event_note_1',
+        note: 'Plan-Review bleibt menschlich.',
+        actor: 'Mensch',
+        createdAt: '2026-06-14T10:00:00.000Z',
+      },
+    });
+
+    const { createBubblophyIssueNoteAction } = await import('@/app/actions');
+    const result = await createBubblophyIssueNoteAction({
+      authUserId: 'user_client_spoof',
+      issueId: 'BV-12',
+      note: 'Plan-Review bleibt menschlich.',
+    } as CreateBubblophyIssueNoteActionInput & { authUserId: string });
+
+    expect(requireBubblophySessionMock).toHaveBeenCalledWith({
+      nextPath: '/',
+    });
+    expect(createBubblophyIssueNoteMock).toHaveBeenCalledWith({
+      authUserId: 'user_server',
+      issueId: 'BV-12',
+      note: 'Plan-Review bleibt menschlich.',
+    });
+    expect(result).toEqual({
+      status: 'created',
+      note: {
+        id: 'event_note_1',
+        note: 'Plan-Review bleibt menschlich.',
+        actor: 'Mensch',
+        createdAt: '2026-06-14T10:00:00.000Z',
+      },
+    });
+  });
+
+  it('forwards note validation and permission results without internal details', async () => {
+    requireBubblophySessionMock.mockResolvedValue({
+      authUserId: 'user_server',
+      email: 'owner@example.test',
+      user: {},
+    });
+    createBubblophyIssueNoteMock.mockResolvedValue({
+      status: 'forbidden',
+    });
+
+    const { createBubblophyIssueNoteAction } = await import('@/app/actions');
+    const result = await createBubblophyIssueNoteAction({
+      authUserId: 'user_client_spoof',
+      issueId: 'BV-12',
+      note: 'Viewer darf nicht schreiben.',
+    } as CreateBubblophyIssueNoteActionInput & { authUserId: string });
+
+    expect(createBubblophyIssueNoteMock).toHaveBeenCalledWith({
+      authUserId: 'user_server',
+      issueId: 'BV-12',
+      note: 'Viewer darf nicht schreiben.',
+    });
+    expect(createBubblophyIssueNoteMock.mock.calls[0]?.[0]).not.toHaveProperty(
+      'email'
+    );
+    expect(result).toEqual({ status: 'forbidden' });
   });
 });
 

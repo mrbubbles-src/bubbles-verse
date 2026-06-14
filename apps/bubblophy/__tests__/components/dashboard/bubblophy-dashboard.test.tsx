@@ -3,6 +3,8 @@ import type {
   CreateBubblophyAgentTokenActionResult,
   CreateBubblophyIssueActionInput,
   CreateBubblophyIssueActionResult,
+  CreateBubblophyIssueNoteActionInput,
+  CreateBubblophyIssueNoteActionResult,
   CreateBubblophyIssuePlanActionInput,
   CreateBubblophyIssuePlanActionResult,
   CreateBubblophyProjectActionInput,
@@ -135,6 +137,25 @@ const databaseSnapshotWithReloadedPlan = {
               { id: 'step_2', text: 'Detailpanel verifizieren' },
             ],
           },
+        }
+      : issue
+  ),
+} satisfies DashboardSnapshot;
+
+const databaseSnapshotWithIssueNote = {
+  ...databaseSnapshot,
+  issues: databaseSnapshot.issues.map((issue) =>
+    issue.id === 'BV-12'
+      ? {
+          ...issue,
+          notes: [
+            {
+              id: 'event_note_existing',
+              note: 'Bestehende Review-Notiz aus dem Reload.',
+              actor: 'Mensch',
+              createdAt: '2026-06-14T09:00:00.000Z',
+            },
+          ],
         }
       : issue
   ),
@@ -1860,6 +1881,138 @@ describe('BubblophyDashboard interactions', () => {
     expect(screen.getByLabelText('Plan-Zusammenfassung')).toHaveValue(
       'Plan bleibt im Dialog.'
     );
+  });
+
+  it('renders reloaded issue notes in the selected issue detail', () => {
+    render(<BubblophyDashboard snapshot={databaseSnapshotWithIssueNote} />);
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+    const notesRegion = within(detailPanel).getByLabelText('Notizen für BV-12');
+
+    expect(
+      within(notesRegion).getByText('Bestehende Review-Notiz aus dem Reload.')
+    ).toBeInTheDocument();
+    expect(within(notesRegion).getByText(/Mensch · 2026-06-14/)).toBeInTheDocument();
+  });
+
+  it('appends a human issue note without starting an agent run', async () => {
+    const createIssueNoteAction = vi.fn<
+      (
+        input: CreateBubblophyIssueNoteActionInput
+      ) => Promise<CreateBubblophyIssueNoteActionResult>
+    >(async (input) => ({
+      status: 'created',
+      note: {
+        id: 'event_note_new',
+        note: input.note,
+        actor: 'Mensch',
+        createdAt: '2026-06-14T10:00:00.000Z',
+      },
+    }));
+    const requestAgentRunAction = vi.fn<
+      (
+        input: RequestBubblophyAgentRunActionInput
+      ) => Promise<RequestBubblophyAgentRunActionResult>
+    >(async () => {
+      throw new Error('Run should not be requested by notes.');
+    });
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        createIssueNoteAction={createIssueNoteAction}
+        requestAgentRunAction={requestAgentRunAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+    const notesRegion = within(detailPanel).getByLabelText('Notizen für BV-12');
+    const noteInput = within(notesRegion).getByLabelText('Neue Notiz');
+
+    fireEvent.change(noteInput, {
+      target: { value: '<strong>Plan bleibt menschlich.</strong>' },
+    });
+    fireEvent.click(
+      within(notesRegion).getByRole('button', { name: 'Notiz speichern' })
+    );
+
+    await waitFor(() => {
+      expect(createIssueNoteAction).toHaveBeenCalledWith({
+        issueId: 'BV-12',
+        note: '<strong>Plan bleibt menschlich.</strong>',
+      });
+    });
+    expect(createIssueNoteAction.mock.calls[0]?.[0]).not.toHaveProperty(
+      'authUserId'
+    );
+
+    await waitFor(() => {
+      expect(
+        within(notesRegion).getByText('<strong>Plan bleibt menschlich.</strong>')
+      ).toBeInTheDocument();
+    });
+    expect(notesRegion.querySelector('strong')).toBeNull();
+    expect(noteInput).toHaveValue('');
+    expect(requestAgentRunAction).not.toHaveBeenCalled();
+  });
+
+  it('keeps note input when the issue note action is denied', async () => {
+    const createIssueNoteAction = vi.fn<
+      (
+        input: CreateBubblophyIssueNoteActionInput
+      ) => Promise<CreateBubblophyIssueNoteActionResult>
+    >(async () => ({ status: 'forbidden' }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        createIssueNoteAction={createIssueNoteAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+    const notesRegion = within(detailPanel).getByLabelText('Notizen für BV-12');
+    const noteInput = within(notesRegion).getByLabelText('Neue Notiz');
+
+    fireEvent.change(noteInput, {
+      target: { value: 'Viewer darf nicht speichern.' },
+    });
+    fireEvent.click(
+      within(notesRegion).getByRole('button', { name: 'Notiz speichern' })
+    );
+
+    await waitFor(() => {
+      expect(createIssueNoteAction).toHaveBeenCalledWith({
+        issueId: 'BV-12',
+        note: 'Viewer darf nicht speichern.',
+      });
+    });
+
+    expect(await within(notesRegion).findByRole('alert')).toHaveTextContent(
+      'Du darfst für dieses Issue keine Notiz schreiben.'
+    );
+    expect(noteInput).toHaveValue('Viewer darf nicht speichern.');
+    expect(
+      within(notesRegion).queryByText('Notiz gespeichert.')
+    ).not.toBeInTheDocument();
   });
 
   it('opens a local draft dialog from the new issue action', () => {

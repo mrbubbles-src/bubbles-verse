@@ -1,6 +1,7 @@
 import 'server-only';
 
 import type { BubblophyDashboardPersistenceRows } from '@/lib/dashboard/data';
+import type { IssueNoteSummary } from '@/lib/dashboard/types';
 import type {
   BubblophyActivityPersistenceRow,
   BubblophyAgentRunPersistenceRow,
@@ -25,6 +26,7 @@ import {
   bubblophyProjectEvents,
   bubblophyProjectMembers,
   bubblophyProjects,
+  type JsonValue,
 } from '@/drizzle/db/schema';
 
 type CountByProjectId = Record<string, number>;
@@ -36,6 +38,7 @@ type LatestPlanByIssueId = Record<
     steps: BubblophyProjectIssueMembershipRow['issuePlanSteps'];
   }
 >;
+type IssueNotesByIssueId = Record<string, IssueNoteSummary[]>;
 type RoleByProjectId = Record<
   string,
   BubblophyProjectIssueMembershipRow['projectCurrentUserRole']
@@ -253,6 +256,43 @@ async function selectBubblophyProjectIssueRowsForProjectIds(
               desc(bubblophyIssuePlans.createdAt)
             )
         );
+  const issueNotes =
+    visibleIssueIds.length === 0
+      ? {}
+      : toIssueNotesByIssueId(
+          await db
+            .select({
+              id: bubblophyIssueEvents.id,
+              issueId: bubblophyIssueEvents.issueId,
+              summary: bubblophyIssueEvents.summary,
+              payload: bubblophyIssueEvents.payload,
+              actorAuthUserId: bubblophyIssueEvents.actorAuthUserId,
+              actorAgentTokenLabel: bubblophyAgentTokens.label,
+              createdAt: bubblophyIssueEvents.createdAt,
+            })
+            .from(bubblophyIssueEvents)
+            .leftJoin(
+              bubblophyAgentTokens,
+              and(
+                eq(
+                  bubblophyAgentTokens.id,
+                  bubblophyIssueEvents.actorAgentTokenId
+                ),
+                inArray(bubblophyAgentTokens.projectId, visibleProjectIds)
+              )
+            )
+            .where(
+              and(
+                inArray(bubblophyIssueEvents.issueId, visibleIssueIds),
+                eq(bubblophyIssueEvents.eventType, 'commented')
+              )
+            )
+            .orderBy(
+              asc(bubblophyIssueEvents.issueId),
+              desc(bubblophyIssueEvents.createdAt),
+              desc(bubblophyIssueEvents.id)
+            )
+        );
 
   const rows = buildMembershipRows({
     authUserId,
@@ -262,6 +302,7 @@ async function selectBubblophyProjectIssueRowsForProjectIds(
     memberCounts: toProjectCountMap(memberCounts),
     tokenCounts: toProjectCountMap(tokenCounts),
     latestPlans,
+    issueNotes,
   });
 
   return rows;
@@ -499,6 +540,7 @@ function buildMembershipRows(input: {
   memberCounts: CountByProjectId;
   tokenCounts: CountByProjectId;
   latestPlans: LatestPlanByIssueId;
+  issueNotes: IssueNotesByIssueId;
 }): BubblophyProjectIssueMembershipRow[] {
   return input.projects.flatMap((project) => {
     const projectIssues = input.issues.filter(
@@ -515,6 +557,7 @@ function buildMembershipRows(input: {
           tokenCount: input.tokenCounts[project.id] ?? 0,
           issue: null,
           latestPlan: null,
+          issueNotes: [],
         }),
       ];
     }
@@ -528,6 +571,7 @@ function buildMembershipRows(input: {
         tokenCount: input.tokenCounts[project.id] ?? 0,
         issue,
         latestPlan: input.latestPlans[issue.id] ?? null,
+        issueNotes: input.issueNotes[issue.id] ?? [],
       })
     );
   });
@@ -562,6 +606,7 @@ function createProjectIssueMembershipRow(input: {
     requiresHumanApproval: boolean;
   } | null;
   latestPlan: LatestPlanByIssueId[string] | null;
+  issueNotes: IssueNoteSummary[];
 }): BubblophyProjectIssueMembershipRow {
   return {
     projectMemberAuthUserId: input.authUserId,
@@ -587,6 +632,7 @@ function createProjectIssueMembershipRow(input: {
     issuePlanVersion: input.latestPlan?.version ?? null,
     issuePlanSummary: input.latestPlan?.summary ?? null,
     issuePlanSteps: input.latestPlan?.steps ?? null,
+    issueNotes: input.issueNotes,
   };
 }
 
@@ -646,4 +692,83 @@ function toLatestPlanByIssueId(
 
     return latestPlans;
   }, {});
+}
+
+/**
+ * Converts issue event rows into issue-local human notes.
+ *
+ * Only events carrying the explicit `issue_note` payload marker are exposed as
+ * notes, so unrelated audit events with the same event type stay in Activity.
+ *
+ * @param rows Issue event rows selected for visible issue IDs.
+ * @returns Notes grouped by issue database ID.
+ */
+function toIssueNotesByIssueId(
+  rows: {
+    id: string;
+    issueId: string;
+    summary: string;
+    payload: JsonValue;
+    actorAuthUserId: string | null;
+    actorAgentTokenLabel: string | null;
+    createdAt: string;
+  }[]
+) {
+  return rows.reduce<IssueNotesByIssueId>((notesByIssueId, row) => {
+    if (!isIssueNotePayload(row.payload)) {
+      return notesByIssueId;
+    }
+
+    const notes = notesByIssueId[row.issueId] ?? [];
+
+    notesByIssueId[row.issueId] = [
+      ...notes,
+      {
+        id: row.id,
+        note: row.summary,
+        actor: formatIssueNoteActor(row),
+        createdAt: row.createdAt,
+      },
+    ];
+
+    return notesByIssueId;
+  }, {});
+}
+
+/**
+ * Detects the intentionally narrow issue-note event payload marker.
+ *
+ * @param payload JSON payload from an issue event row.
+ * @returns True when the event is a human-readable issue note.
+ */
+function isIssueNotePayload(payload: JsonValue) {
+  return (
+    typeof payload === 'object' &&
+    payload !== null &&
+    'entity' in payload &&
+    'action' in payload &&
+    payload.entity === 'issue_note' &&
+    payload.action === 'created'
+  );
+}
+
+/**
+ * Formats a low-PII actor label for note rows.
+ *
+ * @param row Issue event row with optional human or agent actor.
+ * @returns Human-readable actor label.
+ */
+function formatIssueNoteActor(row: {
+  actorAuthUserId: string | null;
+  actorAgentTokenLabel: string | null;
+}) {
+  if (row.actorAuthUserId) {
+    return 'Mensch';
+  }
+
+  if (row.actorAgentTokenLabel) {
+    return `Agent-Token ${row.actorAgentTokenLabel}`;
+  }
+
+  return 'System';
 }

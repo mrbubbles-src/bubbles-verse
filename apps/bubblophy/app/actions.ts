@@ -33,6 +33,10 @@ import type {
   CreateOrUpdateBubblophyIssuePlanDraftResult,
 } from '@/lib/issues/plans';
 import type {
+  CreateBubblophyIssueNoteInput,
+  CreateBubblophyIssueNoteResult,
+} from '@/lib/issues/notes';
+import type {
   UpdateBubblophyIssuePriorityInput,
   UpdateBubblophyIssuePriorityResult,
 } from '@/lib/issues/priority';
@@ -66,6 +70,7 @@ import { createBubblophyIssueDraft } from '@/lib/issues/create';
 import { updateBubblophyIssueAssignee } from '@/lib/issues/assignment';
 import { updateBubblophyIssueContent } from '@/lib/issues/edit';
 import { createOrUpdateBubblophyIssuePlanDraft } from '@/lib/issues/plans';
+import { createBubblophyIssueNote } from '@/lib/issues/notes';
 import { updateBubblophyIssuePriority } from '@/lib/issues/priority';
 import { updateBubblophyIssueStatus } from '@/lib/issues/status';
 import { createBubblophyProject } from '@/lib/projects/create';
@@ -108,6 +113,14 @@ export type CreateBubblophyIssuePlanActionInput = Omit<
 
 export type CreateBubblophyIssuePlanActionResult =
   CreateOrUpdateBubblophyIssuePlanDraftResult;
+
+export type CreateBubblophyIssueNoteActionInput = Omit<
+  CreateBubblophyIssueNoteInput,
+  'authUserId'
+>;
+
+export type CreateBubblophyIssueNoteActionResult =
+  CreateBubblophyIssueNoteResult;
 
 export type UpdateBubblophyIssueStatusActionInput = Omit<
   UpdateBubblophyIssueStatusInput,
@@ -275,6 +288,27 @@ export async function createBubblophyIssuePlanAction(
   const session = await requireBubblophySession({ nextPath: '/' });
 
   return createOrUpdateBubblophyIssuePlanDraft({
+    ...input,
+    authUserId: session.authUserId,
+  });
+}
+
+/**
+ * Appends a human note to a Bubblophy issue for the current session.
+ *
+ * The client never provides an auth user ID. The action resolves the authorized
+ * human session server-side, then delegates membership, archive checks, and
+ * append-only event writing to the issue note service.
+ *
+ * @param input Issue key and bounded note text.
+ * @returns Structured result for the dashboard issue note form.
+ */
+export async function createBubblophyIssueNoteAction(
+  input: CreateBubblophyIssueNoteActionInput
+): Promise<CreateBubblophyIssueNoteActionResult> {
+  const session = await requireBubblophySession({ nextPath: '/' });
+
+  return createBubblophyIssueNote({
     ...input,
     authUserId: session.authUserId,
   });

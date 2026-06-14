@@ -53,7 +53,15 @@ export interface IssueSummary {
   owner: string;
   planSteps: number;
   latestPlan?: IssuePlanSummary;
+  notes?: IssueNoteSummary[];
   approvalRequired: boolean;
+}
+
+export interface IssueNoteSummary {
+  id: string;
+  note: string;
+  actor: string;
+  createdAt: string;
 }
 
 export interface IssuePlanStepSummary {

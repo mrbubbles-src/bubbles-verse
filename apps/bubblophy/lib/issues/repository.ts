@@ -13,6 +13,7 @@ import type {
   AgentRunSummary,
   AgentTokenState,
   AgentTokenSummary,
+  IssueNoteSummary,
   IssuePlanStepSummary,
   IssuePriority,
   IssueStatus,
@@ -44,6 +45,7 @@ export interface BubblophyProjectIssuePersistenceRow {
   issuePlanVersion: number | null;
   issuePlanSummary: string | null;
   issuePlanSteps: JsonValue | null;
+  issueNotes: IssueNoteSummary[];
 }
 
 export type BubblophyProjectIssueMembershipRow =
@@ -304,6 +306,7 @@ export function buildBubblophyProjectIssueSnapshot(
       owner: formatIssueOwner(row.issueAssignedAuthUserId),
       planSteps: getIssuePlanStepCount(row),
       latestPlan: mapBubblophyIssueLatestPlan(row),
+      notes: row.issueNotes,
       approvalRequired: row.issueRequiresHumanApproval ?? true,
     });
   }

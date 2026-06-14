@@ -54,6 +54,7 @@ function makeIssueRow(
     issuePlanVersion: null,
     issuePlanSummary: null,
     issuePlanSteps: null,
+    issueNotes: [],
     ...row,
   };
 }
@@ -182,6 +183,8 @@ describe('Bubblophy issue repository mapping', () => {
         priority: 'hoch',
         owner: 'mrbubbles',
         planSteps: 5,
+        latestPlan: undefined,
+        notes: [],
         approvalRequired: true,
       },
       {
@@ -193,6 +196,8 @@ describe('Bubblophy issue repository mapping', () => {
         priority: 'mittel',
         owner: 'Nicht zugewiesen',
         planSteps: 0,
+        latestPlan: undefined,
+        notes: [],
         approvalRequired: true,
       },
       {
@@ -204,6 +209,8 @@ describe('Bubblophy issue repository mapping', () => {
         priority: 'hoch',
         owner: 'mrbubbles',
         planSteps: 3,
+        latestPlan: undefined,
+        notes: [],
         approvalRequired: true,
       },
     ]);

@@ -5,6 +5,8 @@ import type {
   CreateBubblophyAgentTokenActionResult,
   CreateBubblophyIssueActionInput,
   CreateBubblophyIssueActionResult,
+  CreateBubblophyIssueNoteActionInput,
+  CreateBubblophyIssueNoteActionResult,
   CreateBubblophyIssuePlanActionInput,
   CreateBubblophyIssuePlanActionResult,
   CreateBubblophyProjectActionInput,
@@ -41,6 +43,7 @@ import type {
   IssuePriority,
   IssueStatus,
   IssueSummary,
+  IssueNoteSummary,
   ProjectHealth,
   ProjectMemberRole,
   ProjectMemberSummary,
@@ -117,6 +120,9 @@ interface BubblophyDashboardProps {
   createIssuePlanAction?: (
     input: CreateBubblophyIssuePlanActionInput
   ) => Promise<CreateBubblophyIssuePlanActionResult>;
+  createIssueNoteAction?: (
+    input: CreateBubblophyIssueNoteActionInput
+  ) => Promise<CreateBubblophyIssueNoteActionResult>;
   updateIssueStatusAction?: (
     input: UpdateBubblophyIssueStatusActionInput
   ) => Promise<UpdateBubblophyIssueStatusActionResult>;
@@ -506,6 +512,7 @@ export function BubblophyDashboard({
   updateIssueContentAction,
   updateIssueAssigneeAction,
   createIssuePlanAction,
+  createIssueNoteAction,
   updateIssueStatusAction,
   updateIssuePriorityAction,
   requestAgentRunAction,
@@ -541,6 +548,9 @@ export function BubblophyDashboard({
   const [persistedIssues, setPersistedIssues] = useState<IssueSummary[]>([]);
   const [issuePlansById, setIssuePlansById] = useState<
     Record<string, IssuePlanDraft>
+  >({});
+  const [issueNotesById, setIssueNotesById] = useState<
+    Record<string, IssueNoteSummary[]>
   >({});
   const [updatedIssuesById, setUpdatedIssuesById] = useState<
     Record<string, IssueSummary>
@@ -644,20 +654,24 @@ export function BubblophyDashboard({
         const updatedIssue = updatedIssuesById[issue.id];
         const plan =
           issuePlansById[issue.id] ?? getPersistedIssuePlanDraft(issue);
+        const notes = issueNotesById[issue.id] ?? issue.notes;
         const issueWithUpdate = updatedIssue
           ? { ...issue, ...updatedIssue }
           : issue;
+        const issueWithNotes = notes
+          ? { ...issueWithUpdate, notes }
+          : issueWithUpdate;
 
         if (!plan) {
-          return issueWithUpdate;
+          return issueWithNotes;
         }
 
         return {
-          ...issueWithUpdate,
+          ...issueWithNotes,
           planSteps: plan.steps.length,
         };
       }),
-    [baseIssues, issuePlansById, localDrafts, updatedIssuesById]
+    [baseIssues, issueNotesById, issuePlansById, localDrafts, updatedIssuesById]
   );
 
   const allProjects = useMemo(
@@ -906,6 +920,15 @@ export function BubblophyDashboard({
     }));
   };
 
+  const handleIssueNoteCreated = (issueId: string, note: IssueNoteSummary) => {
+    const currentIssue = allIssues.find((issue) => issue.id === issueId);
+
+    setIssueNotesById((currentNotes) => ({
+      ...currentNotes,
+      [issueId]: [note, ...(currentNotes[issueId] ?? currentIssue?.notes ?? [])],
+    }));
+  };
+
   const handleIssueUpdated = (issue: IssueSummary) => {
     setUpdatedIssuesById((currentIssues) => ({
       ...currentIssues,
@@ -1060,6 +1083,11 @@ export function BubblophyDashboard({
                   !isSelectedProjectArchived &&
                   Boolean(createIssuePlanAction)
                 }
+                canPersistIssueNotes={
+                  canUseDatabase &&
+                  !isSelectedProjectArchived &&
+                  Boolean(createIssueNoteAction)
+                }
                 canPersistIssueContent={
                   canUseDatabase &&
                   !isSelectedProjectArchived &&
@@ -1081,6 +1109,7 @@ export function BubblophyDashboard({
                   Boolean(updateIssueAssigneeAction)
                 }
                 createIssuePlanAction={createIssuePlanAction}
+                createIssueNoteAction={createIssueNoteAction}
                 updateIssueContentAction={updateIssueContentAction}
                 updateIssueAssigneeAction={updateIssueAssigneeAction}
                 updateIssueStatusAction={updateIssueStatusAction}
@@ -1092,6 +1121,7 @@ export function BubblophyDashboard({
                 onProjectSelect={handleProjectSelect}
                 onDraftDelete={handleDeleteDraft}
                 onIssuePlanSaved={handleIssuePlanSaved}
+                onIssueNoteCreated={handleIssueNoteCreated}
                 onIssueContentUpdated={handleIssueUpdated}
                 onIssueAssigneeUpdated={handleIssueUpdated}
                 onIssueStatusUpdated={handleIssueUpdated}
@@ -2178,11 +2208,13 @@ function IssueQueue({
   selectedIssue,
   selectedProjectKey,
   canPersistIssuePlans,
+  canPersistIssueNotes,
   canPersistIssueContent,
   canPersistIssueStatus,
   canPersistIssuePriority,
   canPersistIssueAssignee,
   createIssuePlanAction,
+  createIssueNoteAction,
   updateIssueContentAction,
   updateIssueAssigneeAction,
   updateIssueStatusAction,
@@ -2194,6 +2226,7 @@ function IssueQueue({
   onProjectSelect,
   onDraftDelete,
   onIssuePlanSaved,
+  onIssueNoteCreated,
   onIssueContentUpdated,
   onIssueAssigneeUpdated,
   onIssueStatusUpdated,
@@ -2209,6 +2242,7 @@ function IssueQueue({
   selectedIssue: DashboardIssue | null;
   selectedProjectKey: ProjectFilterKey;
   canPersistIssuePlans: boolean;
+  canPersistIssueNotes: boolean;
   canPersistIssueContent: boolean;
   canPersistIssueStatus: boolean;
   canPersistIssuePriority: boolean;
@@ -2216,6 +2250,9 @@ function IssueQueue({
   createIssuePlanAction?: (
     input: CreateBubblophyIssuePlanActionInput
   ) => Promise<CreateBubblophyIssuePlanActionResult>;
+  createIssueNoteAction?: (
+    input: CreateBubblophyIssueNoteActionInput
+  ) => Promise<CreateBubblophyIssueNoteActionResult>;
   updateIssueContentAction?: (
     input: UpdateBubblophyIssueContentActionInput
   ) => Promise<UpdateBubblophyIssueContentActionResult>;
@@ -2237,6 +2274,7 @@ function IssueQueue({
   onProjectSelect: (projectKey: ProjectFilterKey) => void;
   onDraftDelete: (issueId: string) => void;
   onIssuePlanSaved: (plan: IssuePlanDraft) => void;
+  onIssueNoteCreated: (issueId: string, note: IssueNoteSummary) => void;
   onIssueContentUpdated: (issue: IssueSummary) => void;
   onIssueAssigneeUpdated: (issue: IssueSummary) => void;
   onIssueStatusUpdated: (issue: IssueSummary) => void;
@@ -2398,11 +2436,13 @@ function IssueQueue({
           issue={selectedIssue}
           issuePlan={issuePlan}
           canPersistIssuePlans={canPersistIssuePlans}
+          canPersistIssueNotes={canPersistIssueNotes}
           canPersistIssueContent={canPersistIssueContent}
           canPersistIssueStatus={canPersistIssueStatus}
           canPersistIssuePriority={canPersistIssuePriority}
           canPersistIssueAssignee={canPersistIssueAssignee}
           createIssuePlanAction={createIssuePlanAction}
+          createIssueNoteAction={createIssueNoteAction}
           updateIssueContentAction={updateIssueContentAction}
           updateIssueAssigneeAction={updateIssueAssigneeAction}
           updateIssueStatusAction={updateIssueStatusAction}
@@ -2413,6 +2453,7 @@ function IssueQueue({
           agentRuns={agentRuns}
           onDraftDelete={onDraftDelete}
           onIssuePlanSaved={onIssuePlanSaved}
+          onIssueNoteCreated={onIssueNoteCreated}
           onIssueContentUpdated={onIssueContentUpdated}
           onIssueAssigneeUpdated={onIssueAssigneeUpdated}
           onIssueStatusUpdated={onIssueStatusUpdated}
@@ -2435,11 +2476,13 @@ function IssueDetailPanel({
   issue,
   issuePlan,
   canPersistIssuePlans,
+  canPersistIssueNotes,
   canPersistIssueContent,
   canPersistIssueStatus,
   canPersistIssuePriority,
   canPersistIssueAssignee,
   createIssuePlanAction,
+  createIssueNoteAction,
   updateIssueContentAction,
   updateIssueAssigneeAction,
   updateIssueStatusAction,
@@ -2450,6 +2493,7 @@ function IssueDetailPanel({
   agentRuns,
   onDraftDelete,
   onIssuePlanSaved,
+  onIssueNoteCreated,
   onIssueContentUpdated,
   onIssueAssigneeUpdated,
   onIssueStatusUpdated,
@@ -2460,6 +2504,7 @@ function IssueDetailPanel({
   issue: DashboardIssue | null;
   issuePlan?: IssuePlanDraft;
   canPersistIssuePlans: boolean;
+  canPersistIssueNotes: boolean;
   canPersistIssueContent: boolean;
   canPersistIssueStatus: boolean;
   canPersistIssuePriority: boolean;
@@ -2467,6 +2512,9 @@ function IssueDetailPanel({
   createIssuePlanAction?: (
     input: CreateBubblophyIssuePlanActionInput
   ) => Promise<CreateBubblophyIssuePlanActionResult>;
+  createIssueNoteAction?: (
+    input: CreateBubblophyIssueNoteActionInput
+  ) => Promise<CreateBubblophyIssueNoteActionResult>;
   updateIssueContentAction?: (
     input: UpdateBubblophyIssueContentActionInput
   ) => Promise<UpdateBubblophyIssueContentActionResult>;
@@ -2487,6 +2535,7 @@ function IssueDetailPanel({
   agentRuns: AgentRunSummary[];
   onDraftDelete: (issueId: string) => void;
   onIssuePlanSaved: (plan: IssuePlanDraft) => void;
+  onIssueNoteCreated: (issueId: string, note: IssueNoteSummary) => void;
   onIssueContentUpdated: (issue: IssueSummary) => void;
   onIssueAssigneeUpdated: (issue: IssueSummary) => void;
   onIssueStatusUpdated: (issue: IssueSummary) => void;
@@ -2619,6 +2668,16 @@ function IssueDetailPanel({
           </ol>
         )}
       </div>
+
+      <IssueNotesPanel
+        key={`notes-${issue.id}`}
+        issue={issue}
+        canPersistIssueNotes={
+          canPersistIssueNotes && !isLocalDraftIssue(issue)
+        }
+        createIssueNoteAction={createIssueNoteAction}
+        onIssueNoteCreated={onIssueNoteCreated}
+      />
 
       <div className="grid gap-2 rounded-md border border-border bg-background p-3">
         <div className="flex items-start justify-between gap-3">
@@ -3345,6 +3404,152 @@ function IssuePriorityUpdatePanel({
         <p className="text-sm text-muted-foreground">
           Persistente Prioritätsänderungen sind nur für gespeicherte Issues bei
           aktiver Datenbank verfügbar.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Renders append-only human notes for the selected issue.
+ *
+ * @param props Issue, server action, and local append callback.
+ * @returns Issue-local note list and note form.
+ */
+function IssueNotesPanel({
+  issue,
+  canPersistIssueNotes,
+  createIssueNoteAction,
+  onIssueNoteCreated,
+}: {
+  issue: DashboardIssue;
+  canPersistIssueNotes: boolean;
+  createIssueNoteAction?: (
+    input: CreateBubblophyIssueNoteActionInput
+  ) => Promise<CreateBubblophyIssueNoteActionResult>;
+  onIssueNoteCreated: (issueId: string, note: IssueNoteSummary) => void;
+}) {
+  const notes = issue.notes ?? [];
+  const [noteText, setNoteText] = useState('');
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const normalizedNote = noteText.trim();
+  const canSubmit =
+    canPersistIssueNotes &&
+    Boolean(createIssueNoteAction) &&
+    normalizedNote.length > 0 &&
+    normalizedNote.length <= 2000 &&
+    !isPending;
+
+  const handleSubmit = () => {
+    if (!canSubmit || !createIssueNoteAction) {
+      return;
+    }
+
+    setActionError(null);
+    setActionSuccess(null);
+
+    startTransition(async () => {
+      try {
+        const result = await createIssueNoteAction({
+          issueId: issue.id,
+          note: noteText,
+        });
+
+        if (result.status === 'created') {
+          onIssueNoteCreated(issue.id, result.note);
+          setNoteText('');
+          setActionSuccess('Notiz gespeichert.');
+          return;
+        }
+
+        setActionError(getIssueNoteActionErrorMessage(result));
+      } catch {
+        setActionError(
+          'Die Notiz konnte gerade nicht gespeichert werden. Versuche es erneut.'
+        );
+      }
+    });
+  };
+
+  return (
+    <div
+      aria-label={`Notizen für ${issue.id}`}
+      className="grid gap-3 rounded-md border border-border bg-background p-3">
+      <div className="grid gap-1">
+        <h4 className="text-sm font-medium">Notizen</h4>
+        <p className="text-xs text-muted-foreground">
+          Append-only Review- und Planungsnotizen. Kein Run wird gestartet.
+        </p>
+      </div>
+
+      {notes.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          Noch keine Notizen für dieses Issue.
+        </p>
+      ) : (
+        <ol className="grid gap-2">
+          {notes.map((note) => (
+            <li
+              key={note.id}
+              className="grid gap-1 rounded-md border border-border p-2 text-sm">
+              <p className="whitespace-pre-wrap break-words">{note.note}</p>
+              <p className="text-xs text-muted-foreground">
+                {note.actor} · {note.createdAt}
+              </p>
+            </li>
+          ))}
+        </ol>
+      )}
+
+      {canPersistIssueNotes && createIssueNoteAction ? (
+        <form
+          className="grid gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleSubmit();
+          }}>
+          <label className="grid gap-1.5 text-sm font-medium">
+            Neue Notiz
+            <Textarea
+              name="issueNote"
+              maxLength={2000}
+              placeholder="Kurze Entscheidung, Review-Notiz oder Planhinweis"
+              value={noteText}
+              onChange={(event) => {
+                setActionError(null);
+                setActionSuccess(null);
+                setNoteText(event.currentTarget.value);
+              }}
+            />
+          </label>
+
+          <p className="text-xs text-muted-foreground">
+            Maximal 2.000 Zeichen nach Trim. Speichert ein Issue-Event, keinen
+            Kommentar-Thread mit Editierfunktion.
+          </p>
+
+          {actionError ? (
+            <p role="alert" className="text-sm text-destructive">
+              {actionError}
+            </p>
+          ) : null}
+
+          {actionSuccess ? (
+            <p role="status" className="text-sm text-muted-foreground">
+              {actionSuccess}
+            </p>
+          ) : null}
+
+          <Button type="submit" size="sm" disabled={!canSubmit}>
+            {isPending ? 'Speichert...' : 'Notiz speichern'}
+          </Button>
+        </form>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Notizen können nur für gespeicherte Issues in aktiven Projekten mit
+          Datenbankzugriff angelegt werden.
         </p>
       )}
     </div>
@@ -4789,6 +4994,38 @@ function getIssuePlanActionErrorMessage(
   }
 
   return 'Mindestens ein nicht-leerer Schritt ist nötig.';
+}
+
+/**
+ * Converts issue note action outcomes into quiet inline feedback.
+ *
+ * @param result Result returned by the persisted issue note action.
+ * @returns Human-readable error message for the detail panel.
+ */
+function getIssueNoteActionErrorMessage(
+  result: Exclude<CreateBubblophyIssueNoteActionResult, { status: 'created' }>
+) {
+  if (result.status === 'not_found') {
+    return 'Dieses Issue wurde nicht gefunden. Die Notiz wurde nicht gespeichert.';
+  }
+
+  if (result.status === 'forbidden') {
+    return 'Du darfst für dieses Issue keine Notiz schreiben.';
+  }
+
+  if (result.status === 'database_unavailable') {
+    return 'Die Datenbank ist gerade nicht verfügbar. Die Notiz wurde nicht gespeichert.';
+  }
+
+  if (result.reason === 'empty_issue') {
+    return 'Wähle ein Issue aus, bevor du die Notiz speicherst.';
+  }
+
+  if (result.reason === 'note_too_long') {
+    return 'Die Notiz darf höchstens 2.000 Zeichen lang sein.';
+  }
+
+  return 'Gib eine Notiz ein, bevor du speicherst.';
 }
 
 /**
