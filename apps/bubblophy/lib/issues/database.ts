@@ -389,6 +389,7 @@ async function selectBubblophyAgentRunRowsForProjectIds(
       agentTokenLabel: bubblophyAgentTokens.label,
       state: bubblophyAgentRuns.state,
       updatedAt: bubblophyAgentRuns.updatedAt,
+      result: bubblophyAgentRuns.result,
     })
     .from(bubblophyAgentRuns)
     .innerJoin(

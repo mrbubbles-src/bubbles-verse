@@ -70,6 +70,7 @@ export interface BubblophyAgentRunPersistenceRow {
   agentTokenLabel: string;
   state: BubblophyAgentRunState;
   updatedAt: string;
+  result: JsonValue | null;
 }
 
 export interface BubblophyProjectMemberPersistenceRow {
@@ -534,7 +535,128 @@ export function buildBubblophyAgentRunSummaries(
     state: mapBubblophyAgentRunState(row.state),
     requestedBy: 'Mensch',
     lastEvent: `Status ${mapBubblophyAgentRunState(row.state)} · zuletzt ${row.updatedAt}`,
+    resultSummary: buildSafeAgentRunResultSummary(row.result),
   }));
+}
+
+const agentRunResultTextFields = [
+  'summary',
+  'message',
+  'status',
+  'phase',
+  'error',
+  'details',
+] as const;
+const fallbackAgentRunResultTextFields = new Set(['details']);
+const sensitiveAgentRunResultPattern =
+  /token|secret|password|authorization|bearer|hash|supabase|api[_-]?key|\bkey\b|auth/i;
+const maxAgentRunResultSummaryLength = 240;
+
+export function buildSafeAgentRunResultSummary(
+  result: JsonValue | null
+): string | undefined {
+  if (!result || typeof result !== 'object' || Array.isArray(result)) {
+    return undefined;
+  }
+
+  const resultObject = result as Record<string, JsonValue>;
+
+  for (const field of agentRunResultTextFields) {
+    if (field in resultObject && isSensitiveAgentRunResultKey(field)) {
+      continue;
+    }
+
+    const value = resultObject[field];
+
+    if (typeof value !== 'string') {
+      continue;
+    }
+
+    const summary = sanitizeAgentRunResultText(value, {
+      allowFallback: fallbackAgentRunResultTextFields.has(field),
+    });
+
+    if (summary) {
+      return summary;
+    }
+  }
+
+  return Object.entries(resultObject).some(
+    ([key, value]) =>
+      !isSensitiveAgentRunResultKey(key) && hasSafeStructuredResultHint(value)
+  )
+    ? 'Weitere strukturierte Details vorhanden.'
+    : undefined;
+}
+
+function sanitizeAgentRunResultText(
+  value: string,
+  options: { allowFallback: boolean }
+) {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return undefined;
+  }
+
+  if (isSensitiveAgentRunResultValue(trimmed)) {
+    return undefined;
+  }
+
+  if (options.allowFallback && trimmed.length > 120) {
+    return undefined;
+  }
+
+  return trimmed.length > maxAgentRunResultSummaryLength
+    ? `${trimmed.slice(0, maxAgentRunResultSummaryLength - 1)}…`
+    : trimmed;
+}
+
+function isSensitiveAgentRunResultKey(key: string) {
+  return sensitiveAgentRunResultPattern.test(key);
+}
+
+function isSensitiveAgentRunResultValue(value: string) {
+  return (
+    sensitiveAgentRunResultPattern.test(value) ||
+    /https?:\/\/[^\s]+supabase[^\s]*/i.test(value)
+  );
+}
+
+function hasSafeStructuredResultHint(value: JsonValue): boolean {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  if (Array.isArray(value)) {
+    return value.some((item) => {
+      if (!item || typeof item !== 'object') {
+        return typeof item === 'string'
+          ? !isSensitiveAgentRunResultValue(item)
+          : item !== null;
+      }
+
+      return hasSafeStructuredResultHint(item);
+    });
+  }
+
+  return Object.entries(value as Record<string, JsonValue>).some(
+    ([key, nestedValue]) => {
+      if (isSensitiveAgentRunResultKey(key)) {
+        return false;
+      }
+
+      if (typeof nestedValue === 'string') {
+        return !isSensitiveAgentRunResultValue(nestedValue);
+      }
+
+      if (nestedValue && typeof nestedValue === 'object') {
+        return hasSafeStructuredResultHint(nestedValue);
+      }
+
+      return nestedValue !== null;
+    }
+  );
 }
 
 /**

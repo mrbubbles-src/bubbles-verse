@@ -6,6 +6,7 @@ import {
   buildBubblophyAgentTokenSummaries,
   buildBubblophyProjectIssueSnapshot,
   buildBubblophyProjectIssueSnapshotForUser,
+  buildSafeAgentRunResultSummary,
   buildBubblophyProjectMemberSummaries,
   deriveBubblophyProjectHealth,
   formatBubblophyIssueKey,
@@ -435,6 +436,7 @@ describe('Bubblophy issue repository mapping', () => {
         agentTokenLabel: 'Codex lokal',
         state: 'requested',
         updatedAt: '2026-06-13T16:10:00.000Z',
+        result: null,
       },
     ]);
 
@@ -446,11 +448,68 @@ describe('Bubblophy issue repository mapping', () => {
         state: 'wartet',
         requestedBy: 'Mensch',
         lastEvent: 'Status wartet · zuletzt 2026-06-13T16:10:00.000Z',
+        resultSummary: undefined,
       },
     ]);
     expect(JSON.stringify(runs)).not.toContain('requestedByAuthUserId');
     expect(JSON.stringify(runs)).not.toContain('tokenHash');
     expect(JSON.stringify(runs)).not.toContain('plaintextToken');
+  });
+
+  it('maps agent run result summaries without token secrets', () => {
+    const runs = buildBubblophyAgentRunSummaries([
+      {
+        id: 'run_codex',
+        projectKey: 'BV',
+        issueNumber: 7,
+        agentTokenLabel: 'Codex lokal',
+        state: 'needs_review',
+        updatedAt: '2026-06-13T16:10:00.000Z',
+        result: {
+          summary: 'Diff ist bereit für menschliche Prüfung.',
+          token: 'secret_token_value',
+          authorization: 'Bearer abc',
+          key: 'plain_key_value',
+          message: 'Bearer visible_bearer_value',
+        },
+      },
+    ]);
+
+    expect(runs[0]?.resultSummary).toBe(
+      'Diff ist bereit für menschliche Prüfung.'
+    );
+    expect(JSON.stringify(runs)).not.toContain('secret_token_value');
+    expect(JSON.stringify(runs)).not.toContain('Bearer abc');
+    expect(JSON.stringify(runs)).not.toContain('plain_key_value');
+    expect(JSON.stringify(runs)).not.toContain('visible_bearer_value');
+    expect(JSON.stringify(runs)).not.toContain('tokenHash');
+  });
+
+  it('redacts unsafe or raw structured agent run result details', () => {
+    expect(
+      buildSafeAgentRunResultSummary({
+        token: 'secret_token_value',
+        details: {
+          authorization: 'Bearer abc',
+          key: 'plain_key_value',
+        },
+      })
+    ).toBeUndefined();
+    expect(
+      buildSafeAgentRunResultSummary({
+        summary: 'x'.repeat(300),
+      })
+    ).toBe(`${'x'.repeat(239)}…`);
+    expect(
+      buildSafeAgentRunResultSummary({
+        details: 'Kurze geprüfte Detailnotiz.',
+      })
+    ).toBe('Kurze geprüfte Detailnotiz.');
+    expect(
+      buildSafeAgentRunResultSummary({
+        details: 'x'.repeat(130),
+      })
+    ).toBeUndefined();
   });
 
   it('maps project events into activity without exposing raw auth user IDs', () => {

@@ -264,6 +264,21 @@ const databaseSnapshotWithReviewRun = {
           ...run,
           state: 'review',
           lastEvent: 'Agent hat Review für BV-14 angefordert.',
+          resultSummary: 'Diff ist bereit für menschliche Prüfung.',
+        }
+      : run
+  ),
+} satisfies DashboardSnapshot;
+
+const databaseSnapshotWithFailedRunResult = {
+  ...databaseSnapshotWithRunUpdateToken,
+  agentRuns: databaseSnapshot.agentRuns.map((run) =>
+    run.id === 'run_bv_14'
+      ? {
+          ...run,
+          state: 'fehlgeschlagen',
+          lastEvent: 'Agent-Run für BV-14 ist fehlgeschlagen.',
+          resultSummary: 'Checkout konnte nicht vorbereitet werden.',
         }
       : run
   ),
@@ -5323,6 +5338,91 @@ describe('BubblophyDashboard interactions', () => {
         name: /Automatisch weiterarbeiten/i,
       })
     ).not.toBeInTheDocument();
+  });
+
+  it('shows agent run result details for review runs', () => {
+    render(<BubblophyDashboard snapshot={databaseSnapshotWithReviewRun} />);
+
+    const runsSection = document.getElementById('runs');
+
+    expect(runsSection).toBeInstanceOf(HTMLElement);
+
+    if (!runsSection) {
+      throw new Error('Expected the runs section to render.');
+    }
+
+    const runCard =
+      within(runsSection).getByText('run_bv_14').closest('dl')?.parentElement;
+
+    expect(runCard).toBeInstanceOf(HTMLElement);
+
+    if (!runCard) {
+      throw new Error('Expected the BV run card to render.');
+    }
+
+    expect(within(runCard).getByText('Agent-Ergebnis')).toBeInTheDocument();
+    expect(
+      within(runCard).getByText('Diff ist bereit für menschliche Prüfung.')
+    ).toBeInTheDocument();
+  });
+
+  it('shows failure run result message', () => {
+    render(
+      <BubblophyDashboard snapshot={databaseSnapshotWithFailedRunResult} />
+    );
+
+    const runsSection = document.getElementById('runs');
+
+    expect(runsSection).toBeInstanceOf(HTMLElement);
+
+    if (!runsSection) {
+      throw new Error('Expected the runs section to render.');
+    }
+
+    const runCard =
+      within(runsSection).getByText('run_bv_14').closest('dl')?.parentElement;
+
+    expect(runCard).toBeInstanceOf(HTMLElement);
+
+    if (!runCard) {
+      throw new Error('Expected the BV run card to render.');
+    }
+
+    expect(within(runCard).getByText('Fehlgeschlagen')).toBeInTheDocument();
+    expect(within(runCard).getByText('Agent-Ergebnis')).toBeInTheDocument();
+    expect(
+      within(runCard).getByText('Checkout konnte nicht vorbereitet werden.')
+    ).toBeInTheDocument();
+  });
+
+  it('does not render raw JSON secrets in run result details', () => {
+    render(<BubblophyDashboard snapshot={databaseSnapshotWithReviewRun} />);
+
+    const runsSection = document.getElementById('runs');
+
+    expect(runsSection).toBeInstanceOf(HTMLElement);
+
+    if (!runsSection) {
+      throw new Error('Expected the runs section to render.');
+    }
+
+    const resultBlock = within(runsSection)
+      .getByText('Diff ist bereit für menschliche Prüfung.')
+      .closest('div');
+
+    expect(resultBlock).toBeInstanceOf(HTMLElement);
+
+    if (!resultBlock) {
+      throw new Error('Expected the run result block to render.');
+    }
+
+    expect(within(resultBlock).getByText('Agent-Ergebnis')).toBeInTheDocument();
+    expect(within(resultBlock).queryByText(/token/i)).not.toBeInTheDocument();
+    expect(within(resultBlock).queryByText(/secret/i)).not.toBeInTheDocument();
+    expect(
+      within(resultBlock).queryByText(/authorization/i)
+    ).not.toBeInTheDocument();
+    expect(within(resultBlock).queryByText(/[{}"]/)).not.toBeInTheDocument();
   });
 
   it('opens linked issue from run queue', () => {

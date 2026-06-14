@@ -80,6 +80,7 @@ function makeDatabaseRows(
         agentTokenLabel: 'Codex lokal',
         state: 'requested',
         updatedAt: '2026-06-13T16:10:00.000Z',
+        result: null,
       },
     ],
     activityRows: [

@@ -101,6 +101,7 @@ export interface AgentRunSummary {
   state: AgentRunState;
   requestedBy: string;
   lastEvent: string;
+  resultSummary?: string;
 }
 
 export interface ActivityEvent {

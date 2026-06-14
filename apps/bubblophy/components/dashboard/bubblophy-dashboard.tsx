@@ -2909,6 +2909,9 @@ function IssueDetailPanel({
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">{run.lastEvent}</p>
+                {run.resultSummary ? (
+                  <AgentRunResultSummary summary={run.resultSummary} />
+                ) : null}
               </li>
             ))}
           </ol>
@@ -4987,6 +4990,9 @@ function RunQueue({
                   <p className="text-xs text-muted-foreground">
                     {run.lastEvent}
                   </p>
+                  {run.resultSummary ? (
+                    <AgentRunResultSummary summary={run.resultSummary} />
+                  ) : null}
                   {run.state === 'review' ? (
                     <div className="rounded-md border border-border bg-background/60 p-2 text-xs text-muted-foreground">
                       <p className="font-medium text-foreground">
@@ -5026,6 +5032,15 @@ function RunQueue({
           : null}
       </CardContent>
     </Card>
+  );
+}
+
+function AgentRunResultSummary({ summary }: { summary: string }) {
+  return (
+    <div className="rounded-md border border-border bg-background/60 p-2 text-xs">
+      <p className="font-medium text-foreground">Agent-Ergebnis</p>
+      <p className="mt-1 text-muted-foreground">{summary}</p>
+    </div>
   );
 }
 
