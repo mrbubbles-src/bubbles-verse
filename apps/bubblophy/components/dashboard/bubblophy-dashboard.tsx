@@ -4966,7 +4966,7 @@ function NewIssueDraftDialog({
           </DialogTitle>
           <DialogDescription>
             {canPersistToDatabase
-              ? 'Erstelle ein echtes Issue im ausgewählten Projekt. Optional kannst du es bewusst nur als lokalen Draft halten.'
+              ? 'Erstelle ein echtes Issue im ausgewählten Projekt. Lokale Drafts sind nur eine kurzfristige Arbeitshilfe.'
               : 'Datenbank nicht aktiv, Draft bleibt lokal und wird nicht in Supabase oder Postgres gespeichert.'}
           </DialogDescription>
         </DialogHeader>
@@ -5034,8 +5034,8 @@ function NewIssueDraftDialog({
 
           <div className="rounded-md border border-dashed border-border bg-muted/30 p-3 text-xs text-muted-foreground">
             {canPersistToDatabase
-              ? 'Issue-Erstellung prüft die menschliche Session und Projektmitgliedschaft serverseitig. Sie startet keinen Agent-Run.'
-              : 'Datenbank nicht aktiv, Draft bleibt lokal.'}
+              ? 'Issue erstellen speichert in der Datenbank. Lokale Drafts bleiben nur in dieser Oberfläche und werden nicht mit dem Projekt geteilt.'
+              : 'Datenbank nicht aktiv. Lokale Drafts bleiben nur in dieser Oberfläche und werden nicht mit dem Projekt geteilt.'}
           </div>
 
           {actionError ? (
@@ -5058,7 +5058,7 @@ function NewIssueDraftDialog({
                 variant="outline"
                 disabled={!canCreateDraft || isPersistPending}
                 onClick={handleLocalDraftCreate}>
-                Als lokalen Draft anlegen
+                Nur lokal vormerken
               </Button>
             ) : null}
             <Button

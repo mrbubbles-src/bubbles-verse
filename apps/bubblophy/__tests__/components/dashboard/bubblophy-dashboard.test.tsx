@@ -4262,7 +4262,15 @@ describe('BubblophyDashboard interactions', () => {
       screen.getByRole('button', { name: 'Issue erstellen' })
     ).toBeDisabled();
     expect(
-      screen.getByRole('button', { name: 'Als lokalen Draft anlegen' })
+      screen.getByRole('button', { name: 'Nur lokal vormerken' })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Als lokalen Draft anlegen' })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Lokale Drafts bleiben nur in dieser Oberfläche und werden nicht mit dem Projekt geteilt/i
+      )
     ).toBeInTheDocument();
     expect(
       screen.queryByText(/Planungsansicht folgt/i)
@@ -4313,6 +4321,70 @@ describe('BubblophyDashboard interactions', () => {
       within(detailPanel).getByText(
         /Nutze „Plan entwerfen“/i
       )
+    ).toBeInTheDocument();
+  });
+
+  it('labels local issue drafts as not persisted', async () => {
+    const createIssueAction = vi.fn<
+      (
+        input: CreateBubblophyIssueActionInput
+      ) => Promise<CreateBubblophyIssueActionResult>
+    >(async (input) => ({
+      status: 'created',
+      issue: {
+        id: 'BV-LOCAL-SHOULD-NOT-PERSIST',
+        title: input.title,
+        projectKey: input.projectKey,
+        status: 'triage',
+        priority: input.priority ?? 'mittel',
+        owner: 'Nicht zugewiesen',
+        planSteps: 0,
+        approvalRequired: true,
+        description: input.description,
+      },
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        createIssueAction={createIssueAction}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Neues Issue/i }));
+
+    expect(
+      screen.getByText(
+        /Lokale Drafts bleiben nur in dieser Oberfläche und werden nicht mit dem Projekt geteilt/i
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Als lokalen Draft anlegen' })
+    ).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Titel'), {
+      target: { value: 'Nur lokal geprüfter Draft' },
+    });
+    fireEvent.change(screen.getByLabelText('Beschreibung'), {
+      target: { value: 'Soll nicht an die Server Action gehen.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Nur lokal vormerken' }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+    expect(createIssueAction).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole('button', { name: 'Nur lokal geprüfter Draft' })
+    ).toBeInTheDocument();
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    expect(
+      within(detailPanel).getByText('Lokal / nicht gespeichert')
+    ).toBeInTheDocument();
+    expect(
+      within(detailPanel).getByText('Soll nicht an die Server Action gehen.')
     ).toBeInTheDocument();
   });
 
