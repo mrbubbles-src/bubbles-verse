@@ -3133,6 +3133,71 @@ describe('BubblophyDashboard interactions', () => {
     expect(screen.queryByText(/bubblophy_agent_/i)).not.toBeInTheDocument();
   });
 
+  it('keeps token draft state when agent token creation throws', async () => {
+    const createAgentTokenAction = vi.fn<
+      (
+        input: CreateBubblophyAgentTokenActionInput
+      ) => Promise<CreateBubblophyAgentTokenActionResult>
+    >(async () => {
+      throw new Error('internal token_hash header leaked');
+    });
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        createAgentTokenAction={createAgentTokenAction}
+      />
+    );
+
+    const agentSection = document.getElementById('agents');
+
+    expect(agentSection).toBeInstanceOf(HTMLElement);
+
+    if (!agentSection) {
+      throw new Error('Expected the agent token section to render.');
+    }
+
+    fireEvent.click(
+      within(agentSection).getByRole('button', {
+        name: 'Agent-Token erstellen',
+      })
+    );
+    fireEvent.change(screen.getByLabelText('Label'), {
+      target: { value: 'Token wirft nicht speichern' },
+    });
+    fireEvent.click(screen.getByLabelText('runs:update'));
+    fireEvent.click(screen.getByRole('button', { name: 'Token erstellen' }));
+
+    await waitFor(() => {
+      expect(createAgentTokenAction).toHaveBeenCalledWith({
+        projectKey: 'BV',
+        label: 'Token wirft nicht speichern',
+        scopes: ['projects:read', 'issues:read', 'runs:update'],
+      });
+    });
+
+    const dialog = await screen.findByRole('dialog');
+
+    expect(within(dialog).getByRole('alert')).toHaveTextContent(
+      /konnte gerade nicht erstellt werden/i
+    );
+    expect(within(dialog).getByLabelText('Label')).toHaveValue(
+      'Token wirft nicht speichern'
+    );
+    expect(within(dialog).getByLabelText('projects:read')).toBeChecked();
+    expect(within(dialog).getByLabelText('issues:read')).toBeChecked();
+    expect(within(dialog).getByLabelText('runs:update')).toBeChecked();
+    expect(within(dialog).queryByText(/internal/i)).not.toBeInTheDocument();
+    expect(within(dialog).queryByText(/token_hash/i)).not.toBeInTheDocument();
+    expect(
+      within(dialog).queryByText(/Token jetzt kopieren/i)
+    ).not.toBeInTheDocument();
+    expect(
+      within(agentSection).queryByText('Token wirft nicht speichern')
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/bubblophy_agent_/i)).not.toBeInTheDocument();
+  });
+
   it('pauses an active agent token through the lifecycle action', async () => {
     const updateAgentTokenLifecycleAction = vi.fn<
       (

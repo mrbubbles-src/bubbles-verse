@@ -4101,11 +4101,20 @@ function NewAgentTokenDialog({
 
     setActionError(null);
     startTransition(async () => {
-      const result = await createAgentTokenAction({
-        projectKey,
-        label,
-        scopes,
-      });
+      let result: CreateBubblophyAgentTokenActionResult;
+
+      try {
+        result = await createAgentTokenAction({
+          projectKey,
+          label,
+          scopes,
+        });
+      } catch {
+        setActionError(
+          'Das Agent-Token konnte gerade nicht erstellt werden. Versuche es erneut.'
+        );
+        return;
+      }
 
       if (result.status === 'created') {
         setCreatedToken(result.token);
