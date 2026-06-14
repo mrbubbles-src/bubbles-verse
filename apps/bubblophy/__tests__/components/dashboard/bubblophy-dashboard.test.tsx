@@ -34,6 +34,7 @@ import type { DashboardSnapshot } from '@/lib/dashboard/types';
 import type React from 'react';
 
 import { dashboardSnapshot } from '@/lib/dashboard/sample-data';
+import { bubblophySidebarData } from '@/lib/sidebar';
 
 import {
   fireEvent,
@@ -51,6 +52,14 @@ const navigationMocks = {
   routerReplace: vi.fn(),
   searchParams: vi.fn(() => new URLSearchParams()),
 };
+
+function getBubblophySidebarSectionIds() {
+  return bubblophySidebarData.sections
+    .flatMap((section) => section.items)
+    .flatMap((item) => [item.navigateHref, item.href])
+    .filter((href): href is string => Boolean(href?.startsWith('/#')))
+    .map((href) => href.slice(2));
+}
 
 const databaseSnapshot = {
   ...dashboardSnapshot,
@@ -4185,5 +4194,24 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       within(navigation).getByRole('link', { name: 'Audit' })
     ).toHaveAttribute('href', '/#activity');
+  });
+
+  it('points shared sidebar links at rendered dashboard sections', () => {
+    render(<BubblophyDashboard snapshot={dashboardSnapshot} />);
+
+    const sectionIds = getBubblophySidebarSectionIds();
+
+    expect(sectionIds).toEqual([
+      'overview',
+      'projects',
+      'issues',
+      'agents',
+      'runs',
+      'activity',
+    ]);
+
+    for (const sectionId of sectionIds) {
+      expect(document.getElementById(sectionId)).toBeInstanceOf(HTMLElement);
+    }
   });
 });
