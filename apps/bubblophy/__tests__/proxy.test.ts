@@ -100,8 +100,24 @@ describe('proxy', () => {
     expect(response.headers.get('location')).toBeNull();
   });
 
+  it('does not redirect agent project context routes into the human login flow', () => {
+    const response = proxy(
+      createRequest('/api/agent-projects/project_bubblesverse/issues')
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('location')).toBeNull();
+  });
+
   it('does not redirect auth callback routes into the human login flow', () => {
     const response = proxy(createRequest('/auth/callback?code=test-code'));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('location')).toBeNull();
+  });
+
+  it('does not redirect auth logout routes into the human login flow', () => {
+    const response = proxy(createRequest('/auth/logout?next=/login'));
 
     expect(response.status).toBe(200);
     expect(response.headers.get('location')).toBeNull();
