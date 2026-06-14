@@ -1034,6 +1034,44 @@ describe('BubblophyDashboard interactions', () => {
     ).toBeInTheDocument();
   });
 
+  it('does not expose unsupported issue archive or delete controls', () => {
+    const updateIssueStatusAction = vi.fn<
+      (
+        input: UpdateBubblophyIssueStatusActionInput
+      ) => Promise<UpdateBubblophyIssueStatusActionResult>
+    >(async () => ({ status: 'unchanged' }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        updateIssueStatusAction={updateIssueStatusAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    expect(
+      within(detailPanel).getByLabelText('Neuer Status')
+    ).toBeInTheDocument();
+    expect(
+      within(detailPanel).getByRole('button', { name: 'Status speichern' })
+    ).toBeInTheDocument();
+    expect(
+      within(detailPanel).queryByRole('button', { name: /archivieren/i })
+    ).not.toBeInTheDocument();
+    expect(
+      within(detailPanel).queryByRole('button', {
+        name: /löschen|entfernen/i,
+      })
+    ).not.toBeInTheDocument();
+  });
+
   it('persists a human issue priority update and keeps list and detail state consistent', async () => {
     const updateIssuePriorityAction = vi.fn<
       (
