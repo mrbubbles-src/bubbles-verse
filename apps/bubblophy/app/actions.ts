@@ -21,6 +21,10 @@ import type {
   CreateBubblophyIssueDraftResult,
 } from '@/lib/issues/create';
 import type {
+  UpdateBubblophyIssueAssigneeInput,
+  UpdateBubblophyIssueAssigneeResult,
+} from '@/lib/issues/assignment';
+import type {
   UpdateBubblophyIssueContentInput,
   UpdateBubblophyIssueContentResult,
 } from '@/lib/issues/edit';
@@ -59,6 +63,7 @@ import { createBubblophyAgentToken } from '@/lib/agent-tokens/create';
 import { updateBubblophyAgentTokenLifecycle } from '@/lib/agent-tokens/lifecycle';
 import { requireBubblophySession } from '@/lib/auth/session';
 import { createBubblophyIssueDraft } from '@/lib/issues/create';
+import { updateBubblophyIssueAssignee } from '@/lib/issues/assignment';
 import { updateBubblophyIssueContent } from '@/lib/issues/edit';
 import { createOrUpdateBubblophyIssuePlanDraft } from '@/lib/issues/plans';
 import { updateBubblophyIssuePriority } from '@/lib/issues/priority';
@@ -87,6 +92,14 @@ export type UpdateBubblophyIssueContentActionInput = Omit<
 
 export type UpdateBubblophyIssueContentActionResult =
   UpdateBubblophyIssueContentResult;
+
+export type UpdateBubblophyIssueAssigneeActionInput = Omit<
+  UpdateBubblophyIssueAssigneeInput,
+  'authUserId'
+>;
+
+export type UpdateBubblophyIssueAssigneeActionResult =
+  UpdateBubblophyIssueAssigneeResult;
 
 export type CreateBubblophyIssuePlanActionInput = Omit<
   CreateOrUpdateBubblophyIssuePlanDraftInput,
@@ -220,6 +233,27 @@ export async function updateBubblophyIssueContentAction(
   const session = await requireBubblophySession({ nextPath: '/' });
 
   return updateBubblophyIssueContent({
+    ...input,
+    authUserId: session.authUserId,
+  });
+}
+
+/**
+ * Persists a human issue assignment change for the current session.
+ *
+ * The client never provides an auth user ID. The action resolves the
+ * authorized human session server-side, then delegates project membership,
+ * assignee membership, and audit writing to the issue assignment service.
+ *
+ * @param input Issue key and project member auth user ID, or empty to unassign.
+ * @returns Structured result for the dashboard assignment control.
+ */
+export async function updateBubblophyIssueAssigneeAction(
+  input: UpdateBubblophyIssueAssigneeActionInput
+): Promise<UpdateBubblophyIssueAssigneeActionResult> {
+  const session = await requireBubblophySession({ nextPath: '/' });
+
+  return updateBubblophyIssueAssignee({
     ...input,
     authUserId: session.authUserId,
   });

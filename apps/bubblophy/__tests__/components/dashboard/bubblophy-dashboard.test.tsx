@@ -17,6 +17,8 @@ import type {
   TransitionBubblophyProjectArchiveActionResult,
   UpdateBubblophyAgentTokenLifecycleActionInput,
   UpdateBubblophyAgentTokenLifecycleActionResult,
+  UpdateBubblophyIssueAssigneeActionInput,
+  UpdateBubblophyIssueAssigneeActionResult,
   UpdateBubblophyIssueContentActionInput,
   UpdateBubblophyIssueContentActionResult,
   UpdateBubblophyIssuePriorityActionInput,
@@ -1052,6 +1054,243 @@ describe('BubblophyDashboard interactions', () => {
       'Die Priorität konnte gerade nicht gespeichert werden'
     );
     expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('BV-12');
+  });
+
+  it('assigns an issue to a project member and keeps list and detail state consistent', async () => {
+    const updateIssueAssigneeAction = vi.fn<
+      (
+        input: UpdateBubblophyIssueAssigneeActionInput
+      ) => Promise<UpdateBubblophyIssueAssigneeActionResult>
+    >(async () => ({
+      status: 'updated',
+      issue: {
+        id: 'BV-12',
+        title: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+        projectKey: 'BV',
+        status: 'geplant',
+        priority: 'hoch',
+        owner: 'user_martin',
+        planSteps: 3,
+        approvalRequired: true,
+      },
+    }));
+    const requestAgentRunAction = vi.fn<
+      (
+        input: RequestBubblophyAgentRunActionInput
+      ) => Promise<RequestBubblophyAgentRunActionResult>
+    >();
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithManageableMembers}
+        updateIssueAssigneeAction={updateIssueAssigneeAction}
+        requestAgentRunAction={requestAgentRunAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+    const assigneeSelect = within(detailPanel).getByLabelText('Zuständig');
+
+    fireEvent.change(assigneeSelect, {
+      target: { value: 'user_martin' },
+    });
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Zuweisung speichern' })
+    );
+
+    await waitFor(() => {
+      expect(updateIssueAssigneeAction).toHaveBeenCalledWith({
+        issueId: 'BV-12',
+        assigneeAuthUserId: 'user_martin',
+      });
+    });
+    expect(updateIssueAssigneeAction.mock.calls[0]?.[0]).not.toHaveProperty(
+      'authUserId'
+    );
+
+    expect(
+      await within(detailPanel).findByText('Zuweisung gespeichert.')
+    ).toBeInTheDocument();
+    expect(within(detailPanel).getByText(/Owner user_martin/i)).toBeInTheDocument();
+    expect(
+      within(
+        screen.getByRole('row', {
+          name: 'Issue BV-12: Issue-Plan als strukturierte Arbeitsnotiz speichern auswählen',
+        })
+      ).getByText('user_martin')
+    ).toBeInTheDocument();
+    expect(requestAgentRunAction).not.toHaveBeenCalled();
+  });
+
+  it('removes an issue assignment through the persisted assignment action', async () => {
+    const assignedSnapshot = {
+      ...databaseSnapshotWithManageableMembers,
+      issues: databaseSnapshotWithManageableMembers.issues.map((issue) =>
+        issue.id === 'BV-12'
+          ? {
+              ...issue,
+              owner: 'user_martin',
+            }
+          : issue
+      ),
+    } satisfies DashboardSnapshot;
+    const updateIssueAssigneeAction = vi.fn<
+      (
+        input: UpdateBubblophyIssueAssigneeActionInput
+      ) => Promise<UpdateBubblophyIssueAssigneeActionResult>
+    >(async () => ({
+      status: 'updated',
+      issue: {
+        id: 'BV-12',
+        title: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+        projectKey: 'BV',
+        status: 'geplant',
+        priority: 'hoch',
+        owner: 'Nicht zugewiesen',
+        planSteps: 3,
+        approvalRequired: true,
+      },
+    }));
+    const requestAgentRunAction = vi.fn<
+      (
+        input: RequestBubblophyAgentRunActionInput
+      ) => Promise<RequestBubblophyAgentRunActionResult>
+    >();
+
+    render(
+      <BubblophyDashboard
+        snapshot={assignedSnapshot}
+        updateIssueAssigneeAction={updateIssueAssigneeAction}
+        requestAgentRunAction={requestAgentRunAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    fireEvent.change(within(detailPanel).getByLabelText('Zuständig'), {
+      target: { value: '' },
+    });
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Zuweisung speichern' })
+    );
+
+    await waitFor(() => {
+      expect(updateIssueAssigneeAction).toHaveBeenCalledWith({
+        issueId: 'BV-12',
+        assigneeAuthUserId: null,
+      });
+    });
+    expect(
+      await within(detailPanel).findByText(/Owner Nicht zugewiesen/i)
+    ).toBeInTheDocument();
+    expect(requestAgentRunAction).not.toHaveBeenCalled();
+  });
+
+  it('shows assignee action failures without leaking details or discarding the selection', async () => {
+    const updateIssueAssigneeAction = vi.fn<
+      (
+        input: UpdateBubblophyIssueAssigneeActionInput
+      ) => Promise<UpdateBubblophyIssueAssigneeActionResult>
+    >(async () => {
+      throw new Error('internal project id or membership SQL');
+    });
+    const requestAgentRunAction = vi.fn<
+      (
+        input: RequestBubblophyAgentRunActionInput
+      ) => Promise<RequestBubblophyAgentRunActionResult>
+    >();
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithManageableMembers}
+        updateIssueAssigneeAction={updateIssueAssigneeAction}
+        requestAgentRunAction={requestAgentRunAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+    const assigneeSelect = within(detailPanel).getByLabelText('Zuständig');
+
+    fireEvent.change(assigneeSelect, {
+      target: { value: 'user_martin' },
+    });
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Zuweisung speichern' })
+    );
+
+    const alert = await within(detailPanel).findByRole('alert');
+
+    expect(alert).toHaveTextContent(
+      'Die Zuweisung konnte gerade nicht gespeichert werden'
+    );
+    expect(alert.textContent).not.toContain('internal project id');
+    expect(alert.textContent).not.toContain('membership SQL');
+    expect(assigneeSelect).toHaveValue('user_martin');
+    expect(within(detailPanel).getByText(/Owner mrbubbles/i)).toBeInTheDocument();
+    expect(requestAgentRunAction).not.toHaveBeenCalled();
+  });
+
+  it('shows denied assignee results without discarding the selected member', async () => {
+    const updateIssueAssigneeAction = vi.fn<
+      (
+        input: UpdateBubblophyIssueAssigneeActionInput
+      ) => Promise<UpdateBubblophyIssueAssigneeActionResult>
+    >(async () => ({
+      status: 'forbidden',
+    }));
+    const requestAgentRunAction = vi.fn<
+      (
+        input: RequestBubblophyAgentRunActionInput
+      ) => Promise<RequestBubblophyAgentRunActionResult>
+    >();
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithManageableMembers}
+        updateIssueAssigneeAction={updateIssueAssigneeAction}
+        requestAgentRunAction={requestAgentRunAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+    const assigneeSelect = within(detailPanel).getByLabelText('Zuständig');
+
+    fireEvent.change(assigneeSelect, {
+      target: { value: 'user_martin' },
+    });
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Zuweisung speichern' })
+    );
+
+    expect(await within(detailPanel).findByRole('alert')).toHaveTextContent(
+      'Du darfst dieses Issue nicht zuweisen'
+    );
+    expect(assigneeSelect).toHaveValue('user_martin');
+    expect(requestAgentRunAction).not.toHaveBeenCalled();
   });
 
   it('shows status action exceptions without changing the selected issue', async () => {

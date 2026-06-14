@@ -15,6 +15,7 @@ import {
   transitionBubblophyAgentRunAction,
   transitionBubblophyProjectArchiveAction,
   updateBubblophyAgentTokenLifecycleAction,
+  updateBubblophyIssueAssigneeAction,
   updateBubblophyIssueContentAction,
   updateBubblophyIssuePriorityAction,
   updateBubblophyIssueStatusAction,
@@ -77,6 +78,7 @@ export async function ProtectedBubblophyDashboard() {
       snapshot={dashboardSnapshot}
       createIssueAction={createBubblophyIssueAction}
       updateIssueContentAction={updateBubblophyIssueContentAction}
+      updateIssueAssigneeAction={updateBubblophyIssueAssigneeAction}
       createIssuePlanAction={createBubblophyIssuePlanAction}
       updateIssueStatusAction={updateBubblophyIssueStatusAction}
       updateIssuePriorityAction={updateBubblophyIssuePriorityAction}

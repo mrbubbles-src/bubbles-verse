@@ -8,6 +8,7 @@ import type {
   TransitionBubblophyAgentRunActionInput,
   TransitionBubblophyProjectArchiveActionInput,
   UpdateBubblophyAgentTokenLifecycleActionInput,
+  UpdateBubblophyIssueAssigneeActionInput,
   UpdateBubblophyIssueContentActionInput,
   UpdateBubblophyIssuePriorityActionInput,
   UpdateBubblophyIssueStatusActionInput,
@@ -18,6 +19,7 @@ import type { TransitionBubblophyAgentRunInput } from '@/lib/agent-runs/human-tr
 import type { RequestBubblophyAgentRunInput } from '@/lib/agent-runs/request';
 import type { CreateBubblophyAgentTokenInput } from '@/lib/agent-tokens/create';
 import type { UpdateBubblophyAgentTokenLifecycleInput } from '@/lib/agent-tokens/lifecycle';
+import type { UpdateBubblophyIssueAssigneeInput } from '@/lib/issues/assignment';
 import type { CreateBubblophyIssueDraftInput } from '@/lib/issues/create';
 import type { UpdateBubblophyIssueContentInput } from '@/lib/issues/edit';
 import type { CreateOrUpdateBubblophyIssuePlanDraftInput } from '@/lib/issues/plans';
@@ -37,6 +39,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const requireBubblophySessionMock = vi.fn();
 const createBubblophyIssueDraftMock = vi.fn();
+const updateBubblophyIssueAssigneeMock = vi.fn();
 const updateBubblophyIssueContentMock = vi.fn();
 const createBubblophyIssuePlanDraftMock = vi.fn();
 const updateBubblophyIssuePriorityMock = vi.fn();
@@ -59,6 +62,11 @@ vi.mock('@/lib/auth/session', () => ({
 vi.mock('@/lib/issues/create', () => ({
   createBubblophyIssueDraft: (input: CreateBubblophyIssueDraftInput) =>
     createBubblophyIssueDraftMock(input),
+}));
+
+vi.mock('@/lib/issues/assignment', () => ({
+  updateBubblophyIssueAssignee: (input: UpdateBubblophyIssueAssigneeInput) =>
+    updateBubblophyIssueAssigneeMock(input),
 }));
 
 vi.mock('@/lib/issues/edit', () => ({
@@ -128,6 +136,7 @@ describe('createBubblophyIssueAction', () => {
   beforeEach(() => {
     requireBubblophySessionMock.mockReset();
     createBubblophyIssueDraftMock.mockReset();
+    updateBubblophyIssueAssigneeMock.mockReset();
     updateBubblophyIssueContentMock.mockReset();
     createBubblophyIssuePlanDraftMock.mockReset();
     updateBubblophyIssuePriorityMock.mockReset();
@@ -255,6 +264,95 @@ describe('updateBubblophyIssueContentAction', () => {
         approvalRequired: true,
       },
     });
+  });
+});
+
+describe('updateBubblophyIssueAssigneeAction', () => {
+  beforeEach(() => {
+    requireBubblophySessionMock.mockReset();
+    updateBubblophyIssueAssigneeMock.mockReset();
+  });
+
+  it('resolves the auth user server-side instead of accepting a client authUserId', async () => {
+    requireBubblophySessionMock.mockResolvedValue({
+      authUserId: 'user_server',
+      email: 'owner@example.test',
+      user: {},
+    });
+    updateBubblophyIssueAssigneeMock.mockResolvedValue({
+      status: 'updated',
+      issue: {
+        id: 'BV-12',
+        title: 'Zuweisung pflegen',
+        description: 'Eine klare Zuständigkeit.',
+        projectKey: 'BV',
+        status: 'bereit',
+        priority: 'hoch',
+        owner: 'user_member',
+        planSteps: 2,
+        approvalRequired: true,
+      },
+    });
+
+    const { updateBubblophyIssueAssigneeAction } =
+      await import('@/app/actions');
+    const result = await updateBubblophyIssueAssigneeAction({
+      authUserId: 'user_client_spoof',
+      issueId: 'BV-12',
+      assigneeAuthUserId: 'user_member',
+    } as UpdateBubblophyIssueAssigneeActionInput & { authUserId: string });
+
+    expect(requireBubblophySessionMock).toHaveBeenCalledWith({
+      nextPath: '/',
+    });
+    expect(updateBubblophyIssueAssigneeMock).toHaveBeenCalledWith({
+      authUserId: 'user_server',
+      issueId: 'BV-12',
+      assigneeAuthUserId: 'user_member',
+    });
+    expect(result).toEqual({
+      status: 'updated',
+      issue: {
+        id: 'BV-12',
+        title: 'Zuweisung pflegen',
+        description: 'Eine klare Zuständigkeit.',
+        projectKey: 'BV',
+        status: 'bereit',
+        priority: 'hoch',
+        owner: 'user_member',
+        planSteps: 2,
+        approvalRequired: true,
+      },
+    });
+  });
+
+  it('forwards assignment denial results without client credentials', async () => {
+    requireBubblophySessionMock.mockResolvedValue({
+      authUserId: 'user_server',
+      email: 'owner@example.test',
+      user: {},
+    });
+    updateBubblophyIssueAssigneeMock.mockResolvedValue({
+      status: 'invalid_assignee',
+    });
+
+    const { updateBubblophyIssueAssigneeAction } =
+      await import('@/app/actions');
+    const result = await updateBubblophyIssueAssigneeAction({
+      authUserId: 'user_client_spoof',
+      issueId: 'BV-12',
+      assigneeAuthUserId: 'user_other_project',
+    } as UpdateBubblophyIssueAssigneeActionInput & { authUserId: string });
+
+    expect(updateBubblophyIssueAssigneeMock).toHaveBeenCalledWith({
+      authUserId: 'user_server',
+      issueId: 'BV-12',
+      assigneeAuthUserId: 'user_other_project',
+    });
+    expect(updateBubblophyIssueAssigneeMock.mock.calls[0]?.[0]).not.toHaveProperty(
+      'email'
+    );
+    expect(result).toEqual({ status: 'invalid_assignee' });
   });
 });
 

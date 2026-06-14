@@ -19,6 +19,8 @@ import type {
   TransitionBubblophyProjectArchiveActionResult,
   UpdateBubblophyAgentTokenLifecycleActionInput,
   UpdateBubblophyAgentTokenLifecycleActionResult,
+  UpdateBubblophyIssueAssigneeActionInput,
+  UpdateBubblophyIssueAssigneeActionResult,
   UpdateBubblophyIssueContentActionInput,
   UpdateBubblophyIssueContentActionResult,
   UpdateBubblophyIssuePriorityActionInput,
@@ -109,6 +111,9 @@ interface BubblophyDashboardProps {
   updateIssueContentAction?: (
     input: UpdateBubblophyIssueContentActionInput
   ) => Promise<UpdateBubblophyIssueContentActionResult>;
+  updateIssueAssigneeAction?: (
+    input: UpdateBubblophyIssueAssigneeActionInput
+  ) => Promise<UpdateBubblophyIssueAssigneeActionResult>;
   createIssuePlanAction?: (
     input: CreateBubblophyIssuePlanActionInput
   ) => Promise<CreateBubblophyIssuePlanActionResult>;
@@ -498,6 +503,7 @@ export function BubblophyDashboard({
   snapshot,
   createIssueAction,
   updateIssueContentAction,
+  updateIssueAssigneeAction,
   createIssuePlanAction,
   updateIssueStatusAction,
   updateIssuePriorityAction,
@@ -1068,17 +1074,25 @@ export function BubblophyDashboard({
                   !isSelectedProjectArchived &&
                   Boolean(updateIssuePriorityAction)
                 }
+                canPersistIssueAssignee={
+                  canUseDatabase &&
+                  !isSelectedProjectArchived &&
+                  Boolean(updateIssueAssigneeAction)
+                }
                 createIssuePlanAction={createIssuePlanAction}
                 updateIssueContentAction={updateIssueContentAction}
+                updateIssueAssigneeAction={updateIssueAssigneeAction}
                 updateIssueStatusAction={updateIssueStatusAction}
                 updateIssuePriorityAction={updateIssuePriorityAction}
                 requestAgentRunAction={requestAgentRunAction}
                 agentTokens={displayedAgentTokens}
+                projectMembers={allProjectMembers}
                 agentRuns={selectedIssueRuns}
                 onProjectSelect={handleProjectSelect}
                 onDraftDelete={handleDeleteDraft}
                 onIssuePlanSaved={handleIssuePlanSaved}
                 onIssueContentUpdated={handleIssueUpdated}
+                onIssueAssigneeUpdated={handleIssueUpdated}
                 onIssueStatusUpdated={handleIssueUpdated}
                 onIssuePriorityUpdated={handleIssueUpdated}
                 onAgentRunRequested={handleAgentRunRequested}
@@ -2164,17 +2178,21 @@ function IssueQueue({
   canPersistIssueContent,
   canPersistIssueStatus,
   canPersistIssuePriority,
+  canPersistIssueAssignee,
   createIssuePlanAction,
   updateIssueContentAction,
+  updateIssueAssigneeAction,
   updateIssueStatusAction,
   updateIssuePriorityAction,
   requestAgentRunAction,
   agentTokens,
+  projectMembers,
   agentRuns,
   onProjectSelect,
   onDraftDelete,
   onIssuePlanSaved,
   onIssueContentUpdated,
+  onIssueAssigneeUpdated,
   onIssueStatusUpdated,
   onIssuePriorityUpdated,
   onAgentRunRequested,
@@ -2191,12 +2209,16 @@ function IssueQueue({
   canPersistIssueContent: boolean;
   canPersistIssueStatus: boolean;
   canPersistIssuePriority: boolean;
+  canPersistIssueAssignee: boolean;
   createIssuePlanAction?: (
     input: CreateBubblophyIssuePlanActionInput
   ) => Promise<CreateBubblophyIssuePlanActionResult>;
   updateIssueContentAction?: (
     input: UpdateBubblophyIssueContentActionInput
   ) => Promise<UpdateBubblophyIssueContentActionResult>;
+  updateIssueAssigneeAction?: (
+    input: UpdateBubblophyIssueAssigneeActionInput
+  ) => Promise<UpdateBubblophyIssueAssigneeActionResult>;
   updateIssueStatusAction?: (
     input: UpdateBubblophyIssueStatusActionInput
   ) => Promise<UpdateBubblophyIssueStatusActionResult>;
@@ -2207,11 +2229,13 @@ function IssueQueue({
     input: RequestBubblophyAgentRunActionInput
   ) => Promise<RequestBubblophyAgentRunActionResult>;
   agentTokens: AgentTokenSummary[];
+  projectMembers: ProjectMemberSummary[];
   agentRuns: AgentRunSummary[];
   onProjectSelect: (projectKey: ProjectFilterKey) => void;
   onDraftDelete: (issueId: string) => void;
   onIssuePlanSaved: (plan: IssuePlanDraft) => void;
   onIssueContentUpdated: (issue: IssueSummary) => void;
+  onIssueAssigneeUpdated: (issue: IssueSummary) => void;
   onIssueStatusUpdated: (issue: IssueSummary) => void;
   onIssuePriorityUpdated: (issue: IssueSummary) => void;
   onAgentRunRequested: (run: AgentRunSummary) => void;
@@ -2374,16 +2398,20 @@ function IssueQueue({
           canPersistIssueContent={canPersistIssueContent}
           canPersistIssueStatus={canPersistIssueStatus}
           canPersistIssuePriority={canPersistIssuePriority}
+          canPersistIssueAssignee={canPersistIssueAssignee}
           createIssuePlanAction={createIssuePlanAction}
           updateIssueContentAction={updateIssueContentAction}
+          updateIssueAssigneeAction={updateIssueAssigneeAction}
           updateIssueStatusAction={updateIssueStatusAction}
           updateIssuePriorityAction={updateIssuePriorityAction}
           requestAgentRunAction={requestAgentRunAction}
           activeAgentTokens={activeProjectAgentTokens}
+          projectMembers={projectMembers}
           agentRuns={agentRuns}
           onDraftDelete={onDraftDelete}
           onIssuePlanSaved={onIssuePlanSaved}
           onIssueContentUpdated={onIssueContentUpdated}
+          onIssueAssigneeUpdated={onIssueAssigneeUpdated}
           onIssueStatusUpdated={onIssueStatusUpdated}
           onIssuePriorityUpdated={onIssuePriorityUpdated}
           onAgentRunRequested={onAgentRunRequested}
@@ -2407,16 +2435,20 @@ function IssueDetailPanel({
   canPersistIssueContent,
   canPersistIssueStatus,
   canPersistIssuePriority,
+  canPersistIssueAssignee,
   createIssuePlanAction,
   updateIssueContentAction,
+  updateIssueAssigneeAction,
   updateIssueStatusAction,
   updateIssuePriorityAction,
   requestAgentRunAction,
   activeAgentTokens,
+  projectMembers,
   agentRuns,
   onDraftDelete,
   onIssuePlanSaved,
   onIssueContentUpdated,
+  onIssueAssigneeUpdated,
   onIssueStatusUpdated,
   onIssuePriorityUpdated,
   onAgentRunRequested,
@@ -2428,12 +2460,16 @@ function IssueDetailPanel({
   canPersistIssueContent: boolean;
   canPersistIssueStatus: boolean;
   canPersistIssuePriority: boolean;
+  canPersistIssueAssignee: boolean;
   createIssuePlanAction?: (
     input: CreateBubblophyIssuePlanActionInput
   ) => Promise<CreateBubblophyIssuePlanActionResult>;
   updateIssueContentAction?: (
     input: UpdateBubblophyIssueContentActionInput
   ) => Promise<UpdateBubblophyIssueContentActionResult>;
+  updateIssueAssigneeAction?: (
+    input: UpdateBubblophyIssueAssigneeActionInput
+  ) => Promise<UpdateBubblophyIssueAssigneeActionResult>;
   updateIssueStatusAction?: (
     input: UpdateBubblophyIssueStatusActionInput
   ) => Promise<UpdateBubblophyIssueStatusActionResult>;
@@ -2444,10 +2480,12 @@ function IssueDetailPanel({
     input: RequestBubblophyAgentRunActionInput
   ) => Promise<RequestBubblophyAgentRunActionResult>;
   activeAgentTokens: AgentTokenSummary[];
+  projectMembers: ProjectMemberSummary[];
   agentRuns: AgentRunSummary[];
   onDraftDelete: (issueId: string) => void;
   onIssuePlanSaved: (plan: IssuePlanDraft) => void;
   onIssueContentUpdated: (issue: IssueSummary) => void;
+  onIssueAssigneeUpdated: (issue: IssueSummary) => void;
   onIssueStatusUpdated: (issue: IssueSummary) => void;
   onIssuePriorityUpdated: (issue: IssueSummary) => void;
   onAgentRunRequested: (run: AgentRunSummary) => void;
@@ -2471,6 +2509,9 @@ function IssueDetailPanel({
   const visibleDescription = isLocalDraftIssue(issue)
     ? undefined
     : issue.description?.trim();
+  const issueProjectMembers = projectMembers.filter(
+    (member) => member.projectKey === issue.projectKey
+  );
 
   return (
     <aside
@@ -2510,6 +2551,17 @@ function IssueDetailPanel({
           </dd>
         </div>
       </dl>
+
+      <IssueAssigneeUpdatePanel
+        key={`assignee-${issue.id}`}
+        issue={issue}
+        projectMembers={issueProjectMembers}
+        canPersistIssueAssignee={
+          canPersistIssueAssignee && !isLocalDraftIssue(issue)
+        }
+        updateIssueAssigneeAction={updateIssueAssigneeAction}
+        onIssueAssigneeUpdated={onIssueAssigneeUpdated}
+      />
 
       <IssueStatusTransitionPanel
         key={`${issue.id}-${issue.status}`}
@@ -2966,6 +3018,175 @@ const issuePriorityOptions = [
   'mittel',
   'hoch',
 ] satisfies IssuePriority[];
+
+/**
+ * Resolves the currently selected assignee from the public owner label.
+ *
+ * @param issue Selected dashboard issue.
+ * @param projectMembers Members of the selected issue's project.
+ * @returns Matching project member auth ID, or empty string for unassigned.
+ */
+function getCurrentIssueAssigneeAuthUserId(
+  issue: DashboardIssue,
+  projectMembers: ProjectMemberSummary[]
+) {
+  const member = projectMembers.find(
+    (candidate) =>
+      candidate.label === issue.owner || candidate.authUserId === issue.owner
+  );
+
+  return member?.authUserId ?? '';
+}
+
+/**
+ * Renders a human-only issue assignment update control.
+ *
+ * @param props Selected issue, project members, action, and success callback.
+ * @returns Compact assignee form or non-persistent explanation.
+ */
+function IssueAssigneeUpdatePanel({
+  issue,
+  projectMembers,
+  canPersistIssueAssignee,
+  updateIssueAssigneeAction,
+  onIssueAssigneeUpdated,
+}: {
+  issue: DashboardIssue;
+  projectMembers: ProjectMemberSummary[];
+  canPersistIssueAssignee: boolean;
+  updateIssueAssigneeAction?: (
+    input: UpdateBubblophyIssueAssigneeActionInput
+  ) => Promise<UpdateBubblophyIssueAssigneeActionResult>;
+  onIssueAssigneeUpdated: (issue: IssueSummary) => void;
+}) {
+  const currentAssigneeAuthUserId = getCurrentIssueAssigneeAuthUserId(
+    issue,
+    projectMembers
+  );
+  const [nextAssigneeAuthUserId, setNextAssigneeAuthUserId] = useState(
+    currentAssigneeAuthUserId
+  );
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const previousIssueIdRef = useRef(issue.id);
+  const [isPending, startTransition] = useTransition();
+  useEffect(() => {
+    if (previousIssueIdRef.current === issue.id) {
+      return;
+    }
+
+    previousIssueIdRef.current = issue.id;
+    setNextAssigneeAuthUserId(currentAssigneeAuthUserId);
+    setActionError(null);
+    setActionSuccess(null);
+  }, [currentAssigneeAuthUserId, issue.id]);
+
+  const isKnownAssignee =
+    nextAssigneeAuthUserId === '' ||
+    projectMembers.some(
+      (member) => member.authUserId === nextAssigneeAuthUserId
+    );
+  const canSubmit =
+    canPersistIssueAssignee &&
+    Boolean(updateIssueAssigneeAction) &&
+    projectMembers.length > 0 &&
+    isKnownAssignee &&
+    nextAssigneeAuthUserId !== currentAssigneeAuthUserId &&
+    !isPending;
+
+  const handleSubmit = () => {
+    if (!canSubmit || !updateIssueAssigneeAction) {
+      return;
+    }
+
+    setActionError(null);
+    setActionSuccess(null);
+    startTransition(async () => {
+      try {
+        const result = await updateIssueAssigneeAction({
+          issueId: issue.id,
+          assigneeAuthUserId: nextAssigneeAuthUserId || null,
+        });
+
+        if (result.status === 'updated') {
+          onIssueAssigneeUpdated(result.issue);
+          setActionSuccess('Zuweisung gespeichert.');
+          return;
+        }
+
+        if (result.status === 'unchanged') {
+          setActionSuccess('Zuweisung gespeichert.');
+          return;
+        }
+
+        setActionError(getIssueAssigneeActionErrorMessage(result));
+      } catch {
+        setActionError(
+          'Die Zuweisung konnte gerade nicht gespeichert werden. Versuche es erneut.'
+        );
+      }
+    });
+  };
+
+  return (
+    <div className="grid gap-3 rounded-md border border-border bg-background p-3">
+      <div className="grid gap-1">
+        <h4 className="text-sm font-medium">Zuweisung pflegen</h4>
+        <p className="text-xs text-muted-foreground">
+          Zuweisung an vorhandene Projektmitglieder. Status, Plan und Runs
+          bleiben unverändert.
+        </p>
+      </div>
+
+      {canPersistIssueAssignee && updateIssueAssigneeAction ? (
+        <form
+          className="grid gap-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleSubmit();
+          }}>
+          <label className="grid gap-1.5 text-sm font-medium">
+            Zuständig
+            <select
+              name="assigneeAuthUserId"
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+              value={nextAssigneeAuthUserId}
+              onChange={(event) => {
+                setNextAssigneeAuthUserId(event.currentTarget.value);
+                setActionError(null);
+                setActionSuccess(null);
+              }}>
+              <option value="">Nicht zugewiesen</option>
+              {projectMembers.map((member) => (
+                <option key={member.id} value={member.authUserId}>
+                  {member.label} · {projectMemberRoleLabels[member.role]}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {actionError ? (
+            <p role="alert" className="text-sm text-destructive">
+              {actionError}
+            </p>
+          ) : null}
+          {actionSuccess ? (
+            <p className="text-sm text-muted-foreground">{actionSuccess}</p>
+          ) : null}
+
+          <Button type="submit" size="sm" disabled={!canSubmit}>
+            {isPending ? 'Speichert...' : 'Zuweisung speichern'}
+          </Button>
+        </form>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Persistente Zuweisungen sind nur für gespeicherte Issues mit
+          Projektmitgliedern bei aktiver Datenbank verfügbar.
+        </p>
+      )}
+    </div>
+  );
+}
 
 /**
  * Picks the first selectable priority different from the current issue value.
@@ -4591,6 +4812,41 @@ function getIssueContentActionErrorMessage(
   }
 
   return 'Gib einen Titel ein, bevor du speicherst.';
+}
+
+/**
+ * Converts issue assignee action outcomes into quiet inline feedback.
+ *
+ * @param result Result returned by the persisted issue assignment action.
+ * @returns Human-readable error message for the detail panel.
+ */
+function getIssueAssigneeActionErrorMessage(
+  result: Exclude<
+    UpdateBubblophyIssueAssigneeActionResult,
+    { status: 'updated' } | { status: 'unchanged' }
+  >
+) {
+  if (result.status === 'not_found') {
+    return 'Dieses Issue wurde nicht gefunden. Die Zuweisung wurde nicht geändert.';
+  }
+
+  if (result.status === 'forbidden') {
+    return 'Du darfst dieses Issue nicht zuweisen. Die Zuweisung wurde nicht geändert.';
+  }
+
+  if (result.status === 'invalid_assignee') {
+    return 'Wähle ein Mitglied dieses Projekts aus.';
+  }
+
+  if (result.status === 'database_unavailable') {
+    return 'Die Datenbank ist gerade nicht verfügbar. Die Zuweisung wurde nicht geändert.';
+  }
+
+  if (result.reason === 'empty_issue') {
+    return 'Wähle ein Issue aus, bevor du die Zuweisung speicherst.';
+  }
+
+  return 'Die gewählte Zuweisung ist zu lang.';
 }
 
 /**
