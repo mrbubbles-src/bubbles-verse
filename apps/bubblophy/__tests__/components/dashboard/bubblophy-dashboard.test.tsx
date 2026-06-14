@@ -256,6 +256,21 @@ const databaseSnapshotWithIssueReadToken = {
   ],
 } satisfies DashboardSnapshot;
 
+const databaseSnapshotWithUnresolvedIssueReadToken = {
+  ...databaseSnapshot,
+  agentTokens: [
+    {
+      id: 'token_unknown_project',
+      label: 'Reader ohne Projektauflösung',
+      projectKey: 'ZZ',
+      scopes: ['issues:read'],
+      state: 'aktiv',
+      lastUsedAt: 'noch nie verwendet',
+      expiresAt: 'läuft nicht automatisch ab',
+    },
+  ],
+} satisfies DashboardSnapshot;
+
 const databaseSnapshotWithWriteOnlyToken = {
   ...databaseSnapshot,
   agentTokens: [
@@ -3465,14 +3480,25 @@ describe('BubblophyDashboard interactions', () => {
     ).toBeInTheDocument();
     expect(
       within(agentSection).getByText(
-        '/api/agent-projects/<project-id>/issues'
+        '/api/agent-projects/project_bubblesverse/issues'
       )
     ).toBeInTheDocument();
     expect(
       within(agentSection).getByText(
-        /\$BUBBLOPHY_BASE_URL\/api\/agent-projects\/<project-id>\/issues/
+        /\$BUBBLOPHY_BASE_URL\/api\/agent-projects\/project_bubblesverse\/issues/
       )
     ).toBeInTheDocument();
+    fireEvent.click(
+      within(agentSection).getByRole('button', {
+        name: 'Issue-Kontext kopieren',
+      })
+    );
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringContaining('/api/agent-projects/project_bubblesverse/issues')
+    );
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringContaining('Authorization: Bearer <agent-token>')
+    );
     expect(
       within(agentSection).queryByRole('button', {
         name: 'PATCH-Beispiel kopieren',
@@ -3481,6 +3507,41 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       within(agentSection).getByText(/kann keine Agent-Run-Statusupdates/)
     ).toBeInTheDocument();
+  });
+
+  it('keeps the project issue handoff placeholder when the token project is missing', () => {
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithUnresolvedIssueReadToken}
+      />
+    );
+
+    const agentSection = document.getElementById('agents');
+
+    expect(agentSection).toBeInstanceOf(HTMLElement);
+
+    if (!agentSection) {
+      throw new Error('Expected the agent token section to render.');
+    }
+
+    expect(
+      within(agentSection).getByText(
+        '/api/agent-projects/<project-id>/issues'
+      )
+    ).toBeInTheDocument();
+    fireEvent.click(
+      within(agentSection).getByRole('button', {
+        name: 'Issue-Kontext kopieren',
+      })
+    );
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringContaining('/api/agent-projects/<project-id>/issues')
+    );
+    expect(
+      within(agentSection).queryByText(
+        '/api/agent-projects/project_bubblesverse/issues'
+      )
+    ).not.toBeInTheDocument();
   });
 
   it('does not offer examples for tokens without operative read or update scopes', () => {

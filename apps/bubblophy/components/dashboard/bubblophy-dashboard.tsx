@@ -284,12 +284,7 @@ const agentTokenScopeOptions = [
   'runs:update',
 ];
 
-const agentProjectIssuesEndpointExample =
-  '/api/agent-projects/<project-id>/issues';
 const agentRunUpdateEndpointExample = '/api/agent-runs/<run-id>';
-
-const agentProjectIssuesCurlExample = `curl -X GET "$BUBBLOPHY_BASE_URL/api/agent-projects/<project-id>/issues" \\
-  -H "Authorization: Bearer <agent-token>"`;
 
 const agentRunUpdateCurlExample = `curl -X PATCH "$BUBBLOPHY_BASE_URL/api/agent-runs/<run-id>" \\
   -H "Authorization: Bearer <agent-token>" \\
@@ -1137,6 +1132,7 @@ export function BubblophyDashboard({
               <AgentAccess
                 dataSource={snapshot.meta.dataSource}
                 agentTokens={displayedAgentTokens}
+                projects={allProjects}
                 canCreateAgentToken={
                   canUseDatabase &&
                   activeProjects.length > 0 &&
@@ -3904,6 +3900,7 @@ function IssuePlanDraftDialog({
 function AgentAccess({
   dataSource,
   agentTokens,
+  projects,
   canCreateAgentToken,
   canUpdateAgentTokens,
   updateAgentTokenLifecycleAction,
@@ -3912,6 +3909,7 @@ function AgentAccess({
 }: {
   dataSource: DashboardSnapshot['meta']['dataSource'];
   agentTokens: AgentTokenSummary[];
+  projects: ProjectSummary[];
   canCreateAgentToken: boolean;
   canUpdateAgentTokens: boolean;
   updateAgentTokenLifecycleAction?: (
@@ -3991,7 +3989,15 @@ function AgentAccess({
                 onAgentTokenLifecycleUpdated={onAgentTokenLifecycleUpdated}
               />
             ) : null}
-            {isDatabaseSource ? <AgentTokenHandoff token={token} /> : null}
+            {isDatabaseSource ? (
+              <AgentTokenHandoff
+                token={token}
+                projectId={
+                  projects.find((project) => project.key === token.projectKey)
+                    ?.id
+                }
+              />
+            ) : null}
           </div>
         ))}
       </CardContent>
@@ -4002,14 +4008,22 @@ function AgentAccess({
 /**
  * Renders local-agent usage details for one public token row.
  *
- * @param props Public token summary from the dashboard snapshot.
+ * @param props Public token summary and optional resolved project database ID.
  * @returns Narrow handoff guide for the existing agent read/update endpoints.
  */
-function AgentTokenHandoff({ token }: { token: AgentTokenSummary }) {
+function AgentTokenHandoff({
+  token,
+  projectId,
+}: {
+  token: AgentTokenSummary;
+  projectId?: string;
+}) {
   const canReadIssueContext =
     token.state === 'aktiv' && token.scopes.includes('issues:read');
   const canUpdateRuns =
     token.state === 'aktiv' && token.scopes.includes('runs:update');
+  const projectIssuesEndpoint = buildAgentProjectIssuesEndpoint(projectId);
+  const projectIssuesCurl = buildAgentProjectIssuesCurlExample(projectId);
 
   return (
     <div className="mt-3 grid gap-2 rounded-md border border-dashed border-border bg-muted/20 p-3">
@@ -4029,7 +4043,7 @@ function AgentTokenHandoff({ token }: { token: AgentTokenSummary }) {
             <div>
               <dt className="text-muted-foreground">GET Projekt-Issues</dt>
               <dd className="font-mono break-all">
-                {agentProjectIssuesEndpointExample}
+                {projectIssuesEndpoint}
               </dd>
             </div>
             <div>
@@ -4041,7 +4055,7 @@ function AgentTokenHandoff({ token }: { token: AgentTokenSummary }) {
           {canReadIssueContext ? (
             <CopyableCommandBlock
               label="Issue-Kontext kopieren"
-              value={agentProjectIssuesCurlExample}
+              value={projectIssuesCurl}
             />
           ) : (
             <p className="text-xs text-muted-foreground">
@@ -4091,6 +4105,27 @@ function AgentTokenHandoff({ token }: { token: AgentTokenSummary }) {
       </p>
     </div>
   );
+}
+
+/**
+ * Builds the agent project issue endpoint with a resolved ID when available.
+ *
+ * @param projectId Project database ID resolved from the token project key.
+ * @returns Endpoint path with a real ID or the safe placeholder.
+ */
+function buildAgentProjectIssuesEndpoint(projectId?: string) {
+  return `/api/agent-projects/${projectId ?? '<project-id>'}/issues`;
+}
+
+/**
+ * Builds the copyable read-only issue-context command for local agents.
+ *
+ * @param projectId Project database ID resolved from the token project key.
+ * @returns Curl example with a real project ID or the safe placeholder.
+ */
+function buildAgentProjectIssuesCurlExample(projectId?: string) {
+  return `curl -X GET "$BUBBLOPHY_BASE_URL${buildAgentProjectIssuesEndpoint(projectId)}" \\
+  -H "Authorization: Bearer <agent-token>"`;
 }
 
 /**
@@ -4392,7 +4427,7 @@ function NewAgentTokenDialog({
                 {createdToken.scopes.includes('issues:read') ? (
                   <CopyableCommandBlock
                     label="Issue-Kontext kopieren"
-                    value={agentProjectIssuesCurlExample}
+                    value={buildAgentProjectIssuesCurlExample()}
                   />
                 ) : null}
                 {createdToken.scopes.includes('runs:update') ? (
