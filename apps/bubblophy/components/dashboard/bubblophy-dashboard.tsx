@@ -3170,11 +3170,20 @@ function AgentRunRequestPanel({
 
     setActionError(null);
     startTransition(async () => {
-      const result = await requestAgentRunAction({
-        issueId: issue.id,
-        agentTokenId,
-        instructions,
-      });
+      let result: RequestBubblophyAgentRunActionResult;
+
+      try {
+        result = await requestAgentRunAction({
+          issueId: issue.id,
+          agentTokenId,
+          instructions,
+        });
+      } catch {
+        setActionError(
+          'Der Run konnte gerade nicht angefragt werden. Prüfe die Verbindung und versuche es erneut.'
+        );
+        return;
+      }
 
       if (result.status === 'requested') {
         onAgentRunRequested(result.run);

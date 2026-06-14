@@ -3511,6 +3511,72 @@ describe('BubblophyDashboard interactions', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('keeps the run request form usable when the action throws', async () => {
+    const requestAgentRunAction = vi.fn<
+      (
+        input: RequestBubblophyAgentRunActionInput
+      ) => Promise<RequestBubblophyAgentRunActionResult>
+    >(async () => {
+      throw new Error('internal token hash or database stack trace');
+    });
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithEmptyRuns}
+        requestAgentRunAction={requestAgentRunAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    fireEvent.change(within(detailPanel).getByLabelText('Agent-Token'), {
+      target: { value: 'token_codex_bv' },
+    });
+    fireEvent.change(within(detailPanel).getByLabelText('Auftrag'), {
+      target: {
+        value: 'Bitte lokal prüfen und keine Ausführung starten.',
+      },
+    });
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Run anfragen' })
+    );
+
+    const alert = await within(detailPanel).findByRole('alert');
+
+    expect(alert).toHaveTextContent(
+      'Der Run konnte gerade nicht angefragt werden'
+    );
+    expect(alert.textContent).not.toContain('internal token hash');
+    expect(alert.textContent).not.toContain('database stack trace');
+    expect(within(detailPanel).getByLabelText('Auftrag')).toHaveValue(
+      'Bitte lokal prüfen und keine Ausführung starten.'
+    );
+    expect(requestAgentRunAction).toHaveBeenCalledWith({
+      issueId: 'BV-12',
+      agentTokenId: 'token_codex_bv',
+      instructions: 'Bitte lokal prüfen und keine Ausführung starten.',
+    });
+
+    const runsSection = document.getElementById('runs');
+
+    expect(runsSection).toBeInstanceOf(HTMLElement);
+
+    if (!runsSection) {
+      throw new Error('Expected the runs section to render.');
+    }
+
+    expect(within(runsSection).getByText(/Noch keine Runs/i)).toBeInTheDocument();
+    expect(
+      within(runsSection).queryByText('Bitte lokal prüfen')
+    ).not.toBeInTheDocument();
+  });
+
   it('does not expose human run decisions without the transition server action', () => {
     render(<BubblophyDashboard snapshot={databaseSnapshot} />);
 
