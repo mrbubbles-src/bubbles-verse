@@ -256,6 +256,19 @@ const databaseSnapshotWithApprovedRunUpdateToken = {
   ),
 } satisfies DashboardSnapshot;
 
+const databaseSnapshotWithReviewRun = {
+  ...databaseSnapshotWithRunUpdateToken,
+  agentRuns: databaseSnapshot.agentRuns.map((run) =>
+    run.id === 'run_bv_14'
+      ? {
+          ...run,
+          state: 'review',
+          lastEvent: 'Agent hat Review für BV-14 angefordert.',
+        }
+      : run
+  ),
+} satisfies DashboardSnapshot;
+
 const databaseSnapshotWithIssueReadToken = {
   ...databaseSnapshot,
   agentTokens: [
@@ -4986,6 +4999,80 @@ describe('BubblophyDashboard interactions', () => {
     expect(navigator.clipboard.writeText).not.toHaveBeenCalledWith(
       expect.stringContaining('<run-id>')
     );
+  });
+
+  it('explains human review resolution for runs needing review', () => {
+    render(<BubblophyDashboard snapshot={databaseSnapshotWithReviewRun} />);
+
+    const runsSection = document.getElementById('runs');
+
+    expect(runsSection).toBeInstanceOf(HTMLElement);
+
+    if (!runsSection) {
+      throw new Error('Expected the runs section to render.');
+    }
+
+    const runCard =
+      within(runsSection).getByText('run_bv_14').closest('dl')?.parentElement;
+
+    expect(runCard).toBeInstanceOf(HTMLElement);
+
+    if (!runCard) {
+      throw new Error('Expected the BV run card to render.');
+    }
+
+    expect(within(runCard).getByText('Review nötig')).toBeInTheDocument();
+    expect(
+      within(runCard).getByText(/Prüfe das Ergebnis im Issue BV-14/i)
+    ).toBeInTheDocument();
+    expect(
+      within(runCard).getByText(/Status, Notiz oder Plan/i)
+    ).toBeInTheDocument();
+    expect(
+      within(runCard).getByText(/bewusst einen neuen Run/i)
+    ).toBeInTheDocument();
+    expect(
+      within(runCard).queryByRole('button', {
+        name: /Review abschließen/i,
+      })
+    ).not.toBeInTheDocument();
+    expect(
+      within(runCard).queryByRole('button', { name: /Agent fortsetzen/i })
+    ).not.toBeInTheDocument();
+    expect(
+      within(runCard).queryByRole('button', {
+        name: /Automatisch weiterarbeiten/i,
+      })
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not show human review resolution guidance for non-review runs', () => {
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithApprovedRunUpdateToken}
+      />
+    );
+
+    const runsSection = document.getElementById('runs');
+
+    expect(runsSection).toBeInstanceOf(HTMLElement);
+
+    if (!runsSection) {
+      throw new Error('Expected the runs section to render.');
+    }
+
+    const runCard =
+      within(runsSection).getByText('run_bv_14').closest('dl')?.parentElement;
+
+    expect(runCard).toBeInstanceOf(HTMLElement);
+
+    if (!runCard) {
+      throw new Error('Expected the BV run card to render.');
+    }
+
+    expect(
+      within(runCard).queryByText('Review nötig')
+    ).not.toBeInTheDocument();
   });
 
   it('keeps agent handoff commands horizontally scrollable', () => {

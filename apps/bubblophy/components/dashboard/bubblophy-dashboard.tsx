@@ -4852,6 +4852,19 @@ function RunQueue({
                   <p className="text-xs text-muted-foreground">
                     {run.lastEvent}
                   </p>
+                  {run.state === 'review' ? (
+                    <div className="rounded-md border border-border bg-background/60 p-2 text-xs text-muted-foreground">
+                      <p className="font-medium text-foreground">
+                        Review nötig
+                      </p>
+                      <p>
+                        Prüfe das Ergebnis im Issue {run.issueId}. Entscheide
+                        dort über Status, Notiz oder Plan und frage bewusst
+                        einen neuen Run an, falls weitere Agent-Arbeit nötig
+                        ist.
+                      </p>
+                    </div>
+                  ) : null}
                   {canShowConcreteAgentRunHandoff(run.state) &&
                   canUpdateThisRun ? (
                     <div className="grid gap-2 rounded-md border border-border bg-background/60 p-2">
