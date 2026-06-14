@@ -1570,9 +1570,11 @@ function NewProjectDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[min(90svh,42rem)] overflow-y-auto sm:max-w-lg">
+      <DialogContent
+        aria-label="Projekt erstellen"
+        className="max-h-[min(90svh,42rem)] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Neues Projekt</DialogTitle>
+          <DialogTitle>Projekt erstellen</DialogTitle>
           <DialogDescription>
             Erstellt ein Projekt und trägt dich als Owner ein. Es entstehen
             keine Issues, Agent-Tokens oder Runs.

@@ -2023,6 +2023,9 @@ describe('BubblophyDashboard interactions', () => {
     fireEvent.click(
       within(projectsSection).getByRole('button', { name: 'Neues Projekt' })
     );
+    expect(
+      screen.getByRole('dialog', { name: 'Projekt erstellen' })
+    ).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Name'), {
       target: { value: 'Zentrum' },
     });
@@ -2652,6 +2655,9 @@ describe('BubblophyDashboard interactions', () => {
     }
 
     fireEvent.click(projectCreateButton);
+    expect(
+      screen.getByRole('dialog', { name: 'Projekt erstellen' })
+    ).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Name'), {
       target: { value: 'Doppeltes Projekt' },
     });
@@ -2663,7 +2669,9 @@ describe('BubblophyDashboard interactions', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Dieser Projekt-Key ist schon vergeben.'
     );
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(
+      screen.getByRole('dialog', { name: 'Projekt erstellen' })
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: /^Doppeltes Projekt\s+DP/i })
     ).not.toBeInTheDocument();
@@ -2732,10 +2740,9 @@ describe('BubblophyDashboard interactions', () => {
     }
 
     fireEvent.click(projectCreateButton);
-    expect(screen.getByRole('dialog')).toHaveClass(
-      'max-h-[min(90svh,42rem)]',
-      'overflow-y-auto'
-    );
+    expect(
+      screen.getByRole('dialog', { name: 'Projekt erstellen' })
+    ).toHaveClass('max-h-[min(90svh,42rem)]', 'overflow-y-auto');
     fireEvent.change(screen.getByLabelText('Name'), {
       target: { value: 'Zentrum' },
     });
