@@ -278,10 +278,11 @@ const agentTokenScopeOptions = [
   'runs:update',
 ];
 
+const agentProjectIssuesEndpointExample =
+  '/api/agent-projects/<project-id>/issues';
 const agentRunUpdateEndpointExample = '/api/agent-runs/<run-id>';
-const agentRunContextEndpointExample = '/api/agent-runs/<run-id>';
 
-const agentRunContextCurlExample = `curl -X GET "$BUBBLOPHY_BASE_URL/api/agent-runs/<run-id>" \\
+const agentProjectIssuesCurlExample = `curl -X GET "$BUBBLOPHY_BASE_URL/api/agent-projects/<project-id>/issues" \\
   -H "Authorization: Bearer <agent-token>"`;
 
 const agentRunUpdateCurlExample = `curl -X PATCH "$BUBBLOPHY_BASE_URL/api/agent-runs/<run-id>" \\
@@ -3777,7 +3778,7 @@ function AgentAccess({
  * Renders local-agent usage details for one public token row.
  *
  * @param props Public token summary from the dashboard snapshot.
- * @returns Narrow handoff guide for the existing agent run update endpoint.
+ * @returns Narrow handoff guide for the existing agent read/update endpoints.
  */
 function AgentTokenHandoff({ token }: { token: AgentTokenSummary }) {
   const canReadIssueContext =
@@ -3790,8 +3791,8 @@ function AgentTokenHandoff({ token }: { token: AgentTokenSummary }) {
       <div className="grid gap-1">
         <p className="text-sm font-medium">Lokaler Agent-Handoff</p>
         <p className="text-xs text-muted-foreground">
-          Die nutzbaren Agent-API-Pfade sind aktuell Kontextlesen für einen
-          freigegebenen Run und Status-Update. Planen, Run-Erstellen und
+          Die nutzbaren Agent-API-Pfade sind aktuell offene Issues eines
+          Projekts lesen und Status-Update. Planen, Run-Erstellen und
           Issue-Schreiben bleiben bis zu eigenen Endpunkten in der App beim
           Menschen.
         </p>
@@ -3801,9 +3802,9 @@ function AgentTokenHandoff({ token }: { token: AgentTokenSummary }) {
         <div className="grid gap-2 rounded-md border border-border bg-background/60 p-3">
           <dl className="grid gap-2 text-xs sm:grid-cols-2">
             <div>
-              <dt className="text-muted-foreground">GET Kontext</dt>
+              <dt className="text-muted-foreground">GET Projekt-Issues</dt>
               <dd className="font-mono break-all">
-                {agentRunContextEndpointExample}
+                {agentProjectIssuesEndpointExample}
               </dd>
             </div>
             <div>
@@ -3814,13 +3815,13 @@ function AgentTokenHandoff({ token }: { token: AgentTokenSummary }) {
 
           {canReadIssueContext ? (
             <CopyableCommandBlock
-              label="GET-Beispiel kopieren"
-              value={agentRunContextCurlExample}
+              label="Issue-Kontext kopieren"
+              value={agentProjectIssuesCurlExample}
             />
           ) : (
             <p className="text-xs text-muted-foreground">
-              Dieses Token kann keinen Agent-Run-Kontext lesen, weil es nicht
-              aktiv ist oder der Scope{' '}
+              Dieses Token kann keine Projekt-Issues lesen, weil es nicht aktiv
+              ist oder der Scope{' '}
               <span className="font-mono">issues:read</span> fehlt.
             </p>
           )}
@@ -4155,18 +4156,26 @@ function NewAgentTokenDialog({
             </div>
             <div className="rounded-md border border-dashed border-border bg-muted/20 p-3">
               <p className="text-sm font-medium">
-                Statusupdate für lokale Agenten
+                Nutzung für lokale Agenten
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Nutze das Token als Bearer Secret für freigegebene Runs. Das
-                Beispiel bleibt bei Platzhaltern, damit keine echten Secrets in
-                Logs oder Dokumentation landen.
+                Nutze das Token als Bearer Secret nur für die gewählten Scopes.
+                Die Beispiele bleiben bei Platzhaltern, damit keine echten
+                Secrets in Logs oder Dokumentation landen.
               </p>
-              <div className="mt-3">
-                <CopyableCommandBlock
-                  label="PATCH-Beispiel kopieren"
-                  value={agentRunUpdateCurlExample}
-                />
+              <div className="mt-3 grid gap-3">
+                {createdToken.scopes.includes('issues:read') ? (
+                  <CopyableCommandBlock
+                    label="Issue-Kontext kopieren"
+                    value={agentProjectIssuesCurlExample}
+                  />
+                ) : null}
+                {createdToken.scopes.includes('runs:update') ? (
+                  <CopyableCommandBlock
+                    label="PATCH-Beispiel kopieren"
+                    value={agentRunUpdateCurlExample}
+                  />
+                ) : null}
               </div>
             </div>
             <DialogFooter>

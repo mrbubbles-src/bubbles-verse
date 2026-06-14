@@ -3030,7 +3030,7 @@ describe('BubblophyDashboard interactions', () => {
     ).toBeInTheDocument();
     expect(
       within(dialog).getByText(
-        /\$BUBBLOPHY_BASE_URL\/api\/agent-runs\/<run-id>/
+        /\$BUBBLOPHY_BASE_URL\/api\/agent-projects\/<project-id>\/issues/
       )
     ).toBeInTheDocument();
     expect(
@@ -3045,13 +3045,18 @@ describe('BubblophyDashboard interactions', () => {
       );
     });
     fireEvent.click(
-      within(dialog).getByRole('button', { name: 'PATCH-Beispiel kopieren' })
+      within(dialog).getByRole('button', { name: 'Issue-Kontext kopieren' })
     );
     await waitFor(() => {
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-        expect.stringContaining('Authorization: Bearer <agent-token>')
+        expect.stringContaining(
+          '/api/agent-projects/<project-id>/issues'
+        )
       );
     });
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringContaining('Authorization: Bearer <agent-token>')
+    );
     expect(within(agentSection).getByText('Codex lokal')).toBeInTheDocument();
     expect(
       within(agentSection).queryByText('test_plaintext_token_once')
@@ -3082,8 +3087,8 @@ describe('BubblophyDashboard interactions', () => {
       within(agentSection).getByText('Lokaler Agent-Handoff')
     ).toBeInTheDocument();
     expect(
-      within(agentSection).getAllByText('/api/agent-runs/<run-id>').length
-    ).toBeGreaterThan(1);
+      within(agentSection).getByText('/api/agent-runs/<run-id>')
+    ).toBeInTheDocument();
     expect(
       within(agentSection).getByText(/Authorization: Bearer <agent-token>/)
     ).toBeInTheDocument();
@@ -3094,18 +3099,23 @@ describe('BubblophyDashboard interactions', () => {
     ).toBeInTheDocument();
     expect(
       within(agentSection).queryByRole('button', {
-        name: 'GET-Beispiel kopieren',
+        name: 'Issue-Kontext kopieren',
       })
+    ).not.toBeInTheDocument();
+    expect(
+      within(agentSection).queryByText(
+        /\$BUBBLOPHY_BASE_URL\/api\/agent-projects\/<project-id>\/issues/
+      )
     ).not.toBeInTheDocument();
     expect(
       within(agentSection).queryByText(/test_plaintext_token/)
     ).not.toBeInTheDocument();
     expect(
-      within(agentSection).getByText(/Kontextlesen für einen freigegebenen Run/)
+      within(agentSection).getByText(/offene Issues eines Projekts lesen/)
     ).toBeInTheDocument();
   });
 
-  it('shows GET context handoff only for active issues:read tokens', () => {
+  it('shows project issue context handoff only for active issues:read tokens', () => {
     render(<BubblophyDashboard snapshot={databaseSnapshotWithIssueReadToken} />);
 
     const agentSection = document.getElementById('agents');
@@ -3118,8 +3128,18 @@ describe('BubblophyDashboard interactions', () => {
 
     expect(
       within(agentSection).getByRole('button', {
-        name: 'GET-Beispiel kopieren',
+        name: 'Issue-Kontext kopieren',
       })
+    ).toBeInTheDocument();
+    expect(
+      within(agentSection).getByText(
+        '/api/agent-projects/<project-id>/issues'
+      )
+    ).toBeInTheDocument();
+    expect(
+      within(agentSection).getByText(
+        /\$BUBBLOPHY_BASE_URL\/api\/agent-projects\/<project-id>\/issues/
+      )
     ).toBeInTheDocument();
     expect(
       within(agentSection).queryByRole('button', {
@@ -3150,7 +3170,7 @@ describe('BubblophyDashboard interactions', () => {
         .length
     ).toBeGreaterThan(0);
     expect(
-      within(agentSection).getAllByText(/kann keinen Agent-Run-Kontext lesen/)
+      within(agentSection).getAllByText(/kann keine Projekt-Issues lesen/)
         .length
     ).toBeGreaterThan(0);
     expect(
@@ -3158,6 +3178,16 @@ describe('BubblophyDashboard interactions', () => {
     ).toBeGreaterThan(0);
     expect(
       within(agentSection).queryByText(/Authorization: Bearer <agent-token>/)
+    ).not.toBeInTheDocument();
+    expect(
+      within(agentSection).queryByRole('button', {
+        name: 'Issue-Kontext kopieren',
+      })
+    ).not.toBeInTheDocument();
+    expect(
+      within(agentSection).queryByRole('button', {
+        name: 'PATCH-Beispiel kopieren',
+      })
     ).not.toBeInTheDocument();
   });
 
