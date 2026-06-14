@@ -269,6 +269,20 @@ const databaseSnapshotWithReviewRun = {
   ),
 } satisfies DashboardSnapshot;
 
+const databaseSnapshotWithUnresolvedRun = {
+  ...databaseSnapshotWithRunUpdateToken,
+  agentRuns: [
+    {
+      id: 'run_missing_issue',
+      issueId: 'BV-404',
+      agentLabel: 'codex-local-lio',
+      state: 'review',
+      requestedBy: 'Mensch',
+      lastEvent: 'Run verweist auf ein nicht geladenes Issue.',
+    },
+  ],
+} satisfies DashboardSnapshot;
+
 const databaseSnapshotWithIssueReadToken = {
   ...databaseSnapshot,
   agentTokens: [
@@ -5202,6 +5216,63 @@ describe('BubblophyDashboard interactions', () => {
       within(runCard).queryByRole('button', {
         name: /Automatisch weiterarbeiten/i,
       })
+    ).not.toBeInTheDocument();
+  });
+
+  it('opens linked issue from run queue', () => {
+    render(<BubblophyDashboard snapshot={databaseSnapshotWithReviewRun} />);
+
+    const runsSection = document.getElementById('runs');
+
+    expect(runsSection).toBeInstanceOf(HTMLElement);
+
+    if (!runsSection) {
+      throw new Error('Expected the runs section to render.');
+    }
+
+    const runCard =
+      within(runsSection).getByText('run_bv_14').closest('dl')?.parentElement;
+
+    expect(runCard).toBeInstanceOf(HTMLElement);
+
+    if (!runCard) {
+      throw new Error('Expected the BV run card to render.');
+    }
+
+    fireEvent.click(
+      within(runCard).getByRole('button', { name: 'Issue öffnen' })
+    );
+
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('BV-14');
+    expect(navigationMocks.routerPush).toHaveBeenLastCalledWith(
+      '/?issue=BV-14'
+    );
+  });
+
+  it('does not render issue navigation for runs without resolvable issue', () => {
+    render(<BubblophyDashboard snapshot={databaseSnapshotWithUnresolvedRun} />);
+
+    const runsSection = document.getElementById('runs');
+
+    expect(runsSection).toBeInstanceOf(HTMLElement);
+
+    if (!runsSection) {
+      throw new Error('Expected the runs section to render.');
+    }
+
+    const runCard =
+      within(runsSection)
+        .getByText('run_missing_issue')
+        .closest('dl')?.parentElement;
+
+    expect(runCard).toBeInstanceOf(HTMLElement);
+
+    if (!runCard) {
+      throw new Error('Expected the unresolved run card to render.');
+    }
+
+    expect(
+      within(runCard).queryByRole('button', { name: 'Issue öffnen' })
     ).not.toBeInTheDocument();
   });
 

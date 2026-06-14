@@ -1232,12 +1232,14 @@ export function BubblophyDashboard({
                 dataSource={snapshot.meta.dataSource}
                 agentRuns={displayedAgentRuns}
                 agentTokens={displayedAgentTokens}
+                issueIds={allIssues.map((issue) => issue.id)}
                 transitionAgentRunAction={
                   isSelectedProjectArchived
                     ? undefined
                     : transitionAgentRunAction
                 }
                 onAgentRunTransitioned={handleAgentRunTransitioned}
+                onIssueSelect={handleIssueSelect}
               />
               <ActivityFeed
                 activity={displayedActivity}
@@ -4814,16 +4816,20 @@ function RunQueue({
   dataSource,
   agentRuns,
   agentTokens,
+  issueIds,
   transitionAgentRunAction,
   onAgentRunTransitioned,
+  onIssueSelect,
 }: {
   dataSource: DashboardSnapshot['meta']['dataSource'];
   agentRuns: AgentRunSummary[];
   agentTokens: AgentTokenSummary[];
+  issueIds: string[];
   transitionAgentRunAction?: (
     input: TransitionBubblophyAgentRunActionInput
   ) => Promise<TransitionBubblophyAgentRunActionResult>;
   onAgentRunTransitioned: (run: AgentRunSummary) => void;
+  onIssueSelect: (issueId: string) => void;
 }) {
   const isDatabaseSource =
     dataSource === 'database' || dataSource === 'empty_database';
@@ -4862,6 +4868,7 @@ function RunQueue({
         {isDatabaseSource
           ? agentRuns.map((run) => {
               const runProjectKey = getProjectKeyFromIssueId(run.issueId);
+              const canOpenIssue = issueIds.includes(run.issueId);
               const canUpdateThisRun = agentTokens.some(
                 (token) =>
                   token.state === 'aktiv' &&
@@ -4884,6 +4891,17 @@ function RunQueue({
                       {agentRunStateLabels[run.state]}
                     </Badge>
                   </div>
+                  {canOpenIssue ? (
+                    <div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onIssueSelect(run.issueId)}>
+                        Issue öffnen
+                      </Button>
+                    </div>
+                  ) : null}
                   <dl className="grid gap-1 text-xs sm:grid-cols-2">
                     <div>
                       <dt className="text-muted-foreground">Run-ID</dt>
