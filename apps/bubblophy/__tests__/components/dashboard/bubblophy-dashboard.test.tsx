@@ -46,6 +46,7 @@ import { BubblophyDashboard } from '@/components/dashboard/bubblophy-dashboard';
 
 const navigationMocks = {
   routerPush: vi.fn(),
+  routerReplace: vi.fn(),
   searchParams: vi.fn(() => new URLSearchParams()),
 };
 
@@ -215,6 +216,7 @@ vi.mock('next/navigation', () => ({
   usePathname: () => '/',
   useRouter: () => ({
     push: navigationMocks.routerPush,
+    replace: navigationMocks.routerReplace,
   }),
   useSearchParams: () => navigationMocks.searchParams(),
 }));
@@ -352,6 +354,7 @@ describe('BubblophyDashboard interactions', () => {
       },
     });
     navigationMocks.routerPush.mockClear();
+    navigationMocks.routerReplace.mockClear();
     navigationMocks.searchParams.mockReset();
     navigationMocks.searchParams.mockReturnValue(new URLSearchParams());
   });
@@ -417,12 +420,83 @@ describe('BubblophyDashboard interactions', () => {
     expect(screen.queryByText('codex-local-lio')).not.toBeInTheDocument();
     expect(screen.getAllByText('NO-08').length).toBeGreaterThan(0);
     expect(screen.queryByText('BV-14')).not.toBeInTheDocument();
+    expect(navigationMocks.routerReplace).not.toHaveBeenCalled();
     expect(
       screen.getByText('Novari-Run in Review verschoben')
     ).toBeInTheDocument();
     expect(
       screen.queryByText('Plan für BV-12 aktualisiert')
     ).not.toBeInTheDocument();
+  });
+
+  it('normalizes invalid deep-link selection to the rendered fallback issue', async () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=BV&issue=NO-08')
+    );
+
+    render(<BubblophyDashboard snapshot={databaseSnapshot} />);
+
+    const projectsSection = document.getElementById('projects');
+
+    expect(projectsSection).toBeInstanceOf(HTMLElement);
+
+    if (!projectsSection) {
+      throw new Error('Expected the projects section to render.');
+    }
+
+    expect(
+      within(projectsSection).getByRole('button', {
+        name: 'Projekt Bubblesverse (BV) auswählen',
+      })
+    ).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Gefiltert auf Projekt BV.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('BV-14');
+    expect(screen.queryByText('NO-08')).not.toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(navigationMocks.routerReplace).toHaveBeenCalledWith(
+        '/?project=BV&issue=BV-14'
+      );
+    });
+    expect(navigationMocks.routerPush).not.toHaveBeenCalled();
+  });
+
+  it('falls back from unknown selection params while preserving other query params', async () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=ZZ&issue=ZZ-99&tab=runs')
+    );
+
+    render(<BubblophyDashboard snapshot={databaseSnapshot} />);
+
+    const projectsSection = document.getElementById('projects');
+
+    expect(projectsSection).toBeInstanceOf(HTMLElement);
+
+    if (!projectsSection) {
+      throw new Error('Expected the projects section to render.');
+    }
+
+    expect(
+      within(projectsSection).getByRole('button', {
+        name: 'Alle Projekte auswählen, 29% bereit',
+      })
+    ).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('BV-14');
+
+    await waitFor(() => {
+      expect(navigationMocks.routerReplace).toHaveBeenCalledWith(
+        '/?issue=BV-14&tab=runs'
+      );
+    });
+    expect(navigationMocks.routerPush).not.toHaveBeenCalled();
+  });
+
+  it('keeps the default first visit URL untouched', () => {
+    render(<BubblophyDashboard snapshot={databaseSnapshot} />);
+
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('BV-14');
+    expect(navigationMocks.routerReplace).not.toHaveBeenCalled();
+    expect(navigationMocks.routerPush).not.toHaveBeenCalled();
   });
 
   it('filters projects from the keyboard and restores all projects', () => {
@@ -482,6 +556,7 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       within(detailPanel).getByText('Projekt BV · Owner mrbubbles')
     ).toBeInTheDocument();
+    expect(navigationMocks.routerPush).toHaveBeenCalledWith('/?issue=BV-12');
   });
 
   it('selects an issue when its table row is clicked', () => {

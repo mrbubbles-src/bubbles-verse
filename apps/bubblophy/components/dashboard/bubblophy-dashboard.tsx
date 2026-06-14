@@ -691,6 +691,7 @@ export function BubblophyDashboard({
     : (filteredIssues.find((issue) => issue.id === selectedIssueId) ??
       filteredIssues[0] ??
       null);
+  const selectedIssueIdForUrl = selectedIssue?.id ?? '';
   const selectedIssueRuns = selectedIssue
     ? allAgentRuns.filter((run) => run.issueId === selectedIssue.id)
     : [];
@@ -735,6 +736,45 @@ export function BubblophyDashboard({
       })
     );
   };
+
+  useEffect(() => {
+    const currentProjectKey = searchParams.get('project');
+    const currentIssueId = searchParams.get('issue');
+
+    if (currentProjectKey === null && currentIssueId === null) {
+      return;
+    }
+
+    if (!selectedIssueIdForUrl) {
+      return;
+    }
+
+    const nextProjectKey =
+      selectedProjectKey === 'all' ? null : selectedProjectKey;
+    const nextIssueId = selectedIssueIdForUrl || null;
+
+    if (
+      currentProjectKey === nextProjectKey &&
+      currentIssueId === nextIssueId
+    ) {
+      return;
+    }
+
+    router.replace(
+      buildSelectionHref({
+        pathname,
+        searchParams: new URLSearchParams(searchParams.toString()),
+        projectKey: selectedProjectKey,
+        issueId: selectedIssueIdForUrl,
+      })
+    );
+  }, [
+    pathname,
+    router,
+    searchParams,
+    selectedIssueIdForUrl,
+    selectedProjectKey,
+  ]);
 
   const handleProjectSelect = (projectKey: ProjectFilterKey) => {
     const nextIssueId =

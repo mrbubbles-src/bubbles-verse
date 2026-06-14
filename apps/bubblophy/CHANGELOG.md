@@ -132,3 +132,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   errors without losing the edited draft, selected status, or current issue.
 - Hardened agent-token lifecycle controls so thrown pause/resume/revoke actions
   show generic inline errors without exposing token internals or changing state.
+- Normalized stale Bubblophy project/issue deep-link query parameters with
+  history-safe redirects while leaving first-visit default URLs untouched.
