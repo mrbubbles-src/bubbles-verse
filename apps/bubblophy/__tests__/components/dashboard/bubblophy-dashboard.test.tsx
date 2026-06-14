@@ -4729,6 +4729,7 @@ describe('BubblophyDashboard interactions', () => {
         within(agentSection).getAllByText('Pausiert').length
       ).toBeGreaterThan(0);
     });
+    expect(navigationMocks.routerRefresh).toHaveBeenCalledTimes(1);
   });
 
   it('resumes a paused agent token through the lifecycle action', async () => {
