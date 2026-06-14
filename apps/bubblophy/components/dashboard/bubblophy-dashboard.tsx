@@ -2910,7 +2910,17 @@ function IssueDetailPanel({
                 </div>
                 <p className="text-xs text-muted-foreground">{run.lastEvent}</p>
                 {run.resultSummary ? (
-                  <AgentRunResultSummary summary={run.resultSummary} />
+                  <>
+                    <AgentRunResultSummary summary={run.resultSummary} />
+                    {canPersistIssueNotes && createIssueNoteAction ? (
+                      <AgentRunResultNoteAction
+                        issueId={issue.id}
+                        run={run}
+                        createIssueNoteAction={createIssueNoteAction}
+                        onIssueNoteCreated={onIssueNoteCreated}
+                      />
+                    ) : null}
+                  </>
                 ) : null}
               </li>
             ))}
@@ -5042,6 +5052,83 @@ function AgentRunResultSummary({ summary }: { summary: string }) {
       <p className="mt-1 text-muted-foreground">{summary}</p>
     </div>
   );
+}
+
+function AgentRunResultNoteAction({
+  issueId,
+  run,
+  createIssueNoteAction,
+  onIssueNoteCreated,
+}: {
+  issueId: string;
+  run: AgentRunSummary;
+  createIssueNoteAction: (
+    input: CreateBubblophyIssueNoteActionInput
+  ) => Promise<CreateBubblophyIssueNoteActionResult>;
+  onIssueNoteCreated: (issueId: string, note: IssueNoteSummary) => void;
+}) {
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  const handleSave = () => {
+    if (isPending || !run.resultSummary) {
+      return;
+    }
+
+    setActionError(null);
+    setActionSuccess(null);
+
+    startTransition(async () => {
+      try {
+        const result = await createIssueNoteAction({
+          issueId,
+          note: buildAgentRunResultNoteText(run),
+        });
+
+        if (result.status === 'created') {
+          onIssueNoteCreated(issueId, result.note);
+          setActionSuccess(
+            `Agent-Ergebnis aus Run ${run.id} wurde als Notiz gespeichert.`
+          );
+          return;
+        }
+
+        setActionError(getIssueNoteActionErrorMessage(result));
+      } catch {
+        setActionError(
+          'Das Agent-Ergebnis konnte gerade nicht als Notiz gespeichert werden. Versuche es erneut.'
+        );
+      }
+    });
+  };
+
+  return (
+    <div className="grid gap-1">
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        disabled={isPending}
+        onClick={handleSave}>
+        {isPending ? 'Speichert...' : 'Als Notiz übernehmen'}
+      </Button>
+      {actionError ? (
+        <p role="alert" className="text-xs text-destructive">
+          {actionError}
+        </p>
+      ) : null}
+      {actionSuccess ? (
+        <p role="status" className="text-xs text-muted-foreground">
+          {actionSuccess}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function buildAgentRunResultNoteText(run: AgentRunSummary) {
+  return `Agent-Ergebnis aus Run ${run.id}:\n\n${run.resultSummary ?? ''}`;
 }
 
 /**

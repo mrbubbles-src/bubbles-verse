@@ -5425,6 +5425,123 @@ describe('BubblophyDashboard interactions', () => {
     expect(within(resultBlock).queryByText(/[{}"]/)).not.toBeInTheDocument();
   });
 
+  it('saves agent run result as an issue review note', async () => {
+    const createIssueNoteAction = vi.fn<
+      (
+        input: CreateBubblophyIssueNoteActionInput
+      ) => Promise<CreateBubblophyIssueNoteActionResult>
+    >(async (input) => ({
+      status: 'created',
+      note: {
+        id: 'event_note_run_result',
+        note: input.note,
+        actor: 'Mensch',
+        createdAt: '2026-06-14T11:00:00.000Z',
+      },
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithReviewRun}
+        createIssueNoteAction={createIssueNoteAction}
+      />
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    expect(detailPanel).toHaveTextContent('BV-14');
+
+    fireEvent.click(
+      within(detailPanel).getByRole('button', {
+        name: 'Als Notiz übernehmen',
+      })
+    );
+
+    await waitFor(() => {
+      expect(createIssueNoteAction).toHaveBeenCalledWith({
+        issueId: 'BV-14',
+        note: 'Agent-Ergebnis aus Run run_bv_14:\n\nDiff ist bereit für menschliche Prüfung.',
+      });
+    });
+
+    expect(createIssueNoteAction.mock.calls[0]?.[0]).not.toHaveProperty(
+      'authUserId'
+    );
+
+    await waitFor(() => {
+      expect(
+        within(detailPanel).getByText(
+          'Agent-Ergebnis aus Run run_bv_14 wurde als Notiz gespeichert.'
+        )
+      ).toBeInTheDocument();
+    });
+
+    const notesRegion = within(detailPanel).getByLabelText('Notizen für BV-14');
+
+    expect(notesRegion).toHaveTextContent(
+      'Agent-Ergebnis aus Run run_bv_14:'
+    );
+    expect(notesRegion).toHaveTextContent(
+      'Diff ist bereit für menschliche Prüfung.'
+    );
+  });
+
+  it('does not offer run result note persistence without note permission', () => {
+    render(<BubblophyDashboard snapshot={databaseSnapshotWithReviewRun} />);
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    expect(detailPanel).toHaveTextContent('Diff ist bereit für menschliche Prüfung.');
+    expect(
+      within(detailPanel).queryByRole('button', {
+        name: 'Als Notiz übernehmen',
+      })
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not claim review completion when saving run result note', async () => {
+    const createIssueNoteAction = vi.fn<
+      (
+        input: CreateBubblophyIssueNoteActionInput
+      ) => Promise<CreateBubblophyIssueNoteActionResult>
+    >(async (input) => ({
+      status: 'created',
+      note: {
+        id: 'event_note_run_result',
+        note: input.note,
+        actor: 'Mensch',
+        createdAt: '2026-06-14T11:00:00.000Z',
+      },
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithReviewRun}
+        createIssueNoteAction={createIssueNoteAction}
+      />
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    fireEvent.click(
+      within(detailPanel).getByRole('button', {
+        name: 'Als Notiz übernehmen',
+      })
+    );
+
+    await waitFor(() => {
+      expect(createIssueNoteAction).toHaveBeenCalled();
+    });
+
+    expect(screen.queryByText(/Review abgeschlossen/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Review freigegeben/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Run freigegeben/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Agent fortsetzen/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Automatisch weiterarbeiten/i)
+    ).not.toBeInTheDocument();
+  });
+
   it('opens linked issue from run queue', () => {
     render(<BubblophyDashboard snapshot={databaseSnapshotWithReviewRun} />);
 
