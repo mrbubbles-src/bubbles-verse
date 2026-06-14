@@ -9,9 +9,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const redirectMock = vi.fn<(href: string) => never>();
 const getUserMock = vi.fn();
+const cookieGetAllMock = vi.fn();
 
 vi.mock('next/navigation', () => ({
   redirect: (href: string) => redirectMock(href),
+}));
+
+vi.mock('next/headers', () => ({
+  cookies: async () => ({
+    getAll: cookieGetAllMock,
+  }),
 }));
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -48,6 +55,13 @@ describe('Bubblophy session helpers', () => {
       throw new Error(`NEXT_REDIRECT:${href}`);
     });
     getUserMock.mockReset();
+    cookieGetAllMock.mockReset();
+    cookieGetAllMock.mockReturnValue([
+      {
+        name: 'sb-test-auth-token',
+        value: 'present',
+      },
+    ]);
     vi.stubEnv('BUBBLOPHY_ALLOWED_AUTH_EMAILS', 'owner@example.test');
   });
 
@@ -56,15 +70,12 @@ describe('Bubblophy session helpers', () => {
   });
 
   it('redirects anonymous visitors to login with a relative next path', async () => {
-    getUserMock.mockResolvedValue({
-      data: {
-        user: null,
-      },
-    });
+    cookieGetAllMock.mockReturnValue([]);
 
     await expect(
       requireBubblophySession({ nextPath: '/issues?status=ready' })
     ).rejects.toThrow('NEXT_REDIRECT:/login?next=%2Fissues%3Fstatus%3Dready');
+    expect(getUserMock).not.toHaveBeenCalled();
   });
 
   it('logs out authenticated users that are not temporarily allowed', async () => {

@@ -13,9 +13,11 @@ import {
 } from '@/lib/auth/redirects';
 import { createBubblophyServerSupabaseClient } from '@/lib/supabase/server';
 
+import { hasSupabaseAuthSessionCookie } from '@bubbles/supabase-access/auth';
 import { cache } from 'react';
 
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 
 export type BubblophySession = {
   user: User;
@@ -86,6 +88,12 @@ export function isDeniedBubblophySessionResult(
  * @returns Allowed, anonymous, or denied session state.
  */
 async function loadOptionalBubblophySession(): Promise<BubblophySessionResult> {
+  const cookieStore = await cookies();
+
+  if (!hasSupabaseAuthSessionCookie(cookieStore.getAll())) {
+    return { status: 'anonymous' };
+  }
+
   const supabase = await createBubblophyServerSupabaseClient();
   const {
     data: { user },
