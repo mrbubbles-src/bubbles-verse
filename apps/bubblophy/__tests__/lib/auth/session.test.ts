@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const redirectMock = vi.fn<(href: string) => never>();
 const getUserMock = vi.fn();
 const cookieGetAllMock = vi.fn();
+const getBubblophyDbAccessForUserMock = vi.fn();
 
 vi.mock('next/navigation', () => ({
   redirect: (href: string) => redirectMock(href),
@@ -27,6 +28,11 @@ vi.mock('@/lib/supabase/server', () => ({
       getUser: getUserMock,
     },
   }),
+}));
+
+vi.mock('@/lib/auth/access', () => ({
+  getBubblophyDbAccessForUser: (user: User | null) =>
+    getBubblophyDbAccessForUserMock(user),
 }));
 
 function createUser(email: string): User {
@@ -55,6 +61,7 @@ describe('Bubblophy session helpers', () => {
       throw new Error(`NEXT_REDIRECT:${href}`);
     });
     getUserMock.mockReset();
+    getBubblophyDbAccessForUserMock.mockReset();
     cookieGetAllMock.mockReset();
     cookieGetAllMock.mockReturnValue([
       {
@@ -62,7 +69,14 @@ describe('Bubblophy session helpers', () => {
         value: 'present',
       },
     ]);
-    vi.stubEnv('BUBBLOPHY_ALLOWED_AUTH_EMAILS', 'owner@example.test');
+    getBubblophyDbAccessForUserMock.mockImplementation((user: User | null) =>
+      user
+        ? {
+            authUserId: user.id,
+            email: user.email?.trim().toLowerCase(),
+          }
+        : null
+    );
   });
 
   afterEach(() => {
@@ -78,7 +92,8 @@ describe('Bubblophy session helpers', () => {
     expect(getUserMock).not.toHaveBeenCalled();
   });
 
-  it('logs out authenticated users that are not temporarily allowed', async () => {
+  it('logs out authenticated users without DB-backed Bubblophy access', async () => {
+    getBubblophyDbAccessForUserMock.mockResolvedValue(null);
     getUserMock.mockResolvedValue({
       data: {
         user: createUser('stranger@example.test'),
@@ -106,22 +121,25 @@ describe('Bubblophy session helpers', () => {
     });
   });
 
-  it('fails closed when the temporary allowlist is empty', () => {
-    vi.stubEnv('BUBBLOPHY_ALLOWED_AUTH_EMAILS', '');
+  it('fails closed when the user has no DB-backed Bubblophy access', async () => {
+    getBubblophyDbAccessForUserMock.mockResolvedValue(null);
 
-    expect(
+    await expect(
       getAllowedBubblophySessionForUser(createUser('owner@example.test'))
-    ).toBeNull();
+    ).resolves.toBeNull();
   });
 
-  it('allows only exact normalized email matches', () => {
-    vi.stubEnv('BUBBLOPHY_ALLOWED_AUTH_EMAILS', 'owner@example.test');
+  it('normalizes the authorized session email returned by the DB access layer', async () => {
+    const user = createUser('Owner@Example.Test');
+    getBubblophyDbAccessForUserMock.mockResolvedValue({
+      authUserId: 'user-id',
+      email: 'owner@example.test',
+    });
 
-    expect(
-      getAllowedBubblophySessionForUser(createUser('Owner@Example.Test'))?.email
-    ).toBe('owner@example.test');
-    expect(
-      getAllowedBubblophySessionForUser(createUser('not-owner@example.test'))
-    ).toBeNull();
+    await expect(getAllowedBubblophySessionForUser(user)).resolves.toEqual({
+      user,
+      authUserId: 'user-id',
+      email: 'owner@example.test',
+    });
   });
 });

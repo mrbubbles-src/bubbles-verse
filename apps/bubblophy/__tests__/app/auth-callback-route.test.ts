@@ -7,6 +7,7 @@ import { GET } from '@/app/auth/callback/route';
 const exchangeCodeForSessionMock = vi.fn();
 const getUserMock = vi.fn();
 const getPublicBubblophyEnvMock = vi.fn();
+const getAllowedBubblophySessionForUserMock = vi.fn();
 
 vi.mock('next/server', async (importOriginal) => {
   const actual = await importOriginal<typeof import('next/server')>();
@@ -30,12 +31,24 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }));
 
+vi.mock('@/lib/auth/session', () => ({
+  getAllowedBubblophySessionForUser: (user: unknown) =>
+    getAllowedBubblophySessionForUserMock(user),
+}));
+
 describe('GET /auth/callback', () => {
   beforeEach(() => {
     exchangeCodeForSessionMock.mockReset();
     getUserMock.mockReset();
     getPublicBubblophyEnvMock.mockReset();
-    vi.stubEnv('BUBBLOPHY_ALLOWED_AUTH_EMAILS', 'owner@example.test');
+    getAllowedBubblophySessionForUserMock.mockReset();
+    getAllowedBubblophySessionForUserMock.mockResolvedValue({
+      authUserId: 'user-id',
+      email: 'owner@example.test',
+      user: {
+        email: 'owner@example.test',
+      },
+    });
   });
 
   it('exchanges the auth code and redirects allowed users to a safe next path', async () => {
@@ -135,6 +148,7 @@ describe('GET /auth/callback', () => {
   });
 
   it('logs out denied users after a successful code exchange', async () => {
+    getAllowedBubblophySessionForUserMock.mockResolvedValue(null);
     getPublicBubblophyEnvMock.mockReturnValue({
       NEXT_PUBLIC_APP_URL: 'http://bubblophy.mrbubbles.test:3005',
     });

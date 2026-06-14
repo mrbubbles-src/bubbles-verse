@@ -135,9 +135,11 @@ bun run build
 
 - Menschen loggen sich über Supabase/GitHub ein.
 - Die Auth-Grundstruktur nutzt nur `NEXT_PUBLIC_*` Supabase-Anon-Konfiguration.
-- Das Dashboard unter `/` verlangt eine Supabase-Session und prüft temporär
-  `BUBBLOPHY_ALLOWED_AUTH_EMAILS` serverseitig fail-closed, bis
-  Projektmitgliedschaften und RLS diese Sperre ersetzen.
+- Das Dashboard unter `/` verlangt eine Supabase-Session und prüft
+  serverseitig DB-basierten Zugang. Ein aktiver Eintrag in
+  `private.dashboard_github_allowlist` dient als Owner-/Bootstrap-Zugang;
+  projektbezogene Kollaborateur:innen dürfen über
+  `bubblophy_project_members.auth_user_id` rein.
 - Ein optimistischer Proxy für geschützte Browserseiten und `/login`
   verhindert Login-UI-Flashes anhand vorhandener Supabase-Session-Cookies. Er
   erhält Deep-Link-`next`-Werte, ersetzt keine Autorisierung und lässt
@@ -233,7 +235,6 @@ NEXT_PUBLIC_APP_URL=http://bubblophy.mrbubbles.test:3005
 NEXT_PUBLIC_AUTH_COOKIE_DOMAIN=.mrbubbles.test
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-BUBBLOPHY_ALLOWED_AUTH_EMAILS=mrbubbles@example.com
 DATABASE_URL=...
 ```
 
@@ -241,9 +242,8 @@ DATABASE_URL=...
 Subdomain passen, sobald Bubblophy denselben Supabase-OAuth-Flow wie die
 anderen Bubblesverse-Apps nutzt.
 
-`BUBBLOPHY_ALLOWED_AUTH_EMAILS` ist eine temporäre, server-only
-Komma-Liste erlaubter Supabase-Auth-E-Mails. Ohne Eintrag bleibt Bubblophy
-absichtlich geschlossen.
+Bubblophy liest keine erlaubten Menschen aus der Env. Supabase Auth liefert
+die Identität; die Datenbank entscheidet über Zugang und Projektumfang.
 
 ## Supabase Auth Redirects
 

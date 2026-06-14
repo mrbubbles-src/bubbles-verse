@@ -10,9 +10,10 @@ dauerhaften Autopilot-Rechte.
 - Supabase Auth ist die einzige Login-Schicht für UI-Nutzer.
 - `/login`, `/auth/callback` und `/auth/logout` schützen das MVP-Dashboard
   unter `/` mit einer menschlichen Supabase-Session.
-- Bis Projektmitgliedschaft und RLS angebunden sind, bleibt die Autorisierung
-  fail-closed über die server-only Komma-Liste
-  `BUBBLOPHY_ALLOWED_AUTH_EMAILS`.
+- Die Autorisierung bleibt fail-closed und DB-basiert: Ein aktiver Eintrag in
+  `private.dashboard_github_allowlist` erlaubt Owner-/Bootstrap-Zugang; eine
+  vorhandene Zeile in `bubblophy_project_members` erlaubt projektbezogenen
+  Zugang für genau diese Supabase-User-ID.
 - Ein optimistischer Proxy läuft nur für explizite Browser-Page-Pfade und
   `/login`. Er prüft nur Supabase-Session-Cookie-Präsenz, erhält sichere
   Deep-Link-`next`-Werte, verhindert Login-UI-Flashes und ersetzt keine
@@ -29,9 +30,9 @@ dauerhaften Autopilot-Rechte.
   Mutationsfläche.
 - Request-bezogene Session-Checks dürfen React `cache()` nutzen, aber nicht in
   `use cache` landen.
-- Die aktuelle MVP-Route `/` nutzt noch Snapshot-Daten, ist aber nicht mehr
-  öffentlich. Diese temporäre E-Mail-Sperre muss durch Projektmitgliedschaft,
-  RLS und server-only Datenzugriff ersetzt werden.
+- Die Route `/` ist nicht öffentlich. App-Zugang und Projektumfang werden
+  getrennt geprüft: Der App-Gate lässt nur DB-berechtigte Menschen rein, und
+  Datenzugriffe bleiben zusätzlich membership-scoped.
 - Supabase Auth muss
   `http://bubblophy.mrbubbles.test:3005/auth/callback` als erlaubte Redirect
   URL kennen. Wenn ein Login nach

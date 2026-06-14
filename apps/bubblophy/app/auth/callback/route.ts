@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const session = getAllowedBubblophySessionForUser(user);
+  const session = await getAllowedBubblophySessionForUser(user);
 
   if (!session) {
     return NextResponse.redirect(

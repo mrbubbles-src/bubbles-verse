@@ -2,11 +2,7 @@ import 'server-only';
 
 import type { User } from '@supabase/supabase-js';
 
-import {
-  getBubblophyAllowedAuthEmails,
-  isBubblophyAuthEmailAllowed,
-  normalizeBubblophyAuthEmail,
-} from '@/lib/auth/allowed-emails';
+import { getBubblophyDbAccessForUser } from '@/lib/auth/access';
 import {
   buildBubblophyLoginPath,
   buildBubblophyLogoutPath,
@@ -39,31 +35,24 @@ export type BubblophySessionResult =
     };
 
 /**
- * Checks the temporary Bubblophy server-only email allowlist for a Supabase user.
+ * Checks the DB-backed Bubblophy access rules for a Supabase user.
  *
  * @param user Signed-in Supabase Auth user.
  * @returns Authorized Bubblophy session data or `null` when access is denied.
  */
-export function getAllowedBubblophySessionForUser(
+export async function getAllowedBubblophySessionForUser(
   user: User | null
-): BubblophySession | null {
-  const email = normalizeBubblophyAuthEmail(user?.email);
+): Promise<BubblophySession | null> {
+  const access = await getBubblophyDbAccessForUser(user);
 
-  if (
-    !user ||
-    !email ||
-    !isBubblophyAuthEmailAllowed({
-      email,
-      allowlist: getBubblophyAllowedAuthEmails(),
-    })
-  ) {
+  if (!user || !access) {
     return null;
   }
 
   return {
     user,
-    authUserId: user.id,
-    email,
+    authUserId: access.authUserId,
+    email: access.email,
   };
 }
 
@@ -103,7 +92,7 @@ async function loadOptionalBubblophySession(): Promise<BubblophySessionResult> {
     return { status: 'anonymous' };
   }
 
-  const session = getAllowedBubblophySessionForUser(user);
+  const session = await getAllowedBubblophySessionForUser(user);
 
   if (!session) {
     return {
@@ -123,8 +112,8 @@ const getOptionalSession = cache(loadOptionalBubblophySession);
 /**
  * Loads and authorizes the current human Bubblophy session.
  *
- * This is a temporary fail-closed gate until project membership and RLS replace
- * `BUBBLOPHY_ALLOWED_AUTH_EMAILS`. Agent tokens are intentionally not accepted.
+ * This is the DB-backed human session gate. Agent tokens are intentionally not
+ * accepted by browser routes.
  *
  * @param options.nextPath Protected path to return to after login.
  * @returns Authorized human Bubblophy session.
