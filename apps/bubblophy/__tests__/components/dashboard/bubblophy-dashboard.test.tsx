@@ -140,6 +140,18 @@ const databaseSnapshotWithReloadedPlan = {
   ),
 } satisfies DashboardSnapshot;
 
+const databaseSnapshotWithDoneIssue = {
+  ...databaseSnapshot,
+  issues: databaseSnapshot.issues.map((issue) =>
+    issue.id === 'BV-12'
+      ? {
+          ...issue,
+          status: 'erledigt',
+        }
+      : issue
+  ),
+} satisfies DashboardSnapshot;
+
 const emptyDatabaseSnapshot = {
   ...databaseSnapshot,
   meta: {
@@ -1465,6 +1477,72 @@ describe('BubblophyDashboard interactions', () => {
       expect(within(detailPanel).getByText('Erledigt')).toBeInTheDocument();
     });
     expect(getMetricValue('Offene Issues')).toHaveTextContent('23');
+  });
+
+  it('reopens a done issue through the persisted status action', async () => {
+    const updateIssueStatusAction = vi.fn<
+      (
+        input: UpdateBubblophyIssueStatusActionInput
+      ) => Promise<UpdateBubblophyIssueStatusActionResult>
+    >(async () => ({
+      status: 'updated',
+      issue: {
+        id: 'BV-12',
+        title: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+        projectKey: 'BV',
+        status: 'triage',
+        priority: 'hoch',
+        owner: 'mrbubbles',
+        planSteps: 3,
+        approvalRequired: true,
+      },
+    }));
+    const requestAgentRunAction = vi.fn<
+      (
+        input: RequestBubblophyAgentRunActionInput
+      ) => Promise<RequestBubblophyAgentRunActionResult>
+    >(async () => {
+      throw new Error('Run should not be requested by status changes.');
+    });
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithDoneIssue}
+        updateIssueStatusAction={updateIssueStatusAction}
+        requestAgentRunAction={requestAgentRunAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    expect(within(detailPanel).getByText('Erledigt')).toBeInTheDocument();
+    fireEvent.change(within(detailPanel).getByLabelText('Neuer Status'), {
+      target: { value: 'triage' },
+    });
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Status speichern' })
+    );
+
+    await waitFor(() => {
+      expect(updateIssueStatusAction).toHaveBeenCalledWith({
+        issueId: 'BV-12',
+        status: 'triage',
+        reason: '',
+      });
+    });
+    await waitFor(() => {
+      expect(within(detailPanel).getByText('Triage')).toBeInTheDocument();
+    });
+    expect(screen.getByRole('row', { name: /BV-12/ })).toHaveTextContent(
+      'Triage'
+    );
+    expect(requestAgentRunAction).not.toHaveBeenCalled();
   });
 
   it('persists a human issue plan and renders it in the detail panel', async () => {
