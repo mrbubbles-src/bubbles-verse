@@ -3044,23 +3044,23 @@ describe('BubblophyDashboard interactions', () => {
     expect(alert.textContent).not.toContain('<agent-token>');
   });
 
-  it('persists an issue from the dialog when database data and an action are available', async () => {
+  it('persists a title-only issue from the dialog when database data and an action are available', async () => {
     const createIssueAction = vi.fn<
       (
         input: CreateBubblophyIssueActionInput
       ) => Promise<CreateBubblophyIssueActionResult>
-    >(async () => ({
+    >(async (input) => ({
       status: 'created',
       issue: {
         id: 'BV-15',
-        title: 'Persistiertes Test-Issue',
-        projectKey: 'BV',
+        title: input.title,
+        projectKey: input.projectKey,
         status: 'triage',
-        priority: 'hoch',
+        priority: input.priority ?? 'mittel',
         owner: 'Nicht zugewiesen',
         planSteps: 0,
         approvalRequired: true,
-        description: 'Dieses Issue kommt aus der Server Action.',
+        description: input.description,
       },
     }));
 
@@ -3090,9 +3090,6 @@ describe('BubblophyDashboard interactions', () => {
     fireEvent.change(screen.getByLabelText('Titel'), {
       target: { value: 'Persistiertes Test-Issue' },
     });
-    fireEvent.change(screen.getByLabelText('Beschreibung'), {
-      target: { value: 'Dieses Issue kommt aus der Server Action.' },
-    });
     fireEvent.change(screen.getByLabelText('Priorität'), {
       target: { value: 'hoch' },
     });
@@ -3104,7 +3101,7 @@ describe('BubblophyDashboard interactions', () => {
       expect(createIssueAction).toHaveBeenCalledWith({
         projectKey: 'BV',
         title: 'Persistiertes Test-Issue',
-        description: 'Dieses Issue kommt aus der Server Action.',
+        description: '',
         priority: 'hoch',
       });
     });
@@ -3123,7 +3120,7 @@ describe('BubblophyDashboard interactions', () => {
 
     expect(within(detailPanel).getByText('BV-15')).toBeInTheDocument();
     expect(
-      within(detailPanel).getByText('Dieses Issue kommt aus der Server Action.')
+      within(detailPanel).getByText('Persistiertes Test-Issue')
     ).toBeInTheDocument();
     expect(
       within(detailPanel).queryByText('Lokal / nicht gespeichert')
@@ -3136,6 +3133,51 @@ describe('BubblophyDashboard interactions', () => {
         /Nutze „Plan entwerfen“/i
       )
     ).toBeInTheDocument();
+  });
+
+  it('keeps the issue dialog open when the create action throws', async () => {
+    const createIssueAction = vi.fn<
+      (
+        input: CreateBubblophyIssueActionInput
+      ) => Promise<CreateBubblophyIssueActionResult>
+    >(async () => {
+      throw new Error('database stack trace with internal details');
+    });
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        createIssueAction={createIssueAction}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Neues Issue/i }));
+    fireEvent.change(screen.getByLabelText('Titel'), {
+      target: { value: 'Bleibt nach Fehler erhalten' },
+    });
+    fireEvent.change(screen.getByLabelText('Beschreibung'), {
+      target: { value: 'Beschreibung bleibt ebenfalls erhalten.' },
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Issue erstellen' })
+    );
+
+    const alert = await screen.findByRole('alert');
+
+    expect(alert).toHaveTextContent(
+      'Das Issue konnte gerade nicht gespeichert werden'
+    );
+    expect(alert.textContent).not.toContain('database stack trace');
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByLabelText('Titel')).toHaveValue(
+      'Bleibt nach Fehler erhalten'
+    );
+    expect(screen.getByLabelText('Beschreibung')).toHaveValue(
+      'Beschreibung bleibt ebenfalls erhalten.'
+    );
+    expect(
+      screen.queryByRole('button', { name: 'Bleibt nach Fehler erhalten' })
+    ).not.toBeInTheDocument();
   });
 
   it('shows descriptions for existing database snapshot issues', () => {

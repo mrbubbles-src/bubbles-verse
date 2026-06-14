@@ -4326,7 +4326,16 @@ function NewIssueDraftDialog({
 
     setActionError(null);
     startPersistTransition(async () => {
-      const result = await createIssueAction(draftInput);
+      let result: CreateBubblophyIssueActionResult;
+
+      try {
+        result = await createIssueAction(draftInput);
+      } catch {
+        setActionError(
+          'Das Issue konnte gerade nicht gespeichert werden. Prüfe die Verbindung und versuche es erneut.'
+        );
+        return;
+      }
 
       if (result.status === 'created') {
         onPersistedIssueCreated(result.issue);
