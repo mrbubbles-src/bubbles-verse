@@ -125,3 +125,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pinned persisted issue plan reload behavior so latest plan summary and steps
   stay visible/editable after dashboard load, and kept failed plan saves inside
   the dialog without losing the draft.
+- Hardened the human run decision controls and agent run update route tests so
+  failed approve/cancel actions keep visible controls and revoked, expired, or
+  invalid agent updates stay on explicit JSON errors.

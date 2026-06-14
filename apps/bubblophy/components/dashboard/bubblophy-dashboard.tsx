@@ -4070,17 +4070,23 @@ function RunDecisionControls({
 
     setActionError(null);
     startTransition(async () => {
-      const result = await transitionAgentRunAction({
-        runId: run.id,
-        decision,
-      });
+      try {
+        const result = await transitionAgentRunAction({
+          runId: run.id,
+          decision,
+        });
 
-      if (result.status === 'updated') {
-        onAgentRunTransitioned(result.run);
-        return;
+        if (result.status === 'updated') {
+          onAgentRunTransitioned(result.run);
+          return;
+        }
+
+        setActionError(getAgentRunTransitionActionErrorMessage(result));
+      } catch {
+        setActionError(
+          'Die Run-Entscheidung konnte gerade nicht gespeichert werden. Versuche es erneut.'
+        );
       }
-
-      setActionError(getAgentRunTransitionActionErrorMessage(result));
     });
   };
 

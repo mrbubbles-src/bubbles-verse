@@ -267,6 +267,58 @@ describe('PATCH /api/agent-runs/[runId]', () => {
     ).resolves.toHaveProperty('status', 403);
   });
 
+  it('returns forbidden for revoked tokens', async () => {
+    updateBubblophyAgentRunFromAgentMock.mockResolvedValue({
+      status: 'token_unavailable',
+      reason: 'revoked',
+    });
+
+    const { PATCH } = await import('@/app/api/agent-runs/[runId]/route');
+    const response = await PATCH(createPatchRequest(), {
+      params: Promise.resolve({ runId: 'run_bv_12' }),
+    });
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({
+      status: 'token_unavailable',
+      reason: 'revoked',
+    });
+  });
+
+  it('returns forbidden for expired tokens', async () => {
+    updateBubblophyAgentRunFromAgentMock.mockResolvedValue({
+      status: 'token_unavailable',
+      reason: 'expired',
+    });
+
+    const { PATCH } = await import('@/app/api/agent-runs/[runId]/route');
+    const response = await PATCH(createPatchRequest(), {
+      params: Promise.resolve({ runId: 'run_bv_12' }),
+    });
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({
+      status: 'token_unavailable',
+      reason: 'expired',
+    });
+  });
+
+  it('returns conflict for invalid agent state transitions', async () => {
+    updateBubblophyAgentRunFromAgentMock.mockResolvedValue({
+      status: 'invalid_transition',
+    });
+
+    const { PATCH } = await import('@/app/api/agent-runs/[runId]/route');
+    const response = await PATCH(createPatchRequest(), {
+      params: Promise.resolve({ runId: 'run_bv_12' }),
+    });
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      status: 'invalid_transition',
+    });
+  });
+
   it('passes an empty token when the Authorization header is missing', async () => {
     updateBubblophyAgentRunFromAgentMock.mockResolvedValue({
       status: 'invalid',

@@ -3188,6 +3188,51 @@ describe('BubblophyDashboard interactions', () => {
     });
   });
 
+  it('keeps run decision buttons visible when the transition action throws', async () => {
+    const transitionAgentRunAction = vi.fn<
+      (
+        input: TransitionBubblophyAgentRunActionInput
+      ) => Promise<TransitionBubblophyAgentRunActionResult>
+    >(async () => {
+      throw new Error('run transition failed');
+    });
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        transitionAgentRunAction={transitionAgentRunAction}
+      />
+    );
+
+    const runsSection = document.getElementById('runs');
+
+    expect(runsSection).toBeInstanceOf(HTMLElement);
+
+    if (!runsSection) {
+      throw new Error('Expected the runs section to render.');
+    }
+
+    fireEvent.click(
+      within(runsSection).getByRole('button', { name: 'Freigeben' })
+    );
+
+    await waitFor(() => {
+      expect(transitionAgentRunAction).toHaveBeenCalledWith({
+        runId: 'run_bv_14',
+        decision: 'approve',
+      });
+    });
+    expect(await within(runsSection).findByRole('alert')).toHaveTextContent(
+      'Die Run-Entscheidung konnte gerade nicht gespeichert werden'
+    );
+    expect(
+      within(runsSection).getByRole('button', { name: 'Freigeben' })
+    ).toBeInTheDocument();
+    expect(
+      within(runsSection).getByRole('button', { name: 'Abbrechen' })
+    ).toBeInTheDocument();
+  });
+
   it('blocks run requests for database issues without active project tokens', () => {
     render(
       <BubblophyDashboard
