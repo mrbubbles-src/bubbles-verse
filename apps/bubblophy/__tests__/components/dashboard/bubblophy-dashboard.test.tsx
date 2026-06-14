@@ -3990,6 +3990,79 @@ describe('BubblophyDashboard interactions', () => {
     });
   });
 
+  it('resumes a paused agent token through the lifecycle action', async () => {
+    const updateAgentTokenLifecycleAction = vi.fn<
+      (
+        input: UpdateBubblophyAgentTokenLifecycleActionInput
+      ) => Promise<UpdateBubblophyAgentTokenLifecycleActionResult>
+    >(async () => ({
+      status: 'updated',
+      token: {
+        id: 'token_codex_bv',
+        label: 'codex-local-lio',
+        projectKey: 'BV',
+        scopes: ['issues:read', 'issues:write', 'runs:create'],
+        state: 'aktiv',
+        lastUsedAt: 'vor 12 Min.',
+        expiresAt: 'läuft nicht automatisch ab',
+      },
+    }));
+    const firstToken = databaseSnapshot.agentTokens[0];
+
+    if (!firstToken) {
+      throw new Error('Expected a token fixture.');
+    }
+
+    const pausedTokenSnapshot = {
+      ...databaseSnapshot,
+      agentTokens: [
+        {
+          ...firstToken,
+          state: 'pausiert',
+        },
+      ],
+    } satisfies DashboardSnapshot;
+
+    render(
+      <BubblophyDashboard
+        snapshot={pausedTokenSnapshot}
+        updateAgentTokenLifecycleAction={updateAgentTokenLifecycleAction}
+      />
+    );
+
+    const agentSection = document.getElementById('agents');
+
+    expect(agentSection).toBeInstanceOf(HTMLElement);
+
+    if (!agentSection) {
+      throw new Error('Expected the agent token section to render.');
+    }
+
+    expect(within(agentSection).getByText('Pausiert')).toBeInTheDocument();
+    expect(
+      within(agentSection).queryByRole('button', { name: 'Pausieren' })
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(
+      within(agentSection).getByRole('button', { name: 'Fortsetzen' })
+    );
+
+    await waitFor(() => {
+      expect(updateAgentTokenLifecycleAction).toHaveBeenCalledWith({
+        tokenId: 'token_codex_bv',
+        decision: 'resume',
+      });
+    });
+    expect(
+      updateAgentTokenLifecycleAction.mock.calls[0]?.[0]
+    ).not.toHaveProperty('authUserId');
+    await waitFor(() => {
+      expect(
+        within(agentSection).getAllByText('Aktiv').length
+      ).toBeGreaterThan(0);
+    });
+  });
+
   it('requires explicit confirmation before revoking an agent token', async () => {
     const updateAgentTokenLifecycleAction = vi.fn<
       (
