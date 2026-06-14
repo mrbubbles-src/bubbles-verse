@@ -4746,6 +4746,31 @@ describe('BubblophyDashboard interactions', () => {
     );
   });
 
+  it('keeps agent handoff commands horizontally scrollable', () => {
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithApprovedRunUpdateToken}
+      />
+    );
+
+    const runsSection = document.getElementById('runs');
+
+    expect(runsSection).toBeInstanceOf(HTMLElement);
+
+    if (!runsSection) {
+      throw new Error('Expected the runs section to render.');
+    }
+
+    const commandText = within(runsSection).getByText(
+      /\$BUBBLOPHY_BASE_URL\/api\/agent-runs\/run_bv_14/
+    );
+    const commandBlock = commandText.closest('pre');
+
+    expect(commandBlock).toBeInstanceOf(HTMLElement);
+    expect(commandBlock).toHaveClass('min-w-0', 'overflow-x-auto');
+    expect(commandBlock?.parentElement).toHaveClass('min-w-0');
+  });
+
   it('does not show concrete run PATCH handoff without a matching active update token', () => {
     render(<BubblophyDashboard snapshot={databaseSnapshot} />);
 

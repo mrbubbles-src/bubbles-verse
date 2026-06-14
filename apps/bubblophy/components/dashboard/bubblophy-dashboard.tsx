@@ -4228,8 +4228,8 @@ function CopyableCommandBlock({
   };
 
   return (
-    <div className="grid gap-2">
-      <pre className="overflow-x-auto rounded-md bg-background p-3 text-xs">
+    <div className="grid min-w-0 gap-2">
+      <pre className="min-w-0 overflow-x-auto rounded-md bg-background p-3 text-xs">
         <code>{value}</code>
       </pre>
       <div className="flex flex-wrap items-center gap-2">
