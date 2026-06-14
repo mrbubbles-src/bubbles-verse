@@ -1,4 +1,6 @@
 import type {
+  AddBubblophyProjectMemberActionInput,
+  AddBubblophyProjectMemberActionResult,
   CreateBubblophyAgentTokenActionInput,
   CreateBubblophyAgentTokenActionResult,
   CreateBubblophyIssueActionInput,
@@ -2775,7 +2777,7 @@ describe('BubblophyDashboard interactions', () => {
       within(projectsSection).getByText('Owner geschützt')
     ).toBeInTheDocument();
     expect(
-      within(projectsSection).getByText(/Einladungen brauchen später/)
+      within(projectsSection).getByText(/bekannte Auth-User-ID/)
     ).toBeInTheDocument();
 
     fireEvent.change(
@@ -2800,6 +2802,135 @@ describe('BubblophyDashboard interactions', () => {
         within(projectsSection).getAllByText('Viewer').length
       ).toBeGreaterThan(0);
     });
+  });
+
+  it('adds a project member from the members panel', async () => {
+    const addProjectMemberAction = vi.fn<
+      (
+        input: AddBubblophyProjectMemberActionInput
+      ) => Promise<AddBubblophyProjectMemberActionResult>
+    >(async () => ({
+      status: 'added',
+      member: {
+        id: 'BV:00000000-0000-0000-0000-000000000123',
+        projectKey: 'BV',
+        authUserId: '00000000-0000-0000-0000-000000000123',
+        label: '00000000-0000-0000-0000-000000000123',
+        role: 'viewer',
+        createdAt: '2026-06-14T10:00:00.000Z',
+      },
+      memberCount: 4,
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithManageableMembers}
+        addProjectMemberAction={addProjectMemberAction}
+      />
+    );
+
+    const projectsSection = document.getElementById('projects');
+
+    expect(projectsSection).toBeInstanceOf(HTMLElement);
+
+    if (!projectsSection) {
+      throw new Error('Expected the projects section to render.');
+    }
+
+    fireEvent.click(
+      within(projectsSection).getByRole('button', {
+        name: 'Projekt Bubblesverse (BV) auswählen',
+      })
+    );
+
+    expect(
+      within(projectsSection).getByText(/keine Einladung und kein Profil-Lookup/)
+    ).toBeInTheDocument();
+
+    fireEvent.change(within(projectsSection).getByLabelText('Auth-User-ID'), {
+      target: { value: '00000000-0000-0000-0000-000000000123' },
+    });
+    fireEvent.change(within(projectsSection).getByLabelText('Rolle'), {
+      target: { value: 'viewer' },
+    });
+    fireEvent.click(
+      within(projectsSection).getByRole('button', {
+        name: 'Mitglied hinzufügen',
+      })
+    );
+
+    await waitFor(() => {
+      expect(addProjectMemberAction).toHaveBeenCalledWith({
+        projectKey: 'BV',
+        memberAuthUserId: '00000000-0000-0000-0000-000000000123',
+        role: 'viewer',
+      });
+    });
+    expect(addProjectMemberAction.mock.calls[0]?.[0]).not.toHaveProperty(
+      'authUserId'
+    );
+    await waitFor(() => {
+      expect(
+        within(projectsSection).getByText(
+          '00000000-0000-0000-0000-000000000123'
+        )
+      ).toBeInTheDocument();
+    });
+    expect(within(projectsSection).getByRole('status')).toHaveTextContent(
+      'Mitglied wurde direkt hinzugefügt.'
+    );
+    expect(within(projectsSection).getByText('4 sichtbar')).toBeInTheDocument();
+  });
+
+  it('shows duplicate add-member feedback without fake invite behavior', async () => {
+    const addProjectMemberAction = vi.fn<
+      (
+        input: AddBubblophyProjectMemberActionInput
+      ) => Promise<AddBubblophyProjectMemberActionResult>
+    >(async () => ({ status: 'unchanged' }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithManageableMembers}
+        addProjectMemberAction={addProjectMemberAction}
+      />
+    );
+
+    const projectsSection = document.getElementById('projects');
+
+    expect(projectsSection).toBeInstanceOf(HTMLElement);
+
+    if (!projectsSection) {
+      throw new Error('Expected the projects section to render.');
+    }
+
+    fireEvent.click(
+      within(projectsSection).getByRole('button', {
+        name: 'Projekt Bubblesverse (BV) auswählen',
+      })
+    );
+    fireEvent.change(within(projectsSection).getByLabelText('Auth-User-ID'), {
+      target: { value: 'user_martin' },
+    });
+    fireEvent.click(
+      within(projectsSection).getByRole('button', {
+        name: 'Mitglied hinzufügen',
+      })
+    );
+
+    await waitFor(() => {
+      expect(addProjectMemberAction).toHaveBeenCalledWith({
+        projectKey: 'BV',
+        memberAuthUserId: 'user_martin',
+        role: 'member',
+      });
+    });
+    expect(await within(projectsSection).findByRole('status')).toHaveTextContent(
+      'Dieses Mitglied ist bereits im Projekt.'
+    );
+    expect(
+      within(projectsSection).queryByText(/Einladung wurde/)
+    ).not.toBeInTheDocument();
   });
 
   it('shows role action exceptions without changing the member row', async () => {

@@ -1,6 +1,8 @@
 'use client';
 
 import type {
+  AddBubblophyProjectMemberActionInput,
+  AddBubblophyProjectMemberActionResult,
   CreateBubblophyAgentTokenActionInput,
   CreateBubblophyAgentTokenActionResult,
   CreateBubblophyIssueActionInput,
@@ -144,6 +146,9 @@ interface BubblophyDashboardProps {
   transitionProjectArchiveAction?: (
     input: TransitionBubblophyProjectArchiveActionInput
   ) => Promise<TransitionBubblophyProjectArchiveActionResult>;
+  addProjectMemberAction?: (
+    input: AddBubblophyProjectMemberActionInput
+  ) => Promise<AddBubblophyProjectMemberActionResult>;
   updateProjectMemberRoleAction?: (
     input: UpdateBubblophyProjectMemberRoleActionInput
   ) => Promise<UpdateBubblophyProjectMemberRoleActionResult>;
@@ -514,6 +519,7 @@ export function BubblophyDashboard({
   createProjectAction,
   updateProjectContentAction,
   transitionProjectArchiveAction,
+  addProjectMemberAction,
   updateProjectMemberRoleAction,
   removeProjectMemberAction,
   createAgentTokenAction,
@@ -558,6 +564,9 @@ export function BubblophyDashboard({
   const [updatedProjectMembersById, setUpdatedProjectMembersById] = useState<
     Record<string, ProjectMemberSummary>
   >({});
+  const [persistedProjectMembers, setPersistedProjectMembers] = useState<
+    ProjectMemberSummary[]
+  >([]);
   const [removedProjectMemberIds, setRemovedProjectMemberIds] = useState<
     string[]
   >([]);
@@ -605,10 +614,11 @@ export function BubblophyDashboard({
   );
   const allProjectMembers = useMemo(
     () =>
-      snapshot.projectMembers
+      [...persistedProjectMembers, ...snapshot.projectMembers]
         .filter((member) => !removedProjectMemberIds.includes(member.id))
         .map((member) => updatedProjectMembersById[member.id] ?? member),
     [
+      persistedProjectMembers,
       removedProjectMemberIds,
       snapshot.projectMembers,
       updatedProjectMembersById,
@@ -866,6 +876,32 @@ export function BubblophyDashboard({
     }));
   };
 
+  const handleProjectMemberAdded = (
+    member: ProjectMemberSummary,
+    memberCount: number
+  ) => {
+    setPersistedProjectMembers((currentMembers) =>
+      currentMembers.some((candidate) => candidate.id === member.id)
+        ? currentMembers
+        : [member, ...currentMembers]
+    );
+    setUpdatedProjectMembersById((currentMembers) => ({
+      ...currentMembers,
+      [member.id]: member,
+    }));
+    setRemovedProjectMemberIds((currentIds) =>
+      currentIds.filter((memberId) => memberId !== member.id)
+    );
+
+    const project = allProjects.find(
+      (currentProject) => currentProject.key === member.projectKey
+    );
+
+    if (project) {
+      handleProjectUpdated({ ...project, memberCount });
+    }
+  };
+
   const handleProjectMemberRoleUpdated = (
     member: ProjectMemberSummary,
     memberCount: number
@@ -1058,10 +1094,12 @@ export function BubblophyDashboard({
                 selectedProjectKey={selectedProjectKey}
                 updateProjectContentAction={updateProjectContentAction}
                 transitionProjectArchiveAction={transitionProjectArchiveAction}
+                addProjectMemberAction={addProjectMemberAction}
                 updateProjectMemberRoleAction={updateProjectMemberRoleAction}
                 removeProjectMemberAction={removeProjectMemberAction}
                 onCreateProject={() => setIsProjectDialogOpen(true)}
                 onProjectUpdated={handleProjectUpdated}
+                onProjectMemberAdded={handleProjectMemberAdded}
                 onProjectMemberRoleUpdated={handleProjectMemberRoleUpdated}
                 onProjectMemberRemoved={handleProjectMemberRemoved}
                 onProjectSelect={handleProjectSelect}
@@ -1338,10 +1376,12 @@ function ProjectOverview({
   selectedProjectKey,
   updateProjectContentAction,
   transitionProjectArchiveAction,
+  addProjectMemberAction,
   updateProjectMemberRoleAction,
   removeProjectMemberAction,
   onCreateProject,
   onProjectUpdated,
+  onProjectMemberAdded,
   onProjectMemberRoleUpdated,
   onProjectMemberRemoved,
   onProjectSelect,
@@ -1359,6 +1399,9 @@ function ProjectOverview({
   transitionProjectArchiveAction?: (
     input: TransitionBubblophyProjectArchiveActionInput
   ) => Promise<TransitionBubblophyProjectArchiveActionResult>;
+  addProjectMemberAction?: (
+    input: AddBubblophyProjectMemberActionInput
+  ) => Promise<AddBubblophyProjectMemberActionResult>;
   updateProjectMemberRoleAction?: (
     input: UpdateBubblophyProjectMemberRoleActionInput
   ) => Promise<UpdateBubblophyProjectMemberRoleActionResult>;
@@ -1367,6 +1410,10 @@ function ProjectOverview({
   ) => Promise<RemoveBubblophyProjectMemberActionResult>;
   onCreateProject: () => void;
   onProjectUpdated: (project: ProjectSummary) => void;
+  onProjectMemberAdded: (
+    member: ProjectMemberSummary,
+    memberCount: number
+  ) => void;
   onProjectMemberRoleUpdated: (
     member: ProjectMemberSummary,
     memberCount: number
@@ -1527,8 +1574,10 @@ function ProjectOverview({
           <ProjectMembersPanel
             project={selectedProject}
             members={projectMembers}
+            addProjectMemberAction={addProjectMemberAction}
             updateProjectMemberRoleAction={updateProjectMemberRoleAction}
             removeProjectMemberAction={removeProjectMemberAction}
+            onProjectMemberAdded={onProjectMemberAdded}
             onProjectMemberRoleUpdated={onProjectMemberRoleUpdated}
             onProjectMemberRemoved={onProjectMemberRemoved}
           />
@@ -1922,19 +1971,28 @@ function ProjectManagementPanel({
 function ProjectMembersPanel({
   project,
   members,
+  addProjectMemberAction,
   updateProjectMemberRoleAction,
   removeProjectMemberAction,
+  onProjectMemberAdded,
   onProjectMemberRoleUpdated,
   onProjectMemberRemoved,
 }: {
   project: ProjectSummary;
   members: ProjectMemberSummary[];
+  addProjectMemberAction?: (
+    input: AddBubblophyProjectMemberActionInput
+  ) => Promise<AddBubblophyProjectMemberActionResult>;
   updateProjectMemberRoleAction?: (
     input: UpdateBubblophyProjectMemberRoleActionInput
   ) => Promise<UpdateBubblophyProjectMemberRoleActionResult>;
   removeProjectMemberAction?: (
     input: RemoveBubblophyProjectMemberActionInput
   ) => Promise<RemoveBubblophyProjectMemberActionResult>;
+  onProjectMemberAdded: (
+    member: ProjectMemberSummary,
+    memberCount: number
+  ) => void;
   onProjectMemberRoleUpdated: (
     member: ProjectMemberSummary,
     memberCount: number
@@ -1946,6 +2004,10 @@ function ProjectMembersPanel({
   }) => void;
 }) {
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [addMemberAuthUserId, setAddMemberAuthUserId] = useState('');
+  const [addMemberRole, setAddMemberRole] =
+    useState<AddBubblophyProjectMemberActionInput['role']>('member');
   const [confirmRemoveMemberId, setConfirmRemoveMemberId] = useState<
     string | null
   >(null);
@@ -1954,7 +2016,50 @@ function ProjectMembersPanel({
     !project.isArchived &&
     (project.currentUserRole === 'owner' ||
       project.currentUserRole === 'maintainer') &&
-    Boolean(updateProjectMemberRoleAction || removeProjectMemberAction);
+    Boolean(
+      addProjectMemberAction ||
+        updateProjectMemberRoleAction ||
+        removeProjectMemberAction
+    );
+
+  const handleAddMember = () => {
+    if (!canManageMembers || !addProjectMemberAction || isPending) {
+      return;
+    }
+
+    setActionError(null);
+    setActionMessage(null);
+    startTransition(async () => {
+      let result: AddBubblophyProjectMemberActionResult;
+
+      try {
+        result = await addProjectMemberAction({
+          projectKey: project.key,
+          memberAuthUserId: addMemberAuthUserId,
+          role: addMemberRole,
+        });
+      } catch {
+        setActionError(
+          'Das Mitglied konnte gerade nicht hinzugefügt werden. Versuche es erneut.'
+        );
+        return;
+      }
+
+      if (result.status === 'added') {
+        onProjectMemberAdded(result.member, result.memberCount);
+        setAddMemberAuthUserId('');
+        setActionMessage('Mitglied wurde direkt hinzugefügt.');
+        return;
+      }
+
+      if (result.status === 'unchanged') {
+        setActionMessage('Dieses Mitglied ist bereits im Projekt.');
+        return;
+      }
+
+      setActionError(getProjectMemberAddActionErrorMessage(result));
+    });
+  };
 
   const handleRoleChange = (
     member: ProjectMemberSummary,
@@ -2048,11 +2153,63 @@ function ProjectMembersPanel({
           <p className="text-xs text-muted-foreground">
             {project.isArchived
               ? 'Archivierte Projekte zeigen Mitglieder nur lesend an.'
-              : 'Rollenverwaltung nutzt vorhandene Projektmitgliedschaften. Einladungen brauchen später einen echten User- oder Invite-Lookup.'}
+              : 'Direktes Hinzufügen nutzt eine bekannte Auth-User-ID. Einladungen und Profil-Lookup kommen später.'}
           </p>
         </div>
         <Badge variant="outline">{members.length} sichtbar</Badge>
       </div>
+
+      {canManageMembers && addProjectMemberAction ? (
+        <div className="grid gap-3 rounded-md border border-dashed border-border p-3">
+          <div className="grid gap-1">
+            <h4 className="text-sm font-medium">Mitglied hinzufügen</h4>
+            <p className="text-xs text-muted-foreground">
+              Nutzt eine bekannte Supabase/Auth-User-ID. Es wird keine
+              Einladung und kein Profil-Lookup ausgelöst.
+            </p>
+          </div>
+          <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_12rem_auto]">
+            <label className="grid gap-1 text-xs font-medium">
+              Auth-User-ID
+              <Input
+                value={addMemberAuthUserId}
+                disabled={isPending}
+                placeholder="00000000-0000-0000-0000-000000000000"
+                onChange={(event) =>
+                  setAddMemberAuthUserId(event.currentTarget.value)
+                }
+              />
+            </label>
+            <label className="grid gap-1 text-xs font-medium">
+              Rolle
+              <select
+                className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                value={addMemberRole}
+                disabled={isPending}
+                onChange={(event) =>
+                  setAddMemberRole(
+                    event.currentTarget
+                      .value as AddBubblophyProjectMemberActionInput['role']
+                  )
+                }>
+                {mutableProjectMemberRoles.map((role) => (
+                  <option key={role} value={role}>
+                    {projectMemberRoleLabels[role]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Button
+              type="button"
+              size="sm"
+              className="self-end"
+              disabled={isPending || addMemberAuthUserId.trim().length === 0}
+              onClick={handleAddMember}>
+              Mitglied hinzufügen
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       {members.length === 0 ? (
         <p className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
@@ -2165,6 +2322,11 @@ function ProjectMembersPanel({
       {actionError ? (
         <p role="alert" className="text-sm text-destructive">
           {actionError}
+        </p>
+      ) : null}
+      {actionMessage ? (
+        <p role="status" className="text-sm text-muted-foreground">
+          {actionMessage}
         </p>
       ) : null}
 
@@ -5618,6 +5780,45 @@ function getProjectArchiveActionErrorMessage(
   }
 
   return 'Die Archiventscheidung ist nicht gültig.';
+}
+
+/**
+ * Converts project member add outcomes into quiet inline feedback.
+ *
+ * @param result Result returned by the persisted member add action.
+ * @returns Human-readable error message for the members panel.
+ */
+function getProjectMemberAddActionErrorMessage(
+  result: Exclude<
+    AddBubblophyProjectMemberActionResult,
+    { status: 'added' } | { status: 'unchanged' }
+  >
+) {
+  if (result.status === 'not_found') {
+    return 'Projekt wurde nicht gefunden.';
+  }
+
+  if (result.status === 'forbidden') {
+    return 'Nur Owner und Maintainer können Mitglieder hinzufügen.';
+  }
+
+  if (result.status === 'archived_project') {
+    return 'Archivierte Projekte erlauben keine Mitgliederänderungen.';
+  }
+
+  if (result.status === 'database_unavailable') {
+    return 'Die Datenbank ist gerade nicht verfügbar. Das Mitglied wurde nicht hinzugefügt.';
+  }
+
+  if (result.reason === 'empty_project') {
+    return 'Wähle ein Projekt aus.';
+  }
+
+  if (result.reason === 'empty_member') {
+    return 'Gib eine Auth-User-ID ein.';
+  }
+
+  return 'Diese Rolle ist nicht gültig.';
 }
 
 /**

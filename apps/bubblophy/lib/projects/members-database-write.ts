@@ -28,7 +28,7 @@ type BubblophyProjectMemberMutationTx = Parameters<
   Parameters<typeof bubblophyDb.transaction>[0]
 >[0];
 
-type ProjectMemberAuditAction = 'role_changed' | 'removed';
+type ProjectMemberAuditAction = 'added' | 'role_changed' | 'removed';
 
 export interface BubblophyProjectMemberEventInsert {
   projectId: string;
@@ -47,9 +47,85 @@ export interface BubblophyProjectMemberEventInsert {
  */
 export function createDrizzleBubblophyProjectMemberMutationStore(): BubblophyProjectMemberMutationStore {
   return {
+    addProjectMemberWithEvent,
     updateProjectMemberRoleWithEvent,
     removeProjectMemberWithEvent,
   };
+}
+
+async function addProjectMemberWithEvent(
+  input: BubblophyProjectMemberRoleStoreInput
+): ReturnType<
+  BubblophyProjectMemberMutationStore['addProjectMemberWithEvent']
+> {
+  const { db } = await import('@/drizzle/db');
+
+  return db.transaction(async (tx) => {
+    const context = await selectProjectMemberMutationContext(tx, input);
+
+    if (!context.project) {
+      return { status: 'not_found' };
+    }
+
+    if (!canManageBubblophyProjectMembers(context.actorRole ?? '')) {
+      return { status: 'forbidden' };
+    }
+
+    if (context.project.isArchived) {
+      return { status: 'archived_project' };
+    }
+
+    if (context.targetMember) {
+      return { status: 'unchanged' };
+    }
+
+    const [addedMember] = await tx
+      .insert(bubblophyProjectMembers)
+      .values({
+        projectId: context.project.id,
+        authUserId: input.memberAuthUserId,
+        role: input.role,
+      })
+      .onConflictDoNothing({
+        target: [
+          bubblophyProjectMembers.projectId,
+          bubblophyProjectMembers.authUserId,
+        ],
+      })
+      .returning({
+        authUserId: bubblophyProjectMembers.authUserId,
+        role: bubblophyProjectMembers.role,
+        createdAt: bubblophyProjectMembers.createdAt,
+      });
+
+    if (!addedMember) {
+      return { status: 'unchanged' };
+    }
+
+    await tx.insert(bubblophyProjectEvents).values(
+      buildBubblophyProjectMemberEventInsert({
+        projectId: context.project.id,
+        projectKey: context.project.key,
+        actorAuthUserId: input.authUserId,
+        memberAuthUserId: input.memberAuthUserId,
+        action: 'added',
+        changedFields: ['membership'],
+        previousRole: null,
+        nextRole: input.role,
+      })
+    );
+
+    return {
+      status: 'added',
+      member: mapProjectMemberRowToSummary({
+        projectKey: context.project.key,
+        authUserId: addedMember.authUserId,
+        role: addedMember.role,
+        createdAt: addedMember.createdAt,
+      }),
+      memberCount: await countProjectMembers(tx, context.project.id),
+    };
+  });
 }
 
 async function updateProjectMemberRoleWithEvent(

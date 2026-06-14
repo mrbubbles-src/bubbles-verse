@@ -6,6 +6,7 @@ import { Suspense } from 'react';
 import { connection } from 'next/server';
 
 import {
+  addBubblophyProjectMemberAction,
   createBubblophyAgentTokenAction,
   createBubblophyIssueAction,
   createBubblophyIssueNoteAction,
@@ -89,6 +90,7 @@ export async function ProtectedBubblophyDashboard() {
       createProjectAction={createBubblophyProjectAction}
       updateProjectContentAction={updateBubblophyProjectContentAction}
       transitionProjectArchiveAction={transitionBubblophyProjectArchiveAction}
+      addProjectMemberAction={addBubblophyProjectMemberAction}
       updateProjectMemberRoleAction={updateBubblophyProjectMemberRoleAction}
       removeProjectMemberAction={removeBubblophyProjectMemberAction}
       createAgentTokenAction={createBubblophyAgentTokenAction}

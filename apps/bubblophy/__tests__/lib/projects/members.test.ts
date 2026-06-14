@@ -4,6 +4,7 @@ import type {
 } from '@/lib/projects/members';
 
 import {
+  addBubblophyProjectMember,
   canManageBubblophyProjectMembers,
   isManageableBubblophyProjectMemberRole,
   removeBubblophyProjectMember,
@@ -17,6 +18,7 @@ function createStore(
   result: BubblophyProjectMemberMutationStoreResult
 ): BubblophyProjectMemberMutationStore {
   return {
+    addProjectMemberWithEvent: vi.fn(async () => result),
     updateProjectMemberRoleWithEvent: vi.fn(async () => result),
     removeProjectMemberWithEvent: vi.fn(async () => result),
   };
@@ -25,6 +27,121 @@ function createStore(
 describe('project member mutation services', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
+  });
+
+  it('adds a project member through the member service', async () => {
+    const addedMember = {
+      id: 'BV:user_martin',
+      projectKey: 'BV',
+      authUserId: 'user_martin',
+      label: 'user_martin',
+      role: 'member',
+      createdAt: '2026-06-14T10:00:00.000Z',
+    } as const;
+    const store = createStore({
+      status: 'added',
+      member: addedMember,
+      memberCount: 4,
+    });
+
+    await expect(
+      addBubblophyProjectMember(
+        {
+          authUserId: 'user_owner',
+          projectKey: ' bv ',
+          memberAuthUserId: ' user_martin ',
+          role: 'member',
+        },
+        { store }
+      )
+    ).resolves.toEqual({
+      status: 'added',
+      member: addedMember,
+      memberCount: 4,
+    });
+
+    expect(store.addProjectMemberWithEvent).toHaveBeenCalledWith({
+      authUserId: 'user_owner',
+      projectKey: 'BV',
+      memberAuthUserId: 'user_martin',
+      role: 'member',
+    });
+  });
+
+  it('blocks viewer/member and archived project member additions', async () => {
+    await expect(
+      addBubblophyProjectMember(
+        {
+          authUserId: 'user_viewer',
+          projectKey: 'BV',
+          memberAuthUserId: 'user_new',
+          role: 'viewer',
+        },
+        { store: createStore({ status: 'forbidden' }) }
+      )
+    ).resolves.toEqual({ status: 'forbidden' });
+    await expect(
+      addBubblophyProjectMember(
+        {
+          authUserId: 'user_member',
+          projectKey: 'BV',
+          memberAuthUserId: 'user_new',
+          role: 'member',
+        },
+        { store: createStore({ status: 'forbidden' }) }
+      )
+    ).resolves.toEqual({ status: 'forbidden' });
+    await expect(
+      addBubblophyProjectMember(
+        {
+          authUserId: 'user_owner',
+          projectKey: 'BV',
+          memberAuthUserId: 'user_new',
+          role: 'maintainer',
+        },
+        { store: createStore({ status: 'archived_project' }) }
+      )
+    ).resolves.toEqual({ status: 'archived_project' });
+  });
+
+  it('validates member additions before touching the store', async () => {
+    const store = createStore({ status: 'unchanged' });
+
+    await expect(
+      addBubblophyProjectMember(
+        {
+          authUserId: 'user_owner',
+          projectKey: ' ',
+          memberAuthUserId: 'user_member',
+          role: 'member',
+        },
+        { store }
+      )
+    ).resolves.toEqual({ status: 'invalid', reason: 'empty_project' });
+    await expect(
+      addBubblophyProjectMember(
+        {
+          authUserId: 'user_owner',
+          projectKey: 'BV',
+          memberAuthUserId: ' ',
+          role: 'member',
+        },
+        { store }
+      )
+    ).resolves.toEqual({ status: 'invalid', reason: 'empty_member' });
+    await expect(
+      addBubblophyProjectMember(
+        {
+          authUserId: 'user_owner',
+          projectKey: 'BV',
+          memberAuthUserId: 'user_member',
+          role: 'owner' as 'member',
+        },
+        { store }
+      )
+    ).resolves.toEqual({ status: 'invalid', reason: 'invalid_role' });
+
+    expect(store.addProjectMemberWithEvent).not.toHaveBeenCalled();
   });
 
   it('validates role mutations before touching the store', async () => {
@@ -93,6 +210,14 @@ describe('project member mutation services', () => {
   it('blocks missing database configuration without a store', async () => {
     vi.stubEnv('DATABASE_URL', '');
 
+    await expect(
+      addBubblophyProjectMember({
+        authUserId: 'user_owner',
+        projectKey: 'BV',
+        memberAuthUserId: 'user_member',
+        role: 'member',
+      })
+    ).resolves.toEqual({ status: 'database_unavailable' });
     await expect(
       removeBubblophyProjectMember({
         authUserId: 'user_owner',
@@ -191,6 +316,39 @@ describe('project member helpers', () => {
         changedFields: ['role'],
         previousRole: 'member',
         nextRole: 'viewer',
+      },
+    });
+  });
+
+  it('builds project member added audit metadata without invite data', () => {
+    expect(
+      buildBubblophyProjectMemberEventInsert({
+        projectId: 'project_bv',
+        projectKey: 'BV',
+        actorAuthUserId: 'user_owner',
+        memberAuthUserId: 'user_new',
+        action: 'added',
+        changedFields: ['membership'],
+        previousRole: null,
+        nextRole: 'member',
+      })
+    ).toEqual({
+      projectId: 'project_bv',
+      eventType: 'project_updated',
+      actorAuthUserId: 'user_owner',
+      actorAgentTokenId: null,
+      agentRunId: null,
+      summary: 'Projekt BV: Mitglied added.',
+      payload: {
+        source: 'human',
+        entity: 'project_member',
+        action: 'added',
+        projectId: 'project_bv',
+        projectKey: 'BV',
+        memberUserId: 'user_new',
+        changedFields: ['membership'],
+        previousRole: null,
+        nextRole: 'member',
       },
     });
   });

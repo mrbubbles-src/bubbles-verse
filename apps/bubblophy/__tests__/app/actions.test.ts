@@ -1,4 +1,5 @@
 import type {
+  AddBubblophyProjectMemberActionInput,
   CreateBubblophyAgentTokenActionInput,
   CreateBubblophyIssueActionInput,
   CreateBubblophyIssueNoteActionInput,
@@ -33,6 +34,7 @@ import type {
   UpdateBubblophyProjectContentInput,
 } from '@/lib/projects/manage';
 import type {
+  AddBubblophyProjectMemberInput,
   RemoveBubblophyProjectMemberInput,
   UpdateBubblophyProjectMemberRoleInput,
 } from '@/lib/projects/members';
@@ -50,6 +52,7 @@ const updateBubblophyIssueStatusMock = vi.fn();
 const createBubblophyProjectMock = vi.fn();
 const updateBubblophyProjectContentMock = vi.fn();
 const transitionBubblophyProjectArchiveMock = vi.fn();
+const addBubblophyProjectMemberMock = vi.fn();
 const updateBubblophyProjectMemberRoleMock = vi.fn();
 const removeBubblophyProjectMemberMock = vi.fn();
 const createBubblophyAgentTokenMock = vi.fn();
@@ -112,6 +115,8 @@ vi.mock('@/lib/projects/manage', () => ({
 }));
 
 vi.mock('@/lib/projects/members', () => ({
+  addBubblophyProjectMember: (input: AddBubblophyProjectMemberInput) =>
+    addBubblophyProjectMemberMock(input),
   updateBubblophyProjectMemberRole: (
     input: UpdateBubblophyProjectMemberRoleInput
   ) => updateBubblophyProjectMemberRoleMock(input),
@@ -830,8 +835,54 @@ describe('transitionBubblophyProjectArchiveAction', () => {
 describe('project member actions', () => {
   beforeEach(() => {
     requireBubblophySessionMock.mockReset();
+    addBubblophyProjectMemberMock.mockReset();
     updateBubblophyProjectMemberRoleMock.mockReset();
     removeBubblophyProjectMemberMock.mockReset();
+  });
+
+  it('resolves the auth user server-side for member additions', async () => {
+    requireBubblophySessionMock.mockResolvedValue({
+      authUserId: 'user_server',
+      email: 'owner@example.test',
+      user: {},
+    });
+    addBubblophyProjectMemberMock.mockResolvedValue({
+      status: 'added',
+      member: {
+        id: 'BV:user_martin',
+        projectKey: 'BV',
+        authUserId: 'user_martin',
+        label: 'user_martin',
+        role: 'member',
+        createdAt: '2026-06-14T10:00:00.000Z',
+      },
+      memberCount: 3,
+    });
+
+    const { addBubblophyProjectMemberAction } = await import('@/app/actions');
+    const result = await addBubblophyProjectMemberAction({
+      authUserId: 'user_client_spoof',
+      projectKey: 'BV',
+      memberAuthUserId: 'user_martin',
+      role: 'member',
+    } as AddBubblophyProjectMemberActionInput & { authUserId: string });
+
+    expect(requireBubblophySessionMock).toHaveBeenCalledWith({
+      nextPath: '/',
+    });
+    expect(addBubblophyProjectMemberMock).toHaveBeenCalledWith({
+      authUserId: 'user_server',
+      projectKey: 'BV',
+      memberAuthUserId: 'user_martin',
+      role: 'member',
+    });
+    expect(result).toMatchObject({
+      status: 'added',
+      member: {
+        authUserId: 'user_martin',
+        role: 'member',
+      },
+    });
   });
 
   it('resolves the auth user server-side for role changes', async () => {

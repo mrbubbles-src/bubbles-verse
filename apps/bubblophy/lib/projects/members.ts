@@ -14,6 +14,13 @@ export interface UpdateBubblophyProjectMemberRoleInput {
   role: ManageableProjectMemberRole;
 }
 
+export interface AddBubblophyProjectMemberInput {
+  authUserId: string;
+  projectKey: string;
+  memberAuthUserId: string;
+  role: ManageableProjectMemberRole;
+}
+
 export interface RemoveBubblophyProjectMemberInput {
   authUserId: string;
   projectKey: string;
@@ -31,6 +38,11 @@ export interface BubblophyProjectMemberRoleStoreInput extends BubblophyProjectMe
 }
 
 export type BubblophyProjectMemberMutationStoreResult =
+  | {
+      status: 'added';
+      member: ProjectMemberSummary;
+      memberCount: number;
+    }
   | {
       status: 'updated';
       member: ProjectMemberSummary;
@@ -62,6 +74,9 @@ export type BubblophyProjectMemberMutationStoreResult =
     };
 
 export interface BubblophyProjectMemberMutationStore {
+  addProjectMemberWithEvent(
+    input: BubblophyProjectMemberRoleStoreInput
+  ): Promise<BubblophyProjectMemberMutationStoreResult>;
   updateProjectMemberRoleWithEvent(
     input: BubblophyProjectMemberRoleStoreInput
   ): Promise<BubblophyProjectMemberMutationStoreResult>;
@@ -94,6 +109,32 @@ export type UpdateBubblophyProjectMemberRoleResult =
     }
   | {
       status: 'owner_protected';
+    }
+  | {
+      status: 'database_unavailable';
+    };
+
+export type AddBubblophyProjectMemberResult =
+  | {
+      status: 'added';
+      member: ProjectMemberSummary;
+      memberCount: number;
+    }
+  | {
+      status: 'unchanged';
+    }
+  | {
+      status: 'invalid';
+      reason: 'empty_project' | 'empty_member' | 'invalid_role';
+    }
+  | {
+      status: 'not_found';
+    }
+  | {
+      status: 'forbidden';
+    }
+  | {
+      status: 'archived_project';
     }
   | {
       status: 'database_unavailable';
@@ -140,6 +181,43 @@ const manageableRoles = new Set<ProjectMemberRole>([
 ]);
 
 /**
+ * Adds a non-owner project member by known auth user ID.
+ *
+ * @param input Authenticated user, project key, target auth user ID, and role.
+ * @param options Optional store override for tests.
+ * @returns Structured add-member result for server actions.
+ */
+export async function addBubblophyProjectMember(
+  input: AddBubblophyProjectMemberInput,
+  options: BubblophyProjectMemberMutationOptions = {}
+): Promise<AddBubblophyProjectMemberResult> {
+  const normalized = normalizeProjectMemberRoleInput(input);
+
+  if (normalized.status === 'invalid') {
+    return normalized;
+  }
+
+  const store = options.store ?? (await getDefaultProjectMemberMutationStore());
+
+  if (!store) {
+    return { status: 'database_unavailable' };
+  }
+
+  const result = await store.addProjectMemberWithEvent(normalized.input);
+
+  if (
+    result.status === 'updated' ||
+    result.status === 'removed' ||
+    result.status === 'owner_protected' ||
+    result.status === 'self_removal'
+  ) {
+    return { status: 'forbidden' };
+  }
+
+  return result;
+}
+
+/**
  * Updates a non-owner project member role after server-side authorization.
  *
  * @param input Authenticated user, project key, target member, and next role.
@@ -164,7 +242,11 @@ export async function updateBubblophyProjectMemberRole(
 
   const result = await store.updateProjectMemberRoleWithEvent(normalized.input);
 
-  if (result.status === 'removed' || result.status === 'self_removal') {
+  if (
+    result.status === 'added' ||
+    result.status === 'removed' ||
+    result.status === 'self_removal'
+  ) {
     return { status: 'forbidden' };
   }
 
@@ -205,7 +287,11 @@ export async function removeBubblophyProjectMember(
 
   const result = await store.removeProjectMemberWithEvent(normalized.input);
 
-  if (result.status === 'updated' || result.status === 'unchanged') {
+  if (
+    result.status === 'added' ||
+    result.status === 'updated' ||
+    result.status === 'unchanged'
+  ) {
     return { status: 'forbidden' };
   }
 

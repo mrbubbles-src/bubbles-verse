@@ -55,6 +55,8 @@ import type {
   UpdateBubblophyProjectContentResult,
 } from '@/lib/projects/manage';
 import type {
+  AddBubblophyProjectMemberInput,
+  AddBubblophyProjectMemberResult,
   RemoveBubblophyProjectMemberInput,
   RemoveBubblophyProjectMemberResult,
   UpdateBubblophyProjectMemberRoleInput,
@@ -79,6 +81,7 @@ import {
   updateBubblophyProjectContent,
 } from '@/lib/projects/manage';
 import {
+  addBubblophyProjectMember,
   removeBubblophyProjectMember,
   updateBubblophyProjectMemberRole,
 } from '@/lib/projects/members';
@@ -160,6 +163,14 @@ export type TransitionBubblophyProjectArchiveActionInput = Omit<
 
 export type TransitionBubblophyProjectArchiveActionResult =
   TransitionBubblophyProjectArchiveResult;
+
+export type AddBubblophyProjectMemberActionInput = Omit<
+  AddBubblophyProjectMemberInput,
+  'authUserId'
+>;
+
+export type AddBubblophyProjectMemberActionResult =
+  AddBubblophyProjectMemberResult;
 
 export type UpdateBubblophyProjectMemberRoleActionInput = Omit<
   UpdateBubblophyProjectMemberRoleInput,
@@ -433,6 +444,26 @@ export async function updateBubblophyProjectMemberRoleAction(
   const session = await requireBubblophySession({ nextPath: '/' });
 
   return updateBubblophyProjectMemberRole({
+    ...input,
+    authUserId: session.authUserId,
+  });
+}
+
+/**
+ * Adds a non-owner project member for the current human session.
+ *
+ * The client never provides an auth user ID. The service accepts only a known
+ * auth user ID and role, then enforces project membership and audit metadata.
+ *
+ * @param input Project key, target auth user ID, and initial non-owner role.
+ * @returns Structured result for project member controls.
+ */
+export async function addBubblophyProjectMemberAction(
+  input: AddBubblophyProjectMemberActionInput
+): Promise<AddBubblophyProjectMemberActionResult> {
+  const session = await requireBubblophySession({ nextPath: '/' });
+
+  return addBubblophyProjectMember({
     ...input,
     authUserId: session.authUserId,
   });
