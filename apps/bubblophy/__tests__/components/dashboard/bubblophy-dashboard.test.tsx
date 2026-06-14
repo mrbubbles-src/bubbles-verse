@@ -54,6 +54,7 @@ import { BubblophyDashboard } from '@/components/dashboard/bubblophy-dashboard';
 const navigationMocks = {
   routerPush: vi.fn(),
   routerReplace: vi.fn(),
+  routerRefresh: vi.fn(),
   searchParams: vi.fn(() => new URLSearchParams()),
 };
 
@@ -348,6 +349,7 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: navigationMocks.routerPush,
     replace: navigationMocks.routerReplace,
+    refresh: navigationMocks.routerRefresh,
   }),
   useSearchParams: () => navigationMocks.searchParams(),
 }));
@@ -486,6 +488,7 @@ describe('BubblophyDashboard interactions', () => {
     });
     navigationMocks.routerPush.mockClear();
     navigationMocks.routerReplace.mockClear();
+    navigationMocks.routerRefresh.mockClear();
     navigationMocks.searchParams.mockReset();
     navigationMocks.searchParams.mockReturnValue(new URLSearchParams());
   });
@@ -3819,6 +3822,7 @@ describe('BubblophyDashboard interactions', () => {
     expect(recentFeedback).toHaveTextContent(
       'Temporäres Feedback aus dieser Sitzung; gespeicherte Daten bleiben die Quelle der Wahrheit.'
     );
+    expect(navigationMocks.routerRefresh).toHaveBeenCalledTimes(1);
     expect(
       screen.queryByText(/persistente Aktivität erscheint/i)
     ).not.toBeInTheDocument();
@@ -3923,6 +3927,7 @@ describe('BubblophyDashboard interactions', () => {
     expect(recentFeedback).not.toHaveTextContent(
       'Issue BV-15 wurde erstellt.'
     );
+    expect(navigationMocks.routerRefresh).toHaveBeenCalledTimes(2);
   });
 
   it('plans a newly created title-only database issue without starting a run', async () => {

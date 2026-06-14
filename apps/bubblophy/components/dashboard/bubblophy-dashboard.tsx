@@ -764,6 +764,9 @@ export function BubblophyDashboard({
       })
     );
   };
+  const refreshDatabaseSnapshot = () => {
+    router.refresh();
+  };
 
   useEffect(() => {
     const currentProjectKey = searchParams.get('project');
@@ -854,6 +857,7 @@ export function BubblophyDashboard({
     setSelectedIssueId(issue.id);
     updateSelectionUrl(issue.projectKey, issue.id);
     setRecentMutationFeedback(`Issue ${issue.id} wurde erstellt.`);
+    refreshDatabaseSnapshot();
     setIsDraftDialogOpen(false);
   };
 
@@ -863,6 +867,7 @@ export function BubblophyDashboard({
     setSelectedIssueId('');
     updateSelectionUrl(project.key, '');
     setRecentMutationFeedback(`Projekt ${project.key} wurde erstellt.`);
+    refreshDatabaseSnapshot();
     setIsProjectDialogOpen(false);
   };
 
@@ -880,6 +885,7 @@ export function BubblophyDashboard({
       },
     }));
     setRecentMutationFeedback(`Projekt ${project.key} wurde aktualisiert.`);
+    refreshDatabaseSnapshot();
   };
 
   const handleProjectMemberAdded = (
@@ -905,6 +911,8 @@ export function BubblophyDashboard({
 
     if (project) {
       handleProjectUpdated({ ...project, memberCount });
+    } else {
+      refreshDatabaseSnapshot();
     }
 
     setRecentMutationFeedback(
@@ -927,6 +935,8 @@ export function BubblophyDashboard({
 
     if (project) {
       handleProjectUpdated({ ...project, memberCount });
+    } else {
+      refreshDatabaseSnapshot();
     }
 
     setRecentMutationFeedback(
@@ -954,6 +964,8 @@ export function BubblophyDashboard({
         ...project,
         memberCount: input.memberCount,
       });
+    } else {
+      refreshDatabaseSnapshot();
     }
 
     setRecentMutationFeedback(
@@ -967,6 +979,7 @@ export function BubblophyDashboard({
       [plan.issueId]: plan,
     }));
     setRecentMutationFeedback(`Plan für ${plan.issueId} wurde gespeichert.`);
+    refreshDatabaseSnapshot();
   };
 
   const handleIssueNoteCreated = (issueId: string, note: IssueNoteSummary) => {
@@ -977,6 +990,7 @@ export function BubblophyDashboard({
       [issueId]: [note, ...(currentNotes[issueId] ?? currentIssue?.notes ?? [])],
     }));
     setRecentMutationFeedback(`Notiz für ${issueId} wurde gespeichert.`);
+    refreshDatabaseSnapshot();
   };
 
   const handleIssueUpdated = (issue: IssueSummary) => {
@@ -985,6 +999,7 @@ export function BubblophyDashboard({
       [issue.id]: issue,
     }));
     setRecentMutationFeedback(`Issue ${issue.id} wurde aktualisiert.`);
+    refreshDatabaseSnapshot();
   };
 
   const handleAgentTokenCreated = (token: CreatedAgentToken) => {
@@ -1000,6 +1015,7 @@ export function BubblophyDashboard({
 
     setPersistedAgentTokens((currentTokens) => [summary, ...currentTokens]);
     setRecentMutationFeedback(`Agent-Token ${summary.label} wurde erstellt.`);
+    refreshDatabaseSnapshot();
   };
 
   const handleAgentTokenLifecycleUpdated = (token: AgentTokenSummary) => {
@@ -1008,11 +1024,13 @@ export function BubblophyDashboard({
       [token.id]: token,
     }));
     setRecentMutationFeedback(`Agent-Token ${token.label} wurde aktualisiert.`);
+    refreshDatabaseSnapshot();
   };
 
   const handleAgentRunRequested = (run: AgentRunSummary) => {
     setPersistedAgentRuns((currentRuns) => [run, ...currentRuns]);
     setRecentMutationFeedback(`Run ${run.id} wurde angefragt.`);
+    refreshDatabaseSnapshot();
   };
 
   const handleAgentRunTransitioned = (run: AgentRunSummary) => {
@@ -1021,6 +1039,7 @@ export function BubblophyDashboard({
       [run.id]: run,
     }));
     setRecentMutationFeedback(`Run ${run.id} wurde aktualisiert.`);
+    refreshDatabaseSnapshot();
   };
 
   const handleDeleteDraft = (issueId: string) => {
