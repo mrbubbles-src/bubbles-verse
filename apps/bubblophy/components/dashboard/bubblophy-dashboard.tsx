@@ -2979,6 +2979,10 @@ function IssueDetailPanel({
         )}
       </div>
 
+      {!isLocalDraftIssue(issue) ? (
+        <IssueAgentBriefingPanel issue={issue} issuePlan={issuePlan} />
+      ) : null}
+
       {isLocalDraftIssue(issue) ? (
         <Button
           type="button"
@@ -2999,6 +3003,78 @@ function IssueDetailPanel({
       ) : null}
     </aside>
   );
+}
+
+function IssueAgentBriefingPanel({
+  issue,
+  issuePlan,
+}: {
+  issue: IssueSummary;
+  issuePlan?: IssuePlanDraft;
+}) {
+  return (
+    <div className="grid gap-2 rounded-md border border-border bg-background p-3">
+      <div className="grid gap-1">
+        <h4 className="text-sm font-medium">Lokaler Agent-Auftrag</h4>
+        <p className="text-xs text-muted-foreground">
+          Kopiert Issue- und Plan-Kontext für Codex oder Claude Code. Startet
+          keinen Agenten; der Mensch entscheidet einen neuen Run bewusst.
+        </p>
+      </div>
+      <CopyableCommandBlock
+        label="Agent-Auftrag kopieren"
+        value={buildIssueAgentBriefing({ issue, issuePlan })}
+      />
+    </div>
+  );
+}
+
+/**
+ * Builds a bounded text briefing for local agents from visible issue context.
+ *
+ * @param input Persisted issue and optional persisted plan draft.
+ * @returns Plain text without secrets, tokens, auth data, or shell commands.
+ */
+function buildIssueAgentBriefing({
+  issue,
+  issuePlan,
+}: {
+  issue: IssueSummary;
+  issuePlan?: IssuePlanDraft;
+}) {
+  const lines = [
+    'Bubblophy lokaler Agent-Auftrag',
+    '',
+    'Grenzen:',
+    '- Keine automatische Ausführung.',
+    '- Kein Agent wurde gestartet.',
+    '- Der Mensch entscheidet bewusst, ob ein neuer Run angefragt wird.',
+    '',
+    `Projekt: ${issue.projectKey}`,
+    `Issue: ${issue.id}`,
+    `Titel: ${issue.title}`,
+    `Status: ${issueStatusLabels[issue.status]}`,
+    `Priorität: ${issuePriorityLabels[issue.priority]}`,
+  ];
+
+  if (issuePlan) {
+    lines.push('', `Plan v${issuePlan.version}:`);
+
+    if (issuePlan.summary) {
+      lines.push(`Summary: ${issuePlan.summary}`);
+    }
+
+    if (issuePlan.steps.length > 0) {
+      lines.push('Schritte:');
+      issuePlan.steps.forEach((step, index) => {
+        lines.push(`${index + 1}. ${step.text}`);
+      });
+    }
+  } else {
+    lines.push('', 'Plan: Noch kein gespeicherter Plan vorhanden.');
+  }
+
+  return lines.join('\n');
 }
 
 /**

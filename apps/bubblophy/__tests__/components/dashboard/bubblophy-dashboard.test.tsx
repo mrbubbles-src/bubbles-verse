@@ -1893,6 +1893,112 @@ describe('BubblophyDashboard interactions', () => {
     expect(screen.getAllByText('3 Schritte').length).toBeGreaterThanOrEqual(2);
   });
 
+  it('copies issue agent briefing with persisted plan context', async () => {
+    render(<BubblophyDashboard snapshot={databaseSnapshotWithReloadedPlan} />);
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    expect(
+      within(detailPanel).getByText('Lokaler Agent-Auftrag')
+    ).toBeInTheDocument();
+    expect(
+      within(detailPanel).getByText(/Startet keinen Agenten/i)
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      within(detailPanel).getByRole('button', {
+        name: 'Agent-Auftrag kopieren',
+      })
+    );
+
+    await waitFor(() => {
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+        expect.stringContaining('Bubblophy lokaler Agent-Auftrag')
+      );
+    });
+
+    const copiedBriefing = vi.mocked(navigator.clipboard.writeText).mock
+      .calls[0]?.[0];
+
+    expect(copiedBriefing).toContain('Projekt: BV');
+    expect(copiedBriefing).toContain('Issue: BV-12');
+    expect(copiedBriefing).toContain(
+      'Titel: Issue-Plan als strukturierte Arbeitsnotiz speichern'
+    );
+    expect(copiedBriefing).toContain('Status: Geplant');
+    expect(copiedBriefing).toContain('Priorität: Hoch');
+    expect(copiedBriefing).toContain(
+      'Summary: Reload zeigt den gespeicherten Plan.'
+    );
+    expect(copiedBriefing).toContain('1. Persistierten Plan lesen');
+    expect(copiedBriefing).toContain('2. Detailpanel verifizieren');
+    expect(copiedBriefing).toContain('Kein Agent wurde gestartet.');
+    expect(copiedBriefing).toContain(
+      'Der Mensch entscheidet bewusst, ob ein neuer Run angefragt wird.'
+    );
+  });
+
+  it('does not expose agent briefing for local draft issues', () => {
+    render(<BubblophyDashboard snapshot={dashboardSnapshot} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Neues Issue/i }));
+    fireEvent.change(screen.getByLabelText('Titel'), {
+      target: { value: 'Lokaler Agent-Draft' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Draft anlegen/i }));
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    expect(
+      within(detailPanel).getByText('Lokal / nicht gespeichert')
+    ).toBeInTheDocument();
+    expect(
+      within(detailPanel).queryByText('Lokaler Agent-Auftrag')
+    ).not.toBeInTheDocument();
+    expect(
+      within(detailPanel).queryByRole('button', {
+        name: 'Agent-Auftrag kopieren',
+      })
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps agent briefing free of token secrets and autostart language', async () => {
+    render(<BubblophyDashboard snapshot={databaseSnapshotWithReloadedPlan} />);
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    fireEvent.click(
+      within(detailPanel).getByRole('button', {
+        name: 'Agent-Auftrag kopieren',
+      })
+    );
+
+    await waitFor(() => {
+      expect(navigator.clipboard.writeText).toHaveBeenCalled();
+    });
+
+    const copiedBriefing = vi.mocked(navigator.clipboard.writeText).mock
+      .calls[0]?.[0];
+
+    expect(copiedBriefing).not.toMatch(/token|secret|hash/i);
+    expect(copiedBriefing).not.toMatch(/supabase/i);
+    expect(copiedBriefing).not.toMatch(/Agent gestartet/i);
+    expect(copiedBriefing).not.toMatch(/Run wird ausgeführt/i);
+    expect(copiedBriefing).not.toMatch(/automatisch fortsetzen/i);
+  });
+
   it('keeps the plan dialog open and shows denied plan save errors', async () => {
     const createIssuePlanAction = vi.fn<
       (
