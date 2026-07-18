@@ -7,18 +7,19 @@ const humanTransitionPath = 'lib/agent-runs/human-transition-database-write.ts';
 const agentUpdatePath = 'lib/agent-runs/agent-update-database-write.ts';
 
 describe('run security query wiring', () => {
-  it('binds human approval to the assigned token project', () => {
+  it('locks human approval through project, membership, run, and token', () => {
     const source = readFileSync(
       resolve(process.cwd(), humanTransitionPath),
       'utf8'
     );
 
+    expect(source).toContain('lockBubblophyProjectForHumanWrite(tx');
+    expect(source).toContain('lockBubblophyProjectMembersForHumanWrite(tx');
+    expect(source).toContain(".for('update', { of: bubblophyAgentRuns })");
     expect(source).toContain(
-      'eq(bubblophyAgentTokens.id, bubblophyAgentRuns.agentTokenId)'
+      'eq(bubblophyAgentTokens.id, currentRun.agentTokenId)'
     );
-    expect(source).toContain(
-      'eq(bubblophyAgentTokens.projectId, bubblophyProjects.id)'
-    );
+    expect(source).toContain('eq(bubblophyAgentTokens.projectId, project.id)');
   });
 
   it.each([humanTransitionPath, agentUpdatePath])(

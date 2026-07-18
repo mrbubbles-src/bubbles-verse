@@ -130,7 +130,7 @@ class MockSelectQuery implements PromiseLike<MockRow[]> {
             : [],
     });
     this.locksIssue =
-      strength === 'update' && this.tableName === 'bubblophy_issues';
+      strength === 'no key update' && this.tableName === 'bubblophy_issues';
     return this;
   }
 
@@ -299,7 +299,7 @@ describe('Drizzle issue plan draft store', () => {
     expect(
       state.lockCalls.filter(
         (call) =>
-          call.strength === 'update' &&
+          call.strength === 'no key update' &&
           call.tableNames.join(',') === 'bubblophy_issues'
       )
     ).toHaveLength(2);
@@ -336,7 +336,7 @@ describe('Drizzle issue plan draft store', () => {
 
     expect(state.lockCalls).toEqual([
       { strength: 'share', tableNames: ['bubblophy_projects'] },
-      { strength: 'update', tableNames: ['bubblophy_issues'] },
+      { strength: 'no key update', tableNames: ['bubblophy_issues'] },
       { strength: 'update', tableNames: ['bubblophy_project_members'] },
     ]);
 

@@ -67,6 +67,10 @@
 - Added shared project and sorted membership lock primitives, then hardened
   project management plus agent-token creation and lifecycle writes against
   concurrent manager demotion while preserving existing role semantics.
+- Hardened human run approval and cancellation with ordered project,
+  membership, run, and token locks while preserving cancellation for an
+  unavailable assigned token, plus foreign-key-compatible issue serialization
+  to prevent lock-order deadlocks with audit inserts.
 
 All notable changes to this project will be documented in this file.
 

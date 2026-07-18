@@ -28,8 +28,9 @@ export type BubblophyIssueContributorWriteContextResult =
  * Locks and authorizes one contributor write against an active issue.
  *
  * Project `SHARE` prevents archival while remaining compatible with audit
- * event foreign keys. Issue and membership `UPDATE` locks serialize mutations
- * and keep the authorization decision stable until the transaction commits.
+ * event foreign keys. Issue `NO KEY UPDATE` serializes non-key mutations while
+ * remaining compatible with the audit event's implicit foreign-key lock.
+ * Membership `UPDATE` keeps authorization stable until commit.
  *
  * @param tx Active Drizzle transaction that will perform the mutation.
  * @param input Authenticated user plus parsed project key and issue number.
@@ -69,7 +70,7 @@ export async function lockBubblophyIssueContributorWriteContext(
       )
     )
     .limit(1)
-    .for('update');
+    .for('no key update');
 
   if (!issue) {
     return { status: 'not_found' };

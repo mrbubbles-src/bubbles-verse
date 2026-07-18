@@ -276,7 +276,12 @@ bun run build
 - Persistierte Agent-Run-Freigaben und -Abbrüche laufen serverseitig über
   Projektmitgliedschaft und erlauben nur den atomaren Übergang aus `requested`.
   Freigaben prüfen den ausführbaren Token erneut; Abbrüche bleiben bei einem
-  inzwischen nicht verfügbaren Token möglich.
+  inzwischen nicht verfügbaren Token möglich. Projekt, handelnde
+  Mitgliedschaft, Run und Token werden in dieser Reihenfolge gesperrt, damit
+  paralleler Rollenentzug oder Token-Widerruf nicht mit der Entscheidung
+  kollidiert. Andere Issue-Writes verwenden dafür einen serialisierenden
+  `NO KEY UPDATE`-Lock, der mit dem impliziten Fremdschlüssel-Lock ihrer
+  Audit-Events kompatibel bleibt.
 - Agent-Kontextreads laufen über gehashte Bearer-Tokens mit Scope
   `issues:read`, Projektbindung und aktivem/nicht abgelaufenem Token. Der
   Endpoint verlangt zusätzlich das dem Run zugeordnete Token, gibt nur Run,

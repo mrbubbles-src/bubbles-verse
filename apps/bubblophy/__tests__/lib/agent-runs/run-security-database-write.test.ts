@@ -10,11 +10,32 @@ interface SelectCall {
   tableName: string | null;
 }
 
+interface LockCall {
+  selectedKeys: string[];
+  lockMode: string;
+  targetsSelectionTable: boolean;
+}
+
 const selectCalls: SelectCall[] = [];
+const lockCalls: LockCall[] = [];
+const operationOrder: string[] = [];
 let executionScopes: string[] = ['issues:read', 'runs:update'];
 let tokenState = 'active';
 let tokenExpiresAt: string | null = null;
+let runState = 'requested';
 let updateRows: MockRow[] = [];
+let lockedProject: {
+  id: string;
+  key: string;
+  isArchived: boolean;
+} | null = {
+  id: 'project_bv',
+  key: 'BV',
+  isArchived: false,
+};
+let lockedMemberships: Array<{ authUserId: string; role: string }> = [
+  { authUserId: 'user_member', role: 'member' },
+];
 
 const lockWriteContextMock = vi.fn(async () => ({
   status: 'ready' as const,
@@ -23,6 +44,20 @@ const lockWriteContextMock = vi.fn(async () => ({
 
 vi.mock('@/lib/issues/contributor-write-context-database', () => ({
   lockBubblophyIssueContributorWriteContext: () => lockWriteContextMock(),
+}));
+
+const lockProjectMock = vi.fn(async () => {
+  operationOrder.push('project');
+  return lockedProject;
+});
+const lockMembersMock = vi.fn(async () => {
+  operationOrder.push('membership');
+  return lockedMemberships;
+});
+
+vi.mock('@/lib/projects/human-write-locks-database', () => ({
+  lockBubblophyProjectForHumanWrite: () => lockProjectMock(),
+  lockBubblophyProjectMembersForHumanWrite: () => lockMembersMock(),
 }));
 
 class MockSelectQuery implements PromiseLike<MockRow[]> {
@@ -54,7 +89,20 @@ class MockSelectQuery implements PromiseLike<MockRow[]> {
     return this;
   }
 
-  for() {
+  for(lockMode: string, config?: { of?: DrizzleTable }) {
+    const targetsSelectionTable = Boolean(config?.of);
+    lockCalls.push({
+      selectedKeys: this.call.selectedKeys,
+      lockMode,
+      targetsSelectionTable,
+    });
+
+    if (this.call.selectedKeys.includes('agentTokenId')) {
+      operationOrder.push('run');
+    } else if (this.call.selectedKeys.includes('scopes')) {
+      operationOrder.push('token');
+    }
+
     return this;
   }
 
@@ -78,20 +126,18 @@ class MockSelectQuery implements PromiseLike<MockRow[]> {
  * @returns Deterministic issue, token, or run rows.
  */
 function rowsForSelection(selectedKeys: string[]): MockRow[] {
-  if (selectedKeys.includes('agentTokenScopes')) {
+  if (selectedKeys.length === 1 && selectedKeys.includes('projectId')) {
+    return [{ projectId: 'project_bv' }];
+  }
+
+  if (selectedKeys.includes('agentTokenId')) {
     return [
       {
         id: 'run_bv_12',
-        state: 'requested',
+        state: runState,
         issueDatabaseId: 'issue_bv_12',
         issueNumber: 12,
-        projectId: 'project_bv',
-        projectKey: 'BV',
-        memberRole: 'member',
-        agentTokenLabel: 'Codex',
-        agentTokenScopes: executionScopes,
-        agentTokenState: tokenState,
-        agentTokenExpiresAt: tokenExpiresAt,
+        agentTokenId: 'token_codex',
       },
     ];
   }
@@ -145,8 +191,17 @@ beforeEach(() => {
   executionScopes = ['issues:read', 'runs:update'];
   tokenState = 'active';
   tokenExpiresAt = null;
+  runState = 'requested';
   updateRows = [];
+  lockedProject = {
+    id: 'project_bv',
+    key: 'BV',
+    isArchived: false,
+  };
+  lockedMemberships = [{ authUserId: 'user_member', role: 'member' }];
   selectCalls.length = 0;
+  lockCalls.length = 0;
+  operationOrder.length = 0;
   txMock.select.mockClear();
   txMock.update.mockClear();
   txMock.insert.mockClear();
@@ -156,6 +211,8 @@ beforeEach(() => {
   insertValues.mockClear();
   dbMock.transaction.mockClear();
   lockWriteContextMock.mockClear();
+  lockProjectMock.mockClear();
+  lockMembersMock.mockClear();
 });
 
 describe('run request token execution boundary', () => {
@@ -189,6 +246,59 @@ describe('human run transition security', () => {
         decision: 'approve',
       })
     ).resolves.toEqual({ status: 'token_unavailable' });
+    expect(operationOrder).toEqual(['project', 'membership', 'run', 'token']);
+    expect(lockCalls).toEqual([
+      {
+        selectedKeys: [
+          'id',
+          'state',
+          'issueDatabaseId',
+          'issueNumber',
+          'agentTokenId',
+        ],
+        lockMode: 'update',
+        targetsSelectionTable: true,
+      },
+      {
+        selectedKeys: ['id', 'label', 'scopes', 'state', 'expiresAt'],
+        lockMode: 'update',
+        targetsSelectionTable: false,
+      },
+    ]);
+    expect(txMock.update).not.toHaveBeenCalled();
+    expect(txMock.insert).not.toHaveBeenCalled();
+  });
+
+  it('rejects an actor demoted before the locked authorization check', async () => {
+    lockedMemberships = [{ authUserId: 'user_member', role: 'viewer' }];
+    const { createDrizzleBubblophyAgentRunHumanTransitionStore } =
+      await import('@/lib/agent-runs/human-transition-database-write');
+
+    await expect(
+      createDrizzleBubblophyAgentRunHumanTransitionStore().transitionRun({
+        authUserId: 'user_member',
+        runId: 'run_bv_12',
+        decision: 'approve',
+      })
+    ).resolves.toEqual({ status: 'forbidden' });
+    expect(operationOrder).toEqual(['project', 'membership']);
+    expect(txMock.update).not.toHaveBeenCalled();
+    expect(txMock.insert).not.toHaveBeenCalled();
+  });
+
+  it('checks run state under its row lock before locking the token', async () => {
+    runState = 'approved';
+    const { createDrizzleBubblophyAgentRunHumanTransitionStore } =
+      await import('@/lib/agent-runs/human-transition-database-write');
+
+    await expect(
+      createDrizzleBubblophyAgentRunHumanTransitionStore().transitionRun({
+        authUserId: 'user_member',
+        runId: 'run_bv_12',
+        decision: 'approve',
+      })
+    ).resolves.toEqual({ status: 'invalid_transition' });
+    expect(operationOrder).toEqual(['project', 'membership', 'run']);
     expect(txMock.update).not.toHaveBeenCalled();
     expect(txMock.insert).not.toHaveBeenCalled();
   });

@@ -8,6 +8,10 @@ import type {
 
 import { isExecutableBubblophyAgentToken } from '@/lib/agent-tokens/execution';
 import { formatBubblophyIssueKey } from '@/lib/issues/repository';
+import {
+  lockBubblophyProjectForHumanWrite,
+  lockBubblophyProjectMembersForHumanWrite,
+} from '@/lib/projects/human-write-locks-database';
 import { canContributeToBubblophyProject } from '@/lib/projects/permissions';
 
 import { and, eq } from 'drizzle-orm';
@@ -17,8 +21,6 @@ import {
   bubblophyAgentTokens,
   bubblophyIssueEvents,
   bubblophyIssues,
-  bubblophyProjectMembers,
-  bubblophyProjects,
 } from '@/drizzle/db/schema';
 
 export interface BubblophyAgentRunHumanEventInsert {
@@ -43,7 +45,11 @@ export function createDrizzleBubblophyAgentRunHumanTransitionStore(): BubblophyA
 }
 
 /**
- * Approves or cancels a requested run after project membership checks.
+ * Approves or cancels a requested run after locking its authorization context.
+ *
+ * The lock order is project `SHARE`, actor membership `UPDATE`, run `UPDATE`,
+ * then token `UPDATE`. It keeps authorization and token state stable without
+ * introducing an issue lock that could invert the agent run update order.
  *
  * @param input Authenticated human ID, run ID, and normalized decision.
  * @returns Updated run summary fields or an authorization/state failure.
@@ -54,70 +60,98 @@ async function transitionRun(
   const { db } = await import('@/drizzle/db');
 
   return db.transaction(async (tx) => {
-    const [currentRun] = await tx
+    const [runReference] = await tx
       .select({
-        id: bubblophyAgentRuns.id,
-        state: bubblophyAgentRuns.state,
-        issueDatabaseId: bubblophyIssues.id,
-        issueNumber: bubblophyIssues.issueNumber,
-        projectId: bubblophyProjects.id,
-        projectKey: bubblophyProjects.key,
-        memberRole: bubblophyProjectMembers.role,
-        agentTokenLabel: bubblophyAgentTokens.label,
-        agentTokenScopes: bubblophyAgentTokens.scopes,
-        agentTokenState: bubblophyAgentTokens.state,
-        agentTokenExpiresAt: bubblophyAgentTokens.expiresAt,
+        projectId: bubblophyIssues.projectId,
       })
       .from(bubblophyAgentRuns)
       .innerJoin(
         bubblophyIssues,
         eq(bubblophyIssues.id, bubblophyAgentRuns.issueId)
       )
+      .where(eq(bubblophyAgentRuns.id, input.runId))
+      .limit(1);
+
+    if (!runReference) {
+      return { status: 'not_found' };
+    }
+
+    const project = await lockBubblophyProjectForHumanWrite(tx, {
+      project: { id: runReference.projectId },
+      lockMode: 'share',
+    });
+
+    if (!project || project.isArchived) {
+      return { status: 'not_found' };
+    }
+
+    const memberships = await lockBubblophyProjectMembersForHumanWrite(tx, {
+      projectId: project.id,
+      authUserIds: [input.authUserId],
+    });
+    const actorMembership = memberships.find(
+      (membership) => membership.authUserId === input.authUserId
+    );
+
+    if (!canContributeToBubblophyProject(actorMembership?.role)) {
+      return { status: 'forbidden' };
+    }
+
+    const [currentRun] = await tx
+      .select({
+        id: bubblophyAgentRuns.id,
+        state: bubblophyAgentRuns.state,
+        issueDatabaseId: bubblophyIssues.id,
+        issueNumber: bubblophyIssues.issueNumber,
+        agentTokenId: bubblophyAgentRuns.agentTokenId,
+      })
+      .from(bubblophyAgentRuns)
       .innerJoin(
-        bubblophyProjects,
-        eq(bubblophyProjects.id, bubblophyIssues.projectId)
-      )
-      .innerJoin(
-        bubblophyAgentTokens,
-        and(
-          eq(bubblophyAgentTokens.id, bubblophyAgentRuns.agentTokenId),
-          eq(bubblophyAgentTokens.projectId, bubblophyProjects.id)
-        )
-      )
-      .leftJoin(
-        bubblophyProjectMembers,
-        and(
-          eq(bubblophyProjectMembers.projectId, bubblophyProjects.id),
-          eq(bubblophyProjectMembers.authUserId, input.authUserId)
-        )
+        bubblophyIssues,
+        eq(bubblophyIssues.id, bubblophyAgentRuns.issueId)
       )
       .where(
         and(
           eq(bubblophyAgentRuns.id, input.runId),
-          eq(bubblophyProjects.isArchived, false)
+          eq(bubblophyIssues.projectId, project.id)
         )
       )
-      .limit(1);
+      .limit(1)
+      .for('update', { of: bubblophyAgentRuns });
 
     if (!currentRun) {
       return { status: 'not_found' };
-    }
-
-    if (!canContributeToBubblophyProject(currentRun.memberRole)) {
-      return { status: 'forbidden' };
     }
 
     if (currentRun.state !== 'requested') {
       return { status: 'invalid_transition' };
     }
 
+    const [agentToken] = await tx
+      .select({
+        id: bubblophyAgentTokens.id,
+        label: bubblophyAgentTokens.label,
+        scopes: bubblophyAgentTokens.scopes,
+        state: bubblophyAgentTokens.state,
+        expiresAt: bubblophyAgentTokens.expiresAt,
+      })
+      .from(bubblophyAgentTokens)
+      .where(
+        and(
+          eq(bubblophyAgentTokens.id, currentRun.agentTokenId),
+          eq(bubblophyAgentTokens.projectId, project.id)
+        )
+      )
+      .limit(1)
+      .for('update');
+
+    if (!agentToken) {
+      return { status: 'not_found' };
+    }
+
     if (
       input.decision === 'approve' &&
-      !isExecutableBubblophyAgentToken({
-        state: currentRun.agentTokenState,
-        expiresAt: currentRun.agentTokenExpiresAt,
-        scopes: currentRun.agentTokenScopes,
-      })
+      !isExecutableBubblophyAgentToken(agentToken)
     ) {
       return { status: 'token_unavailable' };
     }
@@ -150,7 +184,7 @@ async function transitionRun(
     }
 
     const issueId = formatBubblophyIssueKey(
-      currentRun.projectKey,
+      project.key,
       currentRun.issueNumber
     );
     const message =
@@ -175,7 +209,7 @@ async function transitionRun(
       run: {
         id: updatedRun.id,
         issueId,
-        agentTokenLabel: currentRun.agentTokenLabel,
+        agentTokenLabel: agentToken.label,
         state: updatedRun.state,
         message,
       },

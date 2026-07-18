@@ -25,7 +25,7 @@ describe('contributor permission wiring', () => {
         "import { canContributeToBubblophyProject } from '@/lib/projects/permissions';"
       );
       expect(source).toMatch(
-        /canContributeToBubblophyProject\([^)]*(?:memberRole|membership\?\.role)\)/
+        /canContributeToBubblophyProject\([^)]*(?:memberRole|(?:actorM|m)embership\?\.role)\)/
       );
     }
   );
@@ -57,5 +57,6 @@ describe('contributor permission wiring', () => {
     expect(source).toMatch(
       /canContributeToBubblophyProject\([^)]*membership\?\.role\)/
     );
+    expect(source).toContain(".for('no key update')");
   });
 });
