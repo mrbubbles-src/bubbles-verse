@@ -42,7 +42,10 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   technische Auth-User-ID als Fallback und bietet noch kein Add-by-E-Mail an.
 - Owner und Maintainer können Nicht-Owner-Mitglieder zwischen `maintainer`,
   `member` und `viewer` umstellen oder entfernen. Owner-Rollen, Owner-Removal
-  und Self-Removal bleiben im MVP konservativ gesperrt.
+  und Self-Removal bleiben im MVP konservativ gesperrt. Projekt und beteiligte
+  Mitgliedschaften werden vor der Autorisierungsentscheidung gesperrt;
+  Rollenänderung und Entfernung verwenden die sichtbare Ausgangsrolle als
+  Compare-and-set-Grenze und überschreiben keine parallelen Änderungen.
 - In einer leeren Datenbank führt der UI-Flow von `Neues Projekt` direkt in
   den ausgewählten Projektkontext und bietet dort das erste persistierte Issue
   für dieses Projekt an.

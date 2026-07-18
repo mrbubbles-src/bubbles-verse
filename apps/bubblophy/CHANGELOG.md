@@ -58,6 +58,12 @@
 - Added the conflict-safe `update_issue_status` MCP tool with all existing
   status targets, required reasons for blocked/done, and public output without
   actor, audit, run, plan, or approval data.
+- Hardened project member role changes and removals with locked project/member
+  authorization, stable lock ordering, expected-role conflict detection, and
+  conflict-safe UI feedback without stale audit events.
+- Added the detailed Phase 2 roles and invitations plan, keeping project
+  membership authoritative and separating invitation management, acceptance,
+  identity display, and mail delivery into reviewable slices.
 
 All notable changes to this project will be documented in this file.
 

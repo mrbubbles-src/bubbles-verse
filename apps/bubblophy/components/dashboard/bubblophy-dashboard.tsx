@@ -2220,6 +2220,7 @@ function ProjectMembersPanel({
         result = await updateProjectMemberRoleAction({
           projectKey: project.key,
           memberAuthUserId: member.authUserId,
+          expectedRole: member.role,
           role,
         });
       } catch {
@@ -2265,6 +2266,7 @@ function ProjectMembersPanel({
         result = await removeProjectMemberAction({
           projectKey: project.key,
           memberAuthUserId: member.authUserId,
+          expectedRole: member.role,
         });
       } catch {
         setActionError(
@@ -6244,6 +6246,10 @@ function getProjectMemberRoleActionErrorMessage(
     return 'Projekt oder Mitglied wurde nicht gefunden.';
   }
 
+  if (result.status === 'conflict') {
+    return 'Die Rolle wurde zwischenzeitlich geändert. Lade die aktuellen Projektdaten neu.';
+  }
+
   if (result.status === 'forbidden') {
     return 'Nur Owner und Maintainer können Rollen verwalten.';
   }
@@ -6287,6 +6293,10 @@ function getProjectMemberRemovalActionErrorMessage(
     return 'Projekt oder Mitglied wurde nicht gefunden.';
   }
 
+  if (result.status === 'conflict') {
+    return 'Das Mitglied wurde zwischenzeitlich geändert. Lade die aktuellen Projektdaten neu.';
+  }
+
   if (result.status === 'forbidden') {
     return 'Nur Owner und Maintainer können Mitglieder entfernen.';
   }
@@ -6311,7 +6321,11 @@ function getProjectMemberRemovalActionErrorMessage(
     return 'Wähle ein Projekt aus.';
   }
 
-  return 'Wähle ein Mitglied aus.';
+  if (result.reason === 'empty_member') {
+    return 'Wähle ein Mitglied aus.';
+  }
+
+  return 'Die erwartete Rolle ist nicht gültig.';
 }
 
 /**

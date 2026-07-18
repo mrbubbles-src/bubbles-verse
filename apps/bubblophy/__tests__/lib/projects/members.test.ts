@@ -153,6 +153,7 @@ describe('project member mutation services', () => {
           authUserId: 'user_owner',
           projectKey: ' ',
           memberAuthUserId: 'user_member',
+          expectedRole: 'member',
           role: 'member',
         },
         { store }
@@ -164,6 +165,7 @@ describe('project member mutation services', () => {
           authUserId: 'user_owner',
           projectKey: 'BV',
           memberAuthUserId: ' ',
+          expectedRole: 'member',
           role: 'member',
         },
         { store }
@@ -175,6 +177,7 @@ describe('project member mutation services', () => {
           authUserId: 'user_owner',
           projectKey: 'BV',
           memberAuthUserId: 'user_member',
+          expectedRole: 'member',
           role: 'owner' as 'member',
         },
         { store }
@@ -193,6 +196,7 @@ describe('project member mutation services', () => {
           authUserId: 'user_member',
           projectKey: ' bv ',
           memberAuthUserId: ' user_viewer ',
+          expectedRole: 'member',
           role: 'viewer',
         },
         { store }
@@ -203,6 +207,7 @@ describe('project member mutation services', () => {
       authUserId: 'user_member',
       projectKey: 'BV',
       memberAuthUserId: 'user_viewer',
+      expectedRole: 'member',
       role: 'viewer',
     });
   });
@@ -223,6 +228,7 @@ describe('project member mutation services', () => {
         authUserId: 'user_owner',
         projectKey: 'BV',
         memberAuthUserId: 'user_member',
+        expectedRole: 'member',
       })
     ).resolves.toEqual({ status: 'database_unavailable' });
   });
@@ -234,6 +240,7 @@ describe('project member mutation services', () => {
           authUserId: 'user_owner',
           projectKey: 'BV',
           memberAuthUserId: 'user_owner',
+          expectedRole: 'owner',
           role: 'maintainer',
         },
         { store: createStore({ status: 'owner_protected' }) }
@@ -245,6 +252,7 @@ describe('project member mutation services', () => {
           authUserId: 'user_maintainer',
           projectKey: 'BV',
           memberAuthUserId: 'user_owner',
+          expectedRole: 'owner',
         },
         { store: createStore({ status: 'owner_protected' }) }
       )
@@ -255,6 +263,7 @@ describe('project member mutation services', () => {
           authUserId: 'user_maintainer',
           projectKey: 'BV',
           memberAuthUserId: 'user_maintainer',
+          expectedRole: 'maintainer',
         },
         { store: createStore({ status: 'self_removal' }) }
       )
@@ -265,10 +274,37 @@ describe('project member mutation services', () => {
           authUserId: 'user_owner',
           projectKey: 'BV',
           memberAuthUserId: 'user_member',
+          expectedRole: 'member',
         },
         { store: createStore({ status: 'archived_project' }) }
       )
     ).resolves.toEqual({ status: 'archived_project' });
+  });
+
+  it('preserves conflicts from stale role and removal requests', async () => {
+    await expect(
+      updateBubblophyProjectMemberRole(
+        {
+          authUserId: 'user_owner',
+          projectKey: 'BV',
+          memberAuthUserId: 'user_member',
+          expectedRole: 'member',
+          role: 'viewer',
+        },
+        { store: createStore({ status: 'conflict' }) }
+      )
+    ).resolves.toEqual({ status: 'conflict' });
+    await expect(
+      removeBubblophyProjectMember(
+        {
+          authUserId: 'user_owner',
+          projectKey: 'BV',
+          memberAuthUserId: 'user_member',
+          expectedRole: 'member',
+        },
+        { store: createStore({ status: 'conflict' }) }
+      )
+    ).resolves.toEqual({ status: 'conflict' });
   });
 });
 

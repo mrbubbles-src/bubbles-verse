@@ -3085,6 +3085,7 @@ describe('BubblophyDashboard interactions', () => {
       expect(updateProjectMemberRoleAction).toHaveBeenCalledWith({
         projectKey: 'BV',
         memberAuthUserId: 'user_martin',
+        expectedRole: 'member',
         role: 'viewer',
       });
     });
@@ -3346,6 +3347,7 @@ describe('BubblophyDashboard interactions', () => {
       expect(updateProjectMemberRoleAction).toHaveBeenCalledWith({
         projectKey: 'BV',
         memberAuthUserId: 'user_martin',
+        expectedRole: 'member',
         role: 'viewer',
       });
     });
@@ -3362,6 +3364,44 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       within(projectsSection).getByText('user_martin')
     ).toBeInTheDocument();
+  });
+
+  it('shows a stale member-role conflict and keeps the visible role unchanged', async () => {
+    const updateProjectMemberRoleAction = vi.fn<
+      (
+        input: UpdateBubblophyProjectMemberRoleActionInput
+      ) => Promise<UpdateBubblophyProjectMemberRoleActionResult>
+    >(async () => ({ status: 'conflict' }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithManageableMembers}
+        updateProjectMemberRoleAction={updateProjectMemberRoleAction}
+      />
+    );
+
+    const projectsSection = document.getElementById('projects');
+
+    if (!projectsSection) {
+      throw new Error('Expected the projects section to render.');
+    }
+
+    fireEvent.click(
+      within(projectsSection).getByRole('button', {
+        name: 'Projekt Bubblesverse (BV) auswählen',
+      })
+    );
+    fireEvent.change(
+      within(projectsSection).getByLabelText('Rolle für user_martin'),
+      { target: { value: 'viewer' } }
+    );
+
+    expect(await within(projectsSection).findByRole('alert')).toHaveTextContent(
+      'Die Rolle wurde zwischenzeitlich geändert. Lade die aktuellen Projektdaten neu.'
+    );
+    expect(
+      within(projectsSection).getByLabelText('Rolle für user_martin')
+    ).toHaveValue('member');
   });
 
   it('keeps member management available after project content updates', async () => {
@@ -3476,6 +3516,7 @@ describe('BubblophyDashboard interactions', () => {
       expect(removeProjectMemberAction).toHaveBeenCalledWith({
         projectKey: 'BV',
         memberAuthUserId: 'user_martin',
+        expectedRole: 'member',
       });
     });
     await waitFor(() => {
@@ -3526,6 +3567,7 @@ describe('BubblophyDashboard interactions', () => {
       expect(removeProjectMemberAction).toHaveBeenCalledWith({
         projectKey: 'BV',
         memberAuthUserId: 'user_martin',
+        expectedRole: 'member',
       });
     });
 

@@ -444,7 +444,7 @@ export async function transitionBubblophyProjectArchiveAction(
  * membership, owner/maintainer roles, archived-project blocking, and audit
  * metadata without accepting profile or email data from the browser.
  *
- * @param input Project key, target member user ID, and next non-owner role.
+ * @param input Project key, target member, expected role, and next role.
  * @returns Structured result for project member controls.
  */
 export async function updateBubblophyProjectMemberRoleAction(
@@ -484,7 +484,7 @@ export async function addBubblophyProjectMemberAction(
  * The current schema has no soft-disable field, so the service performs a
  * guarded hard membership removal and blocks self-removal.
  *
- * @param input Project key and target member user ID.
+ * @param input Project key, target member user ID, and expected role.
  * @returns Structured result for project member controls.
  */
 export async function removeBubblophyProjectMemberAction(

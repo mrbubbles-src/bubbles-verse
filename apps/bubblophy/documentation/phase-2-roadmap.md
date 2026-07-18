@@ -63,10 +63,15 @@ Status: abgeschlossen.
 
 ### 4. Rollen und Einladungen
 
+- Status: bestehende Rollenmutationen transaktions- und konfliktfest gehärtet;
+  als nächster Security-Slice folgen noch die projektweiten Manager-Writer,
+  danach Einladungspersistenz und Manager-Verwaltung.
 - Mitglieder über Profil oder E-Mail statt technischer Auth-User-ID einladen.
 - Einladungszustände, Ablauf, Annahme und Widerruf auditierbar machen.
 - Rollenansichten und Mutationsrechte für Owner, Maintainer, Member und Viewer
   verständlich abbilden.
+- Der detaillierte Slice-Plan liegt unter
+  `docs/superpowers/plans/2026-07-18-bubblophy-roles-invitations.md`.
 
 ### 5. Arbeiten mit größeren Datenmengen
 
@@ -115,9 +120,9 @@ OAuth-Consent-Flow sowie die kontrollierten Schreibwerkzeuge `propose_plan`,
 vorhanden. Konfliktsichere Statusänderungen laufen über
 `update_issue_status`. Ohne
 gültige Signatur, Issuer, Ablauf, Subject, OAuth-Client-ID und exakte
-MCP-Audience bleibt der Zugriff fail-closed. Als Nächstes folgen die genaue
-Supabase-Staging-Konfiguration, der reale Codex-/Claude-Smoke und weitere
-weitere Human-in-the-loop-Schreibwerkzeuge nach
-`documentation/mcp-operations.md`.
-Der detaillierte Plan liegt unter
-`docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md`.
+MCP-Audience bleibt der Zugriff fail-closed. Der reale Codex-/Claude-Staging-
+Smoke bleibt bis zum gemeinsamen Deployment geparkt. Als nächster lokaler
+Phase-2-Bereich folgen Rollen und Einladungen nach
+`docs/superpowers/plans/2026-07-18-bubblophy-roles-invitations.md`; die
+MCP-Grundlage bleibt unter
+`docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md` dokumentiert.

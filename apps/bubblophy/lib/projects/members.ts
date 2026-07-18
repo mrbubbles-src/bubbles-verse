@@ -11,6 +11,7 @@ export interface UpdateBubblophyProjectMemberRoleInput {
   authUserId: string;
   projectKey: string;
   memberAuthUserId: string;
+  expectedRole: ProjectMemberRole;
   role: ManageableProjectMemberRole;
 }
 
@@ -25,6 +26,7 @@ export interface RemoveBubblophyProjectMemberInput {
   authUserId: string;
   projectKey: string;
   memberAuthUserId: string;
+  expectedRole: ProjectMemberRole;
 }
 
 export interface BubblophyProjectMemberMutationStoreInput {
@@ -34,6 +36,14 @@ export interface BubblophyProjectMemberMutationStoreInput {
 }
 
 export interface BubblophyProjectMemberRoleStoreInput extends BubblophyProjectMemberMutationStoreInput {
+  role: ManageableProjectMemberRole;
+}
+
+export interface BubblophyProjectMemberExpectedRoleStoreInput extends BubblophyProjectMemberMutationStoreInput {
+  expectedRole: ProjectMemberRole;
+}
+
+export interface BubblophyProjectMemberUpdateRoleStoreInput extends BubblophyProjectMemberExpectedRoleStoreInput {
   role: ManageableProjectMemberRole;
 }
 
@@ -58,6 +68,9 @@ export type BubblophyProjectMemberMutationStoreResult =
       status: 'unchanged';
     }
   | {
+      status: 'conflict';
+    }
+  | {
       status: 'not_found';
     }
   | {
@@ -78,10 +91,10 @@ export interface BubblophyProjectMemberMutationStore {
     input: BubblophyProjectMemberRoleStoreInput
   ): Promise<BubblophyProjectMemberMutationStoreResult>;
   updateProjectMemberRoleWithEvent(
-    input: BubblophyProjectMemberRoleStoreInput
+    input: BubblophyProjectMemberUpdateRoleStoreInput
   ): Promise<BubblophyProjectMemberMutationStoreResult>;
   removeProjectMemberWithEvent(
-    input: BubblophyProjectMemberMutationStoreInput
+    input: BubblophyProjectMemberExpectedRoleStoreInput
   ): Promise<BubblophyProjectMemberMutationStoreResult>;
 }
 
@@ -93,6 +106,9 @@ export type UpdateBubblophyProjectMemberRoleResult =
     }
   | {
       status: 'unchanged';
+    }
+  | {
+      status: 'conflict';
     }
   | {
       status: 'invalid';
@@ -149,7 +165,7 @@ export type RemoveBubblophyProjectMemberResult =
     }
   | {
       status: 'invalid';
-      reason: 'empty_project' | 'empty_member';
+      reason: 'empty_project' | 'empty_member' | 'invalid_role';
     }
   | {
       status: 'not_found';
@@ -167,6 +183,9 @@ export type RemoveBubblophyProjectMemberResult =
       status: 'self_removal';
     }
   | {
+      status: 'conflict';
+    }
+  | {
       status: 'database_unavailable';
     };
 
@@ -178,6 +197,10 @@ const manageableRoles = new Set<ProjectMemberRole>([
   'maintainer',
   'member',
   'viewer',
+]);
+const projectMemberRoles = new Set<ProjectMemberRole>([
+  'owner',
+  ...manageableRoles,
 ]);
 
 /**
@@ -208,6 +231,7 @@ export async function addBubblophyProjectMember(
   if (
     result.status === 'updated' ||
     result.status === 'removed' ||
+    result.status === 'conflict' ||
     result.status === 'owner_protected' ||
     result.status === 'self_removal'
   ) {
@@ -228,7 +252,7 @@ export async function updateBubblophyProjectMemberRole(
   input: UpdateBubblophyProjectMemberRoleInput,
   options: BubblophyProjectMemberMutationOptions = {}
 ): Promise<UpdateBubblophyProjectMemberRoleResult> {
-  const normalized = normalizeProjectMemberRoleInput(input);
+  const normalized = normalizeProjectMemberRoleUpdateInput(input);
 
   if (normalized.status === 'invalid') {
     return normalized;
@@ -267,16 +291,10 @@ export async function removeBubblophyProjectMember(
   input: RemoveBubblophyProjectMemberInput,
   options: BubblophyProjectMemberMutationOptions = {}
 ): Promise<RemoveBubblophyProjectMemberResult> {
-  const normalized = normalizeProjectMemberMutationInput(input);
+  const normalized = normalizeProjectMemberExpectedRoleInput(input);
 
   if (normalized.status === 'invalid') {
-    return {
-      status: 'invalid',
-      reason:
-        normalized.reason === 'empty_project'
-          ? 'empty_project'
-          : 'empty_member',
-    };
+    return normalized;
   }
 
   const store = options.store ?? (await getDefaultProjectMemberMutationStore());
@@ -321,7 +339,7 @@ export function isManageableBubblophyProjectMemberRole(
 }
 
 function normalizeProjectMemberRoleInput(
-  input: UpdateBubblophyProjectMemberRoleInput
+  input: AddBubblophyProjectMemberInput
 ):
   | {
       status: 'valid';
@@ -347,8 +365,66 @@ function normalizeProjectMemberRoleInput(
   };
 }
 
-function normalizeProjectMemberMutationInput(
+function normalizeProjectMemberRoleUpdateInput(
+  input: UpdateBubblophyProjectMemberRoleInput
+):
+  | {
+      status: 'valid';
+      input: BubblophyProjectMemberUpdateRoleStoreInput;
+    }
+  | Extract<UpdateBubblophyProjectMemberRoleResult, { status: 'invalid' }> {
+  const normalized = normalizeProjectMemberExpectedRoleInput(input);
+
+  if (normalized.status === 'invalid') {
+    return normalized;
+  }
+
+  if (!manageableRoles.has(input.role)) {
+    return { status: 'invalid', reason: 'invalid_role' };
+  }
+
+  return {
+    status: 'valid',
+    input: {
+      ...normalized.input,
+      role: input.role,
+    },
+  };
+}
+
+function normalizeProjectMemberExpectedRoleInput(
   input: RemoveBubblophyProjectMemberInput
+):
+  | {
+      status: 'valid';
+      input: BubblophyProjectMemberExpectedRoleStoreInput;
+    }
+  | Extract<
+      | RemoveBubblophyProjectMemberResult
+      | UpdateBubblophyProjectMemberRoleResult,
+      { status: 'invalid' }
+    > {
+  const normalized = normalizeProjectMemberMutationInput(input);
+
+  if (normalized.status === 'invalid') {
+    return normalized;
+  }
+
+  if (!projectMemberRoles.has(input.expectedRole)) {
+    return { status: 'invalid', reason: 'invalid_role' };
+  }
+
+  return {
+    status: 'valid',
+    input: {
+      ...normalized.input,
+      expectedRole: input.expectedRole,
+    },
+  };
+}
+
+function normalizeProjectMemberMutationInput(
+  input: BubblophyProjectMemberMutationStoreInput
 ):
   | {
       status: 'valid';

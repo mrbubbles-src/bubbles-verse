@@ -4,9 +4,11 @@ import type { db as bubblophyDb } from '@/drizzle/db';
 import type { JsonObject } from '@/drizzle/db/schema';
 import type { ProjectMemberSummary } from '@/lib/dashboard/types';
 import type {
+  BubblophyProjectMemberExpectedRoleStoreInput,
   BubblophyProjectMemberMutationStore,
   BubblophyProjectMemberMutationStoreInput,
   BubblophyProjectMemberRoleStoreInput,
+  BubblophyProjectMemberUpdateRoleStoreInput,
   ManageableProjectMemberRole,
 } from '@/lib/projects/members';
 
@@ -16,7 +18,7 @@ import {
   isManageableBubblophyProjectMemberRole,
 } from '@/lib/projects/members';
 
-import { and, eq, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 
 import {
   bubblophyProjectEvents,
@@ -129,7 +131,7 @@ async function addProjectMemberWithEvent(
 }
 
 async function updateProjectMemberRoleWithEvent(
-  input: BubblophyProjectMemberRoleStoreInput
+  input: BubblophyProjectMemberUpdateRoleStoreInput
 ): ReturnType<
   BubblophyProjectMemberMutationStore['updateProjectMemberRoleWithEvent']
 > {
@@ -154,6 +156,10 @@ async function updateProjectMemberRoleWithEvent(
       return { status: 'not_found' };
     }
 
+    if (context.targetMember.role !== input.expectedRole) {
+      return { status: 'conflict' };
+    }
+
     if (!isManageableBubblophyProjectMemberRole(context.targetMember.role)) {
       return { status: 'owner_protected' };
     }
@@ -168,7 +174,8 @@ async function updateProjectMemberRoleWithEvent(
       .where(
         and(
           eq(bubblophyProjectMembers.projectId, context.project.id),
-          eq(bubblophyProjectMembers.authUserId, input.memberAuthUserId)
+          eq(bubblophyProjectMembers.authUserId, input.memberAuthUserId),
+          eq(bubblophyProjectMembers.role, input.expectedRole)
         )
       )
       .returning({
@@ -178,7 +185,7 @@ async function updateProjectMemberRoleWithEvent(
       });
 
     if (!updatedMember) {
-      throw new Error('Bubblophy member role update did not return a row.');
+      return { status: 'conflict' };
     }
 
     await tx.insert(bubblophyProjectEvents).values(
@@ -208,7 +215,7 @@ async function updateProjectMemberRoleWithEvent(
 }
 
 async function removeProjectMemberWithEvent(
-  input: BubblophyProjectMemberMutationStoreInput
+  input: BubblophyProjectMemberExpectedRoleStoreInput
 ): ReturnType<
   BubblophyProjectMemberMutationStore['removeProjectMemberWithEvent']
 > {
@@ -233,6 +240,10 @@ async function removeProjectMemberWithEvent(
       return { status: 'not_found' };
     }
 
+    if (context.targetMember.role !== input.expectedRole) {
+      return { status: 'conflict' };
+    }
+
     if (input.memberAuthUserId === input.authUserId) {
       return { status: 'self_removal' };
     }
@@ -246,7 +257,8 @@ async function removeProjectMemberWithEvent(
       .where(
         and(
           eq(bubblophyProjectMembers.projectId, context.project.id),
-          eq(bubblophyProjectMembers.authUserId, input.memberAuthUserId)
+          eq(bubblophyProjectMembers.authUserId, input.memberAuthUserId),
+          eq(bubblophyProjectMembers.role, input.expectedRole)
         )
       )
       .returning({
@@ -254,7 +266,7 @@ async function removeProjectMemberWithEvent(
       });
 
     if (!removedMember) {
-      throw new Error('Bubblophy member removal did not return a row.');
+      return { status: 'conflict' };
     }
 
     await tx.insert(bubblophyProjectEvents).values(
@@ -316,7 +328,19 @@ export function buildBubblophyProjectMemberEventInsert(input: {
   };
 }
 
-async function selectProjectMemberMutationContext(
+/**
+ * Locks the project and involved memberships before authorization decisions.
+ *
+ * Project SHARE conflicts with archive/content updates while allowing unrelated
+ * member mutations. Membership rows use one sorted UPDATE lock query so two
+ * concurrent manager actions cannot deadlock by locking actor and target in
+ * opposite order.
+ *
+ * @param tx Active membership mutation transaction.
+ * @param input Actor, project, and target member identifiers.
+ * @returns Locked project, actor role, and optional target member.
+ */
+export async function selectProjectMemberMutationContext(
   tx: BubblophyProjectMemberMutationTx,
   input: BubblophyProjectMemberMutationStoreInput
 ) {
@@ -328,7 +352,8 @@ async function selectProjectMemberMutationContext(
     })
     .from(bubblophyProjects)
     .where(eq(bubblophyProjects.key, input.projectKey))
-    .limit(1);
+    .limit(1)
+    .for('share');
 
   if (!project) {
     return {
@@ -338,32 +363,7 @@ async function selectProjectMemberMutationContext(
     };
   }
 
-  const [actorMember, targetMember] = await Promise.all([
-    selectProjectMember(tx, {
-      projectId: project.id,
-      authUserId: input.authUserId,
-    }),
-    selectProjectMember(tx, {
-      projectId: project.id,
-      authUserId: input.memberAuthUserId,
-    }),
-  ]);
-
-  return {
-    project,
-    actorRole: actorMember?.role ?? null,
-    targetMember,
-  };
-}
-
-async function selectProjectMember(
-  tx: BubblophyProjectMemberMutationTx,
-  input: {
-    projectId: string;
-    authUserId: string;
-  }
-) {
-  const [member] = await tx
+  const lockedMembers = await tx
     .select({
       authUserId: bubblophyProjectMembers.authUserId,
       role: bubblophyProjectMembers.role,
@@ -372,13 +372,27 @@ async function selectProjectMember(
     .from(bubblophyProjectMembers)
     .where(
       and(
-        eq(bubblophyProjectMembers.projectId, input.projectId),
-        eq(bubblophyProjectMembers.authUserId, input.authUserId)
+        eq(bubblophyProjectMembers.projectId, project.id),
+        inArray(bubblophyProjectMembers.authUserId, [
+          input.authUserId,
+          input.memberAuthUserId,
+        ])
       )
     )
-    .limit(1);
+    .orderBy(asc(bubblophyProjectMembers.authUserId))
+    .for('update');
+  const actorMember = lockedMembers.find(
+    (member) => member.authUserId === input.authUserId
+  );
+  const targetMember = lockedMembers.find(
+    (member) => member.authUserId === input.memberAuthUserId
+  );
 
-  return member ?? null;
+  return {
+    project,
+    actorRole: actorMember?.role ?? null,
+    targetMember: targetMember ?? null,
+  };
 }
 
 async function countProjectMembers(

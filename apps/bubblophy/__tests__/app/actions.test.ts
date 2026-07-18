@@ -940,6 +940,7 @@ describe('project member actions', () => {
       authUserId: 'user_client_spoof',
       projectKey: 'BV',
       memberAuthUserId: 'user_martin',
+      expectedRole: 'member',
       role: 'viewer',
     } as UpdateBubblophyProjectMemberRoleActionInput & {
       authUserId: string;
@@ -952,6 +953,7 @@ describe('project member actions', () => {
       authUserId: 'user_server',
       projectKey: 'BV',
       memberAuthUserId: 'user_martin',
+      expectedRole: 'member',
       role: 'viewer',
     });
     expect(result).toMatchObject({
@@ -982,12 +984,14 @@ describe('project member actions', () => {
       authUserId: 'user_client_spoof',
       projectKey: 'BV',
       memberAuthUserId: 'user_martin',
+      expectedRole: 'member',
     } as RemoveBubblophyProjectMemberActionInput & { authUserId: string });
 
     expect(removeBubblophyProjectMemberMock).toHaveBeenCalledWith({
       authUserId: 'user_server',
       projectKey: 'BV',
       memberAuthUserId: 'user_martin',
+      expectedRole: 'member',
     });
     expect(result).toEqual({
       status: 'removed',
