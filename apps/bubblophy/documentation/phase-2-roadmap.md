@@ -74,8 +74,10 @@ Status: abgeschlossen.
   gehashtem Token, Ablauf- und konfliktfreien Terminalzuständen angelegt.
   Direkte RLS-Reads bleiben vollständig geschlossen. Create, Reinvite und
   Revoke verwenden gesperrte Manager-Autorisierung, rotierende Einmal-Tokens,
-  Compare-and-set und E-Mail-/Token-freie Audit-Ereignisse. Redigierter
-  Manager-Snapshot und Annahme folgen als getrennte Slices.
+  Compare-and-set und E-Mail-/Token-freie Audit-Ereignisse. Der redigierte
+  Manager-Snapshot bindet Owner-/Maintainer-Autorisierung und Einladungsdaten
+  in einem Statement und projiziert keine Token-Hashes oder Actor-IDs. Damit
+  ist Task 3 abgeschlossen; Annahme und Auth-Grenze folgen als nächster Slice.
 - Mitglieder über Profil oder E-Mail statt technischer Auth-User-ID einladen.
 - Einladungszustände, Ablauf, Annahme und Widerruf auditierbar machen.
 - Rollenansichten und Mutationsrechte für Owner, Maintainer, Member und Viewer

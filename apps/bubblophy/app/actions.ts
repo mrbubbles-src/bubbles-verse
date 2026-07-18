@@ -48,6 +48,7 @@ import type {
   CreateBubblophyProjectInput,
   CreateBubblophyProjectResult,
 } from '@/lib/projects/create';
+import type { ReadBubblophyProjectInvitationManagerSnapshotResult } from '@/lib/projects/invitation-snapshot';
 import type {
   CreateBubblophyProjectInvitationInput,
   CreateBubblophyProjectInvitationResult,
@@ -84,6 +85,7 @@ import { createOrUpdateBubblophyIssuePlanDraft } from '@/lib/issues/plans';
 import { updateBubblophyIssuePriority } from '@/lib/issues/priority';
 import { updateBubblophyIssueStatus } from '@/lib/issues/status';
 import { createBubblophyProject } from '@/lib/projects/create';
+import { readBubblophyProjectInvitationManagerSnapshot } from '@/lib/projects/invitation-snapshot';
 import {
   createBubblophyProjectInvitation,
   reinviteBubblophyProjectInvitation,
@@ -224,6 +226,13 @@ export type RevokeBubblophyProjectInvitationActionInput = Omit<
 
 export type RevokeBubblophyProjectInvitationActionResult =
   RevokeBubblophyProjectInvitationResult;
+
+export interface ReadBubblophyProjectInvitationManagerSnapshotActionInput {
+  projectKey: string;
+}
+
+export type ReadBubblophyProjectInvitationManagerSnapshotActionResult =
+  ReadBubblophyProjectInvitationManagerSnapshotResult;
 
 export type CreateBubblophyAgentTokenActionInput = Omit<
   CreateBubblophyAgentTokenInput,
@@ -583,6 +592,23 @@ export async function revokeBubblophyProjectInvitationAction(
   return revokeBubblophyProjectInvitation({
     ...input,
     authUserId: session.authUserId,
+  });
+}
+
+/**
+ * Reads redacted invitation metadata for the current project manager session.
+ *
+ * @param input Project key whose invitations should be managed.
+ * @returns Manager-only snapshot without token hashes or invitation actor IDs.
+ */
+export async function readBubblophyProjectInvitationManagerSnapshotAction(
+  input: ReadBubblophyProjectInvitationManagerSnapshotActionInput
+): Promise<ReadBubblophyProjectInvitationManagerSnapshotActionResult> {
+  const session = await requireBubblophySession({ nextPath: '/' });
+
+  return readBubblophyProjectInvitationManagerSnapshot({
+    authUserId: session.authUserId,
+    projectKey: input.projectKey,
   });
 }
 

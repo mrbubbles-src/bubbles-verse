@@ -79,6 +79,9 @@
 - Added manager-only project invitation create, reinvite, and revoke actions
   with ordered authorization locks, seven-day one-time token rotation,
   compare-and-set conflict handling, and email/token-free audit events.
+- Added a manager-only project invitation snapshot that binds role
+  authorization and invitation rows in one query while excluding token hashes
+  and inviter, acceptor, and revoker user IDs.
 
 All notable changes to this project will be documented in this file.
 

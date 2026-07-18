@@ -124,6 +124,14 @@ oder rückläufiger Instanzuhr strikt. Dadurch enden parallele Entscheidungen al
 Konflikt und erzeugen kein veraltetes Audit-Ereignis. Klartext-Tokens werden
 ausschließlich beim erfolgreichen Create oder Reinvite einmalig zurückgegeben.
 
+Der serverseitige Manager-Snapshot verbindet Projekt, aktuelle
+Owner-/Maintainer-Mitgliedschaft und Einladungen in einem einzigen
+`SELECT`. So kann zwischen Autorisierungsprüfung und Ergebnis kein zweiter
+Read auseinanderlaufen. Die Projektion enthält normalisierte E-Mail, Rolle,
+Zustandszeitpunkte und `updated_at`, aber weder Token-Hash noch eine der
+Einladungs-Actor-IDs. Ein fehlendes Projekt und fehlende Managerrechte werden
+beide als `not_found` ausgegeben.
+
 Die Zielumgebung braucht zusätzlich einen Supabase-Custom-Access-Token-Hook,
 der JWTs mit `client_id` die exakte Audience `<NEXT_PUBLIC_APP_URL>/mcp` gibt.
 Der Hook ist absichtlich umgebungsspezifische Auth-Infrastruktur und nicht Teil

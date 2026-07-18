@@ -312,6 +312,11 @@ bun run build
   konkurrierende oder terminale Änderungen überschreiben sich nicht. Nur der
   erfolgreiche Create-/Reinvite-Aufruf erhält das Klartext-Token einmalig,
   während Audit-Ereignisse weder E-Mail noch Token oder Token-Hash enthalten.
+- Der Manager-Snapshot liest Autorisierung und Einladungen in einem
+  Datenbank-Statement. Er zeigt E-Mail, Nicht-Owner-Rolle, abgeleiteten Zustand
+  und Lebenszyklus-Zeitpunkte, schließt aber Token-Hash sowie Einladenden-,
+  Annahme- und Widerruf-User-ID aus. Nicht-Manager erhalten kein
+  unterscheidbares Einladungs-Ergebnis.
 - Persistierte Plan-Erfassung läuft serverseitig über Issue-Projektmitgliedschaft,
   schreibt eine neue Planversion plus `plan_updated`-Event und startet keine
   Agent-Runs.

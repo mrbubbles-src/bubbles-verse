@@ -65,7 +65,7 @@ Einladungspersistenz.
 - [x] Direkte RLS-Reads auf Einladungsdaten schließen.
 - [x] Create-/Reinvite-/Revoke-Verträge mit gesperrter Manager-Autorisierung,
       sicheren Tokens und E-Mail-freien Audit-Ereignissen implementieren.
-- [ ] Nur Owner/Maintainer erhalten einen serverseitig redigierten
+- [x] Nur Owner/Maintainer erhalten einen serverseitig redigierten
       Einladungs-Snapshot.
 
 ## Task 4: Annahme und Auth-Grenze
