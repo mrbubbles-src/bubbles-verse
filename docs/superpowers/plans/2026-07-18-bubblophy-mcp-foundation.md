@@ -285,10 +285,10 @@ Mit Commit-Writer aus dem tatsächlichen staged Diff einen fokussierten Conventi
 
 - [ ] **Step 5: Staging-Ende-zu-Ende-Smoke**
 
-Dynamische Client-Registrierung, PKCE, Consent, Tokenrefresh, `list_projects`
-und `list_issues` mit getrennten Projektmitgliedschaften real gegen Staging
-prüfen: einmal mit Codex, einmal mit Claude. Erst dieser Smoke schließt den
-Slice ab.
+Dynamische Client-Registrierung, PKCE, Consent, Tokenrefresh, `list_projects`,
+`list_issues` und `get_issue` mit getrennten Projektmitgliedschaften real gegen
+Staging prüfen: einmal mit Codex, einmal mit Claude. Erst dieser Smoke schließt
+den Slice ab.
 
 ### Task 7: Paginiertes read-only `list_issues`
 
@@ -311,6 +311,29 @@ read-only Ansicht lesbar.
 
 - [x] **Step 1: Service- und Datenbanktests zuerst schreiben**
 - [x] **Step 2: Membership-gejointe Cursor-Abfrage implementieren**
+- [x] **Step 3: Read-only MCP-Werkzeug registrieren**
+- [x] **Step 4: Reviewer und vollständige Slice-Gates ausführen**
+- [x] **Step 5: Fertigen Slice separat committen**
+
+### Task 8: Membership-scoped read-only `get_issue`
+
+**Files:**
+
+- Create: `apps/bubblophy/lib/mcp/issue-detail.ts`
+- Create: `apps/bubblophy/lib/mcp/issue-detail-database-read.ts`
+- Create: `apps/bubblophy/__tests__/lib/mcp/issue-detail.test.ts`
+- Create: `apps/bubblophy/__tests__/lib/mcp/issue-detail-database-read.test.ts`
+- Modify: `apps/bubblophy/lib/mcp/register-tools.ts`
+- Modify: `apps/bubblophy/__tests__/app/mcp-route.test.ts`
+
+**Contract:** `projectId` plus positive `issueNumber` aus `list_issues` laden
+ein Detail in derselben Membership-gejointen Abfrage. Beschreibung und
+Zeitstempel sind öffentlich für Mitglieder; interne Issue-/User-IDs, Pläne,
+Runs, Tokens und Events bleiben ausgeschlossen. Fehlende und fremde Ressourcen
+sind nicht unterscheidbar.
+
+- [x] **Step 1: Service- und Datenbanktests zuerst schreiben**
+- [x] **Step 2: Membership-gejointe Detailabfrage implementieren**
 - [x] **Step 3: Read-only MCP-Werkzeug registrieren**
 - [x] **Step 4: Reviewer und vollständige Slice-Gates ausführen**
 - [x] **Step 5: Fertigen Slice separat committen**

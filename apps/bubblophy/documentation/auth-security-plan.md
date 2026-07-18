@@ -85,6 +85,10 @@ dauerhaften Autopilot-Rechte.
   nicht selektiert. Fehlende und fremde Projekte bleiben ununterscheidbar.
   Archivierte Mitgliedschaftsprojekte sind nur für historische Reads sichtbar
   und werden im Ergebnis ausdrücklich als archiviert markiert.
+- Das read-only MCP-Werkzeug `get_issue` verwendet Projekt-ID und Issue-Nummer
+  aus der Liste und bindet beides zusammen mit OAuth-`sub` an eine aktuelle
+  Membership. Der Detailvertrag ergänzt die Beschreibung und Zeitstempel, aber
+  keine internen Issue-/User-IDs, Pläne, Runs, Tokens oder Events.
 - Die OAuth-Zustimmungsseite verlangt zusätzlich zur Supabase-Cookie-Session
   den aktuellen DB-basierten Bubblophy-Zugang. Die Decision-Route akzeptiert nur
   URL-encoded `POST`-Formulare mit exakt passendem kanonischem Origin; zusammen

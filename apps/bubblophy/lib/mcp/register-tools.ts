@@ -1,5 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
+import { getBubblophyMcpIssue } from '@/lib/mcp/issue-detail';
 import { listBubblophyMcpIssues } from '@/lib/mcp/issues';
 import { listBubblophyMcpProjects } from '@/lib/mcp/projects';
 
@@ -51,6 +52,30 @@ const issuePageOutputSchema = z.object({
     })
   ),
   nextAfterIssueNumber: z.number().int().positive().nullable(),
+});
+
+const getIssueInputSchema = z.object({
+  projectId: z.string().trim().min(1).max(200),
+  issueNumber: z.number().int().positive(),
+});
+
+const issueDetailOutputSchema = z.object({
+  project: z.object({
+    id: z.string(),
+    key: z.string(),
+    isArchived: z.boolean(),
+  }),
+  issue: z.object({
+    key: z.string(),
+    issueNumber: z.number().int().positive(),
+    title: z.string(),
+    description: z.string(),
+    status: issueStatusSchema,
+    priority: issuePrioritySchema,
+    requiresHumanApproval: z.boolean(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  }),
 });
 
 /** Registers Bubblophy's currently available OAuth-backed MCP tools. */
@@ -149,6 +174,49 @@ export function registerBubblophyMcpTools(server: McpServer) {
       };
     }
   );
+
+  server.registerTool(
+    'get_issue',
+    {
+      title: 'Get Bubblophy issue',
+      description:
+        'Gets one public issue detail for a Bubblophy project visible to the authenticated person.',
+      inputSchema: getIssueInputSchema,
+      outputSchema: issueDetailOutputSchema,
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    async (input, extra) => {
+      const authUserId = readAuthUserId(extra.authInfo?.extra?.authUserId);
+
+      if (!authUserId) {
+        return createToolError('Die authentifizierte User-ID fehlt.');
+      }
+
+      const result = await getBubblophyMcpIssue(authUserId, input);
+
+      if (result.status !== 'success') {
+        return createToolError(readGetIssueError(result.status));
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Issue ${result.issue.key} gefunden.`,
+          },
+        ],
+        structuredContent: {
+          project: result.project,
+          issue: result.issue,
+        },
+      };
+    }
+  );
 }
 
 /** Returns a normalized OAuth user ID from MCP auth context data. */
@@ -177,4 +245,19 @@ function readListIssuesError(
   }
 
   return 'Die Anfrage für die Issue-Liste ist ungültig.';
+}
+
+/** Maps internal issue detail outcomes to non-sensitive MCP messages. */
+function readGetIssueError(
+  status: 'invalid' | 'not_found' | 'database_unavailable'
+) {
+  if (status === 'database_unavailable') {
+    return 'Bubblophy kann das Issue gerade nicht laden.';
+  }
+
+  if (status === 'not_found') {
+    return 'Das Issue wurde nicht gefunden oder ist nicht zugänglich.';
+  }
+
+  return 'Die Anfrage für das Issue ist ungültig.';
 }

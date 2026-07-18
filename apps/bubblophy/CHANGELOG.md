@@ -29,6 +29,9 @@
 - Added the membership-scoped, read-only `list_issues` MCP tool with bounded
   issue-number pagination and a public summary contract that excludes issue
   descriptions, user identifiers, plans, runs, tokens, and audit data.
+- Added the membership-scoped, read-only `get_issue` MCP tool for public issue
+  detail including description and timestamps without internal issue/user IDs
+  or related plans, runs, tokens, and audit data.
 
 All notable changes to this project will be documented in this file.
 

@@ -115,6 +115,10 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   Agent-Tokens oder Auditdaten. Der stabile Cursor ist die Issue-Nummer.
   Archivierte Mitgliedschaftsprojekte bleiben als markierte historische
   read-only Ansicht lesbar; operative Mutationen bleiben gesperrt.
+- Das read-only Werkzeug `get_issue` lädt über Projekt-ID plus Issue-Nummer
+  den Titel, die Beschreibung, Status, Priorität, Approval-Flag und Zeitstempel.
+  Es bindet das Detail in derselben Abfrage an die aktuelle Membership und gibt
+  keine internen Issue- oder User-IDs, Pläne, Runs, Tokens oder Events aus.
 - `/oauth/consent` übernimmt die einmalige persönliche Zustimmung für neue
   MCP-Clients. Bubblophy zeigt Clientname, angeforderte Standard-Scopes und das
   registrierte Rücksprungziel; Erlauben oder Ablehnen läuft ausschließlich über

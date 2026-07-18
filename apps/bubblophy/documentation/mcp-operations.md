@@ -28,8 +28,8 @@ persönliche Client-Anmeldung. Es enthält keine echten Tokens oder Secrets.
 - Lokale Prüfung asymmetrisch signierter Supabase-JWTs gegen Issuer, Ablauf,
   `sub`, `client_id` und die exakte Audience `<APP_URL>/mcp`.
 - Persönlicher Consent unter `/oauth/consent` mit explizitem Erlauben/Ablehnen.
-- Read-only-Werkzeuge `list_projects` und paginiertes `list_issues` mit
-  request-aktueller Membership-Prüfung.
+- Read-only-Werkzeuge `list_projects`, paginiertes `list_issues` und
+  `get_issue` mit request-aktueller Membership-Prüfung.
 
 ## Umgebungsvertrag
 
@@ -187,8 +187,13 @@ Der MCP-Foundation-Slice ist erst nach diesem realen Smoke vollständig:
    eigenes, ein gemeinsames und eine fremde Projekt-ID aufrufen. Issue-Listen
    dürfen nur für aktuelle Memberships erscheinen und keine Beschreibungen,
    User-IDs, Pläne, Runs, Tokens oder Audit-Payloads enthalten.
-4. Eine Membership ändern und beide Werkzeuge ohne neue Anmeldung erneut
-   aufrufen. Das Ergebnis muss die Änderung sofort widerspiegeln.
+   `get_issue` darf die Beschreibung nur für ein sichtbares Listen-Issue
+   ergänzen und weiterhin keine internen Issue-/User-IDs oder Folgeobjekte
+   ausgeben.
+4. Eine Membership ändern und alle drei Werkzeuge ohne neue Anmeldung erneut
+   aufrufen. `list_projects`, `list_issues` und `get_issue` müssen die Änderung
+   sofort widerspiegeln; nach Entfernung darf auch das zuvor sichtbare Detail
+   nicht mehr geladen werden.
 5. Beide Clients schließen und neu starten. Der Zugriff muss ohne erneuten
    manuellen Token-Transfer funktionieren.
 6. In Staging die Access-Token-Laufzeit vorübergehend kurz genug setzen, um nach
