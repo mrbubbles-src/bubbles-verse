@@ -99,7 +99,12 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   persönlichen OAuth-Zugriff bereit. Die Route validiert Supabase-OAuth-JWTs
   lokal über öffentliche asymmetrische JWKS und verweist bei fehlender oder
   ungültiger Authentifizierung über `WWW-Authenticate` auf Bubblophys
-  Protected-Resource-Metadaten. Datenwerkzeuge folgen in getrennten Slices.
+  Protected-Resource-Metadaten.
+- Das erste MCP-Werkzeug `list_projects` gibt ausschließlich öffentliche
+  Projektfelder, Archivstatus und die aktuelle Rolle der authentifizierten
+  Person zurück. Die Mitgliedschaften werden bei jedem Aufruf neu aus
+  `bubblophy_project_members` gelesen; Agent-Token-, Issue-, Run-, Audit- und
+  andere Userdaten gehören nicht zu diesem Read-Vertrag.
 - `/.well-known/oauth-protected-resource/mcp` veröffentlicht Bubblophys fest
   konfigurierte MCP-Resource und den Supabase-Auth-Issuer. Der Origin-Pfad ohne
   `/mcp` bleibt als kompatibler Alias verfügbar. Eingereichte Host- oder
@@ -147,8 +152,8 @@ bun run build
 - Menschen loggen sich über Supabase/GitHub ein.
 - Der neue Remote-MCP-Transport ist fail-closed: Nur Supabase-OAuth-JWTs mit
   gültiger Signatur, Issuer, Ablauf, `sub`, `client_id` und exakt Bubblophys
-  `/mcp`-Audience erreichen den Transport. Noch sind keine Datenwerkzeuge
-  registriert.
+  `/mcp`-Audience erreichen den Transport. `list_projects` verwendet danach
+  ausschließlich die validierte `sub` als Membership-Filter.
 - Die Auth-Grundstruktur nutzt nur `NEXT_PUBLIC_*` Supabase-Anon-Konfiguration.
 - Das Dashboard unter `/` verlangt eine Supabase-Session und prüft
   serverseitig DB-basierten Zugang. Ein aktiver Eintrag in

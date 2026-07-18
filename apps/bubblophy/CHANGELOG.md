@@ -14,6 +14,9 @@
 - Added local Supabase OAuth JWT verification through public asymmetric JWKS,
   requiring the configured issuer, exact MCP audience, expiry, subject, and
   OAuth client ID before requests reach the MCP transport.
+- Added the read-only `list_projects` MCP tool, re-reading current project
+  memberships per call and exposing only public project fields, archive state,
+  and the authenticated person's current role.
 
 All notable changes to this project will be documented in this file.
 

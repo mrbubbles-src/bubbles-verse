@@ -167,19 +167,19 @@ Expected: PASS.
 - Consumes: validierte `authUserId` aus `AuthInfo.extra`.
 - Produces: `listBubblophyMcpProjects(authUserId, options?)` mit aktiven und archivierten Projekten, jeweils `id`, `key`, `name`, `description`, `role`, `isArchived`.
 
-- [ ] **Step 1: Failing Service-Tests schreiben**
+- [x] **Step 1: Failing Service-Tests schreiben**
 
 Abdecken: leere User-ID, keine Mitgliedschaften, mehrere Rollen, archiviertes Projekt und fehlende Datenbankkonfiguration.
 
-- [ ] **Step 2: Membership-Read implementieren**
+- [x] **Step 2: Membership-Read implementieren**
 
 Die Abfrage startet bei `bubblophy_project_members`, filtert auf exakt `auth_user_id` und joint nur öffentliche Projektfelder. Agent-Token-Tabellen werden nicht gelesen.
 
-- [ ] **Step 3: MCP-Tool registrieren**
+- [x] **Step 3: MCP-Tool registrieren**
 
 `list_projects` hat keine Eingabeparameter, ist als read-only annotiert und gibt strukturiertes JSON plus kurze Textzusammenfassung zurück. Die User-ID kommt ausschließlich aus dem validierten Auth-Kontext.
 
-- [ ] **Step 4: Tool- und Servicetests ausführen**
+- [x] **Step 4: Tool- und Servicetests ausführen**
 
 Run:
 

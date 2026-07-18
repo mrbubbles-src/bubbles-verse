@@ -3,10 +3,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const verifyBubblophyMcpTokenMock = vi.fn();
+const listBubblophyMcpProjectsMock = vi.fn();
 
 vi.mock('@/lib/mcp/auth', () => ({
   verifyBubblophyMcpToken: (request: Request, bearerToken?: string) =>
     verifyBubblophyMcpTokenMock(request, bearerToken),
+}));
+
+vi.mock('@/lib/mcp/projects', () => ({
+  listBubblophyMcpProjects: (authUserId: string) =>
+    listBubblophyMcpProjectsMock(authUserId),
 }));
 
 function createInitializeRequest(token?: string) {
@@ -32,10 +38,52 @@ function createInitializeRequest(token?: string) {
   });
 }
 
+function createListProjectsRequest() {
+  return new Request('https://bubblophy.example.com/mcp', {
+    method: 'POST',
+    headers: {
+      accept: 'application/json, text/event-stream',
+      authorization: 'Bearer signed-token',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 2,
+      method: 'tools/call',
+      params: {
+        name: 'list_projects',
+        arguments: {},
+      },
+    }),
+  });
+}
+
+function createListToolsRequest() {
+  return new Request('https://bubblophy.example.com/mcp', {
+    method: 'POST',
+    headers: {
+      accept: 'application/json, text/event-stream',
+      authorization: 'Bearer signed-token',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 3,
+      method: 'tools/list',
+      params: {},
+    }),
+  });
+}
+
 describe('/mcp', () => {
   beforeEach(() => {
     verifyBubblophyMcpTokenMock.mockReset();
     verifyBubblophyMcpTokenMock.mockResolvedValue(undefined);
+    listBubblophyMcpProjectsMock.mockReset();
+    listBubblophyMcpProjectsMock.mockResolvedValue({
+      status: 'success',
+      projects: [],
+    });
     vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://bubblophy.example.com');
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://auth.example.com');
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'public-anon-key');
@@ -90,6 +138,78 @@ describe('/mcp', () => {
       expect.any(Request),
       'signed-token'
     );
+  });
+
+  it('lists only projects for the verified OAuth identity', async () => {
+    verifyBubblophyMcpTokenMock.mockResolvedValue({
+      token: 'signed-token',
+      clientId: 'client-1',
+      scopes: ['openid'],
+      expiresAt: 2_000_000_000,
+      resource: new URL('https://bubblophy.example.com/mcp'),
+      extra: { authUserId: 'user-1' },
+    });
+    listBubblophyMcpProjectsMock.mockResolvedValue({
+      status: 'success',
+      projects: [
+        {
+          id: 'project_bv',
+          key: 'BV',
+          name: 'Bubblesverse',
+          description: 'Aktives Projekt',
+          role: 'owner',
+          isArchived: false,
+        },
+      ],
+    });
+    const { POST } = await import('@/app/mcp/route');
+    const response = await POST(createListProjectsRequest());
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).toContain('"id":"project_bv"');
+    expect(body).toContain('"role":"owner"');
+    expect(body).not.toContain('signed-token');
+    expect(body).not.toContain('user-1');
+    expect(listBubblophyMcpProjectsMock).toHaveBeenCalledWith('user-1');
+  });
+
+  it('advertises list_projects as a read-only closed-world tool', async () => {
+    verifyBubblophyMcpTokenMock.mockResolvedValue({
+      token: 'signed-token',
+      clientId: 'client-1',
+      scopes: ['openid'],
+      expiresAt: 2_000_000_000,
+      resource: new URL('https://bubblophy.example.com/mcp'),
+      extra: { authUserId: 'user-1' },
+    });
+    const { POST } = await import('@/app/mcp/route');
+    const response = await POST(createListToolsRequest());
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).toContain('"name":"list_projects"');
+    expect(body).toContain('"readOnlyHint":true');
+    expect(body).toContain('"destructiveHint":false');
+    expect(body).toContain('"openWorldHint":false');
+  });
+
+  it('does not call project reads without an authenticated user identity', async () => {
+    verifyBubblophyMcpTokenMock.mockResolvedValue({
+      token: 'signed-token',
+      clientId: 'client-1',
+      scopes: ['openid'],
+      expiresAt: 2_000_000_000,
+      resource: new URL('https://bubblophy.example.com/mcp'),
+      extra: {},
+    });
+    const { POST } = await import('@/app/mcp/route');
+    const response = await POST(createListProjectsRequest());
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).toContain('"isError":true');
+    expect(listBubblophyMcpProjectsMock).not.toHaveBeenCalled();
   });
 
   it('exports the complete Streamable HTTP method contract', async () => {

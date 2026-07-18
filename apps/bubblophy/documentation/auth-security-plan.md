@@ -68,6 +68,11 @@ dauerhaften Autopilot-Rechte.
   Ein Produktions-Runbook muss dafür MCP-Instanzen neu starten und, falls die
   verbleibende Supabase-Edge-Latenz nicht tragbar ist, vor dem Rollout einen
   separaten Remote-Validation-/Cache-Bust-Pfad festlegen.
+- Das read-only MCP-Werkzeug `list_projects` beginnt seine Datenbankabfrage bei
+  `bubblophy_project_members` und filtert auf die validierte OAuth-`sub`. Es
+  liest Rollen bei jedem Aufruf neu und gibt nur Projekt-ID, Key, Name,
+  Beschreibung, Archivstatus und aktuelle Rolle zurück. Agent-Token-, Issue-,
+  Run-, Audit- und andere Userdaten werden nicht selektiert.
 - Tokens werden nur einmal im Klartext gezeigt. Persistiert wird ausschließlich
   ein starker Hash in `bubblophy_agent_tokens.token_hash`.
 - Jedes Token ist auf genau ein Projekt begrenzt.

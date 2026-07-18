@@ -3,11 +3,12 @@ import {
   getBubblophyMcpMetadataUrl,
   getBubblophyMcpResourceUrl,
 } from '@/lib/mcp/oauth-metadata';
+import { registerBubblophyMcpTools } from '@/lib/mcp/register-tools';
 
 import { createMcpHandler, withMcpAuth } from 'mcp-handler';
 
 const transportHandler = createMcpHandler(
-  () => undefined,
+  registerBubblophyMcpTools,
   {
     serverInfo: {
       name: 'bubblophy',
