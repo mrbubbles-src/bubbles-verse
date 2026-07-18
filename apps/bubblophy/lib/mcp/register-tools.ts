@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 import { getBubblophyMcpIssue } from '@/lib/mcp/issue-detail';
+import { getBubblophyMcpIssuePlan } from '@/lib/mcp/issue-plan';
 import { listBubblophyMcpIssues } from '@/lib/mcp/issues';
 import { listBubblophyMcpProjects } from '@/lib/mcp/projects';
 
@@ -76,6 +77,34 @@ const issueDetailOutputSchema = z.object({
     createdAt: z.string(),
     updatedAt: z.string(),
   }),
+});
+
+const issuePlanOutputSchema = z.object({
+  project: z.object({
+    id: z.string(),
+    key: z.string(),
+    isArchived: z.boolean(),
+  }),
+  issue: z.object({
+    key: z.string(),
+    issueNumber: z.number().int().positive(),
+    title: z.string(),
+  }),
+  plan: z
+    .object({
+      version: z.number().int().positive(),
+      summary: z.string(),
+      steps: z.array(
+        z.object({
+          id: z.string(),
+          text: z.string(),
+        })
+      ),
+      approvalStatus: z.enum(['draft', 'approved']),
+      approvedAt: z.string().nullable(),
+      createdAt: z.string(),
+    })
+    .nullable(),
 });
 
 /** Registers Bubblophy's currently available OAuth-backed MCP tools. */
@@ -217,6 +246,52 @@ export function registerBubblophyMcpTools(server: McpServer) {
       };
     }
   );
+
+  server.registerTool(
+    'get_issue_plan',
+    {
+      title: 'Get Bubblophy issue plan',
+      description:
+        'Gets the latest draft or approved plan for one Bubblophy issue visible to the authenticated person.',
+      inputSchema: getIssueInputSchema,
+      outputSchema: issuePlanOutputSchema,
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    async (input, extra) => {
+      const authUserId = readAuthUserId(extra.authInfo?.extra?.authUserId);
+
+      if (!authUserId) {
+        return createToolError('Die authentifizierte User-ID fehlt.');
+      }
+
+      const result = await getBubblophyMcpIssuePlan(authUserId, input);
+
+      if (result.status !== 'success') {
+        return createToolError(readGetIssuePlanError(result.status));
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: result.plan
+              ? `Planversion ${result.plan.version} für ${result.issue.key} gefunden.`
+              : `Für ${result.issue.key} wurde noch kein Plan angelegt.`,
+          },
+        ],
+        structuredContent: {
+          project: result.project,
+          issue: result.issue,
+          plan: result.plan,
+        },
+      };
+    }
+  );
 }
 
 /** Returns a normalized OAuth user ID from MCP auth context data. */
@@ -260,4 +335,19 @@ function readGetIssueError(
   }
 
   return 'Die Anfrage für das Issue ist ungültig.';
+}
+
+/** Maps internal issue plan outcomes to non-sensitive MCP messages. */
+function readGetIssuePlanError(
+  status: 'invalid' | 'not_found' | 'database_unavailable'
+) {
+  if (status === 'database_unavailable') {
+    return 'Bubblophy kann den Issue-Plan gerade nicht laden.';
+  }
+
+  if (status === 'not_found') {
+    return 'Das Issue wurde nicht gefunden oder ist nicht zugänglich.';
+  }
+
+  return 'Die Anfrage für den Issue-Plan ist ungültig.';
 }

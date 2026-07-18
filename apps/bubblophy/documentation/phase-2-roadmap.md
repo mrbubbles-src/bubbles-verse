@@ -103,12 +103,12 @@ Status: abgeschlossen.
 Das Sicherheitsgate ist abgeschlossen. Transport, Protected-Resource-Discovery,
 lokale Supabase-JWT-Validierung, das membership-basierte read-only Werkzeug
 `list_projects`, das paginierte membership-basierte `list_issues`, die
-membership-basierte Detailwerkzeug `get_issue`, die OAuth-vs.-Data-API-RLS-
-Grenze und der persönliche
+membership-basierten Detailwerkzeuge `get_issue` und `get_issue_plan`, die
+OAuth-vs.-Data-API-RLS-Grenze und der persönliche
 OAuth-Consent-Flow sind vorhanden. Ohne
 gültige Signatur, Issuer, Ablauf, Subject, OAuth-Client-ID und exakte
 MCP-Audience bleibt der Zugriff fail-closed. Als Nächstes folgen die genaue
-Supabase-Staging-Konfiguration, vollständige Slice-Gates und der reale
-Codex-/Claude-Smoke nach `documentation/mcp-operations.md`.
+Supabase-Staging-Konfiguration, `get_run` und der reale Codex-/Claude-Smoke nach
+`documentation/mcp-operations.md`.
 Der detaillierte Plan liegt unter
 `docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md`.

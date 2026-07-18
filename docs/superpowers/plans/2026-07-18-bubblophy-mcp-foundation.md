@@ -337,3 +337,28 @@ sind nicht unterscheidbar.
 - [x] **Step 3: Read-only MCP-Werkzeug registrieren**
 - [x] **Step 4: Reviewer und vollständige Slice-Gates ausführen**
 - [x] **Step 5: Fertigen Slice separat committen**
+
+### Task 9: Membership-scoped read-only `get_issue_plan`
+
+**Files:**
+
+- Create: `apps/bubblophy/lib/mcp/issue-plan.ts`
+- Create: `apps/bubblophy/lib/mcp/issue-plan-database-read.ts`
+- Create: `apps/bubblophy/__tests__/lib/mcp/issue-plan.test.ts`
+- Create: `apps/bubblophy/__tests__/lib/mcp/issue-plan-database-read.test.ts`
+- Modify: `apps/bubblophy/lib/mcp/register-tools.ts`
+- Modify: `apps/bubblophy/__tests__/app/mcp-route.test.ts`
+
+**Contract:** `projectId` plus positive `issueNumber` laden die neueste
+Planversion in derselben Membership-gejointen Abfrage. Der Vertrag liefert
+Zusammenfassung, normalisierte Schritte, Version, Erstellungszeit und den
+ausdrücklichen Status `draft` oder `approved`, aber keine internen Issue-, Plan-
+oder Actor-IDs. Ein sichtbares Issue ohne Plan liefert erfolgreich `plan: null`;
+fehlende und fremde Ressourcen sind nicht unterscheidbar. Archivierte
+Mitgliedschaftsprojekte bleiben historische read-only Ansichten.
+
+- [x] **Step 1: Service- und Datenbanktests zuerst schreiben**
+- [x] **Step 2: Membership-gejointe Latest-Plan-Abfrage implementieren**
+- [x] **Step 3: Read-only MCP-Werkzeug registrieren**
+- [x] **Step 4: Reviewer und vollständige Slice-Gates ausführen**
+- [x] **Step 5: Fertigen Slice separat committen**

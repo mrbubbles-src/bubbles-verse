@@ -119,6 +119,10 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   den Titel, die Beschreibung, Status, Priorität, Approval-Flag und Zeitstempel.
   Es bindet das Detail in derselben Abfrage an die aktuelle Membership und gibt
   keine internen Issue- oder User-IDs, Pläne, Runs, Tokens oder Events aus.
+- Das read-only Werkzeug `get_issue_plan` lädt für ein sichtbares Issue nur die
+  neueste Planversion. Es kennzeichnet sie ausdrücklich als `draft` oder
+  `approved`, liefert bei noch fehlendem Plan erfolgreich `plan: null` und gibt
+  keine internen Issue-/Plan- oder Actor-IDs aus.
 - `/oauth/consent` übernimmt die einmalige persönliche Zustimmung für neue
   MCP-Clients. Bubblophy zeigt Clientname, angeforderte Standard-Scopes und das
   registrierte Rücksprungziel; Erlauben oder Ablehnen läuft ausschließlich über

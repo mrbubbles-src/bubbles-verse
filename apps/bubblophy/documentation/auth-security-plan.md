@@ -89,6 +89,12 @@ dauerhaften Autopilot-Rechte.
   aus der Liste und bindet beides zusammen mit OAuth-`sub` an eine aktuelle
   Membership. Der Detailvertrag ergänzt die Beschreibung und Zeitstempel, aber
   keine internen Issue-/User-IDs, Pläne, Runs, Tokens oder Events.
+- Das read-only MCP-Werkzeug `get_issue_plan` bindet dieselben Parameter in
+  einer Abfrage an die aktuelle Membership und liefert ausschließlich die nach
+  Version und Erstellungszeit neueste Planversion. `draft` und `approved`
+  werden ausdrücklich unterschieden; Plan-/Issue-/Actor-IDs werden nicht
+  selektiert. Ein sichtbares Issue ohne Plan bleibt mit `plan: null`
+  unterscheidbar von einer fremden oder fehlenden Ressource.
 - Die OAuth-Zustimmungsseite verlangt zusätzlich zur Supabase-Cookie-Session
   den aktuellen DB-basierten Bubblophy-Zugang. Die Decision-Route akzeptiert nur
   URL-encoded `POST`-Formulare mit exakt passendem kanonischem Origin; zusammen
