@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
@@ -27,6 +27,22 @@ const oauthDirectReadHardeningPath = join(
 const oauthDirectReadHardeningSql = existsSync(oauthDirectReadHardeningPath)
   ? normalizeSql(readFileSync(oauthDirectReadHardeningPath, 'utf8'))
   : '';
+const invitationMigrationPath = join(
+  process.cwd(),
+  'drizzle/0006_add_project_invitations.sql'
+);
+const invitationMigrationSql = existsSync(invitationMigrationPath)
+  ? normalizeSql(readFileSync(invitationMigrationPath, 'utf8'))
+  : '';
+const allMigrationSql = readdirSync(join(process.cwd(), 'drizzle'))
+  .filter((fileName) => /^\d{4}_.+\.sql$/.test(fileName))
+  .sort()
+  .map((fileName) =>
+    readFileSync(join(process.cwd(), 'drizzle', fileName), 'utf8')
+  );
+const normalizedAllMigrationSql = normalizeSql(allMigrationSql.join('\n'));
+const invitationPolicyPattern =
+  /\bcreate\s+policy\b[^;]*\bon\s+(?:(?:"public"|public)\.)?(?:"bubblophy_project_invitations"|bubblophy_project_invitations)(?=\s|;|$)/;
 
 const rlsProtectedTables = [
   'bubblophy_projects',
@@ -56,6 +72,30 @@ function getPolicyStatements(sql: string): string[] {
     .split('--> statement-breakpoint')
     .map((statement) => normalizeSql(statement))
     .filter((statement) => statement.startsWith('create policy'));
+}
+
+/** Splits SQL into normalized semicolon-delimited statements. */
+function getSqlStatements(sql: string): string[] {
+  return sql
+    .split(';')
+    .map((statement) => normalizeSql(statement))
+    .filter(Boolean);
+}
+
+/** Detects grants that expose the invitation table directly or schema-wide. */
+function grantsDirectInvitationAccess(statement: string): boolean {
+  if (!/\bgrant\b/.test(statement)) {
+    return false;
+  }
+
+  return (
+    /(?:"bubblophy_project_invitations"|\bbubblophy_project_invitations\b)/.test(
+      statement
+    ) ||
+    /\bon\s+all\s+tables\s+in\s+schema\s+(?:"public"|public)(?=\s|,|$)/.test(
+      statement
+    )
+  );
 }
 
 describe('bubblophy RLS migration', () => {
@@ -149,6 +189,43 @@ describe('bubblophy RLS migration', () => {
         `with check (((select auth.jwt()) ->> 'client_id') is null)`
       );
     }
+  });
+
+  it('keeps invitation identities and token hashes behind server-only access', () => {
+    expect(drizzleJournalSql).toContain(
+      '"tag": "0006_add_project_invitations"'
+    );
+    expect(invitationMigrationSql).toContain(
+      'alter table "public"."bubblophy_project_invitations" enable row level security'
+    );
+    expect(invitationMigrationSql).toContain(
+      'revoke all on table "public"."bubblophy_project_invitations" from public, anon, authenticated'
+    );
+    expect(invitationMigrationSql).toContain(
+      '"bubblophy_project_invitations"."accepted_at" < "bubblophy_project_invitations"."expires_at"'
+    );
+    expect(
+      allMigrationSql
+        .flatMap(getSqlStatements)
+        .filter(grantsDirectInvitationAccess)
+    ).toEqual([]);
+    expect(normalizedAllMigrationSql).not.toMatch(invitationPolicyPattern);
+  });
+
+  it('detects future invitation grants and policies across SQL variants', () => {
+    for (const statement of [
+      'GRANT SELECT ON "public"."bubblophy_project_invitations" TO authenticated',
+      'GRANT ALL ON TABLE public.bubblophy_project_invitations TO authenticated',
+      'GRANT SELECT ON TABLE public.foo, public.bubblophy_project_invitations TO authenticated',
+      'GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated',
+    ]) {
+      expect(grantsDirectInvitationAccess(normalizeSql(statement))).toBe(true);
+    }
+    expect(
+      normalizeSql(
+        'SET search_path = public; CREATE POLICY invite_read ON bubblophy_project_invitations FOR SELECT USING (true);'
+      )
+    ).toMatch(invitationPolicyPattern);
   });
 
   it('limits direct authenticated reads to project membership boundaries', () => {

@@ -43,6 +43,13 @@
       "when": 1784397709657,
       "tag": "0005_add_oauth_audit_attribution",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784410770287,
+      "tag": "0006_add_project_invitations",
+      "breakpoints": true
     }
   ]
 }

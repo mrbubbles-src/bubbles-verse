@@ -7,6 +7,7 @@ import {
   bubblophyIssuePlans,
   bubblophyIssues,
   bubblophyProjectEvents,
+  bubblophyProjectInvitations,
   bubblophyProjectMembers,
   bubblophyProjects,
 } from '@/drizzle/db/schema';
@@ -15,9 +16,20 @@ export const bubblophyProjectRelations = relations(
   bubblophyProjects,
   ({ many }) => ({
     members: many(bubblophyProjectMembers),
+    invitations: many(bubblophyProjectInvitations),
     issues: many(bubblophyIssues),
     agentTokens: many(bubblophyAgentTokens),
     events: many(bubblophyProjectEvents),
+  })
+);
+
+export const bubblophyProjectInvitationRelations = relations(
+  bubblophyProjectInvitations,
+  ({ one }) => ({
+    project: one(bubblophyProjects, {
+      fields: [bubblophyProjectInvitations.projectId],
+      references: [bubblophyProjects.id],
+    }),
   })
 );
 

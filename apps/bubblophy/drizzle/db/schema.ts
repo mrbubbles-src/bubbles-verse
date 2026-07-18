@@ -3,6 +3,7 @@ import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import {
   boolean,
+  check,
   index,
   integer,
   jsonb,
@@ -32,6 +33,9 @@ export const bubblophyProjectRole = pgEnum('bubblophy_project_role', [
   'member',
   'viewer',
 ]);
+
+export type BubblophyProjectRole =
+  (typeof bubblophyProjectRole.enumValues)[number];
 
 export const bubblophyIssueStatus = pgEnum('bubblophy_issue_status', [
   'triage',
@@ -156,6 +160,79 @@ export const bubblophyProjectMembers = pgTable(
     }),
     authUserIdx: index('bubblophy_project_members_auth_user_idx').on(
       table.authUserId
+    ),
+  })
+);
+
+export const bubblophyProjectInvitations = pgTable(
+  'bubblophy_project_invitations',
+  {
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => bubblophyProjects.id, { onDelete: 'cascade' }),
+    normalizedEmail: text('normalized_email').notNull(),
+    role: bubblophyProjectRole().notNull(),
+    tokenHash: text('token_hash').notNull(),
+    invitedByAuthUserId: text('invited_by_auth_user_id').notNull(),
+    acceptedByAuthUserId: text('accepted_by_auth_user_id'),
+    revokedByAuthUserId: text('revoked_by_auth_user_id'),
+    expiresAt: timestamp('expires_at', {
+      mode: 'string',
+      precision: 3,
+    }).notNull(),
+    acceptedAt: timestamp('accepted_at', { mode: 'string', precision: 3 }),
+    revokedAt: timestamp('revoked_at', { mode: 'string', precision: 3 }),
+    createdAt: timestamp('created_at', { mode: 'string', precision: 3 })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { mode: 'string', precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    tokenHashIdx: uniqueIndex(
+      'bubblophy_project_invitations_token_hash_idx'
+    ).on(table.tokenHash),
+    openEmailIdx: uniqueIndex('bubblophy_project_invitations_open_email_idx')
+      .on(table.projectId, table.normalizedEmail)
+      .where(sql`${table.acceptedAt} is null and ${table.revokedAt} is null`),
+    projectCreatedIdx: index(
+      'bubblophy_project_invitations_project_created_idx'
+    ).on(table.projectId, table.createdAt),
+    roleCheck: check(
+      'bubblophy_project_invitations_role_check',
+      sql`${table.role} <> 'owner'`
+    ),
+    normalizedEmailCheck: check(
+      'bubblophy_project_invitations_normalized_email_check',
+      sql`${table.normalizedEmail} = lower(btrim(${table.normalizedEmail})) and length(${table.normalizedEmail}) between 3 and 320 and position('@' in ${table.normalizedEmail}) > 1`
+    ),
+    tokenHashCheck: check(
+      'bubblophy_project_invitations_token_hash_check',
+      sql`${table.tokenHash} ~ '^sha256:[0-9a-f]{64}$'`
+    ),
+    expiryCheck: check(
+      'bubblophy_project_invitations_expiry_check',
+      sql`${table.expiresAt} > ${table.createdAt}`
+    ),
+    acceptancePairCheck: check(
+      'bubblophy_project_invitations_acceptance_pair_check',
+      sql`(${table.acceptedAt} is null) = (${table.acceptedByAuthUserId} is null)`
+    ),
+    revocationPairCheck: check(
+      'bubblophy_project_invitations_revocation_pair_check',
+      sql`(${table.revokedAt} is null) = (${table.revokedByAuthUserId} is null)`
+    ),
+    terminalStateCheck: check(
+      'bubblophy_project_invitations_terminal_state_check',
+      sql`not (${table.acceptedAt} is not null and ${table.revokedAt} is not null)`
+    ),
+    terminalTimeCheck: check(
+      'bubblophy_project_invitations_terminal_time_check',
+      sql`(${table.acceptedAt} is null or (${table.acceptedAt} >= ${table.createdAt} and ${table.acceptedAt} < ${table.expiresAt})) and (${table.revokedAt} is null or ${table.revokedAt} >= ${table.createdAt})`
     ),
   })
 );

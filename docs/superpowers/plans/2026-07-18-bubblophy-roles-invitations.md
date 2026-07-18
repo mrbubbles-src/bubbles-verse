@@ -58,11 +58,11 @@ Einladungspersistenz.
 
 ## Task 3: Einladungspersistenz und Verwaltung
 
-- [ ] Einladungstabelle mit normalisierter E-Mail, Rolle, Token-Hash,
+- [x] Einladungstabelle mit normalisierter E-Mail, Rolle, Token-Hash,
       Einladendem, Ablauf-, Annahme- und Widerrufszeitpunkten ergänzen.
-- [ ] Invarianten für Nicht-Owner-Rollen und widerspruchsfreie Zustände in der
+- [x] Invarianten für Nicht-Owner-Rollen und widerspruchsfreie Zustände in der
       Datenbank absichern.
-- [ ] Direkte RLS-Reads auf Einladungsdaten schließen.
+- [x] Direkte RLS-Reads auf Einladungsdaten schließen.
 - [ ] Create-/Reinvite-/Revoke-Verträge mit gesperrter Manager-Autorisierung,
       sicheren Tokens und E-Mail-freien Audit-Ereignissen implementieren.
 - [ ] Nur Owner/Maintainer erhalten einen serverseitig redigierten

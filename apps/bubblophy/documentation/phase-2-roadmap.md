@@ -70,6 +70,10 @@ Status: abgeschlossen.
   und Zuweisung verwenden ebenfalls Projekt-, Issue- und sortierte
   Membership-Locks. Damit ist das Autorisierungs-Race-Gate vor der
   Einladungspersistenz abgeschlossen.
+- Die Einladungspersistenz ist mit normalisierter E-Mail, Nicht-Owner-Rolle,
+  gehashtem Token, Ablauf- und konfliktfreien Terminalzuständen angelegt.
+  Direkte RLS-Reads bleiben vollständig geschlossen; Create/Reinvite/Revoke
+  und Annahme folgen als getrennte Slices.
 - Mitglieder über Profil oder E-Mail statt technischer Auth-User-ID einladen.
 - Einladungszustände, Ablauf, Annahme und Widerruf auditierbar machen.
 - Rollenansichten und Mutationsrechte für Owner, Maintainer, Member und Viewer

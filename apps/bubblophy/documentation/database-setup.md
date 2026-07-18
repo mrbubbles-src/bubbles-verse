@@ -21,8 +21,8 @@ angewendet.
 
 ## Vorbereitete Migration
 
-Die Struktur, RLS-Härtung und OAuth-Audit-Attribution liegen aktuell in sechs lokalen
-Migrationen:
+Die Struktur, RLS-Härtung, OAuth-Audit-Attribution und Einladungsbasis liegen
+aktuell in sieben lokalen Migrationen:
 
 ```text
 apps/bubblophy/drizzle/0000_premium_psynapse.sql
@@ -31,6 +31,7 @@ apps/bubblophy/drizzle/0002_bubblophy_rls_baseline.sql
 apps/bubblophy/drizzle/0003_close_sensitive_direct_reads.sql
 apps/bubblophy/drizzle/0004_close_oauth_direct_reads.sql
 apps/bubblophy/drizzle/0005_add_oauth_audit_attribution.sql
+apps/bubblophy/drizzle/0006_add_project_invitations.sql
 ```
 
 `0000_premium_psynapse.sql` erzeugt:
@@ -103,6 +104,16 @@ begrenzt.
 Issue- und Projekt-Events. Dadurch können persönliche MCP-Schreibvorgänge neben
 der menschlichen Auth-User-ID den verwendeten OAuth-Client festhalten, während
 bestehende UI- und Agent-Schreibpfade kompatibel bleiben.
+
+`0006_add_project_invitations.sql` ergänzt den server-only Vorzustand für
+Projektmitgliedschaften. Die Tabelle speichert normalisierte E-Mail-Adressen,
+Nicht-Owner-Rollen und ausschließlich SHA-256-Token-Hashes. Checks koppeln
+Annahme- und Widerrufszeitpunkte an ihre Actor-IDs, schließen widersprüchliche
+Terminalzustände aus und erzwingen ein echtes Ablaufdatum. Pro Projekt und
+E-Mail darf nur eine nicht angenommene, nicht widerrufene Einladung bestehen.
+RLS ist aktiviert; direkte Grants und Policies für `public`, `anon` und
+`authenticated` fehlen absichtlich, damit E-Mail und Token-Hash nur über
+serverseitige Verträge gelesen werden können.
 
 Die Zielumgebung braucht zusätzlich einen Supabase-Custom-Access-Token-Hook,
 der JWTs mit `client_id` die exakte Audience `<NEXT_PUBLIC_APP_URL>/mcp` gibt.

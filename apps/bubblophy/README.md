@@ -302,6 +302,11 @@ bun run build
 - Direkte `authenticated`-RLS-Reads auf rohe Agent-Run-Resultate und
   Issue-Event-Payloads sind geschlossen. Diese Daten werden nur über
   membership-geprüfte serverseitige DTOs ausgegeben.
+- Projekt-Einladungen besitzen eine server-only Persistenzbasis mit
+  normalisierter E-Mail, Nicht-Owner-Rolle, SHA-256-Token-Hash, Ablauf und
+  widerspruchsfreien Annahme-/Widerrufsfeldern. Direkte RLS-Grants oder
+  -Policies gibt es für diese Tabelle nicht; eine Einladung gewährt vor der
+  späteren atomaren Annahme keinerlei Mitgliedschaft oder MCP-Zugriff.
 - Persistierte Plan-Erfassung läuft serverseitig über Issue-Projektmitgliedschaft,
   schreibt eine neue Planversion plus `plan_updated`-Event und startet keine
   Agent-Runs.

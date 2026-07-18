@@ -73,6 +73,9 @@
   to prevent lock-order deadlocks with audit inserts.
 - Hardened human issue content, priority, and assignment writes with the shared
   project/issue lock context and one sorted actor/assignee membership recheck.
+- Added the server-only project invitation schema with normalized email,
+  non-owner roles, hashed tokens, lifecycle invariants, one open invite per
+  project/email, and no direct RLS grants or policies.
 
 All notable changes to this project will be documented in this file.
 
