@@ -58,7 +58,7 @@ Formatierung, Lint, Typecheck, Tests, Build und laufenden Reviewer abschließen.
 - Consumes: Web-Standard `Request`/`Response` aus Next.js Route Handlers.
 - Produces: `GET`, `POST` und `DELETE` für den stateless Streamable-HTTP-Endpunkt `/mcp`.
 
-- [ ] **Step 1: Abhängigkeiten vom Repository-Root installieren**
+- [x] **Step 1: Abhängigkeiten vom Repository-Root installieren**
 
 Run:
 
@@ -68,15 +68,15 @@ bun add mcp-handler@1.1.0 @modelcontextprotocol/sdk@1.26.0 --filter=bubblophy
 
 Expected: `apps/bubblophy/package.json` enthält beide direkten Abhängigkeiten und `bun.lock` ist aktualisiert.
 
-- [ ] **Step 2: Failing Route-Test schreiben**
+- [x] **Step 2: Failing Route-Test schreiben**
 
 Der Test sendet einen MCP-`initialize`-Request an `POST` und erwartet ohne Bearer-Token `401`, `WWW-Authenticate: Bearer` und einen `resource_metadata`-Verweis auf Bubblophys Well-Known-Route.
 
-- [ ] **Step 3: Minimalen stateless Handler anlegen**
+- [x] **Step 3: Minimalen stateless Handler anlegen**
 
 `app/mcp/route.ts` erstellt den Handler mit `createMcpHandler`, deaktiviert Legacy-SSE und exportiert `GET`, `POST` sowie `DELETE`. Die Auth-Hülle wird in Task 3 angeschlossen.
 
-- [ ] **Step 4: Route-Test ausführen**
+- [x] **Step 4: Route-Test ausführen**
 
 Run:
 
@@ -89,28 +89,28 @@ Expected: Der Auth-Vertrag schlägt bis Task 3 gezielt fehl; Transport-Imports u
 ### Task 2: OAuth-Discovery und MCP-Audience
 
 **Files:**
-- Modify: `apps/bubblophy/lib/env.ts`
 - Create: `apps/bubblophy/lib/mcp/oauth-metadata.ts`
 - Create: `apps/bubblophy/app/.well-known/oauth-protected-resource/route.ts`
+- Create: `apps/bubblophy/app/.well-known/oauth-protected-resource/mcp/route.ts`
 - Test: `apps/bubblophy/__tests__/lib/mcp/oauth-metadata.test.ts`
 
 **Interfaces:**
 - Consumes: `NEXT_PUBLIC_APP_URL` und `NEXT_PUBLIC_SUPABASE_URL`.
 - Produces: `getBubblophyMcpResourceUrl(): string`, `getBubblophyOAuthIssuerUrl(): string` und RFC-9728-Metadaten für `/mcp`.
 
-- [ ] **Step 1: Failing Metadata-Tests schreiben**
+- [x] **Step 1: Failing Metadata-Tests schreiben**
 
 Die Tests erwarten als Resource `${NEXT_PUBLIC_APP_URL}/mcp`, als Authorization Server `${NEXT_PUBLIC_SUPABASE_URL}/auth/v1` und keine geheimen Umgebungswerte in der Antwort.
 
-- [ ] **Step 2: URL-Helfer implementieren**
+- [x] **Step 2: URL-Helfer implementieren**
 
 Die Helfer normalisieren nur abschließende Slashes und akzeptieren keine frei eingereichten Request-Hosts. Dadurch können Host-Header die OAuth-Metadaten nicht umbiegen.
 
-- [ ] **Step 3: Protected-Resource-Route implementieren**
+- [x] **Step 3: Protected-Resource-Route implementieren**
 
 Die Route verwendet `protectedResourceHandler` aus `mcp-handler` und nennt ausschließlich den konfigurierten Supabase-Issuer. Eine `OPTIONS`-Antwort erlaubt Discovery durch Remote-Clients.
 
-- [ ] **Step 4: Tests ausführen**
+- [x] **Step 4: Tests ausführen**
 
 Run:
 
@@ -142,7 +142,7 @@ Der Service validiert das asymmetrisch signierte JWT lokal über Supabase JWKS u
 
 - [ ] **Step 3: MCP-Handler mit `withMcpAuth` schützen**
 
-Die Auth-Hülle verweist auf `/.well-known/oauth-protected-resource` und liefert für fehlende/ungültige Tokens den standardisierten Discovery-Header.
+Die Auth-Hülle verweist auf den für `/mcp` abgeleiteten Pfad `/.well-known/oauth-protected-resource/mcp` und liefert für fehlende/ungültige Tokens den standardisierten Discovery-Header.
 
 - [ ] **Step 4: Auth- und Route-Tests ausführen**
 

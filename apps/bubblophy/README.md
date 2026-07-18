@@ -95,6 +95,14 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   `documentation/auth-security-plan.md`.
 - Der Nach-MVP-Umfang, beginnend mit einem providerneutralen Remote-MCP über
   Supabase OAuth 2.1, liegt in `documentation/phase-2-roadmap.md`.
+- `/mcp` stellt den stateless Streamable-HTTP-Transport für den kommenden
+  persönlichen OAuth-Zugriff bereit. Bis zur vollständigen Supabase-JWT-Prüfung
+  lehnt die Route alle Zugriffe ab und verweist über `WWW-Authenticate` auf
+  Bubblophys Protected-Resource-Metadaten.
+- `/.well-known/oauth-protected-resource/mcp` veröffentlicht Bubblophys fest
+  konfigurierte MCP-Resource und den Supabase-Auth-Issuer. Der Origin-Pfad ohne
+  `/mcp` bleibt als kompatibler Alias verfügbar. Eingereichte Host- oder
+  Forwarding-Header können diese Discovery-Ziele nicht verändern.
 - Die UI nutzt einen typisierten Dashboard-Snapshot als View Model. Der
   server-only Read-Pfad unter `lib/dashboard/data.ts` kann Datenbankzeilen
   inklusive Projekten, Issues mit Beschreibungen, öffentlichen
@@ -136,6 +144,8 @@ bun run build
 ## Sicherheit
 
 - Menschen loggen sich über Supabase/GitHub ein.
+- Der neue Remote-MCP-Transport ist fail-closed: Ein vorhandener Endpunkt gibt
+  ohne verifiziertes persönliches OAuth-Token keine Werkzeuge oder Daten frei.
 - Die Auth-Grundstruktur nutzt nur `NEXT_PUBLIC_*` Supabase-Anon-Konfiguration.
 - Das Dashboard unter `/` verlangt eine Supabase-Session und prüft
   serverseitig DB-basierten Zugang. Ein aktiver Eintrag in

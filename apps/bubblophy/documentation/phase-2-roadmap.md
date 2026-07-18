@@ -95,7 +95,8 @@ Status: abgeschlossen.
 
 ## Aktueller Slice
 
-Das Sicherheitsgate ist abgeschlossen. Der aktuelle MCP-Slice liefert die
-kleinste Ende-zu-Ende-Verbindung: OAuth-Discovery, Consent, Tokenvalidierung und
-das read-only Werkzeug `list_projects`. Der detaillierte Plan liegt unter
+Das Sicherheitsgate ist abgeschlossen. Transport und Protected-Resource-
+Discovery sind vorhanden, bleiben bis zur Supabase-JWT-Validierung aber bewusst
+fail-closed. Als Nächstes folgen Tokenvalidierung, Consent und das read-only
+Werkzeug `list_projects`. Der detaillierte Plan liegt unter
 `docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md`.

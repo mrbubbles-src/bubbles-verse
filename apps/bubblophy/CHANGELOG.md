@@ -9,6 +9,8 @@
 - Required executable agent tokens at run request and approval time, kept
   cancellation available for unavailable tokens, and made human/agent run
   transitions compare-and-set safe.
+- Added a fail-closed stateless `/mcp` transport plus RFC 9728 protected-resource
+  discovery pinned to Bubblophy's configured app URL and Supabase Auth issuer.
 
 All notable changes to this project will be documented in this file.
 
