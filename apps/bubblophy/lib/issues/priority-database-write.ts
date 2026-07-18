@@ -6,15 +6,15 @@ import type {
   BubblophyIssuePriorityUpdateStoreInput,
 } from '@/lib/issues/priority';
 
+import { lockBubblophyIssueContributorWriteContext } from '@/lib/issues/contributor-write-context-database';
 import { parseBubblophyIssueKey } from '@/lib/issues/plan-database-write';
 
-import { and, eq, sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 import {
   bubblophyIssueEvents,
   bubblophyIssuePlans,
   bubblophyIssues,
-  bubblophyProjectMembers,
   bubblophyProjects,
 } from '@/drizzle/db/schema';
 
@@ -47,7 +47,9 @@ export function createDrizzleBubblophyIssuePriorityUpdateStore(): BubblophyIssue
  */
 async function updateIssuePriorityWithEvent(
   input: BubblophyIssuePriorityUpdateStoreInput
-): ReturnType<BubblophyIssuePriorityUpdateStore['updateIssuePriorityWithEvent']> {
+): ReturnType<
+  BubblophyIssuePriorityUpdateStore['updateIssuePriorityWithEvent']
+> {
   const issueKey = parseBubblophyIssueKey(input.issueId);
 
   if (!issueKey) {
@@ -57,48 +59,33 @@ async function updateIssuePriorityWithEvent(
   const { db } = await import('@/drizzle/db');
 
   return db.transaction(async (tx) => {
+    const writeContext = await lockBubblophyIssueContributorWriteContext(tx, {
+      authUserId: input.authUserId,
+      projectKey: issueKey.projectKey,
+      issueNumber: issueKey.issueNumber,
+    });
+
+    if (writeContext.status !== 'ready') {
+      return writeContext;
+    }
+
     const [currentIssue] = await tx
       .select({
         id: bubblophyIssues.id,
         issueNumber: bubblophyIssues.issueNumber,
         priority: bubblophyIssues.priority,
-        projectId: bubblophyProjects.id,
-        projectKey: bubblophyProjects.key,
         projectName: bubblophyProjects.name,
-        memberAuthUserId: bubblophyProjectMembers.authUserId,
-        memberRole: bubblophyProjectMembers.role,
       })
       .from(bubblophyIssues)
       .innerJoin(
         bubblophyProjects,
         eq(bubblophyProjects.id, bubblophyIssues.projectId)
       )
-      .leftJoin(
-        bubblophyProjectMembers,
-        and(
-          eq(bubblophyProjectMembers.projectId, bubblophyProjects.id),
-          eq(bubblophyProjectMembers.authUserId, input.authUserId)
-        )
-      )
-      .where(
-        and(
-          eq(bubblophyProjects.key, issueKey.projectKey),
-          eq(bubblophyProjects.isArchived, false),
-          eq(bubblophyIssues.issueNumber, issueKey.issueNumber)
-        )
-      )
+      .where(eq(bubblophyIssues.id, writeContext.issueDatabaseId))
       .limit(1);
 
     if (!currentIssue) {
-      return { status: 'not_found' };
-    }
-
-    if (
-      !currentIssue.memberAuthUserId ||
-      !currentIssue.memberRole ||
-      !canMutateBubblophyIssuePriority(currentIssue.memberRole)
-    ) {
-      return { status: 'forbidden' };
+      throw new Error('Locked Bubblophy issue could not be reloaded.');
     }
 
     if (
@@ -153,8 +140,8 @@ async function updateIssuePriorityWithEvent(
       status: 'updated',
       issue: {
         project: {
-          id: currentIssue.projectId,
-          key: currentIssue.projectKey,
+          id: writeContext.projectId,
+          key: writeContext.projectKey,
           name: currentIssue.projectName,
         },
         issue: {
@@ -164,16 +151,6 @@ async function updateIssuePriorityWithEvent(
       },
     };
   });
-}
-
-/**
- * Checks whether a project role may mutate issue priority.
- *
- * @param role Project membership role from persistence.
- * @returns True for contributors, false for read-only viewers.
- */
-export function canMutateBubblophyIssuePriority(role: string) {
-  return ['owner', 'maintainer', 'member'].includes(role);
 }
 
 /**

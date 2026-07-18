@@ -66,8 +66,10 @@ Status: abgeschlossen.
 - Status: bestehende Rollenmutationen transaktions- und konfliktfest gehärtet;
   Projektverwaltung und Agent-Token-Manager-Writer sind ebenfalls gegen
   parallelen Rollenentzug gesichert. Auch menschliche Run-Entscheidungen prüfen
-  Rolle, Run-Zustand und Token unter geordneten Locks. Die verbleibenden
-  Issue-Writer folgen vor Einladungspersistenz und Manager-Verwaltung.
+  Rolle, Run-Zustand und Token unter geordneten Locks. Issue-Inhalt, Priorität
+  und Zuweisung verwenden ebenfalls Projekt-, Issue- und sortierte
+  Membership-Locks. Damit ist das Autorisierungs-Race-Gate vor der
+  Einladungspersistenz abgeschlossen.
 - Mitglieder über Profil oder E-Mail statt technischer Auth-User-ID einladen.
 - Einladungszustände, Ablauf, Annahme und Widerruf auditierbar machen.
 - Rollenansichten und Mutationsrechte für Owner, Maintainer, Member und Viewer

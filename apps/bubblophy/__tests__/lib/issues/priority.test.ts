@@ -9,7 +9,6 @@ import {
 } from '@/lib/issues/priority';
 import {
   buildBubblophyIssuePriorityChangedEventInsert,
-  canMutateBubblophyIssuePriority,
   shouldSkipBubblophyIssuePriorityChangeEvent,
 } from '@/lib/issues/priority-database-write';
 
@@ -18,7 +17,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 function createStore(
   handler: (
     input: BubblophyIssuePriorityUpdateStoreInput
-  ) => ReturnType<BubblophyIssuePriorityUpdateStore['updateIssuePriorityWithEvent']>
+  ) => ReturnType<
+    BubblophyIssuePriorityUpdateStore['updateIssuePriorityWithEvent']
+  >
 ): BubblophyIssuePriorityUpdateStore {
   return {
     updateIssuePriorityWithEvent: vi.fn(handler),
@@ -193,17 +194,10 @@ describe('Bubblophy issue priority helpers', () => {
     });
   });
 
-  it('allows contributors but blocks read-only viewers from issue priority edits', () => {
-    expect(canMutateBubblophyIssuePriority('owner')).toBe(true);
-    expect(canMutateBubblophyIssuePriority('maintainer')).toBe(true);
-    expect(canMutateBubblophyIssuePriority('member')).toBe(true);
-    expect(canMutateBubblophyIssuePriority('viewer')).toBe(false);
-  });
-
   it('detects same-priority no-op transitions before writing events', () => {
-    expect(shouldSkipBubblophyIssuePriorityChangeEvent('medium', 'medium')).toBe(
-      true
-    );
+    expect(
+      shouldSkipBubblophyIssuePriorityChangeEvent('medium', 'medium')
+    ).toBe(true);
     expect(shouldSkipBubblophyIssuePriorityChangeEvent('medium', 'high')).toBe(
       false
     );

@@ -9,7 +9,6 @@ import {
 } from '@/lib/issues/edit';
 import {
   buildBubblophyIssueUpdatedEventInsert,
-  canMutateBubblophyIssueContent,
   getChangedBubblophyIssueContentFields,
 } from '@/lib/issues/edit-database-write';
 
@@ -18,7 +17,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 function createStore(
   handler: (
     input: BubblophyIssueContentUpdateStoreInput
-  ) => ReturnType<BubblophyIssueContentUpdateStore['updateIssueContentWithEvent']>
+  ) => ReturnType<
+    BubblophyIssueContentUpdateStore['updateIssueContentWithEvent']
+  >
 ): BubblophyIssueContentUpdateStore {
   return {
     updateIssueContentWithEvent: vi.fn(handler),
@@ -217,13 +218,6 @@ describe('Bubblophy issue edit helpers', () => {
       planSteps: 1,
       approvalRequired: true,
     });
-  });
-
-  it('allows contributors but blocks read-only viewers from issue edits', () => {
-    expect(canMutateBubblophyIssueContent('owner')).toBe(true);
-    expect(canMutateBubblophyIssueContent('maintainer')).toBe(true);
-    expect(canMutateBubblophyIssueContent('member')).toBe(true);
-    expect(canMutateBubblophyIssueContent('viewer')).toBe(false);
   });
 
   it('detects no-op content edits before writing events', () => {

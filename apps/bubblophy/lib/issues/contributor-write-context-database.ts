@@ -2,15 +2,15 @@ import 'server-only';
 
 import type { db as bubblophyDb } from '@/drizzle/db';
 
+import {
+  lockBubblophyProjectForHumanWrite,
+  lockBubblophyProjectMembersForHumanWrite,
+} from '@/lib/projects/human-write-locks-database';
 import { canContributeToBubblophyProject } from '@/lib/projects/permissions';
 
 import { and, eq } from 'drizzle-orm';
 
-import {
-  bubblophyIssues,
-  bubblophyProjectMembers,
-  bubblophyProjects,
-} from '@/drizzle/db/schema';
+import { bubblophyIssues } from '@/drizzle/db/schema';
 
 export type BubblophyContributorWriteTransaction = Parameters<
   Parameters<typeof bubblophyDb.transaction>[0]
@@ -20,6 +20,11 @@ export type BubblophyIssueContributorWriteContextResult =
   | {
       status: 'ready';
       issueDatabaseId: string;
+      projectId: string;
+      projectKey: string;
+      memberships: Awaited<
+        ReturnType<typeof lockBubblophyProjectMembersForHumanWrite>
+      >;
     }
   | { status: 'not_found' }
   | { status: 'forbidden' };
@@ -30,7 +35,8 @@ export type BubblophyIssueContributorWriteContextResult =
  * Project `SHARE` prevents archival while remaining compatible with audit
  * event foreign keys. Issue `NO KEY UPDATE` serializes non-key mutations while
  * remaining compatible with the audit event's implicit foreign-key lock.
- * Membership `UPDATE` keeps authorization stable until commit.
+ * Actor and optional related memberships are locked in one stable `UPDATE`
+ * order so authorization and assignment targets remain valid until commit.
  *
  * @param tx Active Drizzle transaction that will perform the mutation.
  * @param input Authenticated user plus parsed project key and issue number.
@@ -42,21 +48,15 @@ export async function lockBubblophyIssueContributorWriteContext(
     authUserId: string;
     projectKey: string;
     issueNumber: number;
+    relatedAuthUserIds?: string[];
   }
 ): Promise<BubblophyIssueContributorWriteContextResult> {
-  const [project] = await tx
-    .select({ id: bubblophyProjects.id })
-    .from(bubblophyProjects)
-    .where(
-      and(
-        eq(bubblophyProjects.key, input.projectKey),
-        eq(bubblophyProjects.isArchived, false)
-      )
-    )
-    .limit(1)
-    .for('share');
+  const project = await lockBubblophyProjectForHumanWrite(tx, {
+    project: { key: input.projectKey },
+    lockMode: 'share',
+  });
 
-  if (!project) {
+  if (!project || project.isArchived) {
     return { status: 'not_found' };
   }
 
@@ -76,24 +76,24 @@ export async function lockBubblophyIssueContributorWriteContext(
     return { status: 'not_found' };
   }
 
-  const [membership] = await tx
-    .select({ role: bubblophyProjectMembers.role })
-    .from(bubblophyProjectMembers)
-    .where(
-      and(
-        eq(bubblophyProjectMembers.projectId, project.id),
-        eq(bubblophyProjectMembers.authUserId, input.authUserId)
-      )
-    )
-    .limit(1)
-    .for('update');
+  const actorAuthUserId = input.authUserId.trim();
+  const memberships = await lockBubblophyProjectMembersForHumanWrite(tx, {
+    projectId: project.id,
+    authUserIds: [actorAuthUserId, ...(input.relatedAuthUserIds ?? [])],
+  });
+  const actorMembership = memberships.find(
+    (membership) => membership.authUserId === actorAuthUserId
+  );
 
-  if (!canContributeToBubblophyProject(membership?.role)) {
+  if (!canContributeToBubblophyProject(actorMembership?.role)) {
     return { status: 'forbidden' };
   }
 
   return {
     status: 'ready',
     issueDatabaseId: issue.id,
+    projectId: project.id,
+    projectKey: project.key,
+    memberships,
   };
 }

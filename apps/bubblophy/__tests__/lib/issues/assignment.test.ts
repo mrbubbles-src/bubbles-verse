@@ -9,7 +9,6 @@ import {
 } from '@/lib/issues/assignment';
 import {
   buildBubblophyIssueAssigneeChangedEventInsert,
-  canMutateBubblophyIssueAssignee,
   shouldSkipBubblophyIssueAssigneeChangeEvent,
 } from '@/lib/issues/assignment-database-write';
 
@@ -18,7 +17,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 function createStore(
   handler: (
     input: BubblophyIssueAssigneeUpdateStoreInput
-  ) => ReturnType<BubblophyIssueAssigneeUpdateStore['updateIssueAssigneeWithEvent']>
+  ) => ReturnType<
+    BubblophyIssueAssigneeUpdateStore['updateIssueAssigneeWithEvent']
+  >
 ): BubblophyIssueAssigneeUpdateStore {
   return {
     updateIssueAssigneeWithEvent: vi.fn(handler),
@@ -250,13 +251,6 @@ describe('Bubblophy issue assignment helpers', () => {
       planSteps: 1,
       approvalRequired: true,
     });
-  });
-
-  it('allows contributors but blocks read-only viewers from issue assignment', () => {
-    expect(canMutateBubblophyIssueAssignee('owner')).toBe(true);
-    expect(canMutateBubblophyIssueAssignee('maintainer')).toBe(true);
-    expect(canMutateBubblophyIssueAssignee('member')).toBe(true);
-    expect(canMutateBubblophyIssueAssignee('viewer')).toBe(false);
   });
 
   it('detects same-assignee no-op transitions before writing events', () => {

@@ -71,6 +71,8 @@
   membership, run, and token locks while preserving cancellation for an
   unavailable assigned token, plus foreign-key-compatible issue serialization
   to prevent lock-order deadlocks with audit inserts.
+- Hardened human issue content, priority, and assignment writes with the shared
+  project/issue lock context and one sorted actor/assignee membership recheck.
 
 All notable changes to this project will be documented in this file.
 

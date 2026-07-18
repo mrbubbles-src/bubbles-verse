@@ -49,7 +49,7 @@ Projekt-Snapshots, RLS-Reads und MCP-Werkzeugen ausgeschlossen.
       → Actor-Membership → gegebenenfalls Token umstellen.
 - [x] Menschliche Run-Freigabe und -Abbruch auf Projekt → Actor-Membership →
       Run → Token umstellen.
-- [ ] Issue Edit, Priority und Assignment auf Projekt → Issue → sortierte
+- [x] Issue Edit, Priority und Assignment auf Projekt → Issue → sortierte
       Actor-/Assignee-Memberships umstellen.
 
 Damit kann eine bereits parallel entzogene Rolle nicht nach dem Commit der

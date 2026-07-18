@@ -268,6 +268,10 @@ bun run build
   Inhalte werden als No-op behandelt. Issue-Archivierung ist noch nicht
   implementiert, weil `bubblophy_issues` aktuell kein `archived_at` oder
   `is_archived` besitzt.
+- Persistierte Prioritäts- und Zuweisungsänderungen verwenden denselben
+  gesperrten Contributor-Kontext. Bei Zuweisungen werden Actor und Zielmitglied
+  gemeinsam in stabiler Reihenfolge gesperrt; entfernte oder projektfremde
+  Zielmitglieder ergeben `invalid_assignee` statt eines ungeschützten Writes.
 - Persistierte Agent-Run-Anfragen laufen serverseitig über
   Projektmitgliedschaft und ausführbare Same-Project-Tokens. Ausführbar bedeutet
   aktiv, nicht abgelaufen und mit `issues:read` plus `runs:update`. Sie schreiben

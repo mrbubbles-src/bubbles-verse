@@ -48,9 +48,10 @@ export function createDrizzleBubblophyAgentRunRequestStore(): BubblophyAgentRunR
 /**
  * Creates a requested run after locking its active issue, membership, and token.
  *
- * The lock order is project `SHARE`, issue `UPDATE`, membership `UPDATE`, then
- * token `UPDATE`. This serializes token lifecycle changes with the final
- * executable-token check without approving or starting the requested run.
+ * The lock order is project `SHARE`, issue `NO KEY UPDATE`, membership
+ * `UPDATE`, then token `UPDATE`. This serializes token lifecycle changes with
+ * the final executable-token check without approving or starting the requested
+ * run.
  *
  * @param input Authenticated human user and normalized run request fields.
  * @returns Requested run, `not_found`, `forbidden`, or `token_unavailable`.

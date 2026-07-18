@@ -12,6 +12,9 @@ const sharedContributorContextStores = [
   'lib/issues/plan-database-write.ts',
   'lib/issues/notes-database-write.ts',
   'lib/issues/status-database-write.ts',
+  'lib/issues/edit-database-write.ts',
+  'lib/issues/priority-database-write.ts',
+  'lib/issues/assignment-database-write.ts',
   'lib/agent-runs/request-database-write.ts',
 ] as const;
 
@@ -55,8 +58,18 @@ describe('contributor permission wiring', () => {
       "import { canContributeToBubblophyProject } from '@/lib/projects/permissions';"
     );
     expect(source).toMatch(
-      /canContributeToBubblophyProject\([^)]*membership\?\.role\)/
+      /canContributeToBubblophyProject\([^)]*actorMembership\?\.role\)/
     );
     expect(source).toContain(".for('no key update')");
+  });
+
+  it('locks assignment actors and targets together through the shared context', () => {
+    const source = readFileSync(
+      resolve(process.cwd(), 'lib/issues/assignment-database-write.ts'),
+      'utf8'
+    );
+
+    expect(source).toContain('relatedAuthUserIds: input.assigneeAuthUserId');
+    expect(source).toContain('writeContext.memberships.some');
   });
 });

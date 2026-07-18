@@ -6,15 +6,15 @@ import type {
   BubblophyIssueAssigneeUpdateStoreInput,
 } from '@/lib/issues/assignment';
 
+import { lockBubblophyIssueContributorWriteContext } from '@/lib/issues/contributor-write-context-database';
 import { parseBubblophyIssueKey } from '@/lib/issues/plan-database-write';
 
-import { and, eq, sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 import {
   bubblophyIssueEvents,
   bubblophyIssuePlans,
   bubblophyIssues,
-  bubblophyProjectMembers,
   bubblophyProjects,
 } from '@/drizzle/db/schema';
 
@@ -47,7 +47,9 @@ export function createDrizzleBubblophyIssueAssigneeUpdateStore(): BubblophyIssue
  */
 async function updateIssueAssigneeWithEvent(
   input: BubblophyIssueAssigneeUpdateStoreInput
-): ReturnType<BubblophyIssueAssigneeUpdateStore['updateIssueAssigneeWithEvent']> {
+): ReturnType<
+  BubblophyIssueAssigneeUpdateStore['updateIssueAssigneeWithEvent']
+> {
   const issueKey = parseBubblophyIssueKey(input.issueId);
 
   if (!issueKey) {
@@ -57,67 +59,45 @@ async function updateIssueAssigneeWithEvent(
   const { db } = await import('@/drizzle/db');
 
   return db.transaction(async (tx) => {
+    const writeContext = await lockBubblophyIssueContributorWriteContext(tx, {
+      authUserId: input.authUserId,
+      projectKey: issueKey.projectKey,
+      issueNumber: issueKey.issueNumber,
+      relatedAuthUserIds: input.assigneeAuthUserId
+        ? [input.assigneeAuthUserId]
+        : [],
+    });
+
+    if (writeContext.status !== 'ready') {
+      return writeContext;
+    }
+
+    if (
+      input.assigneeAuthUserId &&
+      !writeContext.memberships.some(
+        (membership) => membership.authUserId === input.assigneeAuthUserId
+      )
+    ) {
+      return { status: 'invalid_assignee' };
+    }
+
     const [currentIssue] = await tx
       .select({
         id: bubblophyIssues.id,
         issueNumber: bubblophyIssues.issueNumber,
         assignedAuthUserId: bubblophyIssues.assignedAuthUserId,
-        projectId: bubblophyProjects.id,
-        projectKey: bubblophyProjects.key,
         projectName: bubblophyProjects.name,
-        memberAuthUserId: bubblophyProjectMembers.authUserId,
-        memberRole: bubblophyProjectMembers.role,
       })
       .from(bubblophyIssues)
       .innerJoin(
         bubblophyProjects,
         eq(bubblophyProjects.id, bubblophyIssues.projectId)
       )
-      .leftJoin(
-        bubblophyProjectMembers,
-        and(
-          eq(bubblophyProjectMembers.projectId, bubblophyProjects.id),
-          eq(bubblophyProjectMembers.authUserId, input.authUserId)
-        )
-      )
-      .where(
-        and(
-          eq(bubblophyProjects.key, issueKey.projectKey),
-          eq(bubblophyProjects.isArchived, false),
-          eq(bubblophyIssues.issueNumber, issueKey.issueNumber)
-        )
-      )
+      .where(eq(bubblophyIssues.id, writeContext.issueDatabaseId))
       .limit(1);
 
     if (!currentIssue) {
-      return { status: 'not_found' };
-    }
-
-    if (
-      !currentIssue.memberAuthUserId ||
-      !currentIssue.memberRole ||
-      !canMutateBubblophyIssueAssignee(currentIssue.memberRole)
-    ) {
-      return { status: 'forbidden' };
-    }
-
-    if (input.assigneeAuthUserId) {
-      const [assigneeMembership] = await tx
-        .select({
-          authUserId: bubblophyProjectMembers.authUserId,
-        })
-        .from(bubblophyProjectMembers)
-        .where(
-          and(
-            eq(bubblophyProjectMembers.projectId, currentIssue.projectId),
-            eq(bubblophyProjectMembers.authUserId, input.assigneeAuthUserId)
-          )
-        )
-        .limit(1);
-
-      if (!assigneeMembership) {
-        return { status: 'invalid_assignee' };
-      }
+      throw new Error('Locked Bubblophy issue could not be reloaded.');
     }
 
     if (
@@ -172,8 +152,8 @@ async function updateIssueAssigneeWithEvent(
       status: 'updated',
       issue: {
         project: {
-          id: currentIssue.projectId,
-          key: currentIssue.projectKey,
+          id: writeContext.projectId,
+          key: writeContext.projectKey,
           name: currentIssue.projectName,
         },
         issue: {
@@ -183,16 +163,6 @@ async function updateIssueAssigneeWithEvent(
       },
     };
   });
-}
-
-/**
- * Checks whether a project role may mutate issue assignments.
- *
- * @param role Project membership role from persistence.
- * @returns True for contributors, false for read-only viewers.
- */
-export function canMutateBubblophyIssueAssignee(role: string) {
-  return ['owner', 'maintainer', 'member'].includes(role);
 }
 
 /**

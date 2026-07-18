@@ -10,7 +10,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type DrizzleTable = Parameters<typeof getTableName>[0];
 type PlanStep = BubblophyIssuePlanDraftStoreInput['steps'][number];
-type MockRowValue = string | number | null | PlanStep[];
+type MockRowValue = string | number | boolean | null | PlanStep[];
 type MockRow = Record<string, MockRowValue>;
 
 interface LockCall {
@@ -146,7 +146,9 @@ class MockSelectQuery implements PromiseLike<MockRow[]> {
   /** Resolves deterministic rows for the selected table. */
   private async rows(): Promise<MockRow[]> {
     if (this.tableName === 'bubblophy_projects') {
-      return state.issueVisible ? [{ id: 'project_bv', projectKey: 'BV' }] : [];
+      return state.issueVisible
+        ? [{ id: 'project_bv', key: 'BV', isArchived: false }]
+        : [];
     }
 
     if (this.tableName === 'bubblophy_issues') {
@@ -166,7 +168,9 @@ class MockSelectQuery implements PromiseLike<MockRow[]> {
     }
 
     if (this.tableName === 'bubblophy_project_members') {
-      return state.memberRole ? [{ role: state.memberRole }] : [];
+      return state.memberRole
+        ? [{ authUserId: 'user_member', role: state.memberRole }]
+        : [];
     }
 
     if (this.tableName === 'bubblophy_issue_plans') {
@@ -350,9 +354,8 @@ describe('Drizzle issue plan draft store', () => {
       (call) => call.tableName === 'bubblophy_project_members'
     );
 
-    expect(projectWhere).toMatchObject({ serializedParams: '["BV",false]' });
+    expect(projectWhere).toMatchObject({ serializedParams: '["BV"]' });
     expect(projectWhere?.sql).toContain('"key" = $1');
-    expect(projectWhere?.sql).toContain('"is_archived" = $2');
     expect(issueWhere).toMatchObject({
       serializedParams: '["project_bv",12]',
     });
@@ -362,7 +365,7 @@ describe('Drizzle issue plan draft store', () => {
       serializedParams: '["project_bv","user_member"]',
     });
     expect(membershipWhere?.sql).toContain('"project_id" = $1');
-    expect(membershipWhere?.sql).toContain('"auth_user_id" = $2');
+    expect(membershipWhere?.sql).toContain('"auth_user_id" in ($2)');
 
     const membershipStoreSource = readFileSync(
       resolve(process.cwd(), 'lib/projects/members-database-write.ts'),
