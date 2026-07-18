@@ -6,6 +6,7 @@ import type {
   BubblophyAgentRunHumanTransitionStoreInput,
 } from '@/lib/agent-runs/human-transition';
 
+import { isExecutableBubblophyAgentToken } from '@/lib/agent-tokens/execution';
 import { formatBubblophyIssueKey } from '@/lib/issues/repository';
 import { canContributeToBubblophyProject } from '@/lib/projects/permissions';
 
@@ -63,6 +64,9 @@ async function transitionRun(
         projectKey: bubblophyProjects.key,
         memberRole: bubblophyProjectMembers.role,
         agentTokenLabel: bubblophyAgentTokens.label,
+        agentTokenScopes: bubblophyAgentTokens.scopes,
+        agentTokenState: bubblophyAgentTokens.state,
+        agentTokenExpiresAt: bubblophyAgentTokens.expiresAt,
       })
       .from(bubblophyAgentRuns)
       .innerJoin(
@@ -107,6 +111,17 @@ async function transitionRun(
       return { status: 'invalid_transition' };
     }
 
+    if (
+      input.decision === 'approve' &&
+      !isExecutableBubblophyAgentToken({
+        state: currentRun.agentTokenState,
+        expiresAt: currentRun.agentTokenExpiresAt,
+        scopes: currentRun.agentTokenScopes,
+      })
+    ) {
+      return { status: 'token_unavailable' };
+    }
+
     const nextState = getHumanDecisionRunState(input.decision);
     const now = new Date().toISOString();
     const [updatedRun] = await tx
@@ -119,14 +134,19 @@ async function transitionRun(
         finishedAt: input.decision === 'cancel' ? now : null,
         updatedAt: now,
       })
-      .where(eq(bubblophyAgentRuns.id, currentRun.id))
+      .where(
+        and(
+          eq(bubblophyAgentRuns.id, currentRun.id),
+          eq(bubblophyAgentRuns.state, currentRun.state)
+        )
+      )
       .returning({
         id: bubblophyAgentRuns.id,
         state: bubblophyAgentRuns.state,
       });
 
     if (!updatedRun) {
-      throw new Error('Bubblophy agent run transition did not return a row.');
+      return { status: 'invalid_transition' };
     }
 
     const issueId = formatBubblophyIssueKey(

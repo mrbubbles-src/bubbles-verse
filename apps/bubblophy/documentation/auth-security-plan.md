@@ -67,6 +67,10 @@ dauerhaften Autopilot-Rechte.
   Die übrigen Scope-Werte sind reserviert, bis es eigene sichere Endpunkte
   gibt.
 - Tokens können pausiert, widerrufen und mit Ablaufdatum versehen werden.
+- Run-Anfrage und menschliche Freigabe verwenden denselben ausführbaren
+  Token-Vertrag: projektgebunden, aktiv, nicht abgelaufen sowie mit
+  `issues:read` und `runs:update`. Ein Abbruch bleibt auch bei einem später
+  pausierten, abgelaufenen oder widerrufenen Token möglich.
 - Erfolgreiche `GET`- und `PATCH`-Zugriffe aktualisieren `last_used_at`; beim
   `GET` ist das die einzige Mutation.
 - Lokale Handoff-Beispiele nutzen Platzhalter wie `<agent-token>` und sollen
@@ -77,6 +81,9 @@ dauerhaften Autopilot-Rechte.
 - `bubblophy_issues.requires_human_approval` ist standardmäßig aktiv.
 - `bubblophy_issue_plans` speichern Planversionen getrennt von Runs.
 - Agent-Runs starten erst, wenn ein Mensch die Arbeit freigibt.
+- Menschliche und agentische Run-Zustandswechsel verwenden Compare-and-set auf
+  Run-ID und bisherigen Zustand. Verliert eine konkurrierende Mutation, wird
+  kein widersprüchliches Audit-Event geschrieben.
 - Agenten dürfen keine dauerhaften Hintergrund-Runs planen.
 
 ## Audit und RLS

@@ -99,7 +99,7 @@ describe('transitionBubblophyAgentRun', () => {
     });
   });
 
-  it('returns membership and transition failures unchanged', async () => {
+  it('returns membership, token, and transition failures unchanged', async () => {
     await expect(
       transitionBubblophyAgentRun(
         {
@@ -120,6 +120,16 @@ describe('transitionBubblophyAgentRun', () => {
         { store: createStore(async () => ({ status: 'invalid_transition' })) }
       )
     ).resolves.toEqual({ status: 'invalid_transition' });
+    await expect(
+      transitionBubblophyAgentRun(
+        {
+          authUserId: 'user_owner',
+          runId: 'run_bv_12',
+          decision: 'approve',
+        },
+        { store: createStore(async () => ({ status: 'token_unavailable' })) }
+      )
+    ).resolves.toEqual({ status: 'token_unavailable' });
   });
 
   it('returns database_unavailable when no store and no database URL exist', async () => {

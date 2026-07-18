@@ -42,6 +42,9 @@ export interface BubblophyAgentRunHumanTransitionStore {
     | {
         status: 'invalid_transition';
       }
+    | {
+        status: 'token_unavailable';
+      }
   >;
 }
 
@@ -62,6 +65,9 @@ export type TransitionBubblophyAgentRunResult =
     }
   | {
       status: 'invalid_transition';
+    }
+  | {
+      status: 'token_unavailable';
     }
   | {
       status: 'database_unavailable';

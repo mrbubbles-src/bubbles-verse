@@ -9,6 +9,8 @@ auditierte Werkzeuge ergänzt.
 
 ### 1. Sicherheitsgate vor dem Remote-MCP
 
+Status: abgeschlossen.
+
 - Redirects akzeptieren nur lokale, normalisierte Pfade.
 - Viewer bleiben in UI und serverseitigen Issue-, Plan- und Run-Mutationen
   read-only.
@@ -93,8 +95,7 @@ auditierte Werkzeuge ergänzt.
 
 ## Aktueller Slice
 
-Das Sicherheitsgate wird zuerst vollständig geschlossen. Danach liefert der
-erste MCP-Slice die kleinste Ende-zu-Ende-Verbindung: OAuth-Discovery, Consent,
-Tokenvalidierung und das read-only Werkzeug `list_projects`. Der detaillierte
-Plan liegt unter
+Das Sicherheitsgate ist abgeschlossen. Der aktuelle MCP-Slice liefert die
+kleinste Ende-zu-Ende-Verbindung: OAuth-Discovery, Consent, Tokenvalidierung und
+das read-only Werkzeug `list_projects`. Der detaillierte Plan liegt unter
 `docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md`.

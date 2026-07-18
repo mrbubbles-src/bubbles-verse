@@ -11,6 +11,7 @@ interface SelectCall {
 }
 
 const selectCalls: SelectCall[] = [];
+let updateRows: MockRow[] = [];
 
 const rows = {
   token: [
@@ -75,12 +76,16 @@ class MockSelectQuery implements PromiseLike<MockRow[]> {
   }
 }
 
+const updateReturning = vi.fn(async () => updateRows);
+const updateWhere = vi.fn(() => ({ returning: updateReturning }));
+const updateSet = vi.fn(() => ({ where: updateWhere }));
+
 const txMock = {
   select: vi.fn(
     (selection: Record<string, object>) =>
       new MockSelectQuery(Object.keys(selection))
   ),
-  update: vi.fn(),
+  update: vi.fn(() => ({ set: updateSet })),
   insert: vi.fn(),
 };
 
@@ -96,9 +101,14 @@ vi.mock('@/drizzle/db', () => ({ db: dbMock }));
 describe('createDrizzleBubblophyAgentRunAgentUpdateStore', () => {
   beforeEach(() => {
     selectCalls.length = 0;
+    updateRows = [];
+    rows.run[0]!.agentTokenId = 'token_assigned';
     txMock.select.mockClear();
     txMock.update.mockClear();
     txMock.insert.mockClear();
+    updateSet.mockClear();
+    updateWhere.mockClear();
+    updateReturning.mockClear();
     dbMock.transaction.mockClear();
   });
 
@@ -116,6 +126,24 @@ describe('createDrizzleBubblophyAgentRunAgentUpdateStore', () => {
       })
     ).resolves.toEqual({ status: 'not_found' });
     expect(txMock.update).not.toHaveBeenCalled();
+    expect(txMock.insert).not.toHaveBeenCalled();
+  });
+
+  it('returns a conflict without audit when compare-and-set loses', async () => {
+    rows.run[0]!.agentTokenId = 'token_attacker';
+    const { createDrizzleBubblophyAgentRunAgentUpdateStore } =
+      await import('@/lib/agent-runs/agent-update-database-write');
+
+    await expect(
+      createDrizzleBubblophyAgentRunAgentUpdateStore().updateRunFromAgent({
+        runId: 'run_bv_12',
+        tokenHash: 'hashed_attacker_token',
+        state: 'running',
+        message: '',
+        result: null,
+      })
+    ).resolves.toEqual({ status: 'invalid_transition' });
+    expect(txMock.update).toHaveBeenCalledTimes(1);
     expect(txMock.insert).not.toHaveBeenCalled();
   });
 });

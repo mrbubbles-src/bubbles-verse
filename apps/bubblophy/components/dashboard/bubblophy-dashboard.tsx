@@ -5907,7 +5907,7 @@ function getAgentRunRequestActionErrorMessage(
   }
 
   if (result.status === 'token_unavailable') {
-    return 'Dieses Agent-Token ist nicht aktiv oder gehört nicht zu diesem Projekt.';
+    return 'Dieses Agent-Token ist nicht ausführbar. Prüfe Projekt, Status, Ablaufdatum sowie die Scopes issues:read und runs:update.';
   }
 
   if (result.status === 'database_unavailable') {
@@ -5947,6 +5947,10 @@ function getAgentRunTransitionActionErrorMessage(
 
   if (result.status === 'invalid_transition') {
     return 'Nur angefragte Runs können freigegeben oder abgebrochen werden.';
+  }
+
+  if (result.status === 'token_unavailable') {
+    return 'Das zugeordnete Agent-Token ist nicht ausführbar. Der Run wurde nicht freigegeben.';
   }
 
   if (result.status === 'database_unavailable') {

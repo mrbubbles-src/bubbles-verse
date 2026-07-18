@@ -83,6 +83,9 @@ export const bubblophyAgentTokenState = pgEnum('bubblophy_agent_token_state', [
   'revoked',
 ]);
 
+export type BubblophyAgentTokenState =
+  (typeof bubblophyAgentTokenState.enumValues)[number];
+
 export const bubblophyAgentRunState = pgEnum('bubblophy_agent_run_state', [
   'requested',
   'approved',

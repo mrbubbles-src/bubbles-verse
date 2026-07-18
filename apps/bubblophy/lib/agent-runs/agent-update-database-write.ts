@@ -153,14 +153,19 @@ async function updateRunFromAgent(
         result: input.result,
         updatedAt: now,
       })
-      .where(eq(bubblophyAgentRuns.id, currentRun.id))
+      .where(
+        and(
+          eq(bubblophyAgentRuns.id, currentRun.id),
+          eq(bubblophyAgentRuns.state, currentRun.state)
+        )
+      )
       .returning({
         id: bubblophyAgentRuns.id,
         state: bubblophyAgentRuns.state,
       });
 
     if (!updatedRun) {
-      throw new Error('Bubblophy agent run update did not return a row.');
+      return { status: 'invalid_transition' };
     }
 
     await tx

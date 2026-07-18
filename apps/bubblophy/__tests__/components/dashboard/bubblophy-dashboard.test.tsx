@@ -5478,6 +5478,37 @@ describe('BubblophyDashboard interactions', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('explains every executable-token requirement after a denied run request', async () => {
+    const requestAgentRunAction = vi.fn<
+      (
+        input: RequestBubblophyAgentRunActionInput
+      ) => Promise<RequestBubblophyAgentRunActionResult>
+    >(async () => ({ status: 'token_unavailable' }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithEmptyRuns}
+        requestAgentRunAction={requestAgentRunAction}
+      />
+    );
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+    const detailPanel = screen.getByLabelText('Issue-Details');
+    fireEvent.change(within(detailPanel).getByLabelText('Agent-Token'), {
+      target: { value: 'token_codex_bv' },
+    });
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Run anfragen' })
+    );
+
+    expect(await within(detailPanel).findByRole('alert')).toHaveTextContent(
+      'Prüfe Projekt, Status, Ablaufdatum sowie die Scopes issues:read und runs:update.'
+    );
+  });
+
   it('keeps the run request form usable when the action throws', async () => {
     const requestAgentRunAction = vi.fn<
       (

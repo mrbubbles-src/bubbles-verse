@@ -28,19 +28,19 @@
 - Modify: bestehende Auth-, Run- und RLS-Grenzen
 - Test: zugehörige Unit-, Store- und Migrationstests
 
-- [ ] **Step 1: Bestehende Autorisierungsfehler schließen**
+- [x] **Step 1: Bestehende Autorisierungsfehler schließen**
 
 Relative Redirects gegen Backslashes härten, Viewer-Mutationen verweigern, Agent-Runs an ihr ausführendes Token binden und direkte RLS-Reads roher Run-/Event-Payloads schließen.
 
-- [ ] **Step 2: Ausführbaren Token-Vertrag vereinheitlichen**
+- [x] **Step 2: Ausführbaren Token-Vertrag vereinheitlichen**
 
 Run-Anfrage und Run-Freigabe verlangen denselben Token: projektgebunden, aktiv, nicht abgelaufen sowie mit `issues:read` und `runs:update`. Abbruch bleibt unabhängig davon möglich.
 
-- [ ] **Step 3: Run-Zustandswechsel atomar machen**
+- [x] **Step 3: Run-Zustandswechsel atomar machen**
 
 Menschliche und agentische Transitionen schreiben mit Compare-and-set auf ID plus bisherigen Zustand. Ein konkurrierender Zustandswechsel liefert einen Konflikt und erzeugt kein widersprüchliches Audit-Event.
 
-- [ ] **Step 4: Vollständige Gates und Review**
+- [x] **Step 4: Vollständige Gates und Review**
 
 Formatierung, Lint, Typecheck, Tests, Build und laufenden Reviewer abschließen. `/mcp` wird erst danach angelegt.
 

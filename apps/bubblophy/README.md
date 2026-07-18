@@ -160,11 +160,14 @@ bun run build
   implementiert, weil `bubblophy_issues` aktuell kein `archived_at` oder
   `is_archived` besitzt.
 - Persistierte Agent-Run-Anfragen laufen serverseitig über
-  Projektmitgliedschaft und aktive Same-Project-Tokens. Sie schreiben nur einen
-  wartenden Run plus `agent_run_requested`-Event; es gibt keinen Worker,
-  Toolcall, Polling-Loop oder Autopilot.
+  Projektmitgliedschaft und ausführbare Same-Project-Tokens. Ausführbar bedeutet
+  aktiv, nicht abgelaufen und mit `issues:read` plus `runs:update`. Sie schreiben
+  nur einen wartenden Run plus `agent_run_requested`-Event; es gibt keinen
+  Worker, Toolcall, Polling-Loop oder Autopilot.
 - Persistierte Agent-Run-Freigaben und -Abbrüche laufen serverseitig über
-  Projektmitgliedschaft und erlauben nur den Übergang aus `requested`.
+  Projektmitgliedschaft und erlauben nur den atomaren Übergang aus `requested`.
+  Freigaben prüfen den ausführbaren Token erneut; Abbrüche bleiben bei einem
+  inzwischen nicht verfügbaren Token möglich.
 - Agent-Kontextreads laufen über gehashte Bearer-Tokens mit Scope
   `issues:read`, Projektbindung und aktivem/nicht abgelaufenem Token. Der
   Endpoint verlangt zusätzlich das dem Run zugeordnete Token, gibt nur Run,
@@ -175,7 +178,8 @@ bun run build
   State-Machine. Auch hier muss das Token dem Run zugeordnet sein. Der Endpoint
   speichert nur Status, Message, Result-JSON, `last_used_at` und Audit-Events;
   er führt keinen Code aus und wird nicht in den menschlichen
-  Login-Redirect-Flow umgebogen.
+  Login-Redirect-Flow umgebogen. Zustandsupdates verwenden Compare-and-set und
+  erzeugen nach einem verlorenen konkurrierenden Update kein Audit-Event.
 - Relative Auth-Redirects lehnen Backslash- und Host-Umgehungen ab.
 - Direkte `authenticated`-RLS-Reads auf rohe Agent-Run-Resultate und
   Issue-Event-Payloads sind geschlossen. Diese Daten werden nur über

@@ -6,6 +6,9 @@
   provider-neutral Remote MCP using personal Supabase OAuth 2.1 access.
 - Hardened relative auth redirects, contributor/viewer mutation boundaries,
   agent-run token binding, and direct RLS access to sensitive run/event payloads.
+- Required executable agent tokens at run request and approval time, kept
+  cancellation available for unavailable tokens, and made human/agent run
+  transitions compare-and-set safe.
 
 All notable changes to this project will be documented in this file.
 

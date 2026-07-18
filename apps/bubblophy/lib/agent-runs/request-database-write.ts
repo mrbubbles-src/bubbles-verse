@@ -6,6 +6,7 @@ import type {
   BubblophyAgentRunRequestStoreInput,
 } from '@/lib/agent-runs/request';
 
+import { isExecutableBubblophyAgentToken } from '@/lib/agent-tokens/execution';
 import { parseBubblophyIssueKey } from '@/lib/issues/plan-database-write';
 import { canContributeToBubblophyProject } from '@/lib/projects/permissions';
 
@@ -102,18 +103,20 @@ async function requestAgentRun(
       .select({
         id: bubblophyAgentTokens.id,
         label: bubblophyAgentTokens.label,
+        scopes: bubblophyAgentTokens.scopes,
+        state: bubblophyAgentTokens.state,
+        expiresAt: bubblophyAgentTokens.expiresAt,
       })
       .from(bubblophyAgentTokens)
       .where(
         and(
           eq(bubblophyAgentTokens.id, input.agentTokenId),
-          eq(bubblophyAgentTokens.projectId, issue.projectId),
-          eq(bubblophyAgentTokens.state, 'active')
+          eq(bubblophyAgentTokens.projectId, issue.projectId)
         )
       )
       .limit(1);
 
-    if (!agentToken) {
+    if (!agentToken || !isExecutableBubblophyAgentToken(agentToken)) {
       return { status: 'token_unavailable' };
     }
 
