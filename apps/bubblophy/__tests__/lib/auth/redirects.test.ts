@@ -17,6 +17,8 @@ describe('Bubblophy auth redirects', () => {
   it('rejects absolute and protocol-relative redirects', () => {
     expect(getSafeBubblophyRedirectPath('https://evil.test')).toBe('/');
     expect(getSafeBubblophyRedirectPath('//evil.test')).toBe('/');
+    expect(getSafeBubblophyRedirectPath('/\\evil.test')).toBe('/');
+    expect(getSafeBubblophyRedirectPath('/%5cevil.test')).toBe('/');
   });
 
   it('builds login paths with encoded relative next params', () => {

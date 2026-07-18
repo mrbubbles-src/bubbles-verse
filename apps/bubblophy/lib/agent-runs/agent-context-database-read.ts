@@ -6,8 +6,11 @@ import type {
   BubblophyAgentRunContextStoreInput,
 } from '@/lib/agent-runs/agent-context';
 
-import { formatBubblophyIssueKey } from '@/lib/issues/repository';
-import { mapBubblophyIssuePlanSteps } from '@/lib/issues/repository';
+import { isBubblophyAgentRunBoundToToken } from '@/lib/agent-runs/authorization';
+import {
+  formatBubblophyIssueKey,
+  mapBubblophyIssuePlanSteps,
+} from '@/lib/issues/repository';
 
 import { and, desc, eq } from 'drizzle-orm';
 
@@ -79,6 +82,7 @@ async function readRunContextForAgent(
     const [currentRun] = await tx
       .select({
         id: bubblophyAgentRuns.id,
+        agentTokenId: bubblophyAgentRuns.agentTokenId,
         state: bubblophyAgentRuns.state,
         updatedAt: bubblophyAgentRuns.updatedAt,
         issueDatabaseId: bubblophyIssues.id,
@@ -113,6 +117,15 @@ async function readRunContextForAgent(
 
     if (currentRun.projectId !== agentToken.projectId) {
       return { status: 'project_mismatch' };
+    }
+
+    if (
+      !isBubblophyAgentRunBoundToToken({
+        runAgentTokenId: currentRun.agentTokenId,
+        authenticatedAgentTokenId: agentToken.id,
+      })
+    ) {
+      return { status: 'not_found' };
     }
 
     if (!canAgentReadRunContext(currentRun.state)) {

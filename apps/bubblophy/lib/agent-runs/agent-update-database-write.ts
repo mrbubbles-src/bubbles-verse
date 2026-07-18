@@ -8,6 +8,7 @@ import type {
 } from '@/lib/agent-runs/agent-update';
 
 import { buildAgentRunUpdatePayload } from '@/lib/agent-runs/agent-update';
+import { isBubblophyAgentRunBoundToToken } from '@/lib/agent-runs/authorization';
 import { formatBubblophyIssueKey } from '@/lib/issues/repository';
 
 import { and, eq } from 'drizzle-orm';
@@ -91,6 +92,7 @@ async function updateRunFromAgent(
     const [currentRun] = await tx
       .select({
         id: bubblophyAgentRuns.id,
+        agentTokenId: bubblophyAgentRuns.agentTokenId,
         state: bubblophyAgentRuns.state,
         issueDatabaseId: bubblophyIssues.id,
         issueNumber: bubblophyIssues.issueNumber,
@@ -120,6 +122,15 @@ async function updateRunFromAgent(
 
     if (currentRun.projectId !== agentToken.projectId) {
       return { status: 'project_mismatch' };
+    }
+
+    if (
+      !isBubblophyAgentRunBoundToToken({
+        runAgentTokenId: currentRun.agentTokenId,
+        authenticatedAgentTokenId: agentToken.id,
+      })
+    ) {
+      return { status: 'not_found' };
     }
 
     if (!canAgentTransitionRun(currentRun.state, input.state)) {

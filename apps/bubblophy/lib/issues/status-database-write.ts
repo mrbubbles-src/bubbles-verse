@@ -7,6 +7,7 @@ import type {
 } from '@/lib/issues/status';
 
 import { parseBubblophyIssueKey } from '@/lib/issues/plan-database-write';
+import { canContributeToBubblophyProject } from '@/lib/projects/permissions';
 
 import { and, eq, sql } from 'drizzle-orm';
 
@@ -65,7 +66,7 @@ async function updateIssueStatusWithEvent(
         projectId: bubblophyProjects.id,
         projectKey: bubblophyProjects.key,
         projectName: bubblophyProjects.name,
-        memberAuthUserId: bubblophyProjectMembers.authUserId,
+        memberRole: bubblophyProjectMembers.role,
       })
       .from(bubblophyIssues)
       .innerJoin(
@@ -92,7 +93,7 @@ async function updateIssueStatusWithEvent(
       return { status: 'not_found' };
     }
 
-    if (!currentIssue.memberAuthUserId) {
+    if (!canContributeToBubblophyProject(currentIssue.memberRole)) {
       return { status: 'forbidden' };
     }
 

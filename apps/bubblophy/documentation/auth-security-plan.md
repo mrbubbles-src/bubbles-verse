@@ -21,6 +21,8 @@ dauerhaften Autopilot-Rechte.
 - Projektzugriff kommt aus `bubblophy_project_members`.
 - Server-seitige Datenzugriffe prüfen immer die Supabase-User-ID und die
   Projektrolle, bevor DTOs an React-Komponenten gehen.
+- Owner, Maintainer:innen und Members dürfen Issue-, Plan- und Run-Mutationen
+  auslösen. Viewer bleiben in UI und serverseitigen Stores read-only.
 - Issue-Inhaltsänderungen sind serverseitig an die Issue-Projektbindung
   gekoppelt. Owner, Maintainer:innen und Members dürfen Titel/Beschreibung
   ändern; Viewer bleiben lesend.
@@ -53,6 +55,9 @@ dauerhaften Autopilot-Rechte.
 - Tokens werden nur einmal im Klartext gezeigt. Persistiert wird ausschließlich
   ein starker Hash in `bubblophy_agent_tokens.token_hash`.
 - Jedes Token ist auf genau ein Projekt begrenzt.
+- Run-Kontext und Statusupdates verlangen zusätzlich, dass das authentifizierte
+  Token dem angefragten Run zugeordnet ist. Ein anderes Token desselben Projekts
+  erhält keinen Zugriff.
 - Scopes sind explizit und klein: `projects:read`, `issues:read`,
   `issues:write`, `plans:write`, `runs:create`, `runs:update`. Im aktuellen
   MVP haben `issues:read` und `runs:update` operative Agent-API-Pfade:
@@ -89,8 +94,11 @@ dauerhaften Autopilot-Rechte.
   hält nur öffentliche Metadaten. Token-Plaintext und Token-Hash gehören weder
   in Audit-Payloads noch in Logs.
 - Events erfassen entweder `actor_auth_user_id` oder `actor_agent_token_id`.
-- Geplante RLS-Lesepolicies: Projektmitglieder lesen Projekte, Issues, Pläne,
-  Agent-Token-Summaries und Project Events nur für ihre Projekte.
+- RLS-Lesepolicies erlauben Projektmitgliedern nur projektgebundene, dafür
+  vorgesehene Tabellen. Direkte `authenticated`-Reads auf
+  `bubblophy_agent_runs` und `bubblophy_issue_events` sind geschlossen, weil
+  rohe Result- und Event-Payloads sensible Inhalte enthalten können. Diese
+  Daten verlassen den Server nur über membership-geprüfte DTOs.
 - Geplante RLS-Schreibpolicies für Menschen: Issue-/Plan-Schreibpfade prüfen
   Projektmitgliedschaft; Token-Erstellung bleibt Owner/Maintainer-only über
   serverseitige Actions.

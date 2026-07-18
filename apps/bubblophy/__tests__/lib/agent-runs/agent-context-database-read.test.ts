@@ -41,6 +41,7 @@ const rows = {
   run: [
     {
       id: 'run_bv_12',
+      agentTokenId: 'token_reader',
       state: 'approved',
       updatedAt: '2026-06-14T10:00:00.000Z',
       issueDatabaseId: 'issue_bv_12',
@@ -185,12 +186,12 @@ describe('createDrizzleBubblophyAgentRunContextStore', () => {
     txMock.select.mockClear();
     txMock.update.mockClear();
     dbMock.transaction.mockClear();
+    rows.run[0]!.agentTokenId = 'token_reader';
   });
 
   it('returns minimal context and records last_used_at on successful reads', async () => {
-    const { createDrizzleBubblophyAgentRunContextStore } = await import(
-      '@/lib/agent-runs/agent-context-database-read'
-    );
+    const { createDrizzleBubblophyAgentRunContextStore } =
+      await import('@/lib/agent-runs/agent-context-database-read');
 
     const result =
       await createDrizzleBubblophyAgentRunContextStore().readRunContextForAgent(
@@ -236,13 +237,26 @@ describe('createDrizzleBubblophyAgentRunContextStore', () => {
       },
     });
   });
+
+  it('hides a same-project run assigned to another token', async () => {
+    rows.run[0]!.agentTokenId = 'token_assigned';
+    const { createDrizzleBubblophyAgentRunContextStore } =
+      await import('@/lib/agent-runs/agent-context-database-read');
+
+    await expect(
+      createDrizzleBubblophyAgentRunContextStore().readRunContextForAgent({
+        runId: 'run_bv_12',
+        tokenHash: 'hashed_attacker_token',
+      })
+    ).resolves.toEqual({ status: 'not_found' });
+    expect(updateCalls).toHaveLength(0);
+  });
 });
 
 describe('canAgentReadRunContext', () => {
   it('allows context reads only after human approval', async () => {
-    const { canAgentReadRunContext } = await import(
-      '@/lib/agent-runs/agent-context-database-read'
-    );
+    const { canAgentReadRunContext } =
+      await import('@/lib/agent-runs/agent-context-database-read');
 
     expect(canAgentReadRunContext('approved')).toBe(true);
     expect(canAgentReadRunContext('running')).toBe(true);

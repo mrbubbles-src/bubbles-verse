@@ -6,6 +6,8 @@ import type {
   BubblophyIssuePlanDraftStoreInput,
 } from '@/lib/issues/plans';
 
+import { canContributeToBubblophyProject } from '@/lib/projects/permissions';
+
 import { and, desc, eq } from 'drizzle-orm';
 
 import {
@@ -66,7 +68,7 @@ async function createIssuePlanVersionWithEvent(
         issueNumber: bubblophyIssues.issueNumber,
         projectId: bubblophyProjects.id,
         projectKey: bubblophyProjects.key,
-        memberAuthUserId: bubblophyProjectMembers.authUserId,
+        memberRole: bubblophyProjectMembers.role,
       })
       .from(bubblophyIssues)
       .innerJoin(
@@ -93,7 +95,7 @@ async function createIssuePlanVersionWithEvent(
       return { status: 'not_found' };
     }
 
-    if (!issue.memberAuthUserId) {
+    if (!canContributeToBubblophyProject(issue.memberRole)) {
       return { status: 'forbidden' };
     }
 

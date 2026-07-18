@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Added the Bubblophy Phase 2 roadmap and the detailed first-slice plan for a
+  provider-neutral Remote MCP using personal Supabase OAuth 2.1 access.
+- Hardened relative auth redirects, contributor/viewer mutation boundaries,
+  agent-run token binding, and direct RLS access to sensitive run/event payloads.
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),

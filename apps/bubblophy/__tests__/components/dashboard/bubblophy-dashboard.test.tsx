@@ -68,6 +68,10 @@ function getBubblophySidebarSectionIds() {
 
 const databaseSnapshot = {
   ...dashboardSnapshot,
+  projects: dashboardSnapshot.projects.map((project) => ({
+    ...project,
+    currentUserRole: 'owner' as const,
+  })),
   meta: {
     dataSource: 'database',
     label: 'Datenbankdaten',
@@ -111,6 +115,14 @@ const databaseSnapshotWithManageableMembers = {
       createdAt: '2026-06-13T12:00:00.000Z',
     },
   ],
+} satisfies DashboardSnapshot;
+
+const databaseSnapshotWithViewerAccess = {
+  ...databaseSnapshot,
+  projects: databaseSnapshot.projects.map((project) => ({
+    ...project,
+    currentUserRole: 'viewer',
+  })),
 } satisfies DashboardSnapshot;
 
 const databaseSnapshotWithIssueDescription = {
@@ -491,6 +503,47 @@ describe('BubblophyDashboard interactions', () => {
     navigationMocks.routerRefresh.mockClear();
     navigationMocks.searchParams.mockReset();
     navigationMocks.searchParams.mockReturnValue(new URLSearchParams());
+  });
+
+  it('keeps viewer issue and run controls read-only', () => {
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithViewerAccess}
+        createIssueAction={async () => ({
+          status: 'invalid',
+          reason: 'empty_title',
+        })}
+        createIssuePlanAction={async () => ({
+          status: 'invalid',
+          reason: 'empty_issue',
+        })}
+        updateIssueContentAction={async () => ({ status: 'forbidden' })}
+        updateIssueStatusAction={async () => ({ status: 'forbidden' })}
+        requestAgentRunAction={async () => ({ status: 'forbidden' })}
+        transitionAgentRunAction={async () => ({ status: 'forbidden' })}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    expect(
+      within(detailPanel).queryByRole('button', { name: 'Bearbeiten' })
+    ).not.toBeInTheDocument();
+    expect(
+      within(detailPanel).queryByRole('button', { name: 'Status speichern' })
+    ).not.toBeInTheDocument();
+    expect(
+      within(detailPanel).queryByRole('button', { name: 'Run anfragen' })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Freigeben' })
+    ).not.toBeInTheDocument();
   });
 
   it('filters the issue queue when a project is selected', () => {
@@ -1244,11 +1297,12 @@ describe('BubblophyDashboard interactions', () => {
         approvalRequired: true,
       },
     }));
-    const requestAgentRunAction = vi.fn<
-      (
-        input: RequestBubblophyAgentRunActionInput
-      ) => Promise<RequestBubblophyAgentRunActionResult>
-    >();
+    const requestAgentRunAction =
+      vi.fn<
+        (
+          input: RequestBubblophyAgentRunActionInput
+        ) => Promise<RequestBubblophyAgentRunActionResult>
+      >();
 
     render(
       <BubblophyDashboard
@@ -1287,7 +1341,9 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       await within(detailPanel).findByText('Zuweisung gespeichert.')
     ).toBeInTheDocument();
-    expect(within(detailPanel).getByText(/Owner user_martin/i)).toBeInTheDocument();
+    expect(
+      within(detailPanel).getByText(/Owner user_martin/i)
+    ).toBeInTheDocument();
     expect(
       within(
         screen.getByRole('row', {
@@ -1327,11 +1383,12 @@ describe('BubblophyDashboard interactions', () => {
         approvalRequired: true,
       },
     }));
-    const requestAgentRunAction = vi.fn<
-      (
-        input: RequestBubblophyAgentRunActionInput
-      ) => Promise<RequestBubblophyAgentRunActionResult>
-    >();
+    const requestAgentRunAction =
+      vi.fn<
+        (
+          input: RequestBubblophyAgentRunActionInput
+        ) => Promise<RequestBubblophyAgentRunActionResult>
+      >();
 
     render(
       <BubblophyDashboard
@@ -1376,11 +1433,12 @@ describe('BubblophyDashboard interactions', () => {
     >(async () => {
       throw new Error('internal project id or membership SQL');
     });
-    const requestAgentRunAction = vi.fn<
-      (
-        input: RequestBubblophyAgentRunActionInput
-      ) => Promise<RequestBubblophyAgentRunActionResult>
-    >();
+    const requestAgentRunAction =
+      vi.fn<
+        (
+          input: RequestBubblophyAgentRunActionInput
+        ) => Promise<RequestBubblophyAgentRunActionResult>
+      >();
 
     render(
       <BubblophyDashboard
@@ -1414,7 +1472,9 @@ describe('BubblophyDashboard interactions', () => {
     expect(alert.textContent).not.toContain('internal project id');
     expect(alert.textContent).not.toContain('membership SQL');
     expect(assigneeSelect).toHaveValue('user_martin');
-    expect(within(detailPanel).getByText(/Owner mrbubbles/i)).toBeInTheDocument();
+    expect(
+      within(detailPanel).getByText(/Owner mrbubbles/i)
+    ).toBeInTheDocument();
     expect(requestAgentRunAction).not.toHaveBeenCalled();
   });
 
@@ -1426,11 +1486,12 @@ describe('BubblophyDashboard interactions', () => {
     >(async () => ({
       status: 'forbidden',
     }));
-    const requestAgentRunAction = vi.fn<
-      (
-        input: RequestBubblophyAgentRunActionInput
-      ) => Promise<RequestBubblophyAgentRunActionResult>
-    >();
+    const requestAgentRunAction =
+      vi.fn<
+        (
+          input: RequestBubblophyAgentRunActionInput
+        ) => Promise<RequestBubblophyAgentRunActionResult>
+      >();
 
     render(
       <BubblophyDashboard
@@ -2132,7 +2193,9 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       within(notesRegion).getByText('Bestehende Review-Notiz aus dem Reload.')
     ).toBeInTheDocument();
-    expect(within(notesRegion).getByText(/Mensch · 2026-06-14/)).toBeInTheDocument();
+    expect(
+      within(notesRegion).getByText(/Mensch · 2026-06-14/)
+    ).toBeInTheDocument();
   });
 
   it('shows issue note events in activity without duplicating audit events as notes', () => {
@@ -2153,9 +2216,9 @@ describe('BubblophyDashboard interactions', () => {
         'Plan-Review als Issue-Notiz festgehalten.'
       )
     ).toBeInTheDocument();
-    expect(within(activitySection).getAllByText('Mensch').length).toBeGreaterThan(
-      0
-    );
+    expect(
+      within(activitySection).getAllByText('Mensch').length
+    ).toBeGreaterThan(0);
 
     fireEvent.click(
       screen.getByRole('button', {
@@ -2233,7 +2296,9 @@ describe('BubblophyDashboard interactions', () => {
 
     await waitFor(() => {
       expect(
-        within(notesRegion).getByText('<strong>Plan bleibt menschlich.</strong>')
+        within(notesRegion).getByText(
+          '<strong>Plan bleibt menschlich.</strong>'
+        )
       ).toBeInTheDocument();
     });
     expect(notesRegion.querySelector('strong')).toBeNull();
@@ -2425,6 +2490,7 @@ describe('BubblophyDashboard interactions', () => {
         blockedIssues: 0,
         memberCount: 1,
         agentTokenCount: 0,
+        currentUserRole: 'owner',
       },
     }));
 
@@ -3033,7 +3099,9 @@ describe('BubblophyDashboard interactions', () => {
     );
 
     expect(
-      within(projectsSection).getByText(/keine Einladung und kein Profil-Lookup/)
+      within(projectsSection).getByText(
+        /keine Einladung und kein Profil-Lookup/
+      )
     ).toBeInTheDocument();
 
     fireEvent.change(within(projectsSection).getByLabelText('Auth-User-ID'), {
@@ -3189,9 +3257,9 @@ describe('BubblophyDashboard interactions', () => {
         role: 'member',
       });
     });
-    expect(await within(projectsSection).findByRole('status')).toHaveTextContent(
-      'Dieses Mitglied ist bereits im Projekt.'
-    );
+    expect(
+      await within(projectsSection).findByRole('status')
+    ).toHaveTextContent('Dieses Mitglied ist bereits im Projekt.');
     expect(
       within(projectsSection).queryByText(/Einladung wurde/)
     ).not.toBeInTheDocument();
@@ -3252,7 +3320,9 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       within(projectsSection).getByLabelText('Rolle für user_martin')
     ).toHaveValue('member');
-    expect(within(projectsSection).getByText('user_martin')).toBeInTheDocument();
+    expect(
+      within(projectsSection).getByText('user_martin')
+    ).toBeInTheDocument();
   });
 
   it('keeps member management available after project content updates', async () => {
@@ -3644,6 +3714,7 @@ describe('BubblophyDashboard interactions', () => {
         blockedIssues: 0,
         memberCount: 1,
         agentTokenCount: 0,
+        currentUserRole: 'owner',
       },
     }));
     const createIssueAction = vi.fn<
@@ -3732,9 +3803,7 @@ describe('BubblophyDashboard interactions', () => {
     fireEvent.change(screen.getByLabelText('Priorität'), {
       target: { value: 'hoch' },
     });
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Issue erstellen' })
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Issue erstellen' }));
 
     await waitFor(() => {
       expect(createIssueAction).toHaveBeenCalledWith({
@@ -3800,9 +3869,7 @@ describe('BubblophyDashboard interactions', () => {
     fireEvent.change(screen.getByLabelText('Titel'), {
       target: { value: 'Feedback sichtbarer machen' },
     });
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Issue erstellen' })
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Issue erstellen' }));
 
     await waitFor(() => {
       expect(createIssueAction).toHaveBeenCalledWith({
@@ -3887,9 +3954,7 @@ describe('BubblophyDashboard interactions', () => {
     fireEvent.change(screen.getByLabelText('Titel'), {
       target: { value: 'Feedback später überschreiben' },
     });
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Issue erstellen' })
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Issue erstellen' }));
 
     expect(
       await screen.findByText('Issue BV-15 wurde erstellt.')
@@ -3924,9 +3989,7 @@ describe('BubblophyDashboard interactions', () => {
         'Run run_bv_15_requested wurde angefragt.'
       );
     });
-    expect(recentFeedback).not.toHaveTextContent(
-      'Issue BV-15 wurde erstellt.'
-    );
+    expect(recentFeedback).not.toHaveTextContent('Issue BV-15 wurde erstellt.');
     expect(navigationMocks.routerRefresh).toHaveBeenCalledTimes(2);
   });
 
@@ -3992,9 +4055,7 @@ describe('BubblophyDashboard interactions', () => {
     fireEvent.change(screen.getByLabelText('Priorität'), {
       target: { value: 'hoch' },
     });
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Issue erstellen' })
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Issue erstellen' }));
 
     await waitFor(() => {
       expect(createIssueAction).toHaveBeenCalledWith({
@@ -4025,9 +4086,7 @@ describe('BubblophyDashboard interactions', () => {
       within(detailPanel).getByText('Frisches Plan-Issue')
     ).toBeInTheDocument();
     expect(
-      within(detailPanel).getByText(
-        /Nutze „Plan entwerfen“/i
-      )
+      within(detailPanel).getByText(/Nutze „Plan entwerfen“/i)
     ).toBeInTheDocument();
 
     fireEvent.click(
@@ -4168,9 +4227,7 @@ describe('BubblophyDashboard interactions', () => {
     );
     await waitFor(() => {
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-        expect.stringContaining(
-          '/api/agent-projects/<project-id>/issues'
-        )
+        expect.stringContaining('/api/agent-projects/<project-id>/issues')
       );
     });
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
@@ -4417,7 +4474,9 @@ describe('BubblophyDashboard interactions', () => {
   });
 
   it('shows project issue context handoff only for active issues:read tokens', () => {
-    render(<BubblophyDashboard snapshot={databaseSnapshotWithIssueReadToken} />);
+    render(
+      <BubblophyDashboard snapshot={databaseSnapshotWithIssueReadToken} />
+    );
 
     const agentSection = document.getElementById('agents');
 
@@ -4479,9 +4538,7 @@ describe('BubblophyDashboard interactions', () => {
     }
 
     expect(
-      within(agentSection).getByText(
-        '/api/agent-projects/<project-id>/issues'
-      )
+      within(agentSection).getByText('/api/agent-projects/<project-id>/issues')
     ).toBeInTheDocument();
     fireEvent.click(
       within(agentSection).getByRole('button', {
@@ -4499,7 +4556,9 @@ describe('BubblophyDashboard interactions', () => {
   });
 
   it('does not offer examples for tokens without operative read or update scopes', () => {
-    render(<BubblophyDashboard snapshot={databaseSnapshotWithWriteOnlyToken} />);
+    render(
+      <BubblophyDashboard snapshot={databaseSnapshotWithWriteOnlyToken} />
+    );
 
     const agentSection = document.getElementById('agents');
 
@@ -4799,9 +4858,9 @@ describe('BubblophyDashboard interactions', () => {
       updateAgentTokenLifecycleAction.mock.calls[0]?.[0]
     ).not.toHaveProperty('authUserId');
     await waitFor(() => {
-      expect(
-        within(agentSection).getAllByText('Aktiv').length
-      ).toBeGreaterThan(0);
+      expect(within(agentSection).getAllByText('Aktiv').length).toBeGreaterThan(
+        0
+      );
     });
   });
 
@@ -5097,9 +5156,7 @@ describe('BubblophyDashboard interactions', () => {
     fireEvent.change(screen.getByLabelText('Priorität'), {
       target: { value: 'hoch' },
     });
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Issue erstellen' })
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Issue erstellen' }));
 
     await waitFor(() => {
       expect(createIssueAction).toHaveBeenCalledWith({
@@ -5133,9 +5190,7 @@ describe('BubblophyDashboard interactions', () => {
       within(detailPanel).queryByText(/Sample-Daten enthalten/i)
     ).not.toBeInTheDocument();
     expect(
-      within(detailPanel).getByText(
-        /Nutze „Plan entwerfen“/i
-      )
+      within(detailPanel).getByText(/Nutze „Plan entwerfen“/i)
     ).toBeInTheDocument();
   });
 
@@ -5183,7 +5238,9 @@ describe('BubblophyDashboard interactions', () => {
     fireEvent.change(screen.getByLabelText('Beschreibung'), {
       target: { value: 'Soll nicht an die Server Action gehen.' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Nur lokal vormerken' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Nur lokal vormerken' })
+    );
 
     await waitFor(() => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -5226,9 +5283,7 @@ describe('BubblophyDashboard interactions', () => {
     fireEvent.change(screen.getByLabelText('Beschreibung'), {
       target: { value: 'Beschreibung bleibt ebenfalls erhalten.' },
     });
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Issue erstellen' })
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Issue erstellen' }));
 
     const alert = await screen.findByRole('alert');
 
@@ -5280,9 +5335,7 @@ describe('BubblophyDashboard interactions', () => {
     fireEvent.change(screen.getByLabelText('Titel'), {
       target: { value: 'Nicht erlaubtes Issue' },
     });
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Issue erstellen' })
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Issue erstellen' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Du bist kein Mitglied dieses Projekts.'
@@ -5485,7 +5538,9 @@ describe('BubblophyDashboard interactions', () => {
       throw new Error('Expected the runs section to render.');
     }
 
-    expect(within(runsSection).getByText(/Noch keine Runs/i)).toBeInTheDocument();
+    expect(
+      within(runsSection).getByText(/Noch keine Runs/i)
+    ).toBeInTheDocument();
     expect(
       within(runsSection).queryByText('Bitte lokal prüfen')
     ).not.toBeInTheDocument();
@@ -5541,8 +5596,12 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       within(runsSection).getByText(/Authorization: Bearer <agent-token>/)
     ).toBeInTheDocument();
-    expect(within(runsSection).queryByText(/test_plaintext_token/)).not.toBeInTheDocument();
-    expect(within(runsSection).queryByText(/tokenHash/)).not.toBeInTheDocument();
+    expect(
+      within(runsSection).queryByText(/test_plaintext_token/)
+    ).not.toBeInTheDocument();
+    expect(
+      within(runsSection).queryByText(/tokenHash/)
+    ).not.toBeInTheDocument();
 
     fireEvent.click(
       within(runsSection).getByRole('button', {
@@ -5572,8 +5631,9 @@ describe('BubblophyDashboard interactions', () => {
       throw new Error('Expected the runs section to render.');
     }
 
-    const runCard =
-      within(runsSection).getByText('run_bv_14').closest('dl')?.parentElement;
+    const runCard = within(runsSection)
+      .getByText('run_bv_14')
+      .closest('dl')?.parentElement;
 
     expect(runCard).toBeInstanceOf(HTMLElement);
 
@@ -5617,8 +5677,9 @@ describe('BubblophyDashboard interactions', () => {
       throw new Error('Expected the runs section to render.');
     }
 
-    const runCard =
-      within(runsSection).getByText('run_bv_14').closest('dl')?.parentElement;
+    const runCard = within(runsSection)
+      .getByText('run_bv_14')
+      .closest('dl')?.parentElement;
 
     expect(runCard).toBeInstanceOf(HTMLElement);
 
@@ -5643,8 +5704,9 @@ describe('BubblophyDashboard interactions', () => {
       throw new Error('Expected the runs section to render.');
     }
 
-    const runCard =
-      within(runsSection).getByText('run_bv_14').closest('dl')?.parentElement;
+    const runCard = within(runsSection)
+      .getByText('run_bv_14')
+      .closest('dl')?.parentElement;
 
     expect(runCard).toBeInstanceOf(HTMLElement);
 
@@ -5681,8 +5743,9 @@ describe('BubblophyDashboard interactions', () => {
       throw new Error('Expected the runs section to render.');
     }
 
-    const runCard =
-      within(runsSection).getByText('run_bv_14').closest('dl')?.parentElement;
+    const runCard = within(runsSection)
+      .getByText('run_bv_14')
+      .closest('dl')?.parentElement;
 
     expect(runCard).toBeInstanceOf(HTMLElement);
 
@@ -5780,9 +5843,7 @@ describe('BubblophyDashboard interactions', () => {
 
     const notesRegion = within(detailPanel).getByLabelText('Notizen für BV-14');
 
-    expect(notesRegion).toHaveTextContent(
-      'Agent-Ergebnis aus Run run_bv_14:'
-    );
+    expect(notesRegion).toHaveTextContent('Agent-Ergebnis aus Run run_bv_14:');
     expect(notesRegion).toHaveTextContent(
       'Diff ist bereit für menschliche Prüfung.'
     );
@@ -5793,7 +5854,9 @@ describe('BubblophyDashboard interactions', () => {
 
     const detailPanel = screen.getByLabelText('Issue-Details');
 
-    expect(detailPanel).toHaveTextContent('Diff ist bereit für menschliche Prüfung.');
+    expect(detailPanel).toHaveTextContent(
+      'Diff ist bereit für menschliche Prüfung.'
+    );
     expect(
       within(detailPanel).queryByRole('button', {
         name: 'Als Notiz übernehmen',
@@ -5855,8 +5918,9 @@ describe('BubblophyDashboard interactions', () => {
       throw new Error('Expected the runs section to render.');
     }
 
-    const runCard =
-      within(runsSection).getByText('run_bv_14').closest('dl')?.parentElement;
+    const runCard = within(runsSection)
+      .getByText('run_bv_14')
+      .closest('dl')?.parentElement;
 
     expect(runCard).toBeInstanceOf(HTMLElement);
 
@@ -5885,10 +5949,9 @@ describe('BubblophyDashboard interactions', () => {
       throw new Error('Expected the runs section to render.');
     }
 
-    const runCard =
-      within(runsSection)
-        .getByText('run_missing_issue')
-        .closest('dl')?.parentElement;
+    const runCard = within(runsSection)
+      .getByText('run_missing_issue')
+      .closest('dl')?.parentElement;
 
     expect(runCard).toBeInstanceOf(HTMLElement);
 
@@ -5916,8 +5979,9 @@ describe('BubblophyDashboard interactions', () => {
       throw new Error('Expected the runs section to render.');
     }
 
-    const runCard =
-      within(runsSection).getByText('run_bv_14').closest('dl')?.parentElement;
+    const runCard = within(runsSection)
+      .getByText('run_bv_14')
+      .closest('dl')?.parentElement;
 
     expect(runCard).toBeInstanceOf(HTMLElement);
 
@@ -5925,9 +5989,7 @@ describe('BubblophyDashboard interactions', () => {
       throw new Error('Expected the BV run card to render.');
     }
 
-    expect(
-      within(runCard).queryByText('Review nötig')
-    ).not.toBeInTheDocument();
+    expect(within(runCard).queryByText('Review nötig')).not.toBeInTheDocument();
   });
 
   it('keeps agent handoff commands horizontally scrollable', () => {

@@ -152,6 +152,7 @@ export function mapCreatedProjectToSummary(project: {
     blockedIssues: 0,
     memberCount: 1,
     agentTokenCount: 0,
+    currentUserRole: 'owner',
   };
 }
 

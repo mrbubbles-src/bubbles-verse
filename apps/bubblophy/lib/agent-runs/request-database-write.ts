@@ -7,6 +7,7 @@ import type {
 } from '@/lib/agent-runs/request';
 
 import { parseBubblophyIssueKey } from '@/lib/issues/plan-database-write';
+import { canContributeToBubblophyProject } from '@/lib/projects/permissions';
 
 import { and, eq } from 'drizzle-orm';
 
@@ -66,7 +67,7 @@ async function requestAgentRun(
         id: bubblophyIssues.id,
         projectId: bubblophyProjects.id,
         projectKey: bubblophyProjects.key,
-        memberAuthUserId: bubblophyProjectMembers.authUserId,
+        memberRole: bubblophyProjectMembers.role,
       })
       .from(bubblophyIssues)
       .innerJoin(
@@ -93,7 +94,7 @@ async function requestAgentRun(
       return { status: 'not_found' };
     }
 
-    if (!issue.memberAuthUserId) {
+    if (!canContributeToBubblophyProject(issue.memberRole)) {
       return { status: 'forbidden' };
     }
 

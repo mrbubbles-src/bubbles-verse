@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
@@ -13,6 +13,13 @@ const drizzleJournalSql = readFileSync(
   join(process.cwd(), 'drizzle/meta/_journal.json'),
   'utf8'
 );
+const sensitiveReadHardeningPath = join(
+  process.cwd(),
+  'drizzle/0003_close_sensitive_direct_reads.sql'
+);
+const sensitiveReadHardeningSql = existsSync(sensitiveReadHardeningPath)
+  ? normalizeSql(readFileSync(sensitiveReadHardeningPath, 'utf8'))
+  : '';
 
 const rlsProtectedTables = [
   'bubblophy_projects',
@@ -92,6 +99,24 @@ describe('bubblophy RLS migration', () => {
     );
 
     expect(agentTokenPolicies).toEqual([]);
+  });
+
+  it('closes direct authenticated reads of raw agent results and events', () => {
+    expect(drizzleJournalSql).toContain(
+      '"tag": "0003_close_sensitive_direct_reads"'
+    );
+    expect(sensitiveReadHardeningSql).toContain(
+      'revoke select on table "public"."bubblophy_agent_runs" from authenticated'
+    );
+    expect(sensitiveReadHardeningSql).toContain(
+      'revoke select on table "public"."bubblophy_issue_events" from authenticated'
+    );
+    expect(sensitiveReadHardeningSql).toContain(
+      'drop policy if exists "bubblophy project members read agent runs" on "public"."bubblophy_agent_runs"'
+    );
+    expect(sensitiveReadHardeningSql).toContain(
+      'drop policy if exists "bubblophy project members read issue events" on "public"."bubblophy_issue_events"'
+    );
   });
 
   it('limits direct authenticated reads to project membership boundaries', () => {

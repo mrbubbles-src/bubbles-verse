@@ -174,6 +174,7 @@ describe('createBubblophyProject', () => {
         blockedIssues: 0,
         memberCount: 1,
         agentTokenCount: 0,
+        currentUserRole: 'owner',
       },
     });
 
@@ -223,6 +224,7 @@ describe('mapCreatedProjectToSummary', () => {
       blockedIssues: 0,
       memberCount: 1,
       agentTokenCount: 0,
+      currentUserRole: 'owner',
     });
   });
 });

@@ -7,6 +7,8 @@ import type {
   BubblophyIssueDraftCreateStoreResult,
 } from '@/lib/issues/create';
 
+import { canContributeToBubblophyProject } from '@/lib/projects/permissions';
+
 import { and, desc, eq } from 'drizzle-orm';
 
 import {
@@ -59,6 +61,7 @@ async function createIssueWithCreatedEvent(
         id: bubblophyProjects.id,
         key: bubblophyProjects.key,
         name: bubblophyProjects.name,
+        memberRole: bubblophyProjectMembers.role,
       })
       .from(bubblophyProjects)
       .innerJoin(
@@ -74,7 +77,7 @@ async function createIssueWithCreatedEvent(
       )
       .limit(1);
 
-    if (!project) {
+    if (!project || !canContributeToBubblophyProject(project.memberRole)) {
       return null;
     }
 

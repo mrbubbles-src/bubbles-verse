@@ -42,10 +42,10 @@ import type {
   AgentTokenState,
   AgentTokenSummary,
   DashboardSnapshot,
+  IssueNoteSummary,
   IssuePriority,
   IssueStatus,
   IssueSummary,
-  IssueNoteSummary,
   ProjectHealth,
   ProjectMemberRole,
   ProjectMemberSummary,
@@ -61,6 +61,7 @@ import {
   projectHealthLabels,
 } from '@/lib/dashboard/labels';
 import { getIssueReadinessPercent } from '@/lib/dashboard/metrics';
+import { canContributeToBubblophyProject } from '@/lib/projects/permissions';
 import { bubblophySidebarData, getBubblophyBreadcrumbs } from '@/lib/sidebar';
 
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
@@ -694,6 +695,23 @@ export function BubblophyDashboard({
     () => allProjects.filter((project) => !project.isArchived),
     [allProjects]
   );
+  const projectRoleByKey = useMemo(
+    () =>
+      new Map(
+        allProjects.map((project) => [project.key, project.currentUserRole])
+      ),
+    [allProjects]
+  );
+  const activeContributorProjects = useMemo(
+    () =>
+      activeProjects.filter((project) =>
+        canContributeToBubblophyProject(project.currentUserRole)
+      ),
+    [activeProjects]
+  );
+  const issueCreationProjects = canUseDatabase
+    ? activeContributorProjects
+    : activeProjects;
 
   const filteredIssues = useMemo(() => {
     if (selectedProjectKey === 'all') {
@@ -719,6 +737,25 @@ export function BubblophyDashboard({
     : (filteredIssues.find((issue) => issue.id === selectedIssueId) ??
       filteredIssues[0] ??
       null);
+  const selectedIssueProject = selectedIssue
+    ? allProjects.find((project) => project.key === selectedIssue.projectKey)
+    : null;
+  const canContributeToSelectedIssueProject = canContributeToBubblophyProject(
+    selectedIssueProject?.currentUserRole
+  );
+  const writableIssueIds = useMemo(
+    () =>
+      new Set(
+        allIssues
+          .filter((issue) =>
+            canContributeToBubblophyProject(
+              projectRoleByKey.get(issue.projectKey)
+            )
+          )
+          .map((issue) => issue.id)
+      ),
+    [allIssues, projectRoleByKey]
+  );
   const selectedIssueIdForUrl = selectedIssue?.id ?? '';
   const selectedIssueRuns = selectedIssue
     ? allAgentRuns.filter((run) => run.issueId === selectedIssue.id)
@@ -745,7 +782,11 @@ export function BubblophyDashboard({
     openIssues: totalOpenIssues,
   });
   const canOpenIssueDialog =
-    activeProjects.length > 0 && !isSelectedProjectArchived;
+    issueCreationProjects.length > 0 &&
+    !isSelectedProjectArchived &&
+    (!canUseDatabase ||
+      !selectedProject ||
+      canContributeToBubblophyProject(selectedProject.currentUserRole));
   const canCreateFirstProjectFromHeader =
     activeProjects.length === 0 &&
     canUseDatabase &&
@@ -987,7 +1028,10 @@ export function BubblophyDashboard({
 
     setIssueNotesById((currentNotes) => ({
       ...currentNotes,
-      [issueId]: [note, ...(currentNotes[issueId] ?? currentIssue?.notes ?? [])],
+      [issueId]: [
+        note,
+        ...(currentNotes[issueId] ?? currentIssue?.notes ?? []),
+      ],
     }));
     setRecentMutationFeedback(`Notiz für ${issueId} wurde gespeichert.`);
     refreshDatabaseSnapshot();
@@ -1174,31 +1218,37 @@ export function BubblophyDashboard({
                 canPersistIssuePlans={
                   canUseDatabase &&
                   !isSelectedProjectArchived &&
+                  canContributeToSelectedIssueProject &&
                   Boolean(createIssuePlanAction)
                 }
                 canPersistIssueNotes={
                   canUseDatabase &&
                   !isSelectedProjectArchived &&
+                  canContributeToSelectedIssueProject &&
                   Boolean(createIssueNoteAction)
                 }
                 canPersistIssueContent={
                   canUseDatabase &&
                   !isSelectedProjectArchived &&
+                  canContributeToSelectedIssueProject &&
                   Boolean(updateIssueContentAction)
                 }
                 canPersistIssueStatus={
                   canUseDatabase &&
                   !isSelectedProjectArchived &&
+                  canContributeToSelectedIssueProject &&
                   Boolean(updateIssueStatusAction)
                 }
                 canPersistIssuePriority={
                   canUseDatabase &&
                   !isSelectedProjectArchived &&
+                  canContributeToSelectedIssueProject &&
                   Boolean(updateIssuePriorityAction)
                 }
                 canPersistIssueAssignee={
                   canUseDatabase &&
                   !isSelectedProjectArchived &&
+                  canContributeToSelectedIssueProject &&
                   Boolean(updateIssueAssigneeAction)
                 }
                 createIssuePlanAction={createIssuePlanAction}
@@ -1207,7 +1257,11 @@ export function BubblophyDashboard({
                 updateIssueAssigneeAction={updateIssueAssigneeAction}
                 updateIssueStatusAction={updateIssueStatusAction}
                 updateIssuePriorityAction={updateIssuePriorityAction}
-                requestAgentRunAction={requestAgentRunAction}
+                requestAgentRunAction={
+                  canContributeToSelectedIssueProject
+                    ? requestAgentRunAction
+                    : undefined
+                }
                 agentTokens={displayedAgentTokens}
                 projectMembers={allProjectMembers}
                 agentRuns={selectedIssueRuns}
@@ -1253,6 +1307,7 @@ export function BubblophyDashboard({
                 agentRuns={displayedAgentRuns}
                 agentTokens={displayedAgentTokens}
                 issueIds={allIssues.map((issue) => issue.id)}
+                writableIssueIds={writableIssueIds}
                 transitionAgentRunAction={
                   isSelectedProjectArchived
                     ? undefined
@@ -1271,12 +1326,12 @@ export function BubblophyDashboard({
       </main>
       {isDraftDialogOpen ? (
         <NewIssueDraftDialog
-          projects={activeProjects}
+          projects={issueCreationProjects}
           open={isDraftDialogOpen}
           selectedProjectKey={selectedProjectKey}
           canPersistToDatabase={
             canUseDatabase &&
-            activeProjects.length > 0 &&
+            activeContributorProjects.length > 0 &&
             Boolean(createIssueAction)
           }
           createIssueAction={createIssueAction}
@@ -2089,8 +2144,8 @@ function ProjectMembersPanel({
       project.currentUserRole === 'maintainer') &&
     Boolean(
       addProjectMemberAction ||
-        updateProjectMemberRoleAction ||
-        removeProjectMemberAction
+      updateProjectMemberRoleAction ||
+      removeProjectMemberAction
     );
 
   const handleAddMember = () => {
@@ -2247,8 +2302,8 @@ function ProjectMembersPanel({
           <div className="grid gap-1">
             <h4 className="text-sm font-medium">Mitglied hinzufügen</h4>
             <p className="text-xs text-muted-foreground">
-              Nutzt eine bekannte Supabase/Auth-User-ID. Es wird keine
-              Einladung und kein Profil-Lookup ausgelöst.
+              Nutzt eine bekannte Supabase/Auth-User-ID. Es wird keine Einladung
+              und kein Profil-Lookup ausgelöst.
             </p>
           </div>
           <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_12rem_auto]">
@@ -3007,9 +3062,7 @@ function IssueDetailPanel({
       <IssueNotesPanel
         key={`notes-${issue.id}`}
         issue={issue}
-        canPersistIssueNotes={
-          canPersistIssueNotes && !isLocalDraftIssue(issue)
-        }
+        canPersistIssueNotes={canPersistIssueNotes && !isLocalDraftIssue(issue)}
         createIssueNoteAction={createIssueNoteAction}
         onIssueNoteCreated={onIssueNoteCreated}
       />
@@ -3668,9 +3721,7 @@ function IssueAssigneeUpdatePanel({
  * @returns A valid target priority for the priority update form.
  */
 function getDefaultNextIssuePriority(priority: IssuePriority) {
-  return (
-    issuePriorityOptions.find((option) => option !== priority) ?? priority
-  );
+  return issuePriorityOptions.find((option) => option !== priority) ?? priority;
 }
 
 /**
@@ -3905,7 +3956,7 @@ function IssueNotesPanel({
             <li
               key={note.id}
               className="grid gap-1 rounded-md border border-border p-2 text-sm">
-              <p className="whitespace-pre-wrap break-words">{note.note}</p>
+              <p className="break-words whitespace-pre-wrap">{note.note}</p>
               <p className="text-xs text-muted-foreground">
                 {note.actor} · {note.createdAt}
               </p>
@@ -4439,9 +4490,7 @@ function AgentTokenHandoff({
           <dl className="grid gap-2 text-xs sm:grid-cols-2">
             <div>
               <dt className="text-muted-foreground">GET Projekt-Issues</dt>
-              <dd className="font-mono break-all">
-                {projectIssuesEndpoint}
-              </dd>
+              <dd className="font-mono break-all">{projectIssuesEndpoint}</dd>
             </div>
             <div>
               <dt className="text-muted-foreground">Benötigter Scope</dt>
@@ -4457,8 +4506,8 @@ function AgentTokenHandoff({
           ) : (
             <p className="text-xs text-muted-foreground">
               Dieses Token kann keine Projekt-Issues lesen, weil es nicht aktiv
-              ist oder der Scope{' '}
-              <span className="font-mono">issues:read</span> fehlt.
+              ist oder der Scope <span className="font-mono">issues:read</span>{' '}
+              fehlt.
             </p>
           )}
         </div>
@@ -4484,8 +4533,8 @@ function AgentTokenHandoff({
             />
           ) : (
             <p className="text-xs text-muted-foreground">
-              Dieses Token kann keine Agent-Run-Statusupdates schreiben, weil
-              es nicht aktiv ist oder der Scope{' '}
+              Dieses Token kann keine Agent-Run-Statusupdates schreiben, weil es
+              nicht aktiv ist oder der Scope{' '}
               <span className="font-mono">runs:update</span> fehlt.
             </p>
           )}
@@ -4860,9 +4909,7 @@ function NewAgentTokenDialog({
               </p>
             </div>
             <div className="rounded-md border border-dashed border-border bg-muted/20 p-3">
-              <p className="text-sm font-medium">
-                Nutzung für lokale Agenten
-              </p>
+              <p className="text-sm font-medium">Nutzung für lokale Agenten</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 Nutze das Token als Bearer Secret nur für die gewählten Scopes.
                 Die Beispiele bleiben bei Platzhaltern, damit keine echten
@@ -5002,6 +5049,7 @@ function RunQueue({
   agentRuns,
   agentTokens,
   issueIds,
+  writableIssueIds,
   transitionAgentRunAction,
   onAgentRunTransitioned,
   onIssueSelect,
@@ -5010,6 +5058,7 @@ function RunQueue({
   agentRuns: AgentRunSummary[];
   agentTokens: AgentTokenSummary[];
   issueIds: string[];
+  writableIssueIds: ReadonlySet<string>;
   transitionAgentRunAction?: (
     input: TransitionBubblophyAgentRunActionInput
   ) => Promise<TransitionBubblophyAgentRunActionResult>;
@@ -5054,6 +5103,7 @@ function RunQueue({
           ? agentRuns.map((run) => {
               const runProjectKey = getProjectKeyFromIssueId(run.issueId);
               const canOpenIssue = issueIds.includes(run.issueId);
+              const canTransitionRun = writableIssueIds.has(run.issueId);
               const canUpdateThisRun = agentTokens.some(
                 (token) =>
                   token.state === 'aktiv' &&
@@ -5125,7 +5175,9 @@ function RunQueue({
                       />
                     </div>
                   ) : null}
-                  {run.state === 'wartet' && transitionAgentRunAction ? (
+                  {run.state === 'wartet' &&
+                  canTransitionRun &&
+                  transitionAgentRunAction ? (
                     <RunDecisionControls
                       run={run}
                       transitionAgentRunAction={transitionAgentRunAction}

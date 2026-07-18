@@ -93,6 +93,8 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   ein projektweites Audit-Event ohne Plaintext oder Hash.
 - Der Auth- und Sicherheitsplan liegt in
   `documentation/auth-security-plan.md`.
+- Der Nach-MVP-Umfang, beginnend mit einem providerneutralen Remote-MCP über
+  Supabase OAuth 2.1, liegt in `documentation/phase-2-roadmap.md`.
 - Die UI nutzt einen typisierten Dashboard-Snapshot als View Model. Der
   server-only Read-Pfad unter `lib/dashboard/data.ts` kann Datenbankzeilen
   inklusive Projekten, Issues mit Beschreibungen, öffentlichen
@@ -145,7 +147,8 @@ bun run build
   erhält Deep-Link-`next`-Werte, ersetzt keine Autorisierung und lässt
   `/api/*` sowie `/auth/*` bei ihren route-spezifischen Auth-Verträgen.
 - Persistierte Issue-Erfassung läuft serverseitig über Projektmitgliedschaft,
-  schreibt nur Issue plus `created`-Event und startet keine Agent-Runs.
+  verlangt Owner-, Maintainer- oder Member-Rolle, schreibt nur Issue plus
+  `created`-Event und startet keine Agent-Runs. Viewer bleiben read-only.
 - Persistierte Issue-Statuspflege läuft serverseitig über Projektmitgliedschaft,
   schreibt nur den neuen Status plus `status_changed`-Event und startet keine
   Agent-Runs. Identische Zielstatus werden als No-op behandelt, damit keine
@@ -164,13 +167,19 @@ bun run build
   Projektmitgliedschaft und erlauben nur den Übergang aus `requested`.
 - Agent-Kontextreads laufen über gehashte Bearer-Tokens mit Scope
   `issues:read`, Projektbindung und aktivem/nicht abgelaufenem Token. Der
-  Endpoint gibt nur Run, Projekt, Issue und latest Plan zurück, aktualisiert
-  `last_used_at` und liest keine Token-, Member-, User- oder Audit-DTOs aus.
+  Endpoint verlangt zusätzlich das dem Run zugeordnete Token, gibt nur Run,
+  Projekt, Issue und latest Plan zurück, aktualisiert `last_used_at` und liest
+  keine Token-, Member-, User- oder Audit-DTOs aus.
 - Agent-Statusupdates laufen über gehashte Bearer-Tokens mit Scope
   `runs:update`, Projektbindung, aktivem/nicht abgelaufenem Token und enger
-  State-Machine. Der Endpoint speichert nur Status, Message, Result-JSON,
-  `last_used_at` und Audit-Events; er führt keinen Code aus und wird nicht in
-  den menschlichen Login-Redirect-Flow umgebogen.
+  State-Machine. Auch hier muss das Token dem Run zugeordnet sein. Der Endpoint
+  speichert nur Status, Message, Result-JSON, `last_used_at` und Audit-Events;
+  er führt keinen Code aus und wird nicht in den menschlichen
+  Login-Redirect-Flow umgebogen.
+- Relative Auth-Redirects lehnen Backslash- und Host-Umgehungen ab.
+- Direkte `authenticated`-RLS-Reads auf rohe Agent-Run-Resultate und
+  Issue-Event-Payloads sind geschlossen. Diese Daten werden nur über
+  membership-geprüfte serverseitige DTOs ausgegeben.
 - Persistierte Plan-Erfassung läuft serverseitig über Issue-Projektmitgliedschaft,
   schreibt eine neue Planversion plus `plan_updated`-Event und startet keine
   Agent-Runs.

@@ -12,7 +12,12 @@ export function getSafeBubblophyRedirectPath(
   value: string | null | undefined,
   fallback = DEFAULT_BUBBLOPHY_REDIRECT_PATH
 ) {
-  if (!value || !value.startsWith('/') || value.startsWith('//')) {
+  if (
+    !value ||
+    !value.startsWith('/') ||
+    value.startsWith('//') ||
+    /\\|%5c/i.test(value)
+  ) {
     return fallback;
   }
 

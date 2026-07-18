@@ -48,6 +48,10 @@ Agent-Orchestrierungsoberfläche für mehrere Projekte.
 
 ## Noch sinnvoll / nächste Ausbaustufen
 
+Der verbindliche Phase-2-Umfang und seine Reihenfolge stehen in
+`documentation/phase-2-roadmap.md`. Der erste Slice ist ein providerneutraler,
+persönlich authentifizierter Remote-MCP mit Supabase OAuth 2.1.
+
 - Visuelle Regressionen dauerhaft automatisieren, z. B. über einen späteren
   Browser-Check oder Screenshot-Flow, sobald dafür ein stabiler Projektpfad
   feststeht.

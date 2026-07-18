@@ -7,6 +7,7 @@ import type {
 } from '@/lib/agent-runs/human-transition';
 
 import { formatBubblophyIssueKey } from '@/lib/issues/repository';
+import { canContributeToBubblophyProject } from '@/lib/projects/permissions';
 
 import { and, eq } from 'drizzle-orm';
 
@@ -60,7 +61,7 @@ async function transitionRun(
         issueNumber: bubblophyIssues.issueNumber,
         projectId: bubblophyProjects.id,
         projectKey: bubblophyProjects.key,
-        memberAuthUserId: bubblophyProjectMembers.authUserId,
+        memberRole: bubblophyProjectMembers.role,
         agentTokenLabel: bubblophyAgentTokens.label,
       })
       .from(bubblophyAgentRuns)
@@ -98,7 +99,7 @@ async function transitionRun(
       return { status: 'not_found' };
     }
 
-    if (!currentRun.memberAuthUserId) {
+    if (!canContributeToBubblophyProject(currentRun.memberRole)) {
       return { status: 'forbidden' };
     }
 
