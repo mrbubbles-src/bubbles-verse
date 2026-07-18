@@ -8,13 +8,17 @@ import type {
   BubblophyAgentTokenLifecycleStoreResult,
 } from '@/lib/agent-tokens/lifecycle';
 
-import { and, eq, inArray } from 'drizzle-orm';
+import {
+  lockBubblophyProjectForHumanWrite,
+  lockBubblophyProjectMembersForHumanWrite,
+} from '@/lib/projects/human-write-locks-database';
+import { canManageBubblophyProjectMembers } from '@/lib/projects/members';
+
+import { and, eq } from 'drizzle-orm';
 
 import {
   bubblophyAgentTokens,
   bubblophyProjectEvents,
-  bubblophyProjectMembers,
-  bubblophyProjects,
 } from '@/drizzle/db/schema';
 
 export interface BubblophyAgentTokenLifecycleProjectEventInsert {
@@ -53,50 +57,62 @@ async function updateAgentTokenLifecycle(
   const { db } = await import('@/drizzle/db');
 
   return db.transaction(async (tx) => {
+    const [tokenReference] = await tx
+      .select({
+        id: bubblophyAgentTokens.id,
+        projectId: bubblophyAgentTokens.projectId,
+      })
+      .from(bubblophyAgentTokens)
+      .where(eq(bubblophyAgentTokens.id, input.tokenId))
+      .limit(1);
+
+    if (!tokenReference) {
+      return { status: 'not_found' };
+    }
+
+    const project = await lockBubblophyProjectForHumanWrite(tx, {
+      project: { id: tokenReference.projectId },
+      lockMode: 'share',
+    });
+
+    if (!project || project.isArchived) {
+      return { status: 'not_found' };
+    }
+
+    const memberships = await lockBubblophyProjectMembersForHumanWrite(tx, {
+      projectId: project.id,
+      authUserIds: [input.authUserId],
+    });
+    const actorRole = memberships.find(
+      (membership) => membership.authUserId === input.authUserId
+    )?.role;
+
+    if (!canManageBubblophyProjectMembers(actorRole ?? '')) {
+      return { status: 'forbidden' };
+    }
+
     const [token] = await tx
       .select({
         id: bubblophyAgentTokens.id,
         label: bubblophyAgentTokens.label,
         projectId: bubblophyAgentTokens.projectId,
-        projectKey: bubblophyProjects.key,
         scopes: bubblophyAgentTokens.scopes,
         state: bubblophyAgentTokens.state,
         lastUsedAt: bubblophyAgentTokens.lastUsedAt,
         expiresAt: bubblophyAgentTokens.expiresAt,
       })
       .from(bubblophyAgentTokens)
-      .innerJoin(
-        bubblophyProjects,
-        eq(bubblophyProjects.id, bubblophyAgentTokens.projectId)
-      )
       .where(
         and(
           eq(bubblophyAgentTokens.id, input.tokenId),
-          eq(bubblophyProjects.isArchived, false)
+          eq(bubblophyAgentTokens.projectId, project.id)
         )
       )
-      .limit(1);
+      .limit(1)
+      .for('update');
 
     if (!token) {
       return { status: 'not_found' };
-    }
-
-    const [membership] = await tx
-      .select({
-        authUserId: bubblophyProjectMembers.authUserId,
-      })
-      .from(bubblophyProjectMembers)
-      .where(
-        and(
-          eq(bubblophyProjectMembers.projectId, token.projectId),
-          eq(bubblophyProjectMembers.authUserId, input.authUserId),
-          inArray(bubblophyProjectMembers.role, ['owner', 'maintainer'])
-        )
-      )
-      .limit(1);
-
-    if (!membership) {
-      return { status: 'forbidden' };
     }
 
     const transition = getAgentTokenLifecycleTransition({
@@ -112,7 +128,7 @@ async function updateAgentTokenLifecycle(
     if (transition.status === 'unchanged') {
       return {
         status: 'unchanged',
-        token: toLifecycleStoreResult(token),
+        token: toLifecycleStoreResult({ ...token, projectKey: project.key }),
       };
     }
 
@@ -140,7 +156,7 @@ async function updateAgentTokenLifecycle(
     await tx.insert(bubblophyProjectEvents).values(
       buildBubblophyAgentTokenLifecycleProjectEventInsert({
         projectId: token.projectId,
-        projectKey: token.projectKey,
+        projectKey: project.key,
         authUserId: input.authUserId,
         tokenId: updatedToken.id,
         tokenLabel: updatedToken.label,
@@ -154,7 +170,7 @@ async function updateAgentTokenLifecycle(
       status: 'updated',
       token: toLifecycleStoreResult({
         ...updatedToken,
-        projectKey: token.projectKey,
+        projectKey: project.key,
       }),
     };
   });

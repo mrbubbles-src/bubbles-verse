@@ -64,8 +64,9 @@ Status: abgeschlossen.
 ### 4. Rollen und Einladungen
 
 - Status: bestehende Rollenmutationen transaktions- und konfliktfest gehärtet;
-  als nächster Security-Slice folgen noch die projektweiten Manager-Writer,
-  danach Einladungspersistenz und Manager-Verwaltung.
+  Projektverwaltung und Agent-Token-Manager-Writer sind ebenfalls gegen
+  parallelen Rollenentzug gesichert. Menschliche Run- und verbleibende
+  Issue-Writer folgen vor Einladungspersistenz und Manager-Verwaltung.
 - Mitglieder über Profil oder E-Mail statt technischer Auth-User-ID einladen.
 - Einladungszustände, Ablauf, Annahme und Widerruf auditierbar machen.
 - Rollenansichten und Mutationsrechte für Owner, Maintainer, Member und Viewer

@@ -41,13 +41,22 @@ Projekt-Snapshots, RLS-Reads und MCP-Werkzeugen ausgeschlossen.
 - [x] Store-, Service-, Action- und UI-Tests ergänzen; Dokumentation und
   Changelog aktualisieren.
 
-## Task 2: Einladungspersistenz und Verwaltung
+## Task 2: Projektweite Autorisierungs-Races schließen
 
-Vor der Einladungspersistenz folgt ein eigener Security-Slice: bestehende
-Manager-Writer für Projektverwaltung, Agent-Token-Lifecycle und menschliche
-Run-Entscheidungen müssen Projekt und Actor-Membership unter demselben stabilen
-Lock-Vertrag erneut prüfen. Damit kann eine bereits parallel entzogene
-Maintainer-Rolle nicht nach dem Commit der Demotion noch wirksam werden.
+- [x] Gemeinsame kleine Projekt- und Membership-Lock-Primitiven mit stabiler
+  Reihenfolge, deduplizierten User-IDs und ohne Rollenpolitik ergänzen.
+- [x] Projektverwaltung sowie Agent-Token-Erstellung und -Lifecycle auf Projekt
+  → Actor-Membership → gegebenenfalls Token umstellen.
+- [ ] Menschliche Run-Freigabe und -Abbruch auf Projekt → Actor-Membership →
+  Run → Token umstellen.
+- [ ] Issue Edit, Priority und Assignment auf Projekt → Issue → sortierte
+  Actor-/Assignee-Memberships umstellen.
+
+Damit kann eine bereits parallel entzogene Rolle nicht nach dem Commit der
+Demotion noch wirksam werden. Erst nach diesen Security-Slices folgt die
+Einladungspersistenz.
+
+## Task 3: Einladungspersistenz und Verwaltung
 
 - [ ] Einladungstabelle mit normalisierter E-Mail, Rolle, Token-Hash,
   Einladendem, Ablauf-, Annahme- und Widerrufszeitpunkten ergänzen.
@@ -59,7 +68,7 @@ Maintainer-Rolle nicht nach dem Commit der Demotion noch wirksam werden.
 - [ ] Nur Owner/Maintainer erhalten einen serverseitig redigierten
   Einladungs-Snapshot.
 
-## Task 3: Annahme und Auth-Grenze
+## Task 4: Annahme und Auth-Grenze
 
 - [ ] Einen eigenen Einladungs-Deep-Link definieren, der anonyme Nutzer über
   den bestehenden GitHub-/Supabase-Login zurückführt.
@@ -70,7 +79,7 @@ Maintainer-Rolle nicht nach dem Commit der Demotion noch wirksam werden.
 - [ ] Wiederholung, Ablauf, Widerruf, falsche E-Mail und parallele Annahme
   fail-closed und verständlich abbilden.
 
-## Task 4: Team-UX und verständliche Identität
+## Task 5: Team-UX und verständliche Identität
 
 - [ ] Technische Auth-ID-Eingabe durch E-Mail-Einladung ersetzen.
 - [ ] Offene, abgelaufene und widerrufene Einladungen für Manager verständlich
@@ -80,7 +89,7 @@ Maintainer-Rolle nicht nach dem Commit der Demotion noch wirksam werden.
 - [ ] Rollenrechte für Owner, Maintainer, Member und Viewer im UI klar
   beschreiben und unerlaubte Aktionen serverseitig weiterhin abweisen.
 
-## Task 5: Zustellung und Produktionsgate
+## Task 6: Zustellung und Produktionsgate
 
 - [ ] Mailversand hinter eine kleine server-only Schnittstelle legen; keine
   Provider-Secrets oder Service-Role-Schlüssel an den Browser geben.

@@ -9,6 +9,10 @@ import type {
   BubblophyProjectManagementStoreResult,
 } from '@/lib/projects/manage';
 
+import {
+  lockBubblophyProjectForHumanWrite,
+  lockBubblophyProjectMembersForHumanWrite,
+} from '@/lib/projects/human-write-locks-database';
 import { canManageBubblophyProject } from '@/lib/projects/manage';
 
 import { and, eq, sql } from 'drizzle-orm';
@@ -57,15 +61,13 @@ async function updateProjectContentWithEvent(
   const { db } = await import('@/drizzle/db');
 
   return db.transaction(async (tx) => {
-    const currentProject = await selectProjectForManagement(tx, input);
+    const context = await lockProjectManagerMutationContext(tx, input);
 
-    if (!currentProject) {
-      return { status: 'not_found' };
+    if (context.status !== 'ready') {
+      return context;
     }
 
-    if (!canManageBubblophyProject(currentProject.memberRole ?? '')) {
-      return { status: 'forbidden' };
-    }
+    const currentProject = context.project;
 
     const changedFields = getChangedBubblophyProjectContentFields({
       current: currentProject,
@@ -121,15 +123,13 @@ async function transitionProjectArchiveWithEvent(
   const { db } = await import('@/drizzle/db');
 
   return db.transaction(async (tx) => {
-    const currentProject = await selectProjectForManagement(tx, input);
+    const context = await lockProjectManagerMutationContext(tx, input);
 
-    if (!currentProject) {
-      return { status: 'not_found' };
+    if (context.status !== 'ready') {
+      return context;
     }
 
-    if (!canManageBubblophyProject(currentProject.memberRole ?? '')) {
-      return { status: 'forbidden' };
-    }
+    const currentProject = context.project;
 
     const nextArchived = input.decision === 'archive';
 
@@ -226,13 +226,41 @@ export function buildBubblophyProjectUpdatedEventInsert(input: {
   };
 }
 
-async function selectProjectForManagement(
+/**
+ * Locks project and actor membership before a manager mutation.
+ *
+ * @param tx Active project management transaction.
+ * @param input Authenticated actor and project key.
+ * @returns Locked current project or a structured authorization failure.
+ */
+export async function lockProjectManagerMutationContext(
   tx: BubblophyProjectManagementTx,
   input: {
     authUserId: string;
     projectKey: string;
   }
 ) {
+  const lockedProject = await lockBubblophyProjectForHumanWrite(tx, {
+    project: { key: input.projectKey },
+    lockMode: 'no key update',
+  });
+
+  if (!lockedProject) {
+    return { status: 'not_found' } as const;
+  }
+
+  const memberships = await lockBubblophyProjectMembersForHumanWrite(tx, {
+    projectId: lockedProject.id,
+    authUserIds: [input.authUserId],
+  });
+  const actorRole = memberships.find(
+    (membership) => membership.authUserId === input.authUserId
+  )?.role;
+
+  if (!canManageBubblophyProject(actorRole ?? '')) {
+    return { status: 'forbidden' } as const;
+  }
+
   const [project] = await tx
     .select({
       id: bubblophyProjects.id,
@@ -240,20 +268,16 @@ async function selectProjectForManagement(
       name: bubblophyProjects.name,
       description: bubblophyProjects.description,
       isArchived: bubblophyProjects.isArchived,
-      memberRole: bubblophyProjectMembers.role,
     })
     .from(bubblophyProjects)
-    .leftJoin(
-      bubblophyProjectMembers,
-      and(
-        eq(bubblophyProjectMembers.projectId, bubblophyProjects.id),
-        eq(bubblophyProjectMembers.authUserId, input.authUserId)
-      )
-    )
-    .where(eq(bubblophyProjects.key, input.projectKey))
+    .where(eq(bubblophyProjects.id, lockedProject.id))
     .limit(1);
 
-  return project ?? null;
+  if (!project) {
+    throw new Error('Locked Bubblophy project could not be reloaded.');
+  }
+
+  return { status: 'ready', project } as const;
 }
 
 async function addProjectCounters(

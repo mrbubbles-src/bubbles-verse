@@ -64,6 +64,9 @@
 - Added the detailed Phase 2 roles and invitations plan, keeping project
   membership authoritative and separating invitation management, acceptance,
   identity display, and mail delivery into reviewable slices.
+- Added shared project and sorted membership lock primitives, then hardened
+  project management plus agent-token creation and lifecycle writes against
+  concurrent manager demotion while preserving existing role semantics.
 
 All notable changes to this project will be documented in this file.
 

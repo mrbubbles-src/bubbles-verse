@@ -37,6 +37,9 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   sowie Projekte über `is_archived` archivieren oder wiederherstellen.
   Archivierte Projekte bleiben sichtbar markiert, wirken aber nicht als aktive
   Arbeitsfläche für neue Issues, Run-Anfragen oder Agent-Token-Aktionen.
+  Projektänderungen sperren Projekt und aktuelle Manager-Mitgliedschaft vor der
+  Autorisierungsentscheidung, sodass paralleler Rollenentzug zuerst wirksam
+  wird.
 - Der Projektbereich zeigt Mitglieder eines ausgewählten Projekts aus
   `bubblophy_project_members`. Ohne Profil- oder Invite-Modell zeigt die UI die
   technische Auth-User-ID als Fallback und bietet noch kein Add-by-E-Mail an.
@@ -96,7 +99,9 @@ einem bewusst human-gesteuerten Kontrollzentrum.
 - Im Agent-Token-Bereich können Owner/Maintainer bei aktiver Datenbankquelle
   ein projektbegrenztes Token erstellen. Der Klartext wird nur einmal gezeigt;
   gespeichert wird ausschließlich der Hash. Die Erstellung schreibt zusätzlich
-  ein projektweites Audit-Event ohne Plaintext oder Hash.
+  ein projektweites Audit-Event ohne Plaintext oder Hash. Erstellung, Pause,
+  Fortsetzung und Widerruf prüfen Projekt und Manager-Mitgliedschaft unter
+  stabilen Locks; Lifecycle-Zustände werden erst unter dem Token-Lock bewertet.
 - Der Auth- und Sicherheitsplan liegt in
   `documentation/auth-security-plan.md`.
 - Der Nach-MVP-Umfang, beginnend mit einem providerneutralen Remote-MCP über

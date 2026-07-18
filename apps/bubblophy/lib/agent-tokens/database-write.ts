@@ -6,13 +6,15 @@ import type {
   BubblophyAgentTokenCreateStoreInput,
 } from '@/lib/agent-tokens/create';
 
-import { and, eq, inArray } from 'drizzle-orm';
+import {
+  lockBubblophyProjectForHumanWrite,
+  lockBubblophyProjectMembersForHumanWrite,
+} from '@/lib/projects/human-write-locks-database';
+import { canManageBubblophyProjectMembers } from '@/lib/projects/members';
 
 import {
   bubblophyAgentTokens,
   bubblophyProjectEvents,
-  bubblophyProjectMembers,
-  bubblophyProjects,
 } from '@/drizzle/db/schema';
 
 export interface BubblophyAgentTokenCreatedProjectEventInsert {
@@ -53,30 +55,24 @@ async function createAgentToken(
 
   try {
     return await db.transaction(async (tx) => {
-      const [project] = await tx
-        .select({
-          id: bubblophyProjects.id,
-          key: bubblophyProjects.key,
-          name: bubblophyProjects.name,
-        })
-        .from(bubblophyProjects)
-        .innerJoin(
-          bubblophyProjectMembers,
-          and(
-            eq(bubblophyProjectMembers.projectId, bubblophyProjects.id),
-            eq(bubblophyProjectMembers.authUserId, input.authUserId),
-            inArray(bubblophyProjectMembers.role, ['owner', 'maintainer'])
-          )
-        )
-        .where(
-          and(
-            eq(bubblophyProjects.key, input.projectKey),
-            eq(bubblophyProjects.isArchived, false)
-          )
-        )
-        .limit(1);
+      const project = await lockBubblophyProjectForHumanWrite(tx, {
+        project: { key: input.projectKey },
+        lockMode: 'share',
+      });
 
-      if (!project) {
+      if (!project || project.isArchived) {
+        return { status: 'forbidden' };
+      }
+
+      const memberships = await lockBubblophyProjectMembersForHumanWrite(tx, {
+        projectId: project.id,
+        authUserIds: [input.authUserId],
+      });
+      const actorRole = memberships.find(
+        (membership) => membership.authUserId === input.authUserId
+      )?.role;
+
+      if (!canManageBubblophyProjectMembers(actorRole ?? '')) {
         return { status: 'forbidden' };
       }
 
