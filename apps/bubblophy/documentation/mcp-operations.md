@@ -28,8 +28,8 @@ persönliche Client-Anmeldung. Es enthält keine echten Tokens oder Secrets.
 - Lokale Prüfung asymmetrisch signierter Supabase-JWTs gegen Issuer, Ablauf,
   `sub`, `client_id` und die exakte Audience `<APP_URL>/mcp`.
 - Persönlicher Consent unter `/oauth/consent` mit explizitem Erlauben/Ablehnen.
-- Read-only-Werkzeuge `list_projects`, paginiertes `list_issues`, `get_issue`
-  und `get_issue_plan` mit request-aktueller Membership-Prüfung.
+- Read-only-Werkzeuge `list_projects`, paginiertes `list_issues`, `get_issue`,
+  `get_issue_plan` und `get_run` mit request-aktueller Membership-Prüfung.
 
 ## Umgebungsvertrag
 
@@ -191,11 +191,14 @@ Der MCP-Foundation-Slice ist erst nach diesem realen Smoke vollständig:
    ergänzen und weiterhin keine internen Issue-/User-IDs oder Folgeobjekte
    ausgeben. `get_issue_plan` muss nur die neueste Planversion samt
    `draft`-/`approved`-Status liefern; interne Plan-/Actor-IDs bleiben verborgen
-   und ein sichtbares Issue ohne Plan liefert `plan: null`.
-4. Eine Membership ändern und alle vier Werkzeuge ohne neue Anmeldung erneut
-   aufrufen. `list_projects`, `list_issues`, `get_issue` und `get_issue_plan`
-   müssen die Änderung sofort widerspiegeln; nach Entfernung dürfen auch das
-   zuvor sichtbare Detail und der Plan nicht mehr geladen werden.
+   und ein sichtbares Issue ohne Plan liefert `plan: null`. `get_run` darf nur
+   einen sichtbaren Projekt-Run mit öffentlichem State, Agent-Label,
+   Zeitstempeln und Secret-gefilterter Result-Kurzfassung liefern, nie rohe
+   Result-JSON oder User-/Token-IDs.
+4. Eine Membership ändern und alle fünf Werkzeuge ohne neue Anmeldung erneut
+   aufrufen. `list_projects`, `list_issues`, `get_issue`, `get_issue_plan` und
+   `get_run` müssen die Änderung sofort widerspiegeln; nach Entfernung dürfen
+   auch Detail, Plan und Run nicht mehr geladen werden.
 5. Beide Clients schließen und neu starten. Der Zugriff muss ohne erneuten
    manuellen Token-Transfer funktionieren.
 6. In Staging die Access-Token-Laufzeit vorübergehend kurz genug setzen, um nach

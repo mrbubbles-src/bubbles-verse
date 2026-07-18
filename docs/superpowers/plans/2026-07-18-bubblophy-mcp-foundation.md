@@ -362,3 +362,29 @@ Mitgliedschaftsprojekte bleiben historische read-only Ansichten.
 - [x] **Step 3: Read-only MCP-Werkzeug registrieren**
 - [x] **Step 4: Reviewer und vollständige Slice-Gates ausführen**
 - [x] **Step 5: Fertigen Slice separat committen**
+
+### Task 10: Membership-scoped read-only `get_run`
+
+**Files:**
+
+- Create: `apps/bubblophy/lib/mcp/run-detail.ts`
+- Create: `apps/bubblophy/lib/mcp/run-detail-database-read.ts`
+- Create: `apps/bubblophy/__tests__/lib/mcp/run-detail.test.ts`
+- Create: `apps/bubblophy/__tests__/lib/mcp/run-detail-database-read.test.ts`
+- Modify: `apps/bubblophy/lib/mcp/register-tools.ts`
+- Modify: `apps/bubblophy/__tests__/app/mcp-route.test.ts`
+
+**Contract:** `projectId` plus `runId` laden einen Run in derselben
+Membership-gejointen Abfrage. Projekt, Issue, Run und zugeordnetes Agent-Token
+werden miteinander gebunden. Der Vertrag liefert öffentliche Run-ID, State,
+Agent-Label und Zeitstempel, aber keine User-, Token- oder Event-IDs. Rohe
+Result-JSON bleibt serverintern und wird höchstens als bestehende
+Secret-filternde Kurzfassung ausgegeben. Fremde und fehlende Ressourcen sind
+nicht unterscheidbar; archivierte Mitgliedschaftsprojekte bleiben historische
+read-only Ansichten.
+
+- [x] **Step 1: Service- und Datenbanktests zuerst schreiben**
+- [x] **Step 2: Membership-gejointe Run-Abfrage implementieren**
+- [x] **Step 3: Read-only MCP-Werkzeug registrieren**
+- [x] **Step 4: Reviewer und vollständige Slice-Gates ausführen**
+- [x] **Step 5: Fertigen Slice separat committen**

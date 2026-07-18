@@ -95,6 +95,13 @@ dauerhaften Autopilot-Rechte.
   werden ausdrücklich unterschieden; Plan-/Issue-/Actor-IDs werden nicht
   selektiert. Ein sichtbares Issue ohne Plan bleibt mit `plan: null`
   unterscheidbar von einer fremden oder fehlenden Ressource.
+- Das read-only MCP-Werkzeug `get_run` bindet OAuth-`sub`, Projekt-ID und Run-ID
+  in derselben Abfrage an Projekt, Issue, Run und das dem Projekt zugeordnete
+  Agent-Token. Der öffentliche Vertrag enthält Run-ID, State, Agent-Label und
+  Zeitstempel, aber keine User-, Token- oder Event-IDs. Die rohe Result-JSON
+  verlässt den server-only Mapper nicht; ausgegeben wird höchstens die bestehende
+  Secret-filternde Kurzfassung. Fremde und fehlende Ressourcen bleiben
+  ununterscheidbar, archivierte Mitgliedschaftsprojekte nur historisch lesbar.
 - Die OAuth-Zustimmungsseite verlangt zusätzlich zur Supabase-Cookie-Session
   den aktuellen DB-basierten Bubblophy-Zugang. Die Decision-Route akzeptiert nur
   URL-encoded `POST`-Formulare mit exakt passendem kanonischem Origin; zusammen

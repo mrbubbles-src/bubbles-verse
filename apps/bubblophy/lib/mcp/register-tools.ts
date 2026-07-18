@@ -4,10 +4,12 @@ import { getBubblophyMcpIssue } from '@/lib/mcp/issue-detail';
 import { getBubblophyMcpIssuePlan } from '@/lib/mcp/issue-plan';
 import { listBubblophyMcpIssues } from '@/lib/mcp/issues';
 import { listBubblophyMcpProjects } from '@/lib/mcp/projects';
+import { getBubblophyMcpRun } from '@/lib/mcp/run-detail';
 
 import * as z from 'zod';
 
 import {
+  bubblophyAgentRunState,
   bubblophyIssuePriority,
   bubblophyIssueStatus,
 } from '@/drizzle/db/schema';
@@ -105,6 +107,35 @@ const issuePlanOutputSchema = z.object({
       createdAt: z.string(),
     })
     .nullable(),
+});
+
+const getRunInputSchema = z.object({
+  projectId: z.string().trim().min(1).max(200),
+  runId: z.string().trim().min(1).max(200),
+});
+
+const runDetailOutputSchema = z.object({
+  project: z.object({
+    id: z.string(),
+    key: z.string(),
+    isArchived: z.boolean(),
+  }),
+  issue: z.object({
+    key: z.string(),
+    issueNumber: z.number().int().positive(),
+    title: z.string(),
+  }),
+  run: z.object({
+    id: z.string(),
+    state: z.enum(bubblophyAgentRunState.enumValues),
+    agentLabel: z.string(),
+    approvedAt: z.string().nullable(),
+    startedAt: z.string().nullable(),
+    finishedAt: z.string().nullable(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+    resultSummary: z.string().nullable(),
+  }),
 });
 
 /** Registers Bubblophy's currently available OAuth-backed MCP tools. */
@@ -292,6 +323,50 @@ export function registerBubblophyMcpTools(server: McpServer) {
       };
     }
   );
+
+  server.registerTool(
+    'get_run',
+    {
+      title: 'Get Bubblophy run',
+      description:
+        'Gets one sanitized agent run detail for a Bubblophy project visible to the authenticated person.',
+      inputSchema: getRunInputSchema,
+      outputSchema: runDetailOutputSchema,
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    async (input, extra) => {
+      const authUserId = readAuthUserId(extra.authInfo?.extra?.authUserId);
+
+      if (!authUserId) {
+        return createToolError('Die authentifizierte User-ID fehlt.');
+      }
+
+      const result = await getBubblophyMcpRun(authUserId, input);
+
+      if (result.status !== 'success') {
+        return createToolError(readGetRunError(result.status));
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Run ${result.run.id} für ${result.issue.key} gefunden.`,
+          },
+        ],
+        structuredContent: {
+          project: result.project,
+          issue: result.issue,
+          run: result.run,
+        },
+      };
+    }
+  );
 }
 
 /** Returns a normalized OAuth user ID from MCP auth context data. */
@@ -350,4 +425,19 @@ function readGetIssuePlanError(
   }
 
   return 'Die Anfrage für den Issue-Plan ist ungültig.';
+}
+
+/** Maps internal run read outcomes to non-sensitive MCP messages. */
+function readGetRunError(
+  status: 'invalid' | 'not_found' | 'database_unavailable'
+) {
+  if (status === 'database_unavailable') {
+    return 'Bubblophy kann den Run gerade nicht laden.';
+  }
+
+  if (status === 'not_found') {
+    return 'Der Run wurde nicht gefunden oder ist nicht zugänglich.';
+  }
+
+  return 'Die Anfrage für den Run ist ungültig.';
 }

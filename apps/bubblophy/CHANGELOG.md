@@ -34,6 +34,8 @@
   or related plans, runs, tokens, and audit data.
 - Added the membership-scoped, read-only `get_issue_plan` MCP tool for the
   latest draft or approved plan without internal issue, plan, or actor IDs.
+- Added the membership-scoped, read-only `get_run` MCP tool with public run
+  metadata and a secret-filtered result summary instead of raw result JSON.
 
 All notable changes to this project will be documented in this file.
 

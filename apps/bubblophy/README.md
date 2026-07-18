@@ -123,6 +123,11 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   neueste Planversion. Es kennzeichnet sie ausdrücklich als `draft` oder
   `approved`, liefert bei noch fehlendem Plan erfolgreich `plan: null` und gibt
   keine internen Issue-/Plan- oder Actor-IDs aus.
+- Das read-only Werkzeug `get_run` bindet Projekt-ID und Run-ID in einer
+  Abfrage an die aktuelle Membership, das Issue und das zugeordnete
+  Projekt-Token. Es liefert State, Agent-Label und Zeitstempel; rohe
+  Result-JSON wird ausschließlich serverintern in die bestehende
+  Secret-filternde Kurzfassung überführt. User- und Token-IDs bleiben verborgen.
 - `/oauth/consent` übernimmt die einmalige persönliche Zustimmung für neue
   MCP-Clients. Bubblophy zeigt Clientname, angeforderte Standard-Scopes und das
   registrierte Rücksprungziel; Erlauben oder Ablehnen läuft ausschließlich über
