@@ -50,6 +50,9 @@ Status: abgeschlossen.
   Signaturschlüssel für die Zielumgebung konfigurieren.
 - Monitoring, Rate Limits, Secret-Handling, Backups und Restore-Ablauf
   dokumentieren und testen.
+- Signing-Key-Rotation erst nach mindestens 20 Minuten JWKS-Propagation
+  durchführen; für dringende Revocations einen getesteten Cache-Bust- oder
+  Remote-Validation-Ablauf festlegen.
 - Staging-Smoke für Codex und Claude vor dem Produktions-Rollout.
 
 ### 4. Rollen und Einladungen
@@ -95,8 +98,9 @@ Status: abgeschlossen.
 
 ## Aktueller Slice
 
-Das Sicherheitsgate ist abgeschlossen. Transport und Protected-Resource-
-Discovery sind vorhanden, bleiben bis zur Supabase-JWT-Validierung aber bewusst
-fail-closed. Als Nächstes folgen Tokenvalidierung, Consent und das read-only
-Werkzeug `list_projects`. Der detaillierte Plan liegt unter
+Das Sicherheitsgate ist abgeschlossen. Transport, Protected-Resource-Discovery
+und lokale Supabase-JWT-Validierung sind vorhanden. Ohne gültige Signatur,
+Issuer, Ablauf, Subject, OAuth-Client-ID und exakte MCP-Audience bleibt der
+Zugriff fail-closed. Als Nächstes folgen das read-only Werkzeug `list_projects`
+und der persönliche Consent-Flow. Der detaillierte Plan liegt unter
 `docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md`.

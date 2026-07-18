@@ -2,11 +2,19 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+const verifyBubblophyMcpTokenMock = vi.fn();
+
+vi.mock('@/lib/mcp/auth', () => ({
+  verifyBubblophyMcpToken: (request: Request, bearerToken?: string) =>
+    verifyBubblophyMcpTokenMock(request, bearerToken),
+}));
+
 function createInitializeRequest(token?: string) {
   return new Request('https://attacker.example/mcp', {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
+      accept: 'application/json, text/event-stream',
       ...(token ? { authorization: `Bearer ${token}` } : {}),
       'x-forwarded-host': 'attacker.example',
       'x-forwarded-proto': 'https',
@@ -26,7 +34,8 @@ function createInitializeRequest(token?: string) {
 
 describe('/mcp', () => {
   beforeEach(() => {
-    vi.resetModules();
+    verifyBubblophyMcpTokenMock.mockReset();
+    verifyBubblophyMcpTokenMock.mockResolvedValue(undefined);
     vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://bubblophy.example.com');
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://auth.example.com');
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'public-anon-key');
@@ -59,6 +68,28 @@ describe('/mcp', () => {
 
     expect(postResponse.status).toBe(401);
     expect(deleteResponse.status).toBe(401);
+  });
+
+  it('passes verified OAuth identities into the MCP transport', async () => {
+    verifyBubblophyMcpTokenMock.mockResolvedValue({
+      token: 'signed-token',
+      clientId: 'client-1',
+      scopes: ['openid'],
+      expiresAt: 2_000_000_000,
+      resource: new URL('https://bubblophy.example.com/mcp'),
+      extra: { authUserId: 'user-1' },
+    });
+    const { POST } = await import('@/app/mcp/route');
+    const response = await POST(createInitializeRequest('signed-token'));
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).toContain('"serverInfo":{"name":"bubblophy"');
+    expect(body).toContain('"version":"0.1.0"');
+    expect(verifyBubblophyMcpTokenMock).toHaveBeenCalledWith(
+      expect.any(Request),
+      'signed-token'
+    );
   });
 
   it('exports the complete Streamable HTTP method contract', async () => {

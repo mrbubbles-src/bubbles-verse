@@ -3,6 +3,7 @@ import { getPublicBubblophyEnv } from '@/lib/env';
 const MCP_RESOURCE_PATH = '/mcp';
 const MCP_METADATA_PATH = '/.well-known/oauth-protected-resource/mcp';
 const SUPABASE_OAUTH_ISSUER_PATH = '/auth/v1';
+const SUPABASE_OAUTH_JWKS_PATH = '/auth/v1/.well-known/jwks.json';
 
 /** Joins a configured public base URL with one canonical absolute path. */
 function joinPublicUrl(baseUrl: string, pathname: string) {
@@ -35,5 +36,13 @@ export function getBubblophyOAuthIssuerUrl() {
   return joinPublicUrl(
     getPublicBubblophyEnv().NEXT_PUBLIC_SUPABASE_URL,
     SUPABASE_OAUTH_ISSUER_PATH
+  );
+}
+
+/** Returns the public Supabase JWKS endpoint used to verify OAuth JWTs. */
+export function getBubblophyOAuthJwksUrl() {
+  return joinPublicUrl(
+    getPublicBubblophyEnv().NEXT_PUBLIC_SUPABASE_URL,
+    SUPABASE_OAUTH_JWKS_PATH
   );
 }

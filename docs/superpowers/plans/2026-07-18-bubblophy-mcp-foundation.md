@@ -132,19 +132,19 @@ Expected: PASS.
 - Consumes: `Authorization: Bearer <Supabase OAuth access token>`.
 - Produces: `verifyBubblophyMcpToken(request, bearerToken): Promise<AuthInfo | undefined>` mit `extra.authUserId`, `clientId` und validierter MCP-Audience.
 
-- [ ] **Step 1: Failing Auth-Tests schreiben**
+- [x] **Step 1: Failing Auth-Tests schreiben**
 
 Abdecken: fehlendes Token, ungültiger JWT, fehlender `client_id`, falsche Audience, fehlendes `sub` und gültiges OAuth-Token. Supabase-Validierung wird im Unit-Test injiziert; echte Secrets kommen in keine Fixture.
 
-- [ ] **Step 2: Kleinen Auth-Service implementieren**
+- [x] **Step 2: Kleinen Auth-Service implementieren**
 
 Der Service validiert das asymmetrisch signierte JWT lokal über Supabase JWKS und verlangt gültige Signatur, `iss`, `exp`, optionales `nbf`, `sub`, `client_id` und exakt die konfigurierte MCP-Resource als Audience. Claim-Decoding oder ein Remote-User-Lookup allein reichen nicht. Fehler werden als nicht authentifiziert behandelt und nicht mit Tokeninhalt geloggt.
 
-- [ ] **Step 3: MCP-Handler mit `withMcpAuth` schützen**
+- [x] **Step 3: MCP-Handler mit `withMcpAuth` schützen**
 
 Die Auth-Hülle verweist auf den für `/mcp` abgeleiteten Pfad `/.well-known/oauth-protected-resource/mcp` und liefert für fehlende/ungültige Tokens den standardisierten Discovery-Header.
 
-- [ ] **Step 4: Auth- und Route-Tests ausführen**
+- [x] **Step 4: Auth- und Route-Tests ausführen**
 
 Run:
 

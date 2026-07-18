@@ -11,6 +11,9 @@
   transitions compare-and-set safe.
 - Added a fail-closed stateless `/mcp` transport plus RFC 9728 protected-resource
   discovery pinned to Bubblophy's configured app URL and Supabase Auth issuer.
+- Added local Supabase OAuth JWT verification through public asymmetric JWKS,
+  requiring the configured issuer, exact MCP audience, expiry, subject, and
+  OAuth client ID before requests reach the MCP transport.
 
 All notable changes to this project will be documented in this file.
 

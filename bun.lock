@@ -27,6 +27,7 @@
         "@supabase/ssr": "catalog:supabase",
         "@supabase/supabase-js": "catalog:supabase",
         "drizzle-orm": "catalog:database",
+        "jose": "catalog:app-runtime",
         "mcp-handler": "1.1.0",
         "next": "catalog:",
         "postgres": "catalog:database",

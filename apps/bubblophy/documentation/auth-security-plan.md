@@ -44,14 +44,30 @@ dauerhaften Autopilot-Rechte.
 
 ## Agenten
 
-- Agenten authentifizieren sich über Bubblophy-Agent-Tokens, nicht über
-  Supabase Auth.
+- Unbeaufsichtigte Runner und Service-Accounts authentifizieren sich weiter
+  über projektgebundene Bubblophy-Agent-Tokens. Persönliche Codex-, Claude- und
+  andere MCP-Verbindungen authentifizieren die handelnde Person über Supabase
+  OAuth 2.1 und erhalten keine gemeinsam genutzten Agent-Tokens.
 - Agent/API-Routen bleiben außerhalb des menschlichen Login-Proxys. Fehlende
   oder ungültige Bearer-Tokens müssen als route-spezifische JSON/Auth-Fehler
   zurückkommen, nicht als Redirect zu `/login`.
 - Agenten verwenden weder die Supabase-Browsercookies noch die
   Supabase-Service-Role. Login/Callback nutzen ausschließlich öffentliche
   Supabase-Anon-Konfiguration.
+- `/mcp` validiert persönliche OAuth-Access-Tokens lokal über Supabases
+  öffentliche asymmetrische JWKS. Akzeptiert werden nur Tokens mit dem
+  konfigurierten Supabase-Issuer, gültigem Ablauf, `sub`, `client_id` und exakt
+  Bubblophys kanonischer `/mcp`-Audience. Ungültige Tokens werden nicht geloggt;
+  Claims werden nicht pauschal an Werkzeuge weitergereicht.
+- Der MCP-Server cached Supabases JWKS explizit höchstens zehn Minuten und
+  begrenzt erneute Fetches nach einem Erfolg für 30 Sekunden; Supabases Edge
+  cached dasselbe Dokument zusätzlich ungefähr zehn Minuten. Vor einer
+  Signing-Key-Rotation muss ein Standby-Key deshalb mindestens 20 Minuten lang
+  sichtbar sein. Bei einer dringenden Revocation kann der MCP-Server einen
+  widerrufenen Schlüssel innerhalb dieses Stalenessfensters noch akzeptieren.
+  Ein Produktions-Runbook muss dafür MCP-Instanzen neu starten und, falls die
+  verbleibende Supabase-Edge-Latenz nicht tragbar ist, vor dem Rollout einen
+  separaten Remote-Validation-/Cache-Bust-Pfad festlegen.
 - Tokens werden nur einmal im Klartext gezeigt. Persistiert wird ausschließlich
   ein starker Hash in `bubblophy_agent_tokens.token_hash`.
 - Jedes Token ist auf genau ein Projekt begrenzt.

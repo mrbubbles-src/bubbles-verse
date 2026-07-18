@@ -4,6 +4,7 @@ import {
   getBubblophyMcpMetadataUrl,
   getBubblophyMcpResourceUrl,
   getBubblophyOAuthIssuerUrl,
+  getBubblophyOAuthJwksUrl,
 } from '@/lib/mcp/oauth-metadata';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -28,6 +29,9 @@ describe('Bubblophy MCP OAuth metadata URLs', () => {
     );
     expect(getBubblophyOAuthIssuerUrl()).toBe(
       'https://auth.example.com/auth/v1'
+    );
+    expect(getBubblophyOAuthJwksUrl()).toBe(
+      'https://auth.example.com/auth/v1/.well-known/jwks.json'
     );
   });
 });

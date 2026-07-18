@@ -96,9 +96,10 @@ einem bewusst human-gesteuerten Kontrollzentrum.
 - Der Nach-MVP-Umfang, beginnend mit einem providerneutralen Remote-MCP über
   Supabase OAuth 2.1, liegt in `documentation/phase-2-roadmap.md`.
 - `/mcp` stellt den stateless Streamable-HTTP-Transport für den kommenden
-  persönlichen OAuth-Zugriff bereit. Bis zur vollständigen Supabase-JWT-Prüfung
-  lehnt die Route alle Zugriffe ab und verweist über `WWW-Authenticate` auf
-  Bubblophys Protected-Resource-Metadaten.
+  persönlichen OAuth-Zugriff bereit. Die Route validiert Supabase-OAuth-JWTs
+  lokal über öffentliche asymmetrische JWKS und verweist bei fehlender oder
+  ungültiger Authentifizierung über `WWW-Authenticate` auf Bubblophys
+  Protected-Resource-Metadaten. Datenwerkzeuge folgen in getrennten Slices.
 - `/.well-known/oauth-protected-resource/mcp` veröffentlicht Bubblophys fest
   konfigurierte MCP-Resource und den Supabase-Auth-Issuer. Der Origin-Pfad ohne
   `/mcp` bleibt als kompatibler Alias verfügbar. Eingereichte Host- oder
@@ -144,8 +145,10 @@ bun run build
 ## Sicherheit
 
 - Menschen loggen sich über Supabase/GitHub ein.
-- Der neue Remote-MCP-Transport ist fail-closed: Ein vorhandener Endpunkt gibt
-  ohne verifiziertes persönliches OAuth-Token keine Werkzeuge oder Daten frei.
+- Der neue Remote-MCP-Transport ist fail-closed: Nur Supabase-OAuth-JWTs mit
+  gültiger Signatur, Issuer, Ablauf, `sub`, `client_id` und exakt Bubblophys
+  `/mcp`-Audience erreichen den Transport. Noch sind keine Datenwerkzeuge
+  registriert.
 - Die Auth-Grundstruktur nutzt nur `NEXT_PUBLIC_*` Supabase-Anon-Konfiguration.
 - Das Dashboard unter `/` verlangt eine Supabase-Session und prüft
   serverseitig DB-basierten Zugang. Ein aktiver Eintrag in

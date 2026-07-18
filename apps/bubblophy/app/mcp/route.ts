@@ -1,3 +1,4 @@
+import { verifyBubblophyMcpToken } from '@/lib/mcp/auth';
 import {
   getBubblophyMcpMetadataUrl,
   getBubblophyMcpResourceUrl,
@@ -19,14 +20,9 @@ const transportHandler = createMcpHandler(
   }
 );
 
-/** Denies access until Supabase OAuth JWT verification is connected. */
-function rejectUnverifiedMcpToken() {
-  return undefined;
-}
-
 /** Applies request-time OAuth configuration to the shared stateless transport. */
 function handleMcpRequest(request: Request) {
-  return withMcpAuth(transportHandler, rejectUnverifiedMcpToken, {
+  return withMcpAuth(transportHandler, verifyBubblophyMcpToken, {
     required: true,
     resourceMetadataPath: new URL(getBubblophyMcpMetadataUrl()).pathname,
     resourceUrl: new URL(getBubblophyMcpResourceUrl()).origin,

@@ -4,7 +4,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('GET /.well-known/oauth-protected-resource/mcp', () => {
   beforeEach(() => {
-    vi.resetModules();
     vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://bubblophy.example.com');
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://auth.example.com');
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'public-anon-key');
