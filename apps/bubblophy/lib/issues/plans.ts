@@ -2,6 +2,7 @@ import 'server-only';
 
 export interface CreateOrUpdateBubblophyIssuePlanDraftInput {
   authUserId: string;
+  oauthClientId?: string;
   issueId: string;
   summary?: string;
   steps: string[];
@@ -21,6 +22,7 @@ export interface BubblophyIssuePlanDraft {
 
 export interface BubblophyIssuePlanDraftStoreInput {
   authUserId: string;
+  oauthClientId?: string;
   issueId: string;
   summary: string;
   steps: BubblophyIssuePlanStep[];
@@ -71,9 +73,11 @@ export interface CreateOrUpdateBubblophyIssuePlanDraftOptions {
   store?: BubblophyIssuePlanDraftStore;
 }
 
-const maxPlanSteps = 12;
-const maxPlanStepLength = 280;
-const maxPlanSummaryLength = 240;
+export const bubblophyIssuePlanLimits = {
+  maxSteps: 12,
+  maxStepLength: 280,
+  maxSummaryLength: 240,
+} as const;
 
 /**
  * Creates a new human-authored issue plan draft version.
@@ -141,6 +145,7 @@ function normalizeIssuePlanDraftInput(
       { status: 'invalid' }
     > {
   const issueId = input.issueId.trim();
+  const oauthClientId = input.oauthClientId?.trim();
   const summary = input.summary?.trim() ?? '';
   const steps = normalizeBubblophyIssuePlanSteps(input.steps);
 
@@ -148,7 +153,7 @@ function normalizeIssuePlanDraftInput(
     return { status: 'invalid', reason: 'empty_issue' };
   }
 
-  if (summary.length > maxPlanSummaryLength) {
+  if (summary.length > bubblophyIssuePlanLimits.maxSummaryLength) {
     return { status: 'invalid', reason: 'summary_too_long' };
   }
 
@@ -156,11 +161,15 @@ function normalizeIssuePlanDraftInput(
     return { status: 'invalid', reason: 'empty_steps' };
   }
 
-  if (steps.length > maxPlanSteps) {
+  if (steps.length > bubblophyIssuePlanLimits.maxSteps) {
     return { status: 'invalid', reason: 'too_many_steps' };
   }
 
-  if (steps.some((step) => step.text.length > maxPlanStepLength)) {
+  if (
+    steps.some(
+      (step) => step.text.length > bubblophyIssuePlanLimits.maxStepLength
+    )
+  ) {
     return { status: 'invalid', reason: 'step_too_long' };
   }
 
@@ -168,6 +177,7 @@ function normalizeIssuePlanDraftInput(
     status: 'valid',
     input: {
       authUserId: input.authUserId,
+      ...(oauthClientId ? { oauthClientId } : {}),
       issueId,
       summary,
       steps,

@@ -4,6 +4,7 @@ import type {
 } from '@/lib/issues/plans';
 
 import {
+  buildBubblophyIssuePlanInsert,
   buildBubblophyIssuePlanUpdatedEventInsert,
   getNextBubblophyIssuePlanVersion,
   parseBubblophyIssueKey,
@@ -138,6 +139,32 @@ describe('createOrUpdateBubblophyIssuePlanDraft', () => {
     });
   });
 
+  it('normalizes optional OAuth client attribution for personal MCP writes', async () => {
+    const store = createStore(async (input) => ({
+      status: 'created',
+      plan: {
+        issueId: input.issueId,
+        version: 2,
+        summary: input.summary,
+        steps: input.steps,
+      },
+    }));
+
+    await createOrUpdateBubblophyIssuePlanDraft(
+      {
+        authUserId: 'user_owner',
+        oauthClientId: ' client-1 ',
+        issueId: 'BV-12',
+        steps: ['Plan prüfen'],
+      },
+      { store }
+    );
+
+    expect(store.createIssuePlanVersionWithEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ oauthClientId: 'client-1' })
+    );
+  });
+
   it('returns store not_found and forbidden results unchanged', async () => {
     await expect(
       createOrUpdateBubblophyIssuePlanDraft(
@@ -210,6 +237,7 @@ describe('Bubblophy issue plan helpers', () => {
       issueId: 'issue_bv_12',
       eventType: 'plan_updated',
       actorAuthUserId: 'user_owner',
+      actorOauthClientId: null,
       actorAgentTokenId: null,
       agentRunId: null,
       summary: 'Plan BV-12 v3 aktualisiert.',
@@ -219,6 +247,41 @@ describe('Bubblophy issue plan helpers', () => {
         version: 3,
         stepCount: 2,
       },
+    });
+  });
+
+  it('builds OAuth-attributed plan and event inserts for personal MCP writes', () => {
+    expect(
+      buildBubblophyIssuePlanInsert({
+        issueDatabaseId: 'issue_bv_12',
+        authUserId: 'user_owner',
+        oauthClientId: 'client-1',
+        version: 4,
+        summary: 'Agent-Entwurf',
+        steps: [{ id: 'step_1', text: 'Vertrag prüfen' }],
+      })
+    ).toMatchObject({
+      issueId: 'issue_bv_12',
+      createdByAuthUserId: 'user_owner',
+      createdByOauthClientId: 'client-1',
+      createdByAgentTokenId: null,
+      approvedByAuthUserId: null,
+      approvedAt: null,
+    });
+    expect(
+      buildBubblophyIssuePlanUpdatedEventInsert({
+        issueDatabaseId: 'issue_bv_12',
+        authUserId: 'user_owner',
+        oauthClientId: 'client-1',
+        issueId: 'BV-12',
+        version: 4,
+        stepCount: 1,
+      })
+    ).toMatchObject({
+      actorAuthUserId: 'user_owner',
+      actorOauthClientId: 'client-1',
+      actorAgentTokenId: null,
+      payload: { source: 'oauth_mcp' },
     });
   });
 });

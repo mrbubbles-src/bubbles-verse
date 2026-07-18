@@ -105,9 +105,10 @@ lokale Supabase-JWT-Validierung, das membership-basierte read-only Werkzeug
 `list_projects`, das paginierte membership-basierte `list_issues`, die
 membership-basierten Detailwerkzeuge `get_issue`, `get_issue_plan` und
 `get_run`, die OAuth-vs.-Data-API-RLS-Grenze und der persönliche
-OAuth-Consent-Flow sind vorhanden. Ohne
+OAuth-Consent-Flow sowie das kontrollierte Draft-Schreibwerkzeug `propose_plan`
+sind vorhanden. Ohne
 gültige Signatur, Issuer, Ablauf, Subject, OAuth-Client-ID und exakte
-MCP-Audience bleibt der Zugriff fail-closed. Als Nächstes folgen kontrollierte
+MCP-Audience bleibt der Zugriff fail-closed. Als Nächstes folgen weitere
 Human-in-the-loop-Schreibwerkzeuge sowie die genaue Supabase-Staging-
 Konfiguration und der reale Codex-/Claude-Smoke nach
 `documentation/mcp-operations.md`.

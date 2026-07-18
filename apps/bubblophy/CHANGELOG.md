@@ -38,6 +38,9 @@
   metadata and a secret-filtered result summary instead of raw result JSON.
 - Added nullable OAuth client attribution to issue plans and issue/project
   audit events as groundwork for distinguishable personal MCP writes.
+- Added the controlled `propose_plan` MCP write tool, which reuses the
+  transactional membership/role checks to create only OAuth-attributed,
+  unapproved plan drafts without starting agent runs.
 
 All notable changes to this project will be documented in this file.
 

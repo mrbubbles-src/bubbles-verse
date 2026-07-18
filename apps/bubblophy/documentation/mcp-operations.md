@@ -30,6 +30,9 @@ persönliche Client-Anmeldung. Es enthält keine echten Tokens oder Secrets.
 - Persönlicher Consent unter `/oauth/consent` mit explizitem Erlauben/Ablehnen.
 - Read-only-Werkzeuge `list_projects`, paginiertes `list_issues`, `get_issue`,
   `get_issue_plan` und `get_run` mit request-aktueller Membership-Prüfung.
+- Kontrolliertes Schreibwerkzeug `propose_plan`: neue OAuth-attributierte
+  Draft-Version nur für Contributor-Rollen in aktiven Projekten, ohne Approval
+  oder Run-Start.
 
 ## Umgebungsvertrag
 
@@ -199,23 +202,29 @@ Der MCP-Foundation-Slice ist erst nach diesem realen Smoke vollständig:
    aufrufen. `list_projects`, `list_issues`, `get_issue`, `get_issue_plan` und
    `get_run` müssen die Änderung sofort widerspiegeln; nach Entfernung dürfen
    auch Detail, Plan und Run nicht mehr geladen werden.
-5. Beide Clients schließen und neu starten. Der Zugriff muss ohne erneuten
+5. In einem eigenen Staging-Issue `propose_plan` als Owner/Member aufrufen und
+   die neue Version über `get_issue_plan` als `draft` zurücklesen. Audit-
+   Attribution auf User plus OAuth-Client prüfen. Derselbe Aufruf muss als
+   Viewer und in einem archivierten Projekt scheitern; es darf kein Run
+   entstehen. Das Test-Issue anschließend über den normalen menschlichen
+   Workflow bereinigen oder archivieren.
+6. Beide Clients schließen und neu starten. Der Zugriff muss ohne erneuten
    manuellen Token-Transfer funktionieren.
-6. In Staging die Access-Token-Laufzeit vorübergehend kurz genug setzen, um nach
+7. In Staging die Access-Token-Laufzeit vorübergehend kurz genug setzen, um nach
    Ablauf einen erneuten Werkzeugaufruf zu prüfen. Der Client muss per
    Refresh-Token fortfahren; danach die normale Laufzeit wiederherstellen.
-7. Mit einem echten OAuth-JWT gegen die Supabase Data API prüfen, dass Reads und
+8. Mit einem echten OAuth-JWT gegen die Supabase Data API prüfen, dass Reads und
    Writes auf alle acht Bubblophy-Tabellen durch `0004` blockiert bleiben.
    Dasselbe mit einer normalen menschlichen JWT und vorhandener Membership
    gegen die vorgesehenen Select-Policies gegenprüfen.
-8. Negativfälle prüfen: falsche Audience, abgelaufenes Token, entfernte
+9. Negativfälle prüfen: falsche Audience, abgelaufenes Token, entfernte
    Membership, unbekannter User und der Versuch, fremde Projekt-IDs zu erraten.
    Archivierte Mitgliedschaftsprojekte bleiben dagegen absichtlich sichtbar
    und müssen mit `isArchived: true` samt historischer Issue-Summaries
    zurückkommen; operative Mutationen bleiben für sie gesperrt.
-9. Keine Tokens in Terminalausgabe, Screenshots, Logs oder Testartefakte
-   übernehmen. Nur Clientname, Testperson, erwartete/sichtbare Projekt-IDs,
-   Zeitstempel und Pass/Fail dokumentieren.
+10. Keine Tokens in Terminalausgabe, Screenshots, Logs oder Testartefakte
+    übernehmen. Nur Clientname, Testperson, erwartete/sichtbare Projekt-IDs,
+    Zeitstempel und Pass/Fail dokumentieren.
 
 ## Rollback und Störungen
 

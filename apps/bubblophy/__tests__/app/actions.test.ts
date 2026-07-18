@@ -24,8 +24,8 @@ import type { UpdateBubblophyAgentTokenLifecycleInput } from '@/lib/agent-tokens
 import type { UpdateBubblophyIssueAssigneeInput } from '@/lib/issues/assignment';
 import type { CreateBubblophyIssueDraftInput } from '@/lib/issues/create';
 import type { UpdateBubblophyIssueContentInput } from '@/lib/issues/edit';
-import type { CreateOrUpdateBubblophyIssuePlanDraftInput } from '@/lib/issues/plans';
 import type { CreateBubblophyIssueNoteInput } from '@/lib/issues/notes';
+import type { CreateOrUpdateBubblophyIssuePlanDraftInput } from '@/lib/issues/plans';
 import type { UpdateBubblophyIssuePriorityInput } from '@/lib/issues/priority';
 import type { UpdateBubblophyIssueStatusInput } from '@/lib/issues/status';
 import type { CreateBubblophyProjectInput } from '@/lib/projects/create';
@@ -363,9 +363,9 @@ describe('updateBubblophyIssueAssigneeAction', () => {
       issueId: 'BV-12',
       assigneeAuthUserId: 'user_other_project',
     });
-    expect(updateBubblophyIssueAssigneeMock.mock.calls[0]?.[0]).not.toHaveProperty(
-      'email'
-    );
+    expect(
+      updateBubblophyIssueAssigneeMock.mock.calls[0]?.[0]
+    ).not.toHaveProperty('email');
     expect(result).toEqual({ status: 'invalid_assignee' });
   });
 });
@@ -401,10 +401,14 @@ describe('createBubblophyIssuePlanAction', () => {
     const { createBubblophyIssuePlanAction } = await import('@/app/actions');
     const result = await createBubblophyIssuePlanAction({
       authUserId: 'user_client_spoof',
+      oauthClientId: 'client-spoof',
       issueId: 'BV-12',
       summary: 'Plan prüfen',
       steps: ['Kontext lesen'],
-    } as CreateBubblophyIssuePlanActionInput & { authUserId: string });
+    } as CreateBubblophyIssuePlanActionInput & {
+      authUserId: string;
+      oauthClientId: string;
+    });
 
     expect(requireBubblophySessionMock).toHaveBeenCalledWith({
       nextPath: '/',
@@ -415,6 +419,9 @@ describe('createBubblophyIssuePlanAction', () => {
       summary: 'Plan prüfen',
       steps: ['Kontext lesen'],
     });
+    expect(
+      createBubblophyIssuePlanDraftMock.mock.calls[0]?.[0]
+    ).not.toHaveProperty('oauthClientId');
     expect(result).toEqual({
       status: 'created',
       plan: {

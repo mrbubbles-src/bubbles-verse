@@ -1,9 +1,11 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
+import { bubblophyIssuePlanLimits } from '@/lib/issues/plans';
 import { getBubblophyMcpIssue } from '@/lib/mcp/issue-detail';
 import { getBubblophyMcpIssuePlan } from '@/lib/mcp/issue-plan';
 import { listBubblophyMcpIssues } from '@/lib/mcp/issues';
 import { listBubblophyMcpProjects } from '@/lib/mcp/projects';
+import { proposeBubblophyMcpPlan } from '@/lib/mcp/propose-plan';
 import { getBubblophyMcpRun } from '@/lib/mcp/run-detail';
 
 import * as z from 'zod';
@@ -135,6 +137,40 @@ const runDetailOutputSchema = z.object({
     createdAt: z.string(),
     updatedAt: z.string(),
     resultSummary: z.string().nullable(),
+  }),
+});
+
+const proposePlanInputSchema = z.object({
+  projectId: z.string().trim().min(1).max(200),
+  issueNumber: z.number().int().positive(),
+  summary: z.string().max(bubblophyIssuePlanLimits.maxSummaryLength).optional(),
+  steps: z
+    .array(z.string().max(bubblophyIssuePlanLimits.maxStepLength))
+    .min(1)
+    .max(bubblophyIssuePlanLimits.maxSteps),
+});
+
+const proposedPlanOutputSchema = z.object({
+  project: z.object({
+    id: z.string(),
+    key: z.string(),
+    isArchived: z.boolean(),
+  }),
+  issue: z.object({
+    key: z.string(),
+    issueNumber: z.number().int().positive(),
+    title: z.string(),
+  }),
+  plan: z.object({
+    version: z.number().int().positive(),
+    summary: z.string(),
+    steps: z.array(
+      z.object({
+        id: z.string(),
+        text: z.string(),
+      })
+    ),
+    approvalStatus: z.literal('draft'),
   }),
 });
 
@@ -367,10 +403,66 @@ export function registerBubblophyMcpTools(server: McpServer) {
       };
     }
   );
+
+  server.registerTool(
+    'propose_plan',
+    {
+      title: 'Propose Bubblophy plan',
+      description:
+        'Creates a new unapproved plan draft for one visible Bubblophy issue. Human approval remains required before any run.',
+      inputSchema: proposePlanInputSchema,
+      outputSchema: proposedPlanOutputSchema,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false,
+      },
+    },
+    async (input, extra) => {
+      const authUserId = readAuthUserId(extra.authInfo?.extra?.authUserId);
+      const oauthClientId = readOauthClientId(extra.authInfo?.clientId);
+
+      if (!authUserId || !oauthClientId) {
+        return createToolError(
+          'Die authentifizierte User- oder OAuth-Client-ID fehlt.'
+        );
+      }
+
+      const result = await proposeBubblophyMcpPlan(
+        authUserId,
+        oauthClientId,
+        input
+      );
+
+      if (result.status !== 'created') {
+        return createToolError(readProposePlanError(result.status));
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Planentwurf v${result.plan.version} für ${result.issue.key} erstellt. Er wartet auf menschliche Freigabe.`,
+          },
+        ],
+        structuredContent: {
+          project: result.project,
+          issue: result.issue,
+          plan: result.plan,
+        },
+      };
+    }
+  );
 }
 
 /** Returns a normalized OAuth user ID from MCP auth context data. */
 function readAuthUserId(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+/** Returns a normalized OAuth client ID from MCP auth context data. */
+function readOauthClientId(value: unknown) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
@@ -440,4 +532,23 @@ function readGetRunError(
   }
 
   return 'Die Anfrage für den Run ist ungültig.';
+}
+
+/** Maps internal plan proposal outcomes to non-sensitive MCP messages. */
+function readProposePlanError(
+  status: 'invalid' | 'not_found' | 'forbidden' | 'database_unavailable'
+) {
+  if (status === 'database_unavailable') {
+    return 'Bubblophy kann den Planentwurf gerade nicht speichern.';
+  }
+
+  if (status === 'not_found') {
+    return 'Das Issue wurde nicht gefunden oder ist nicht zugänglich.';
+  }
+
+  if (status === 'forbidden') {
+    return 'Die aktuelle Projektrolle darf keine Planentwürfe erstellen.';
+  }
+
+  return 'Der Planentwurf ist ungültig.';
 }

@@ -17,25 +17,25 @@ import type {
   UpdateBubblophyAgentTokenLifecycleResult,
 } from '@/lib/agent-tokens/lifecycle';
 import type {
-  CreateBubblophyIssueDraftInput,
-  CreateBubblophyIssueDraftResult,
-} from '@/lib/issues/create';
-import type {
   UpdateBubblophyIssueAssigneeInput,
   UpdateBubblophyIssueAssigneeResult,
 } from '@/lib/issues/assignment';
+import type {
+  CreateBubblophyIssueDraftInput,
+  CreateBubblophyIssueDraftResult,
+} from '@/lib/issues/create';
 import type {
   UpdateBubblophyIssueContentInput,
   UpdateBubblophyIssueContentResult,
 } from '@/lib/issues/edit';
 import type {
-  CreateOrUpdateBubblophyIssuePlanDraftInput,
-  CreateOrUpdateBubblophyIssuePlanDraftResult,
-} from '@/lib/issues/plans';
-import type {
   CreateBubblophyIssueNoteInput,
   CreateBubblophyIssueNoteResult,
 } from '@/lib/issues/notes';
+import type {
+  CreateOrUpdateBubblophyIssuePlanDraftInput,
+  CreateOrUpdateBubblophyIssuePlanDraftResult,
+} from '@/lib/issues/plans';
 import type {
   UpdateBubblophyIssuePriorityInput,
   UpdateBubblophyIssuePriorityResult,
@@ -68,11 +68,11 @@ import { requestBubblophyAgentRun } from '@/lib/agent-runs/request';
 import { createBubblophyAgentToken } from '@/lib/agent-tokens/create';
 import { updateBubblophyAgentTokenLifecycle } from '@/lib/agent-tokens/lifecycle';
 import { requireBubblophySession } from '@/lib/auth/session';
-import { createBubblophyIssueDraft } from '@/lib/issues/create';
 import { updateBubblophyIssueAssignee } from '@/lib/issues/assignment';
+import { createBubblophyIssueDraft } from '@/lib/issues/create';
 import { updateBubblophyIssueContent } from '@/lib/issues/edit';
-import { createOrUpdateBubblophyIssuePlanDraft } from '@/lib/issues/plans';
 import { createBubblophyIssueNote } from '@/lib/issues/notes';
+import { createOrUpdateBubblophyIssuePlanDraft } from '@/lib/issues/plans';
 import { updateBubblophyIssuePriority } from '@/lib/issues/priority';
 import { updateBubblophyIssueStatus } from '@/lib/issues/status';
 import { createBubblophyProject } from '@/lib/projects/create';
@@ -111,7 +111,7 @@ export type UpdateBubblophyIssueAssigneeActionResult =
 
 export type CreateBubblophyIssuePlanActionInput = Omit<
   CreateOrUpdateBubblophyIssuePlanDraftInput,
-  'authUserId'
+  'authUserId' | 'oauthClientId'
 >;
 
 export type CreateBubblophyIssuePlanActionResult =
@@ -299,8 +299,10 @@ export async function createBubblophyIssuePlanAction(
   const session = await requireBubblophySession({ nextPath: '/' });
 
   return createOrUpdateBubblophyIssuePlanDraft({
-    ...input,
     authUserId: session.authUserId,
+    issueId: input.issueId,
+    summary: input.summary,
+    steps: input.steps,
   });
 }
 

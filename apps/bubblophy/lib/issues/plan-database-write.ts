@@ -22,6 +22,7 @@ export interface BubblophyIssuePlanUpdatedEventInsert {
   issueId: string;
   eventType: 'plan_updated';
   actorAuthUserId: string;
+  actorOauthClientId: string | null;
   actorAgentTokenId: null;
   agentRunId: null;
   summary: string;
@@ -33,25 +34,41 @@ interface BubblophyIssueKeyParts {
   issueNumber: number;
 }
 
+type BubblophyDatabase = (typeof import('@/drizzle/db'))['db'];
+
 /**
  * Creates the Drizzle-backed store for human-authored issue plan drafts.
  *
  * @returns Store implementation for server actions.
  */
 export function createDrizzleBubblophyIssuePlanDraftStore(): BubblophyIssuePlanDraftStore {
+  let databasePromise: Promise<BubblophyDatabase> | null = null;
+
+  /** Reuses one database module resolution across concurrent store writes. */
+  function getDatabase() {
+    databasePromise ??= import('@/drizzle/db').then(({ db }) => db);
+    return databasePromise;
+  }
+
   return {
-    createIssuePlanVersionWithEvent,
+    createIssuePlanVersionWithEvent: (input) =>
+      createIssuePlanVersionWithEvent(input, getDatabase()),
   };
 }
 
 /**
- * Creates a new plan version and audit event after membership checks.
+ * Creates a new plan version and audit event after locked authorization checks.
+ *
+ * A shared project lock keeps archival state stable without blocking project
+ * event foreign-key checks. The issue lock serializes version allocation, and
+ * the membership lock prevents role removal or changes from racing the write.
  *
  * @param input Authenticated human user and normalized plan draft fields.
  * @returns Created plan, `not_found`, or `forbidden`.
  */
 async function createIssuePlanVersionWithEvent(
-  input: BubblophyIssuePlanDraftStoreInput
+  input: BubblophyIssuePlanDraftStoreInput,
+  databasePromise: Promise<BubblophyDatabase>
 ): ReturnType<BubblophyIssuePlanDraftStore['createIssuePlanVersionWithEvent']> {
   const issueKey = parseBubblophyIssueKey(input.issueId);
 
@@ -59,43 +76,64 @@ async function createIssuePlanVersionWithEvent(
     return { status: 'not_found' };
   }
 
-  const { db } = await import('@/drizzle/db');
+  const db = await databasePromise;
 
   return db.transaction(async (tx) => {
+    const [project] = await tx
+      .select({
+        id: bubblophyProjects.id,
+        projectKey: bubblophyProjects.key,
+      })
+      .from(bubblophyProjects)
+      .where(
+        and(
+          eq(bubblophyProjects.key, issueKey.projectKey),
+          eq(bubblophyProjects.isArchived, false)
+        )
+      )
+      .limit(1)
+      .for('share');
+
+    if (!project) {
+      return { status: 'not_found' };
+    }
+
     const [issue] = await tx
       .select({
         id: bubblophyIssues.id,
         issueNumber: bubblophyIssues.issueNumber,
-        projectId: bubblophyProjects.id,
-        projectKey: bubblophyProjects.key,
-        memberRole: bubblophyProjectMembers.role,
       })
       .from(bubblophyIssues)
-      .innerJoin(
-        bubblophyProjects,
-        eq(bubblophyProjects.id, bubblophyIssues.projectId)
-      )
-      .leftJoin(
-        bubblophyProjectMembers,
-        and(
-          eq(bubblophyProjectMembers.projectId, bubblophyProjects.id),
-          eq(bubblophyProjectMembers.authUserId, input.authUserId)
-        )
-      )
       .where(
         and(
-          eq(bubblophyProjects.key, issueKey.projectKey),
-          eq(bubblophyProjects.isArchived, false),
+          eq(bubblophyIssues.projectId, project.id),
           eq(bubblophyIssues.issueNumber, issueKey.issueNumber)
         )
       )
-      .limit(1);
+      .limit(1)
+      .for('update');
 
     if (!issue) {
       return { status: 'not_found' };
     }
 
-    if (!canContributeToBubblophyProject(issue.memberRole)) {
+    const [membership] = await tx
+      .select({
+        role: bubblophyProjectMembers.role,
+      })
+      .from(bubblophyProjectMembers)
+      .where(
+        and(
+          eq(bubblophyProjectMembers.projectId, project.id),
+          eq(bubblophyProjectMembers.authUserId, input.authUserId)
+        )
+      )
+      .limit(1)
+      .for('update');
+
+    const memberRole = membership?.role;
+
+    if (!canContributeToBubblophyProject(memberRole)) {
       return { status: 'forbidden' };
     }
 
@@ -112,16 +150,16 @@ async function createIssuePlanVersionWithEvent(
 
     const [plan] = await tx
       .insert(bubblophyIssuePlans)
-      .values({
-        issueId: issue.id,
-        version,
-        summary: input.summary,
-        steps: buildBubblophyIssuePlanStepsJson(input.steps),
-        createdByAuthUserId: input.authUserId,
-        createdByAgentTokenId: null,
-        approvedByAuthUserId: null,
-        approvedAt: null,
-      })
+      .values(
+        buildBubblophyIssuePlanInsert({
+          issueDatabaseId: issue.id,
+          authUserId: input.authUserId,
+          oauthClientId: input.oauthClientId,
+          version,
+          summary: input.summary,
+          steps: input.steps,
+        })
+      )
       .returning({
         version: bubblophyIssuePlans.version,
         summary: bubblophyIssuePlans.summary,
@@ -136,6 +174,7 @@ async function createIssuePlanVersionWithEvent(
       buildBubblophyIssuePlanUpdatedEventInsert({
         issueDatabaseId: issue.id,
         authUserId: input.authUserId,
+        oauthClientId: input.oauthClientId,
         issueId: input.issueId,
         version,
         stepCount: input.steps.length,
@@ -152,6 +191,33 @@ async function createIssuePlanVersionWithEvent(
       },
     };
   });
+}
+
+/**
+ * Builds one unapproved plan-version insert with optional OAuth attribution.
+ *
+ * @param input Issue, actor, content, and version for the new draft.
+ * @returns Insert values for `bubblophy_issue_plans`.
+ */
+export function buildBubblophyIssuePlanInsert(input: {
+  issueDatabaseId: string;
+  authUserId: string;
+  oauthClientId?: string;
+  version: number;
+  summary: string;
+  steps: BubblophyIssuePlanDraftStoreInput['steps'];
+}) {
+  return {
+    issueId: input.issueDatabaseId,
+    version: input.version,
+    summary: input.summary,
+    steps: buildBubblophyIssuePlanStepsJson(input.steps),
+    createdByAuthUserId: input.authUserId,
+    createdByOauthClientId: input.oauthClientId ?? null,
+    createdByAgentTokenId: null,
+    approvedByAuthUserId: null,
+    approvedAt: null,
+  };
 }
 
 /**
@@ -211,6 +277,7 @@ export function getNextBubblophyIssuePlanVersion(
 export function buildBubblophyIssuePlanUpdatedEventInsert(input: {
   issueDatabaseId: string;
   authUserId: string;
+  oauthClientId?: string;
   issueId: string;
   version: number;
   stepCount: number;
@@ -219,11 +286,12 @@ export function buildBubblophyIssuePlanUpdatedEventInsert(input: {
     issueId: input.issueDatabaseId,
     eventType: 'plan_updated',
     actorAuthUserId: input.authUserId,
+    actorOauthClientId: input.oauthClientId ?? null,
     actorAgentTokenId: null,
     agentRunId: null,
     summary: `Plan ${input.issueId} v${input.version} aktualisiert.`,
     payload: {
-      source: 'human',
+      source: input.oauthClientId ? 'oauth_mcp' : 'human',
       issueId: input.issueId,
       version: input.version,
       stepCount: input.stepCount,

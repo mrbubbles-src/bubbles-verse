@@ -142,6 +142,12 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   OAuth-Client-Attribution. Persönliche MCP-Schreibvorgänge können dadurch die
   menschliche `authUserId` und zusätzlich die konkrete `client_id` festhalten,
   ohne bestehende UI- oder Agent-Actor-Verträge umzudeuten.
+- Das erste MCP-Schreibwerkzeug `propose_plan` legt für ein sichtbares aktives
+  Issue ausschließlich eine neue ungeprüfte Planversion an. Der vorhandene
+  transaktionale Planpfad prüft Membership und Contributor-Rolle erneut,
+  schreibt menschliche User- plus OAuth-Client-Attribution und ein Audit-Event.
+  Viewer und archivierte Projekte bleiben gesperrt; kein Agent-Run wird
+  angelegt oder freigegeben.
 - `/.well-known/oauth-protected-resource/mcp` veröffentlicht Bubblophys fest
   konfigurierte MCP-Resource und den Supabase-Auth-Issuer. Der Origin-Pfad ohne
   `/mcp` bleibt als kompatibler Alias verfügbar. Eingereichte Host- oder

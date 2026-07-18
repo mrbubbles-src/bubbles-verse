@@ -155,6 +155,11 @@ dauerhaften Autopilot-Rechte.
   Run-ID und bisherigen Zustand. Verliert eine konkurrierende Mutation, wird
   kein widersprüchliches Audit-Event geschrieben.
 - Agenten dürfen keine dauerhaften Hintergrund-Runs planen.
+- Persönliche OAuth-Clients dürfen über `propose_plan` nur neue ungeprüfte
+  Planversionen vorschlagen. Der MCP-Read löst das sichtbare Issue auf; der
+  bestehende transaktionale Plan-Store prüft aktive Membership,
+  Contributor-Rolle und Archivstatus beim Schreiben erneut. Viewer bleiben
+  gesperrt, Approval-Felder bleiben leer und es wird kein Run gestartet.
 
 ## Audit und RLS
 
@@ -175,6 +180,9 @@ dauerhaften Autopilot-Rechte.
   menschliche User-ID und ergänzen `actor_oauth_client_id`; Planversionen nutzen
   entsprechend `created_by_oauth_client_id`. Die nullable Zusatzattribution
   verändert bestehende UI-/Agent-Schreibpfade nicht.
+- Die manuelle Server Action verwirft clientseitig eingereichte OAuth-
+  Attribution ausdrücklich. Nur der validierte MCP-Auth-Kontext darf eine
+  `client_id` an den gemeinsamen Plan-Store weitergeben.
 - RLS-Lesepolicies erlauben Projektmitgliedern nur projektgebundene, dafür
   vorgesehene Tabellen. Direkte `authenticated`-Reads auf
   `bubblophy_agent_runs` und `bubblophy_issue_events` sind geschlossen, weil

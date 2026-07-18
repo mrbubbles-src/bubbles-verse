@@ -411,3 +411,35 @@ persistiert.
 - [x] **Step 2: Additive Drizzle-Migration generieren**
 - [x] **Step 3: Reviewer und vollständige Slice-Gates ausführen**
 - [x] **Step 4: Fertigen Slice separat committen**
+
+### Task 12: Kontrolliertes MCP-Schreibwerkzeug `propose_plan`
+
+**Files:**
+
+- Create: `apps/bubblophy/lib/mcp/propose-plan.ts`
+- Create: `apps/bubblophy/__tests__/lib/mcp/propose-plan.test.ts`
+- Create: `apps/bubblophy/__tests__/lib/issues/plan-database-write.test.ts`
+- Modify: `apps/bubblophy/lib/issues/plans.ts`
+- Modify: `apps/bubblophy/lib/issues/plan-database-write.ts`
+- Modify: `apps/bubblophy/app/actions.ts`
+- Modify: `apps/bubblophy/lib/mcp/register-tools.ts`
+- Modify: `apps/bubblophy/__tests__/lib/issues/plans.test.ts`
+- Modify: `apps/bubblophy/__tests__/app/actions.test.ts`
+- Modify: `apps/bubblophy/__tests__/app/mcp-route.test.ts`
+
+**Contract:** `projectId`, positive `issueNumber`, optionale Summary und
+begrenzte Schritte erzeugen ausschließlich eine neue ungeprüfte Planversion.
+Der MCP-Read löst das sichtbare Issue membership-gebunden auf; der vorhandene
+transaktionale Store prüft aktive Membership, Contributor-Rolle und Archivstatus
+beim Schreiben erneut. Projekt-, Issue- und Membership-Locks stabilisieren
+diese Prüfung und serialisieren parallele Planversionen. Plan und Event
+speichern menschliche `authUserId` plus validierte OAuth-`client_id`. Viewer
+bleiben gesperrt, Approval bleibt leer und kein Agent-Run wird erzeugt. Die
+manuelle Server Action darf keine vom Client eingereichte OAuth-Attribution
+weiterreichen.
+
+- [x] **Step 1: Service-, Attribution- und Route-Tests zuerst schreiben**
+- [x] **Step 2: Gemeinsamen Planpfad sicher erweitern**
+- [x] **Step 3: `propose_plan` mit nicht-idempotentem Write-Vertrag registrieren**
+- [x] **Step 4: Reviewer und vollständige Slice-Gates ausführen**
+- [x] **Step 5: Fertigen Slice separat committen**
