@@ -25,7 +25,7 @@ describe('contributor permission wiring', () => {
         "import { canContributeToBubblophyProject } from '@/lib/projects/permissions';"
       );
       expect(source).toMatch(
-        /canContributeToBubblophyProject\([^)]*memberRole\)/
+        /canContributeToBubblophyProject\([^)]*(?:memberRole|membership\?\.role)\)/
       );
     }
   );

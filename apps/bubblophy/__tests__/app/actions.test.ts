@@ -188,11 +188,15 @@ describe('createBubblophyIssueAction', () => {
     const { createBubblophyIssueAction } = await import('@/app/actions');
     const result = await createBubblophyIssueAction({
       authUserId: 'user_client_spoof',
+      oauthClientId: 'client-spoof',
       projectKey: 'BV',
       title: 'Persistiertes Issue',
       description: 'Nur die serverseitige Session zählt.',
       priority: 'mittel',
-    } as CreateBubblophyIssueActionInput & { authUserId: string });
+    } as CreateBubblophyIssueActionInput & {
+      authUserId: string;
+      oauthClientId: string;
+    });
 
     expect(requireBubblophySessionMock).toHaveBeenCalledWith({
       nextPath: '/',
@@ -204,6 +208,9 @@ describe('createBubblophyIssueAction', () => {
       description: 'Nur die serverseitige Session zählt.',
       priority: 'mittel',
     });
+    expect(createBubblophyIssueDraftMock.mock.calls[0]?.[0]).not.toHaveProperty(
+      'oauthClientId'
+    );
     expect(result).toEqual({
       status: 'created',
       issue: {

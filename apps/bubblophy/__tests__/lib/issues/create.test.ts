@@ -4,6 +4,7 @@ import type {
 } from '@/lib/issues/create';
 
 import {
+  bubblophyIssueContentLimits,
   createBubblophyIssueDraft,
   mapCreatedIssueToSummary,
 } from '@/lib/issues/create';
@@ -49,6 +50,37 @@ describe('createBubblophyIssueDraft', () => {
       reason: 'empty_title',
     });
 
+    expect(store.createIssueWithCreatedEvent).not.toHaveBeenCalled();
+  });
+
+  it('enforces the shared title and description bounds before the store', async () => {
+    const store = createStore(async () => {
+      throw new Error('store should not be called');
+    });
+
+    await expect(
+      createBubblophyIssueDraft(
+        {
+          authUserId: 'user_owner',
+          projectKey: 'BV',
+          title: 'x'.repeat(bubblophyIssueContentLimits.maxTitleLength + 1),
+        },
+        { store }
+      )
+    ).resolves.toEqual({ status: 'invalid', reason: 'title_too_long' });
+    await expect(
+      createBubblophyIssueDraft(
+        {
+          authUserId: 'user_owner',
+          projectKey: 'BV',
+          title: 'Grenztest',
+          description: 'x'.repeat(
+            bubblophyIssueContentLimits.maxDescriptionLength + 1
+          ),
+        },
+        { store }
+      )
+    ).resolves.toEqual({ status: 'invalid', reason: 'description_too_long' });
     expect(store.createIssueWithCreatedEvent).not.toHaveBeenCalled();
   });
 
@@ -156,6 +188,39 @@ describe('createBubblophyIssueDraft', () => {
     });
   });
 
+  it('normalizes OAuth attribution and accepts exact content limits', async () => {
+    const store = createStore(async (input) => ({
+      project: { id: 'project_bv', key: input.projectKey, name: 'Bubblophy' },
+      issue: {
+        id: 'issue_bv_1',
+        issueNumber: 1,
+        title: input.title,
+        description: input.description,
+        status: 'triage',
+        priority: input.priority,
+        assignedAuthUserId: null,
+        requiresHumanApproval: true,
+      },
+    }));
+
+    await createBubblophyIssueDraft(
+      {
+        authUserId: 'user_owner',
+        oauthClientId: ' client-1 ',
+        projectKey: 'BV',
+        title: 'x'.repeat(bubblophyIssueContentLimits.maxTitleLength),
+        description: 'x'.repeat(
+          bubblophyIssueContentLimits.maxDescriptionLength
+        ),
+      },
+      { store }
+    );
+
+    expect(store.createIssueWithCreatedEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ oauthClientId: 'client-1' })
+    );
+  });
+
   it('returns database_unavailable when no store and no database URL exist', async () => {
     vi.stubEnv('DATABASE_URL', '');
 
@@ -191,6 +256,7 @@ describe('Bubblophy issue write helpers', () => {
       issueId: 'issue_bv_15',
       eventType: 'created',
       actorAuthUserId: 'user_owner',
+      actorOauthClientId: null,
       actorAgentTokenId: null,
       agentRunId: null,
       summary: 'Issue BV-15 erstellt.',
@@ -199,6 +265,23 @@ describe('Bubblophy issue write helpers', () => {
         projectKey: 'BV',
         issueNumber: 15,
       },
+    });
+  });
+
+  it('builds an OAuth-attributed created event for personal MCP writes', () => {
+    expect(
+      buildBubblophyIssueCreatedEventInsert({
+        issueId: 'issue_bv_16',
+        authUserId: 'user_owner',
+        oauthClientId: 'client-1',
+        projectKey: 'BV',
+        issueNumber: 16,
+      })
+    ).toMatchObject({
+      actorAuthUserId: 'user_owner',
+      actorOauthClientId: 'client-1',
+      actorAgentTokenId: null,
+      payload: { source: 'oauth_mcp' },
     });
   });
 });

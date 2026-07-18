@@ -10,6 +10,7 @@ const getBubblophyMcpIssuePlanMock = vi.fn();
 const getBubblophyMcpRunMock = vi.fn();
 const proposeBubblophyMcpPlanMock = vi.fn();
 const addBubblophyMcpNoteMock = vi.fn();
+const createBubblophyMcpIssueMock = vi.fn();
 
 vi.mock('@/lib/mcp/auth', () => ({
   verifyBubblophyMcpToken: (request: Request, bearerToken?: string) =>
@@ -72,6 +73,19 @@ vi.mock('@/lib/mcp/add-note', () => ({
     clientId: string,
     input: { projectId: string; issueNumber: number; note: string }
   ) => addBubblophyMcpNoteMock(authUserId, clientId, input),
+}));
+
+vi.mock('@/lib/mcp/create-issue', () => ({
+  createBubblophyMcpIssue: (
+    authUserId: string,
+    clientId: string,
+    input: {
+      projectId: string;
+      title: string;
+      description?: string;
+      priority: 'low' | 'medium' | 'high';
+    }
+  ) => createBubblophyMcpIssueMock(authUserId, clientId, input),
 }));
 
 function createInitializeRequest(token?: string) {
@@ -250,6 +264,31 @@ function createAddNoteRequest() {
   });
 }
 
+function createCreateIssueRequest() {
+  return new Request('https://bubblophy.example.com/mcp', {
+    method: 'POST',
+    headers: {
+      accept: 'application/json, text/event-stream',
+      authorization: 'Bearer signed-token',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 10,
+      method: 'tools/call',
+      params: {
+        name: 'create_issue',
+        arguments: {
+          projectId: 'project_bv',
+          title: 'MCP-Login dokumentieren',
+          description: 'Ein sicherer Triage-Draft.',
+          priority: 'high',
+        },
+      },
+    }),
+  });
+}
+
 function createListToolsRequest() {
   return new Request('https://bubblophy.example.com/mcp', {
     method: 'POST',
@@ -293,6 +332,8 @@ describe('/mcp', () => {
     proposeBubblophyMcpPlanMock.mockResolvedValue({ status: 'not_found' });
     addBubblophyMcpNoteMock.mockReset();
     addBubblophyMcpNoteMock.mockResolvedValue({ status: 'not_found' });
+    createBubblophyMcpIssueMock.mockReset();
+    createBubblophyMcpIssueMock.mockResolvedValue({ status: 'not_found' });
     vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://bubblophy.example.com');
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://auth.example.com');
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'public-anon-key');
@@ -407,6 +448,7 @@ describe('/mcp', () => {
     expect(body).toContain('"name":"get_run"');
     expect(body).toContain('"name":"propose_plan"');
     expect(body).toContain('"name":"add_note"');
+    expect(body).toContain('"name":"create_issue"');
   });
 
   it('lists bounded public issue summaries for the verified OAuth identity', async () => {
@@ -655,6 +697,55 @@ describe('/mcp', () => {
       issueNumber: 12,
       note: 'Review abgeschlossen.',
     });
+  });
+
+  it('creates only an OAuth-attributed triage issue with public fields', async () => {
+    verifyBubblophyMcpTokenMock.mockResolvedValue({
+      token: 'signed-token',
+      clientId: 'client-1',
+      scopes: ['openid'],
+      expiresAt: 2_000_000_000,
+      resource: new URL('https://bubblophy.example.com/mcp'),
+      extra: { authUserId: 'user-1' },
+    });
+    createBubblophyMcpIssueMock.mockResolvedValue({
+      status: 'created',
+      project: { id: 'project_bv', key: 'BV', isArchived: false },
+      issue: {
+        key: 'BV-16',
+        issueNumber: 16,
+        title: 'MCP-Login dokumentieren',
+        description: 'Ein sicherer Triage-Draft.',
+        status: 'triage',
+        priority: 'high',
+        requiresHumanApproval: true,
+      },
+    });
+    const { POST } = await import('@/app/mcp/route');
+    const response = await POST(createCreateIssueRequest());
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).toContain('"key":"BV-16"');
+    expect(body).toContain('"status":"triage"');
+    expect(body).toContain('"requiresHumanApproval":true');
+    expect(body).not.toContain('createdByAuthUserId');
+    expect(body).not.toContain('assignedAuthUserId');
+    expect(body).not.toContain('actorAuthUserId');
+    expect(body).not.toContain('oauthClientId');
+    expect(body).not.toContain('signed-token');
+    expect(body).not.toContain('user-1');
+    expect(body).not.toContain('client-1');
+    expect(createBubblophyMcpIssueMock).toHaveBeenCalledWith(
+      'user-1',
+      'client-1',
+      {
+        projectId: 'project_bv',
+        title: 'MCP-Login dokumentieren',
+        description: 'Ein sicherer Triage-Draft.',
+        priority: 'high',
+      }
+    );
   });
 
   it('does not call project reads without an authenticated user identity', async () => {

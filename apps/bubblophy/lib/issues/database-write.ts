@@ -11,6 +11,7 @@ import { canContributeToBubblophyProject } from '@/lib/projects/permissions';
 
 import { and, desc, eq } from 'drizzle-orm';
 
+import { db } from '@/drizzle/db';
 import {
   bubblophyIssueEvents,
   bubblophyIssues,
@@ -22,6 +23,7 @@ export interface BubblophyIssueCreatedEventInsert {
   issueId: string;
   eventType: 'created';
   actorAuthUserId: string;
+  actorOauthClientId: string | null;
   actorAgentTokenId: null;
   agentRunId: null;
   summary: string;
@@ -31,10 +33,10 @@ export interface BubblophyIssueCreatedEventInsert {
 /**
  * Creates the Drizzle-backed store for persisted human issue drafts.
  *
- * Issue number selection and event creation run in one transaction. The MVP
- * still relies on the existing `(project_id, issue_number)` unique index for
- * concurrent duplicate protection; a future project counter can make retries
- * friendlier without changing the service contract.
+ * Issue number selection and event creation run in one transaction. A project
+ * `NO KEY UPDATE` lock serializes per-project numbering while remaining
+ * compatible with the project `KEY SHARE` locks used by issue inserts and
+ * project audit writes. The existing unique index remains defense in depth.
  *
  * @returns Store implementation for server actions or route handlers.
  */
@@ -45,7 +47,11 @@ export function createDrizzleBubblophyIssueDraftStore(): BubblophyIssueDraftCrea
 }
 
 /**
- * Creates an issue and its audit event after checking project membership.
+ * Creates an issue and its audit event after locked authorization checks.
+ *
+ * The project lock keeps archival state stable and serializes number
+ * allocation. The membership lock prevents role removal or changes from
+ * racing the write.
  *
  * @param input Authenticated human user and normalized draft fields.
  * @returns Created issue data, or `null` when the user is not a project member.
@@ -53,31 +59,40 @@ export function createDrizzleBubblophyIssueDraftStore(): BubblophyIssueDraftCrea
 async function createIssueWithCreatedEvent(
   input: BubblophyIssueDraftCreateStoreInput
 ): Promise<BubblophyIssueDraftCreateStoreResult | null> {
-  const { db } = await import('@/drizzle/db');
-
   return db.transaction(async (tx) => {
     const [project] = await tx
       .select({
         id: bubblophyProjects.id,
         key: bubblophyProjects.key,
         name: bubblophyProjects.name,
-        memberRole: bubblophyProjectMembers.role,
       })
       .from(bubblophyProjects)
-      .innerJoin(
-        bubblophyProjectMembers,
-        eq(bubblophyProjectMembers.projectId, bubblophyProjects.id)
-      )
       .where(
         and(
           eq(bubblophyProjects.key, input.projectKey),
-          eq(bubblophyProjects.isArchived, false),
+          eq(bubblophyProjects.isArchived, false)
+        )
+      )
+      .limit(1)
+      .for('no key update');
+
+    if (!project) {
+      return null;
+    }
+
+    const [membership] = await tx
+      .select({ role: bubblophyProjectMembers.role })
+      .from(bubblophyProjectMembers)
+      .where(
+        and(
+          eq(bubblophyProjectMembers.projectId, project.id),
           eq(bubblophyProjectMembers.authUserId, input.authUserId)
         )
       )
-      .limit(1);
+      .limit(1)
+      .for('update');
 
-    if (!project || !canContributeToBubblophyProject(project.memberRole)) {
+    if (!canContributeToBubblophyProject(membership?.role)) {
       return null;
     }
 
@@ -124,6 +139,7 @@ async function createIssueWithCreatedEvent(
       buildBubblophyIssueCreatedEventInsert({
         issueId: issue.id,
         authUserId: input.authUserId,
+        oauthClientId: input.oauthClientId,
         projectKey: project.key,
         issueNumber,
       })
@@ -163,6 +179,7 @@ export function getNextBubblophyIssueNumber(
 export function buildBubblophyIssueCreatedEventInsert(input: {
   issueId: string;
   authUserId: string;
+  oauthClientId?: string;
   projectKey: string;
   issueNumber: number;
 }): BubblophyIssueCreatedEventInsert {
@@ -170,11 +187,12 @@ export function buildBubblophyIssueCreatedEventInsert(input: {
     issueId: input.issueId,
     eventType: 'created',
     actorAuthUserId: input.authUserId,
+    actorOauthClientId: input.oauthClientId ?? null,
     actorAgentTokenId: null,
     agentRunId: null,
     summary: `Issue ${input.projectKey}-${input.issueNumber.toString().padStart(2, '0')} erstellt.`,
     payload: {
-      source: 'human',
+      source: input.oauthClientId ? 'oauth_mcp' : 'human',
       projectKey: input.projectKey,
       issueNumber: input.issueNumber,
     },

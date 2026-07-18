@@ -36,9 +36,10 @@ Status: abgeschlossen.
 - Read-first-Werkzeuge: `list_projects`, `list_issues`, `get_issue`,
   `get_issue_plan` und `get_run`.
 - Kontrollierte Schreibwerkzeuge folgen separat: `propose_plan` als ungeprüfter
-  Agent-Entwurf und `add_note` als append-only Aktivität sind vorhanden. Danach
-  folgen Issues, Statusänderungen und Run-Anfragen mit Rollenprüfung, Audit und
-  menschlicher Freigabe.
+  Agent-Entwurf, `add_note` als append-only Aktivität und `create_issue` als
+  freigabepflichtiger Triage-Draft sind vorhanden. Danach folgen
+  Statusänderungen und Run-Anfragen mit Rollenprüfung, Audit und menschlicher
+  Freigabe.
 - Bestehende projektgebundene Agent-Tokens bleiben für unbeaufsichtigte
   Runner und Service-Accounts erhalten. Persönliche Codex-/Claude-Verbindungen
   verwenden OAuth statt gemeinsam genutzter Agent-Tokens.
@@ -106,12 +107,12 @@ lokale Supabase-JWT-Validierung, das membership-basierte read-only Werkzeug
 `list_projects`, das paginierte membership-basierte `list_issues`, die
 membership-basierten Detailwerkzeuge `get_issue`, `get_issue_plan` und
 `get_run`, die OAuth-vs.-Data-API-RLS-Grenze und der persönliche
-OAuth-Consent-Flow sowie die kontrollierten Schreibwerkzeuge `propose_plan` und
-`add_note` sind vorhanden. Ohne
+OAuth-Consent-Flow sowie die kontrollierten Schreibwerkzeuge `propose_plan`,
+`add_note` und `create_issue` sind vorhanden. Ohne
 gültige Signatur, Issuer, Ablauf, Subject, OAuth-Client-ID und exakte
-MCP-Audience bleibt der Zugriff fail-closed. Als Nächstes folgen weitere
-Human-in-the-loop-Schreibwerkzeuge sowie die genaue Supabase-Staging-
-Konfiguration und der reale Codex-/Claude-Smoke nach
+MCP-Audience bleibt der Zugriff fail-closed. Als Nächstes folgen die genaue
+Supabase-Staging-Konfiguration, der reale Codex-/Claude-Smoke und weitere
+Human-in-the-loop-Schreibwerkzeuge nach
 `documentation/mcp-operations.md`.
 Der detaillierte Plan liegt unter
 `docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md`.

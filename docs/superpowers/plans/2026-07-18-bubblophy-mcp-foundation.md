@@ -473,3 +473,35 @@ darf keine vom Client eingereichte OAuth-Attribution weiterreichen.
 - [x] **Step 3: `add_note` mit nicht-idempotentem Write-Vertrag registrieren**
 - [x] **Step 4: Reviewer und vollständige Slice-Gates ausführen**
 - [x] **Step 5: Fertigen Slice separat committen**
+
+### Task 14: Kontrolliertes MCP-Schreibwerkzeug `create_issue`
+
+**Files:**
+
+- Create: `apps/bubblophy/lib/mcp/create-issue.ts`
+- Create: `apps/bubblophy/__tests__/lib/mcp/create-issue.test.ts`
+- Create: `apps/bubblophy/__tests__/lib/issues/database-write.test.ts`
+- Create: `apps/bubblophy/lib/issues/content-limits.ts`
+- Modify: `apps/bubblophy/lib/issues/create.ts`
+- Modify: `apps/bubblophy/lib/issues/edit.ts`
+- Modify: `apps/bubblophy/lib/issues/database-write.ts`
+- Modify: `apps/bubblophy/app/actions.ts`
+- Modify: `apps/bubblophy/lib/mcp/register-tools.ts`
+- Modify: relevante Service-, Action- und Route-Tests
+- Modify: Bubblophy-README, Changelog, Roadmap und MCP-Runbook
+
+**Contract:** `projectId`, ein auf 180 Zeichen begrenzter Titel, eine auf 4.000
+Zeichen begrenzte Beschreibung und eine öffentliche Priorität erzeugen in einem
+sichtbaren aktiven Projekt genau ein neues Issue. Der Writer sperrt das Projekt
+mit `FOR NO KEY UPDATE`, danach die konkrete Membership mit `FOR UPDATE`, prüft
+die Contributor-Rolle und serialisiert so die nächste Issue-Nummer. Das Issue
+bleibt `triage`, nicht zugewiesen und freigabepflichtig. Das `created`-Event
+speichert menschliche `authUserId` plus validierte OAuth-`client_id`. Plan,
+Approval und Agent-Runs bleiben unangetastet; die manuelle Action darf keine
+OAuth-Attribution vom Client übernehmen.
+
+- [x] **Step 1: Bounds-, Attribution-, Store- und MCP-Tests zuerst schreiben**
+- [x] **Step 2: Create-Pfad mit race-sicheren Locks härten**
+- [x] **Step 3: `create_issue` mit nicht-idempotentem Write-Vertrag registrieren**
+- [x] **Step 4: Reviewer und vollständige Slice-Gates ausführen**
+- [x] **Step 5: Fertigen Slice separat committen**

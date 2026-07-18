@@ -1,8 +1,10 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
+import { bubblophyIssueContentLimits } from '@/lib/issues/content-limits';
 import { BUBBLOPHY_ISSUE_NOTE_MAX_LENGTH } from '@/lib/issues/notes';
 import { bubblophyIssuePlanLimits } from '@/lib/issues/plans';
 import { addBubblophyMcpNote } from '@/lib/mcp/add-note';
+import { createBubblophyMcpIssue } from '@/lib/mcp/create-issue';
 import { getBubblophyMcpIssue } from '@/lib/mcp/issue-detail';
 import { getBubblophyMcpIssuePlan } from '@/lib/mcp/issue-plan';
 import { listBubblophyMcpIssues } from '@/lib/mcp/issues';
@@ -196,6 +198,38 @@ const addedNoteOutputSchema = z.object({
   note: z.object({
     text: z.string(),
     createdAt: z.string(),
+  }),
+});
+
+const createIssueInputSchema = z.object({
+  projectId: z.string().trim().min(1).max(200),
+  title: z
+    .string()
+    .trim()
+    .min(1)
+    .max(bubblophyIssueContentLimits.maxTitleLength),
+  description: z
+    .string()
+    .trim()
+    .max(bubblophyIssueContentLimits.maxDescriptionLength)
+    .optional(),
+  priority: z.enum(['low', 'medium', 'high']),
+});
+
+const createdIssueOutputSchema = z.object({
+  project: z.object({
+    id: z.string(),
+    key: z.string(),
+    isArchived: z.boolean(),
+  }),
+  issue: z.object({
+    key: z.string(),
+    issueNumber: z.number().int().positive(),
+    title: z.string(),
+    description: z.string(),
+    status: z.literal('triage'),
+    priority: z.enum(['low', 'medium', 'high']),
+    requiresHumanApproval: z.literal(true),
   }),
 });
 
@@ -530,6 +564,56 @@ export function registerBubblophyMcpTools(server: McpServer) {
       };
     }
   );
+
+  server.registerTool(
+    'create_issue',
+    {
+      title: 'Create Bubblophy issue',
+      description:
+        'Creates one OAuth-attributed triage issue in a visible active project. It never creates a plan, approval, or run.',
+      inputSchema: createIssueInputSchema,
+      outputSchema: createdIssueOutputSchema,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false,
+      },
+    },
+    async (input, extra) => {
+      const authUserId = readAuthUserId(extra.authInfo?.extra?.authUserId);
+      const oauthClientId = readOauthClientId(extra.authInfo?.clientId);
+
+      if (!authUserId || !oauthClientId) {
+        return createToolError(
+          'Die authentifizierte User- oder OAuth-Client-ID fehlt.'
+        );
+      }
+
+      const result = await createBubblophyMcpIssue(
+        authUserId,
+        oauthClientId,
+        input
+      );
+
+      if (result.status !== 'created') {
+        return createToolError(readCreateIssueError(result.status));
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Issue ${result.issue.key} als Triage-Draft erstellt. Planung und Ausführung warten auf weitere Schritte.`,
+          },
+        ],
+        structuredContent: {
+          project: result.project,
+          issue: result.issue,
+        },
+      };
+    }
+  );
 }
 
 /** Returns a normalized OAuth user ID from MCP auth context data. */
@@ -646,4 +730,23 @@ function readAddNoteError(
   }
 
   return 'Die Notiz ist ungültig.';
+}
+
+/** Maps internal issue creation outcomes to non-sensitive MCP messages. */
+function readCreateIssueError(
+  status: 'invalid' | 'not_found' | 'forbidden' | 'database_unavailable'
+) {
+  if (status === 'database_unavailable') {
+    return 'Bubblophy kann das Issue gerade nicht speichern.';
+  }
+
+  if (status === 'not_found') {
+    return 'Das Projekt wurde nicht gefunden oder ist nicht zugänglich.';
+  }
+
+  if (status === 'forbidden') {
+    return 'Die aktuelle Projektrolle darf keine Issues erstellen.';
+  }
+
+  return 'Das neue Issue ist ungültig.';
 }

@@ -153,6 +153,12 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   unverändert. Plan- und Notizpfad teilen sich dieselbe gesperrte Projekt-,
   Issue- und Membership-Prüfung; Viewer und archivierte Projekte bleiben
   gesperrt.
+- `create_issue` erzeugt für Contributor in einem sichtbaren aktiven Projekt
+  genau ein OAuth-attributiertes Triage-Issue. Eine Projektsperre serialisiert
+  die laufende Issue-Nummer auch bei gleichzeitigen Aufrufen verschiedener
+  Mitglieder; die Membership wird danach gesperrt erneut geprüft. Das Issue
+  bleibt nicht zugewiesen und freigabepflichtig. Plan, Approval und Run werden
+  nicht angelegt.
 - `/.well-known/oauth-protected-resource/mcp` veröffentlicht Bubblophys fest
   konfigurierte MCP-Resource und den Supabase-Auth-Issuer. Der Origin-Pfad ohne
   `/mcp` bleibt als kompatibler Alias verfügbar. Eingereichte Host- oder
@@ -298,12 +304,15 @@ bun run build
 - Agenten nutzen eingeschränkte Bubblophy-Agent-Tokens mit Hash, Scopes,
   Projektgrenze, Status und Ablaufdatum.
 - Agenten erhalten keine Mensch-Logins und keinen Supabase-Service-Role-Key.
-- Der aktuell nutzbare Agent-API-Vertrag ist eng: Lokale Agenten können mit
+- Der projektgebundene Agent-Token-API-Vertrag bleibt eng: Lokale Runner können
+  mit
   Scope `issues:read` minimalen Run-/Issue-/Plan-Kontext über
   `GET /api/agent-runs/[runId]` für freigegebene oder laufende Runs lesen und
   mit Scope `runs:update` Status, Message und Result-JSON für freigegebene Runs an
-  `PATCH /api/agent-runs/[runId]` melden. Planen, Issue-Schreiben und
-  Run-Erstellen haben noch keinen Agent-Endpoint und bleiben human-in-the-loop.
+  `PATCH /api/agent-runs/[runId]` melden. Dieser Token-Vertrag kann keine Pläne,
+  Issues oder Runs anlegen. Persönliche OAuth-MCP-Clients können getrennt davon
+  ungeprüfte Pläne vorschlagen, Notizen anhängen und freigabepflichtige
+  Triage-Issues erstellen; keiner dieser Schreibpfade startet einen Run.
 - Alles bleibt human-in-the-loop; Agent-Runs brauchen explizite Freigabe.
 - Datenzugriff auf `DATABASE_URL` ist in `drizzle/db/index.ts` durch
   `server-only` auf Server-Bundles begrenzt.
@@ -313,10 +322,9 @@ bun run build
   `bubblophy_agent_tokens` wird wegen `token_hash` nicht direkt für
   `authenticated` geöffnet. Server Actions behalten zusätzlich ihre
   serverseitigen Membership-Prüfungen.
-- Die aktuelle Issue-Nummer-Vergabe passiert im MVP transaktional über
-  `max(issue_number) + 1` pro Projekt und wird vom eindeutigen DB-Index
-  abgesichert. Ein späterer Projekt-Counter kann parallele Kollisionen
-  nutzerfreundlicher retryen.
+- Die Issue-Nummer-Vergabe liest transaktional `max(issue_number) + 1` pro
+  Projekt. Ein `FOR NO KEY UPDATE`-Lock auf dem aktiven Projekt serialisiert
+  parallele Erstellungen; der eindeutige DB-Index bleibt zusätzliche Absicherung.
 
 ## Environment
 

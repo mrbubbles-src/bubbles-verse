@@ -35,6 +35,9 @@ persönliche Client-Anmeldung. Es enthält keine echten Tokens oder Secrets.
   oder Run-Start.
 - Kontrolliertes Schreibwerkzeug `add_note`: append-only OAuth-attributierte
   Issue-Notiz für Contributor in aktiven Projekten, ohne Workflow-Mutation.
+- Kontrolliertes Schreibwerkzeug `create_issue`: OAuth-attributierter,
+  nicht zugewiesener Triage-Draft für Contributor in aktiven Projekten, ohne
+  Plan, Approval oder Run.
 
 ## Umgebungsvertrag
 
@@ -184,6 +187,10 @@ dynamischer Registrierung normalerweise nicht nötig.
 
 Der MCP-Foundation-Slice ist erst nach diesem realen Smoke vollständig:
 
+Der lokale Store-Test prüft die erzeugten Lock-Klauseln, ihre Reihenfolge und
+ein Serialisierungsmodell. Er ersetzt keinen echten PostgreSQL-Konkurrenztest;
+insbesondere Schritt 7 bleibt deshalb ein offenes Produktions-Gate.
+
 1. Zwei Testpersonen mit disjunkten Projektmitgliedschaften vorbereiten; eine
    dritte gemeinsame Mitgliedschaft darf unterschiedliche Rollen haben.
 2. Person A über Codex verbinden. Person B getrennt über Claude Code verbinden.
@@ -214,21 +221,28 @@ Der MCP-Foundation-Slice ist erst nach diesem realen Smoke vollständig:
    `commented`-Aktivität samt User- und OAuth-Client-Attribution prüfen. Viewer,
    entfernte Membership und archivierte Projekte müssen scheitern. Plan,
    Status, Approval und Runs müssen unverändert bleiben.
-7. Beide Clients schließen und neu starten. Der Zugriff muss ohne erneuten
+7. In einem gemeinsamen aktiven Projekt `create_issue` zeitgleich als zwei
+   verschiedene Contributor aufrufen. Es müssen genau zwei Issues mit
+   aufeinanderfolgenden, eindeutigen Nummern, Status `triage`, leerer Zuweisung
+   und aktivem Human-Approval-Flag entstehen. Beide `created`-Events müssen den
+   jeweiligen User und OAuth-Client ausweisen. Es dürfen keine Pläne, Approvals
+   oder Runs entstehen. Viewer, entfernte Membership und archivierte Projekte
+   müssen scheitern.
+8. Beide Clients schließen und neu starten. Der Zugriff muss ohne erneuten
    manuellen Token-Transfer funktionieren.
-8. In Staging die Access-Token-Laufzeit vorübergehend kurz genug setzen, um nach
+9. In Staging die Access-Token-Laufzeit vorübergehend kurz genug setzen, um nach
    Ablauf einen erneuten Werkzeugaufruf zu prüfen. Der Client muss per
    Refresh-Token fortfahren; danach die normale Laufzeit wiederherstellen.
-9. Mit einem echten OAuth-JWT gegen die Supabase Data API prüfen, dass Reads und
-   Writes auf alle acht Bubblophy-Tabellen durch `0004` blockiert bleiben.
-   Dasselbe mit einer normalen menschlichen JWT und vorhandener Membership
-   gegen die vorgesehenen Select-Policies gegenprüfen.
-10. Negativfälle prüfen: falsche Audience, abgelaufenes Token, entfernte
-   Membership, unbekannter User und der Versuch, fremde Projekt-IDs zu erraten.
-   Archivierte Mitgliedschaftsprojekte bleiben dagegen absichtlich sichtbar
-   und müssen mit `isArchived: true` samt historischer Issue-Summaries
-   zurückkommen; operative Mutationen bleiben für sie gesperrt.
-11. Keine Tokens in Terminalausgabe, Screenshots, Logs oder Testartefakte
+10. Mit einem echten OAuth-JWT gegen die Supabase Data API prüfen, dass Reads und
+    Writes auf alle acht Bubblophy-Tabellen durch `0004` blockiert bleiben.
+    Dasselbe mit einer normalen menschlichen JWT und vorhandener Membership
+    gegen die vorgesehenen Select-Policies gegenprüfen.
+11. Negativfälle prüfen: falsche Audience, abgelaufenes Token, entfernte
+    Membership, unbekannter User und der Versuch, fremde Projekt-IDs zu erraten.
+    Archivierte Mitgliedschaftsprojekte bleiben dagegen absichtlich sichtbar
+    und müssen mit `isArchived: true` samt historischer Issue-Summaries
+    zurückkommen; operative Mutationen bleiben für sie gesperrt.
+12. Keine Tokens in Terminalausgabe, Screenshots, Logs oder Testartefakte
     übernehmen. Nur Clientname, Testperson, erwartete/sichtbare Projekt-IDs,
     Zeitstempel und Pass/Fail dokumentieren.
 

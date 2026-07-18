@@ -163,6 +163,11 @@ dauerhaften Autopilot-Rechte.
 - `add_note` verwendet denselben gesperrten Contributor-Kontext und erzeugt
   ausschließlich ein append-only `commented`-Event. Plan, Status, Approval und
   Run-Zustand werden nicht verändert.
+- `create_issue` sperrt zuerst das aktive Projekt mit `NO KEY UPDATE`, damit
+  die nächste projektweite Issue-Nummer auch für verschiedene Contributor
+  serialisiert wird. Danach sperrt und prüft der Writer die aktuelle
+  Membership. Das OAuth-attributierte Issue bleibt in `triage`, nicht
+  zugewiesen und freigabepflichtig; kein Plan, Approval oder Run wird erzeugt.
 
 ## Audit und RLS
 

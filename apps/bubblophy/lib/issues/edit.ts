@@ -1,8 +1,12 @@
 import 'server-only';
 
-import type { BubblophyIssuePriority, BubblophyIssueStatus } from '@/drizzle/db/schema';
+import type {
+  BubblophyIssuePriority,
+  BubblophyIssueStatus,
+} from '@/drizzle/db/schema';
 import type { IssueSummary } from '@/lib/dashboard/types';
 
+import { bubblophyIssueContentLimits } from '@/lib/issues/content-limits';
 import {
   formatBubblophyIssueKey,
   mapBubblophyIssuePriority,
@@ -72,7 +76,11 @@ export type UpdateBubblophyIssueContentResult =
     }
   | {
       status: 'invalid';
-      reason: 'empty_issue' | 'empty_title' | 'title_too_long' | 'description_too_long';
+      reason:
+        | 'empty_issue'
+        | 'empty_title'
+        | 'title_too_long'
+        | 'description_too_long';
     }
   | {
       status: 'not_found';
@@ -87,9 +95,6 @@ export type UpdateBubblophyIssueContentResult =
 export interface UpdateBubblophyIssueContentOptions {
   store?: BubblophyIssueContentUpdateStore;
 }
-
-const maxIssueTitleLength = 180;
-const maxIssueDescriptionLength = 4_000;
 
 /**
  * Updates a persisted issue title and description after authorization checks.
@@ -175,11 +180,11 @@ function normalizeIssueContentInput(input: UpdateBubblophyIssueContentInput):
     return { status: 'invalid', reason: 'empty_title' };
   }
 
-  if (title.length > maxIssueTitleLength) {
+  if (title.length > bubblophyIssueContentLimits.maxTitleLength) {
     return { status: 'invalid', reason: 'title_too_long' };
   }
 
-  if (description.length > maxIssueDescriptionLength) {
+  if (description.length > bubblophyIssueContentLimits.maxDescriptionLength) {
     return { status: 'invalid', reason: 'description_too_long' };
   }
 

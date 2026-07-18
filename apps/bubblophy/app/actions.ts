@@ -88,7 +88,7 @@ import {
 
 export type CreateBubblophyIssueActionInput = Omit<
   CreateBubblophyIssueDraftInput,
-  'authUserId'
+  'authUserId' | 'oauthClientId'
 >;
 
 export type CreateBubblophyIssueActionResult = CreateBubblophyIssueDraftResult;
@@ -236,8 +236,11 @@ export async function createBubblophyIssueAction(
   const session = await requireBubblophySession({ nextPath: '/' });
 
   return createBubblophyIssueDraft({
-    ...input,
     authUserId: session.authUserId,
+    projectKey: input.projectKey,
+    title: input.title,
+    description: input.description,
+    priority: input.priority,
   });
 }
 

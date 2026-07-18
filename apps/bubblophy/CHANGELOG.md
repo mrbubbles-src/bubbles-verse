@@ -43,6 +43,9 @@
   unapproved plan drafts without starting agent runs.
 - Added the controlled `add_note` MCP write tool and a shared locked
   contributor-write context for race-safe plan and note authorization.
+- Added the controlled `create_issue` MCP write tool with bounded public input,
+  OAuth audit attribution, locked contributor authorization, and serialized
+  per-project issue numbering without implicit plans, approvals, or runs.
 
 All notable changes to this project will be documented in this file.
 

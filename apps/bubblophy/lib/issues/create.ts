@@ -3,14 +3,18 @@ import 'server-only';
 import type { BubblophyIssuePriority } from '@/drizzle/db/schema';
 import type { IssuePriority, IssueSummary } from '@/lib/dashboard/types';
 
+import { bubblophyIssueContentLimits } from '@/lib/issues/content-limits';
 import {
   formatBubblophyIssueKey,
   mapBubblophyIssuePriority,
   mapBubblophyIssueStatus,
 } from '@/lib/issues/repository';
 
+export { bubblophyIssueContentLimits } from '@/lib/issues/content-limits';
+
 export interface CreateBubblophyIssueDraftInput {
   authUserId: string;
+  oauthClientId?: string;
   projectKey: string;
   title: string;
   description?: string;
@@ -36,6 +40,7 @@ export interface BubblophyCreatedIssueRecord {
 
 export interface BubblophyIssueDraftCreateStoreInput {
   authUserId: string;
+  oauthClientId?: string;
   projectKey: string;
   title: string;
   description: string;
@@ -60,7 +65,12 @@ export type CreateBubblophyIssueDraftResult =
     }
   | {
       status: 'invalid';
-      reason: 'empty_title' | 'empty_project' | 'invalid_priority';
+      reason:
+        | 'empty_title'
+        | 'empty_project'
+        | 'invalid_priority'
+        | 'title_too_long'
+        | 'description_too_long';
     }
   | {
       status: 'forbidden';
@@ -156,6 +166,8 @@ function normalizeCreateInput(input: CreateBubblophyIssueDraftInput):
   | Extract<CreateBubblophyIssueDraftResult, { status: 'invalid' }> {
   const title = input.title.trim();
   const projectKey = input.projectKey.trim();
+  const oauthClientId = input.oauthClientId?.trim();
+  const description = input.description?.trim() ?? '';
   const priority = mapDashboardPriorityToDatabasePriority(
     input.priority ?? 'mittel'
   );
@@ -168,6 +180,14 @@ function normalizeCreateInput(input: CreateBubblophyIssueDraftInput):
     return { status: 'invalid', reason: 'empty_project' };
   }
 
+  if (title.length > bubblophyIssueContentLimits.maxTitleLength) {
+    return { status: 'invalid', reason: 'title_too_long' };
+  }
+
+  if (description.length > bubblophyIssueContentLimits.maxDescriptionLength) {
+    return { status: 'invalid', reason: 'description_too_long' };
+  }
+
   if (!priority) {
     return { status: 'invalid', reason: 'invalid_priority' };
   }
@@ -176,9 +196,10 @@ function normalizeCreateInput(input: CreateBubblophyIssueDraftInput):
     status: 'valid',
     input: {
       authUserId: input.authUserId,
+      ...(oauthClientId ? { oauthClientId } : {}),
       projectKey,
       title,
-      description: input.description?.trim() ?? '',
+      description,
       priority,
     },
   };
