@@ -148,6 +148,11 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   schreibt menschliche User- plus OAuth-Client-Attribution und ein Audit-Event.
   Viewer und archivierte Projekte bleiben gesperrt; kein Agent-Run wird
   angelegt oder freigegeben.
+- `add_note` hängt für Contributor eine OAuth-attributierte Notiz als
+  append-only Issue-Event an. Plan, Status, Approval und Runs bleiben dabei
+  unverändert. Plan- und Notizpfad teilen sich dieselbe gesperrte Projekt-,
+  Issue- und Membership-Prüfung; Viewer und archivierte Projekte bleiben
+  gesperrt.
 - `/.well-known/oauth-protected-resource/mcp` veröffentlicht Bubblophys fest
   konfigurierte MCP-Resource und den Supabase-Auth-Issuer. Der Origin-Pfad ohne
   `/mcp` bleibt als kompatibler Alias verfügbar. Eingereichte Host- oder

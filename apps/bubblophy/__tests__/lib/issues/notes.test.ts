@@ -5,7 +5,6 @@ import type {
 
 import {
   BUBBLOPHY_ISSUE_NOTE_MAX_LENGTH,
-  canCreateBubblophyIssueNote,
   createBubblophyIssueNote,
   normalizeIssueNoteInput,
 } from '@/lib/issues/notes';
@@ -104,6 +103,32 @@ describe('createBubblophyIssueNote', () => {
     });
   });
 
+  it('normalizes optional OAuth client attribution for personal MCP writes', async () => {
+    const store = createStore(async (input) => ({
+      status: 'created',
+      note: {
+        id: 'event_note_1',
+        note: input.note,
+        actor: 'Mensch',
+        createdAt: '2026-07-18T12:30:00.000Z',
+      },
+    }));
+
+    await createBubblophyIssueNote(
+      {
+        authUserId: 'user_owner',
+        oauthClientId: ' client-1 ',
+        issueId: 'BV-12',
+        note: 'Review abgeschlossen.',
+      },
+      { store }
+    );
+
+    expect(store.createIssueNoteWithEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ oauthClientId: 'client-1' })
+    );
+  });
+
   it('returns store not_found and forbidden results unchanged', async () => {
     await expect(
       createBubblophyIssueNote(
@@ -141,13 +166,6 @@ describe('createBubblophyIssueNote', () => {
 });
 
 describe('Bubblophy issue note helpers', () => {
-  it('allows contributors but blocks read-only viewers from writing notes', () => {
-    expect(canCreateBubblophyIssueNote('owner')).toBe(true);
-    expect(canCreateBubblophyIssueNote('maintainer')).toBe(true);
-    expect(canCreateBubblophyIssueNote('member')).toBe(true);
-    expect(canCreateBubblophyIssueNote('viewer')).toBe(false);
-  });
-
   it('normalizes text after trimming and enforces the 2,000 character limit', () => {
     expect(
       normalizeIssueNoteInput({
@@ -185,6 +203,7 @@ describe('Bubblophy issue note helpers', () => {
       issueId: 'issue_bv_12',
       eventType: 'commented',
       actorAuthUserId: 'user_owner',
+      actorOauthClientId: null,
       actorAgentTokenId: null,
       agentRunId: null,
       summary: 'Plan-Review ist abgeschlossen.',
@@ -194,6 +213,23 @@ describe('Bubblophy issue note helpers', () => {
         action: 'created',
         issueId: 'BV-12',
       },
+    });
+  });
+
+  it('builds OAuth-attributed issue notes for personal MCP writes', () => {
+    expect(
+      buildBubblophyIssueNoteEventInsert({
+        issueDatabaseId: 'issue_bv_12',
+        authUserId: 'user_owner',
+        oauthClientId: 'client-1',
+        issueId: 'BV-12',
+        note: 'Review abgeschlossen.',
+      })
+    ).toMatchObject({
+      actorAuthUserId: 'user_owner',
+      actorOauthClientId: 'client-1',
+      actorAgentTokenId: null,
+      payload: { source: 'oauth_mcp' },
     });
   });
 });

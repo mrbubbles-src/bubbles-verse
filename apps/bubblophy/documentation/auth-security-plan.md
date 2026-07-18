@@ -160,6 +160,9 @@ dauerhaften Autopilot-Rechte.
   bestehende transaktionale Plan-Store prüft aktive Membership,
   Contributor-Rolle und Archivstatus beim Schreiben erneut. Viewer bleiben
   gesperrt, Approval-Felder bleiben leer und es wird kein Run gestartet.
+- `add_note` verwendet denselben gesperrten Contributor-Kontext und erzeugt
+  ausschließlich ein append-only `commented`-Event. Plan, Status, Approval und
+  Run-Zustand werden nicht verändert.
 
 ## Audit und RLS
 

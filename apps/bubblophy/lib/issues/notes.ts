@@ -6,20 +6,20 @@ export const BUBBLOPHY_ISSUE_NOTE_MAX_LENGTH = 2000;
 
 export interface CreateBubblophyIssueNoteInput {
   authUserId: string;
+  oauthClientId?: string;
   issueId: string;
   note: string;
 }
 
 export interface BubblophyIssueNoteStoreInput {
   authUserId: string;
+  oauthClientId?: string;
   issueId: string;
   note: string;
 }
 
 export interface BubblophyIssueNoteStore {
-  createIssueNoteWithEvent(
-    input: BubblophyIssueNoteStoreInput
-  ): Promise<
+  createIssueNoteWithEvent(input: BubblophyIssueNoteStoreInput): Promise<
     | {
         status: 'created';
         note: IssueNoteSummary;
@@ -86,30 +86,19 @@ export async function createBubblophyIssueNote(
 }
 
 /**
- * Checks whether a project role may append issue notes.
- *
- * @param role Project membership role from persistence.
- * @returns True for contributors, false for read-only viewers.
- */
-export function canCreateBubblophyIssueNote(role: string) {
-  return ['owner', 'maintainer', 'member'].includes(role);
-}
-
-/**
  * Normalizes issue-note input before persistence.
  *
  * @param input Raw action input plus authenticated user ID.
  * @returns Store input with trimmed text or a validation result.
  */
-export function normalizeIssueNoteInput(
-  input: CreateBubblophyIssueNoteInput
-):
+export function normalizeIssueNoteInput(input: CreateBubblophyIssueNoteInput):
   | {
       status: 'valid';
       input: BubblophyIssueNoteStoreInput;
     }
   | Extract<CreateBubblophyIssueNoteResult, { status: 'invalid' }> {
   const issueId = input.issueId.trim();
+  const oauthClientId = input.oauthClientId?.trim();
   const note = input.note.trim();
 
   if (!issueId) {
@@ -128,6 +117,7 @@ export function normalizeIssueNoteInput(
     status: 'valid',
     input: {
       authUserId: input.authUserId,
+      ...(oauthClientId ? { oauthClientId } : {}),
       issueId,
       note,
     },
@@ -144,9 +134,8 @@ async function getDefaultIssueNoteStore() {
     return undefined;
   }
 
-  const { createDrizzleBubblophyIssueNoteStore } = await import(
-    '@/lib/issues/notes-database-write'
-  );
+  const { createDrizzleBubblophyIssueNoteStore } =
+    await import('@/lib/issues/notes-database-write');
 
   return createDrizzleBubblophyIssueNoteStore();
 }

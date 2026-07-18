@@ -1,6 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
+import { BUBBLOPHY_ISSUE_NOTE_MAX_LENGTH } from '@/lib/issues/notes';
 import { bubblophyIssuePlanLimits } from '@/lib/issues/plans';
+import { addBubblophyMcpNote } from '@/lib/mcp/add-note';
 import { getBubblophyMcpIssue } from '@/lib/mcp/issue-detail';
 import { getBubblophyMcpIssuePlan } from '@/lib/mcp/issue-plan';
 import { listBubblophyMcpIssues } from '@/lib/mcp/issues';
@@ -171,6 +173,29 @@ const proposedPlanOutputSchema = z.object({
       })
     ),
     approvalStatus: z.literal('draft'),
+  }),
+});
+
+const addNoteInputSchema = z.object({
+  projectId: z.string().trim().min(1).max(200),
+  issueNumber: z.number().int().positive(),
+  note: z.string().trim().min(1).max(BUBBLOPHY_ISSUE_NOTE_MAX_LENGTH),
+});
+
+const addedNoteOutputSchema = z.object({
+  project: z.object({
+    id: z.string(),
+    key: z.string(),
+    isArchived: z.boolean(),
+  }),
+  issue: z.object({
+    key: z.string(),
+    issueNumber: z.number().int().positive(),
+    title: z.string(),
+  }),
+  note: z.object({
+    text: z.string(),
+    createdAt: z.string(),
   }),
 });
 
@@ -454,6 +479,57 @@ export function registerBubblophyMcpTools(server: McpServer) {
       };
     }
   );
+
+  server.registerTool(
+    'add_note',
+    {
+      title: 'Add Bubblophy note',
+      description:
+        'Appends one OAuth-attributed note to a visible active Bubblophy issue without changing workflow state.',
+      inputSchema: addNoteInputSchema,
+      outputSchema: addedNoteOutputSchema,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false,
+      },
+    },
+    async (input, extra) => {
+      const authUserId = readAuthUserId(extra.authInfo?.extra?.authUserId);
+      const oauthClientId = readOauthClientId(extra.authInfo?.clientId);
+
+      if (!authUserId || !oauthClientId) {
+        return createToolError(
+          'Die authentifizierte User- oder OAuth-Client-ID fehlt.'
+        );
+      }
+
+      const result = await addBubblophyMcpNote(
+        authUserId,
+        oauthClientId,
+        input
+      );
+
+      if (result.status !== 'created') {
+        return createToolError(readAddNoteError(result.status));
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Notiz für ${result.issue.key} hinzugefügt.`,
+          },
+        ],
+        structuredContent: {
+          project: result.project,
+          issue: result.issue,
+          note: result.note,
+        },
+      };
+    }
+  );
 }
 
 /** Returns a normalized OAuth user ID from MCP auth context data. */
@@ -551,4 +627,23 @@ function readProposePlanError(
   }
 
   return 'Der Planentwurf ist ungültig.';
+}
+
+/** Maps internal note outcomes to non-sensitive MCP messages. */
+function readAddNoteError(
+  status: 'invalid' | 'not_found' | 'forbidden' | 'database_unavailable'
+) {
+  if (status === 'database_unavailable') {
+    return 'Bubblophy kann die Notiz gerade nicht speichern.';
+  }
+
+  if (status === 'not_found') {
+    return 'Das Issue wurde nicht gefunden oder ist nicht zugänglich.';
+  }
+
+  if (status === 'forbidden') {
+    return 'Die aktuelle Projektrolle darf keine Notizen erstellen.';
+  }
+
+  return 'Die Notiz ist ungültig.';
 }

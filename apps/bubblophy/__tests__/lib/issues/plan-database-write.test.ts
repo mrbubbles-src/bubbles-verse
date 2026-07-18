@@ -1,9 +1,11 @@
 import type { BubblophyIssuePlanDraftStoreInput } from '@/lib/issues/plans';
+import type { SQL } from 'drizzle-orm';
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { getTableName } from 'drizzle-orm';
+import { PgDialect } from 'drizzle-orm/pg-core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type DrizzleTable = Parameters<typeof getTableName>[0];
@@ -16,6 +18,12 @@ interface LockCall {
   tableNames: string[];
 }
 
+interface WhereCall {
+  tableName: string;
+  sql: string;
+  serializedParams: string;
+}
+
 interface MockState {
   issueVisible: boolean;
   memberRole: string | null;
@@ -23,6 +31,7 @@ interface MockState {
   planInserts: MockRow[];
   eventInserts: MockRow[];
   lockCalls: LockCall[];
+  whereCalls: WhereCall[];
 }
 
 const state: MockState = {
@@ -32,6 +41,7 @@ const state: MockState = {
   planInserts: [],
   eventInserts: [],
   lockCalls: [],
+  whereCalls: [],
 };
 
 let issueLockTail = Promise.resolve();
@@ -85,7 +95,13 @@ class MockSelectQuery implements PromiseLike<MockRow[]> {
     return this;
   }
 
-  where() {
+  where(condition: SQL) {
+    const query = new PgDialect().sqlToQuery(condition);
+    state.whereCalls.push({
+      tableName: this.tableName ?? 'unset',
+      sql: query.sql,
+      serializedParams: JSON.stringify(query.params),
+    });
     return this;
   }
 
@@ -250,6 +266,7 @@ beforeEach(() => {
   state.planInserts = [];
   state.eventInserts = [];
   state.lockCalls = [];
+  state.whereCalls = [];
   issueLockTail = Promise.resolve();
   dbMock.transaction.mockClear();
 });
@@ -322,6 +339,30 @@ describe('Drizzle issue plan draft store', () => {
       { strength: 'update', tableNames: ['bubblophy_issues'] },
       { strength: 'update', tableNames: ['bubblophy_project_members'] },
     ]);
+
+    const projectWhere = state.whereCalls.find(
+      (call) => call.tableName === 'bubblophy_projects'
+    );
+    const issueWhere = state.whereCalls.find(
+      (call) => call.tableName === 'bubblophy_issues'
+    );
+    const membershipWhere = state.whereCalls.find(
+      (call) => call.tableName === 'bubblophy_project_members'
+    );
+
+    expect(projectWhere).toMatchObject({ serializedParams: '["BV",false]' });
+    expect(projectWhere?.sql).toContain('"key" = $1');
+    expect(projectWhere?.sql).toContain('"is_archived" = $2');
+    expect(issueWhere).toMatchObject({
+      serializedParams: '["project_bv",12]',
+    });
+    expect(issueWhere?.sql).toContain('"project_id" = $1');
+    expect(issueWhere?.sql).toContain('"issue_number" = $2');
+    expect(membershipWhere).toMatchObject({
+      serializedParams: '["project_bv","user_member"]',
+    });
+    expect(membershipWhere?.sql).toContain('"project_id" = $1');
+    expect(membershipWhere?.sql).toContain('"auth_user_id" = $2');
 
     const membershipStoreSource = readFileSync(
       resolve(process.cwd(), 'lib/projects/members-database-write.ts'),

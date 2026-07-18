@@ -41,6 +41,8 @@
 - Added the controlled `propose_plan` MCP write tool, which reuses the
   transactional membership/role checks to create only OAuth-attributed,
   unapproved plan drafts without starting agent runs.
+- Added the controlled `add_note` MCP write tool and a shared locked
+  contributor-write context for race-safe plan and note authorization.
 
 All notable changes to this project will be documented in this file.
 

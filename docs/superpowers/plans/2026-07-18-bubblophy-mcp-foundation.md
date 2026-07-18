@@ -443,3 +443,33 @@ weiterreichen.
 - [x] **Step 3: `propose_plan` mit nicht-idempotentem Write-Vertrag registrieren**
 - [x] **Step 4: Reviewer und vollständige Slice-Gates ausführen**
 - [x] **Step 5: Fertigen Slice separat committen**
+
+### Task 13: Kontrolliertes MCP-Schreibwerkzeug `add_note`
+
+**Files:**
+
+- Create: `apps/bubblophy/lib/mcp/add-note.ts`
+- Create: `apps/bubblophy/__tests__/lib/mcp/add-note.test.ts`
+- Create: `apps/bubblophy/lib/issues/contributor-write-context-database.ts`
+- Create: `apps/bubblophy/__tests__/lib/issues/notes-database-write.test.ts`
+- Modify: `apps/bubblophy/lib/issues/notes.ts`
+- Modify: `apps/bubblophy/lib/issues/notes-database-write.ts`
+- Modify: `apps/bubblophy/lib/issues/plan-database-write.ts`
+- Modify: `apps/bubblophy/app/actions.ts`
+- Modify: `apps/bubblophy/lib/mcp/register-tools.ts`
+- Modify: relevante Service-, Store-, Action- und Route-Tests
+- Modify: Bubblophy-README, Changelog, Roadmap und MCP-Runbook
+
+**Contract:** `projectId`, positive `issueNumber` und eine auf 2.000 Zeichen
+begrenzte Notiz erzeugen ausschließlich ein append-only `commented`-Event am
+sichtbaren aktiven Issue. Der Schreibpfad prüft Membership und Contributor-Rolle
+transaktional erneut und speichert menschliche `authUserId` plus validierte
+OAuth-`client_id`. Viewer und archivierte Projekte bleiben gesperrt. Plan,
+Status, Approval und Agent-Runs bleiben unverändert. Die manuelle Server Action
+darf keine vom Client eingereichte OAuth-Attribution weiterreichen.
+
+- [x] **Step 1: Service-, Attribution-, Store- und Route-Tests zuerst schreiben**
+- [x] **Step 2: Gemeinsamen Note-Pfad race-sicher erweitern**
+- [x] **Step 3: `add_note` mit nicht-idempotentem Write-Vertrag registrieren**
+- [x] **Step 4: Reviewer und vollständige Slice-Gates ausführen**
+- [x] **Step 5: Fertigen Slice separat committen**

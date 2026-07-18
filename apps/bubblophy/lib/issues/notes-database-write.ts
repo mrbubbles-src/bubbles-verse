@@ -6,22 +6,16 @@ import type {
   BubblophyIssueNoteStoreInput,
 } from '@/lib/issues/notes';
 
+import { lockBubblophyIssueContributorWriteContext } from '@/lib/issues/contributor-write-context-database';
 import { parseBubblophyIssueKey } from '@/lib/issues/plan-database-write';
-import { canCreateBubblophyIssueNote } from '@/lib/issues/notes';
 
-import { and, eq } from 'drizzle-orm';
-
-import {
-  bubblophyIssueEvents,
-  bubblophyIssues,
-  bubblophyProjectMembers,
-  bubblophyProjects,
-} from '@/drizzle/db/schema';
+import { bubblophyIssueEvents } from '@/drizzle/db/schema';
 
 export interface BubblophyIssueNoteEventInsert {
   issueId: string;
   eventType: 'commented';
   actorAuthUserId: string;
+  actorOauthClientId: string | null;
   actorAgentTokenId: null;
   agentRunId: null;
   summary: string;
@@ -57,51 +51,23 @@ async function createIssueNoteWithEvent(
   const { db } = await import('@/drizzle/db');
 
   return db.transaction(async (tx) => {
-    const [currentIssue] = await tx
-      .select({
-        id: bubblophyIssues.id,
-        memberAuthUserId: bubblophyProjectMembers.authUserId,
-        memberRole: bubblophyProjectMembers.role,
-      })
-      .from(bubblophyIssues)
-      .innerJoin(
-        bubblophyProjects,
-        eq(bubblophyProjects.id, bubblophyIssues.projectId)
-      )
-      .leftJoin(
-        bubblophyProjectMembers,
-        and(
-          eq(bubblophyProjectMembers.projectId, bubblophyProjects.id),
-          eq(bubblophyProjectMembers.authUserId, input.authUserId)
-        )
-      )
-      .where(
-        and(
-          eq(bubblophyProjects.key, issueKey.projectKey),
-          eq(bubblophyProjects.isArchived, false),
-          eq(bubblophyIssues.issueNumber, issueKey.issueNumber)
-        )
-      )
-      .limit(1);
+    const context = await lockBubblophyIssueContributorWriteContext(tx, {
+      authUserId: input.authUserId,
+      projectKey: issueKey.projectKey,
+      issueNumber: issueKey.issueNumber,
+    });
 
-    if (!currentIssue) {
-      return { status: 'not_found' };
-    }
-
-    if (
-      !currentIssue.memberAuthUserId ||
-      !currentIssue.memberRole ||
-      !canCreateBubblophyIssueNote(currentIssue.memberRole)
-    ) {
-      return { status: 'forbidden' };
+    if (context.status !== 'ready') {
+      return context;
     }
 
     const [createdEvent] = await tx
       .insert(bubblophyIssueEvents)
       .values(
         buildBubblophyIssueNoteEventInsert({
-          issueDatabaseId: currentIssue.id,
+          issueDatabaseId: context.issueDatabaseId,
           authUserId: input.authUserId,
+          oauthClientId: input.oauthClientId,
           issueId: input.issueId,
           note: input.note,
         })
@@ -137,6 +103,7 @@ async function createIssueNoteWithEvent(
 export function buildBubblophyIssueNoteEventInsert(input: {
   issueDatabaseId: string;
   authUserId: string;
+  oauthClientId?: string;
   issueId: string;
   note: string;
 }): BubblophyIssueNoteEventInsert {
@@ -144,11 +111,12 @@ export function buildBubblophyIssueNoteEventInsert(input: {
     issueId: input.issueDatabaseId,
     eventType: 'commented',
     actorAuthUserId: input.authUserId,
+    actorOauthClientId: input.oauthClientId ?? null,
     actorAgentTokenId: null,
     agentRunId: null,
     summary: input.note,
     payload: {
-      source: 'human',
+      source: input.oauthClientId ? 'oauth_mcp' : 'human',
       entity: 'issue_note',
       action: 'created',
       issueId: input.issueId,

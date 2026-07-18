@@ -35,9 +35,10 @@ Status: abgeschlossen.
   ausschließlich aus aktueller DB-Rolle und Bubblophy-Client-Policy bestimmt.
 - Read-first-Werkzeuge: `list_projects`, `list_issues`, `get_issue`,
   `get_issue_plan` und `get_run`.
-- Kontrollierte Schreibwerkzeuge folgen separat: zuerst `propose_plan` als
-  ungeprüfter Agent-Entwurf, danach Notizen, Issues, Statusänderungen und
-  Run-Anfragen mit Rollenprüfung, Audit und menschlicher Freigabe.
+- Kontrollierte Schreibwerkzeuge folgen separat: `propose_plan` als ungeprüfter
+  Agent-Entwurf und `add_note` als append-only Aktivität sind vorhanden. Danach
+  folgen Issues, Statusänderungen und Run-Anfragen mit Rollenprüfung, Audit und
+  menschlicher Freigabe.
 - Bestehende projektgebundene Agent-Tokens bleiben für unbeaufsichtigte
   Runner und Service-Accounts erhalten. Persönliche Codex-/Claude-Verbindungen
   verwenden OAuth statt gemeinsam genutzter Agent-Tokens.
@@ -105,8 +106,8 @@ lokale Supabase-JWT-Validierung, das membership-basierte read-only Werkzeug
 `list_projects`, das paginierte membership-basierte `list_issues`, die
 membership-basierten Detailwerkzeuge `get_issue`, `get_issue_plan` und
 `get_run`, die OAuth-vs.-Data-API-RLS-Grenze und der persönliche
-OAuth-Consent-Flow sowie das kontrollierte Draft-Schreibwerkzeug `propose_plan`
-sind vorhanden. Ohne
+OAuth-Consent-Flow sowie die kontrollierten Schreibwerkzeuge `propose_plan` und
+`add_note` sind vorhanden. Ohne
 gültige Signatur, Issuer, Ablauf, Subject, OAuth-Client-ID und exakte
 MCP-Audience bleibt der Zugriff fail-closed. Als Nächstes folgen weitere
 Human-in-the-loop-Schreibwerkzeuge sowie die genaue Supabase-Staging-

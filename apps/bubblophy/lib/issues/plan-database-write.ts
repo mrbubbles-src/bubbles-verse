@@ -6,17 +6,11 @@ import type {
   BubblophyIssuePlanDraftStoreInput,
 } from '@/lib/issues/plans';
 
-import { canContributeToBubblophyProject } from '@/lib/projects/permissions';
+import { lockBubblophyIssueContributorWriteContext } from '@/lib/issues/contributor-write-context-database';
 
-import { and, desc, eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 
-import {
-  bubblophyIssueEvents,
-  bubblophyIssuePlans,
-  bubblophyIssues,
-  bubblophyProjectMembers,
-  bubblophyProjects,
-} from '@/drizzle/db/schema';
+import { bubblophyIssueEvents, bubblophyIssuePlans } from '@/drizzle/db/schema';
 
 export interface BubblophyIssuePlanUpdatedEventInsert {
   issueId: string;
@@ -79,62 +73,14 @@ async function createIssuePlanVersionWithEvent(
   const db = await databasePromise;
 
   return db.transaction(async (tx) => {
-    const [project] = await tx
-      .select({
-        id: bubblophyProjects.id,
-        projectKey: bubblophyProjects.key,
-      })
-      .from(bubblophyProjects)
-      .where(
-        and(
-          eq(bubblophyProjects.key, issueKey.projectKey),
-          eq(bubblophyProjects.isArchived, false)
-        )
-      )
-      .limit(1)
-      .for('share');
+    const context = await lockBubblophyIssueContributorWriteContext(tx, {
+      authUserId: input.authUserId,
+      projectKey: issueKey.projectKey,
+      issueNumber: issueKey.issueNumber,
+    });
 
-    if (!project) {
-      return { status: 'not_found' };
-    }
-
-    const [issue] = await tx
-      .select({
-        id: bubblophyIssues.id,
-        issueNumber: bubblophyIssues.issueNumber,
-      })
-      .from(bubblophyIssues)
-      .where(
-        and(
-          eq(bubblophyIssues.projectId, project.id),
-          eq(bubblophyIssues.issueNumber, issueKey.issueNumber)
-        )
-      )
-      .limit(1)
-      .for('update');
-
-    if (!issue) {
-      return { status: 'not_found' };
-    }
-
-    const [membership] = await tx
-      .select({
-        role: bubblophyProjectMembers.role,
-      })
-      .from(bubblophyProjectMembers)
-      .where(
-        and(
-          eq(bubblophyProjectMembers.projectId, project.id),
-          eq(bubblophyProjectMembers.authUserId, input.authUserId)
-        )
-      )
-      .limit(1)
-      .for('update');
-
-    const memberRole = membership?.role;
-
-    if (!canContributeToBubblophyProject(memberRole)) {
-      return { status: 'forbidden' };
+    if (context.status !== 'ready') {
+      return context;
     }
 
     const [lastPlan] = await tx
@@ -142,7 +88,7 @@ async function createIssuePlanVersionWithEvent(
         version: bubblophyIssuePlans.version,
       })
       .from(bubblophyIssuePlans)
-      .where(eq(bubblophyIssuePlans.issueId, issue.id))
+      .where(eq(bubblophyIssuePlans.issueId, context.issueDatabaseId))
       .orderBy(desc(bubblophyIssuePlans.version))
       .limit(1);
 
@@ -152,7 +98,7 @@ async function createIssuePlanVersionWithEvent(
       .insert(bubblophyIssuePlans)
       .values(
         buildBubblophyIssuePlanInsert({
-          issueDatabaseId: issue.id,
+          issueDatabaseId: context.issueDatabaseId,
           authUserId: input.authUserId,
           oauthClientId: input.oauthClientId,
           version,
@@ -172,7 +118,7 @@ async function createIssuePlanVersionWithEvent(
 
     await tx.insert(bubblophyIssueEvents).values(
       buildBubblophyIssuePlanUpdatedEventInsert({
-        issueDatabaseId: issue.id,
+        issueDatabaseId: context.issueDatabaseId,
         authUserId: input.authUserId,
         oauthClientId: input.oauthClientId,
         issueId: input.issueId,

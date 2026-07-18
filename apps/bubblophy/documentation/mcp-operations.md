@@ -33,6 +33,8 @@ persönliche Client-Anmeldung. Es enthält keine echten Tokens oder Secrets.
 - Kontrolliertes Schreibwerkzeug `propose_plan`: neue OAuth-attributierte
   Draft-Version nur für Contributor-Rollen in aktiven Projekten, ohne Approval
   oder Run-Start.
+- Kontrolliertes Schreibwerkzeug `add_note`: append-only OAuth-attributierte
+  Issue-Notiz für Contributor in aktiven Projekten, ohne Workflow-Mutation.
 
 ## Umgebungsvertrag
 
@@ -208,21 +210,25 @@ Der MCP-Foundation-Slice ist erst nach diesem realen Smoke vollständig:
    Viewer und in einem archivierten Projekt scheitern; es darf kein Run
    entstehen. Das Test-Issue anschließend über den normalen menschlichen
    Workflow bereinigen oder archivieren.
-6. Beide Clients schließen und neu starten. Der Zugriff muss ohne erneuten
+6. Am selben Staging-Issue `add_note` als Owner/Member aufrufen und die
+   `commented`-Aktivität samt User- und OAuth-Client-Attribution prüfen. Viewer,
+   entfernte Membership und archivierte Projekte müssen scheitern. Plan,
+   Status, Approval und Runs müssen unverändert bleiben.
+7. Beide Clients schließen und neu starten. Der Zugriff muss ohne erneuten
    manuellen Token-Transfer funktionieren.
-7. In Staging die Access-Token-Laufzeit vorübergehend kurz genug setzen, um nach
+8. In Staging die Access-Token-Laufzeit vorübergehend kurz genug setzen, um nach
    Ablauf einen erneuten Werkzeugaufruf zu prüfen. Der Client muss per
    Refresh-Token fortfahren; danach die normale Laufzeit wiederherstellen.
-8. Mit einem echten OAuth-JWT gegen die Supabase Data API prüfen, dass Reads und
+9. Mit einem echten OAuth-JWT gegen die Supabase Data API prüfen, dass Reads und
    Writes auf alle acht Bubblophy-Tabellen durch `0004` blockiert bleiben.
    Dasselbe mit einer normalen menschlichen JWT und vorhandener Membership
    gegen die vorgesehenen Select-Policies gegenprüfen.
-9. Negativfälle prüfen: falsche Audience, abgelaufenes Token, entfernte
+10. Negativfälle prüfen: falsche Audience, abgelaufenes Token, entfernte
    Membership, unbekannter User und der Versuch, fremde Projekt-IDs zu erraten.
    Archivierte Mitgliedschaftsprojekte bleiben dagegen absichtlich sichtbar
    und müssen mit `isArchived: true` samt historischer Issue-Summaries
    zurückkommen; operative Mutationen bleiben für sie gesperrt.
-10. Keine Tokens in Terminalausgabe, Screenshots, Logs oder Testartefakte
+11. Keine Tokens in Terminalausgabe, Screenshots, Logs oder Testartefakte
     übernehmen. Nur Clientname, Testperson, erwartete/sichtbare Projekt-IDs,
     Zeitstempel und Pass/Fail dokumentieren.
 

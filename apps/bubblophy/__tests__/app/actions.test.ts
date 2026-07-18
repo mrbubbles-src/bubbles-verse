@@ -459,9 +459,13 @@ describe('createBubblophyIssueNoteAction', () => {
     const { createBubblophyIssueNoteAction } = await import('@/app/actions');
     const result = await createBubblophyIssueNoteAction({
       authUserId: 'user_client_spoof',
+      oauthClientId: 'client-spoof',
       issueId: 'BV-12',
       note: 'Plan-Review bleibt menschlich.',
-    } as CreateBubblophyIssueNoteActionInput & { authUserId: string });
+    } as CreateBubblophyIssueNoteActionInput & {
+      authUserId: string;
+      oauthClientId: string;
+    });
 
     expect(requireBubblophySessionMock).toHaveBeenCalledWith({
       nextPath: '/',
@@ -471,6 +475,9 @@ describe('createBubblophyIssueNoteAction', () => {
       issueId: 'BV-12',
       note: 'Plan-Review bleibt menschlich.',
     });
+    expect(createBubblophyIssueNoteMock.mock.calls[0]?.[0]).not.toHaveProperty(
+      'oauthClientId'
+    );
     expect(result).toEqual({
       status: 'created',
       note: {
