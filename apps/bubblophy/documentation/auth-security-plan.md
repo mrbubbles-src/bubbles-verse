@@ -159,6 +159,12 @@ dauerhaften Autopilot-Rechte.
 - Menschliche und agentische Run-Zustandswechsel verwenden Compare-and-set auf
   Run-ID und bisherigen Zustand. Verliert eine konkurrierende Mutation, wird
   kein widersprüchliches Audit-Event geschrieben.
+- Menschliche Issue-Statusänderungen behalten ihre freie Auswahl aller sieben
+  Statusziele, laufen aber unter derselben gesperrten Projekt-, Issue- und
+  Membership-Prüfung wie andere Contributor-Writes. Ein optionaler
+  `expectedStatus` verhindert nach dem Issue-Lock veraltete Updates; Konflikt
+  und Gleichstand schreiben weder Änderung noch Audit-Event. Der Writer kann
+  für persönliche MCP-Aufrufe zusätzlich die OAuth-Client-ID attribuieren.
 - Agenten dürfen keine dauerhaften Hintergrund-Runs planen.
 - Persönliche OAuth-Clients dürfen über `propose_plan` nur neue ungeprüfte
   Planversionen vorschlagen. Der MCP-Read löst das sichtbare Issue auf; der

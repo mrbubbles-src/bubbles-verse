@@ -52,6 +52,9 @@
 - Added the controlled `request_run` MCP write tool with OAuth audit
   attribution, locked contributor and token rechecks, and a public requested-run
   response without approval, execution, workflow mutation, or internal IDs.
+- Hardened the shared issue-status writer with locked contributor
+  authorization, optional expected-status conflict detection, OAuth audit
+  attribution, and explicit server-action field forwarding.
 
 All notable changes to this project will be documented in this file.
 

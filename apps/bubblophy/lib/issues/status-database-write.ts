@@ -6,16 +6,15 @@ import type {
   BubblophyIssueStatusUpdateStoreInput,
 } from '@/lib/issues/status';
 
+import { lockBubblophyIssueContributorWriteContext } from '@/lib/issues/contributor-write-context-database';
 import { parseBubblophyIssueKey } from '@/lib/issues/plan-database-write';
-import { canContributeToBubblophyProject } from '@/lib/projects/permissions';
 
-import { and, eq, sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 import {
   bubblophyIssueEvents,
   bubblophyIssuePlans,
   bubblophyIssues,
-  bubblophyProjectMembers,
   bubblophyProjects,
 } from '@/drizzle/db/schema';
 
@@ -23,6 +22,7 @@ export interface BubblophyIssueStatusChangedEventInsert {
   issueId: string;
   eventType: 'status_changed';
   actorAuthUserId: string;
+  actorOauthClientId: string | null;
   actorAgentTokenId: null;
   agentRunId: null;
   summary: string;
@@ -41,7 +41,7 @@ export function createDrizzleBubblophyIssueStatusUpdateStore(): BubblophyIssueSt
 }
 
 /**
- * Updates an issue status and writes a human audit event after membership check.
+ * Updates an issue status after locking its project, issue, and membership.
  *
  * @param input Authenticated human user, issue key, target status, and reason.
  * @returns Updated issue, `not_found`, or `forbidden`.
@@ -58,6 +58,16 @@ async function updateIssueStatusWithEvent(
   const { db } = await import('@/drizzle/db');
 
   return db.transaction(async (tx) => {
+    const writeContext = await lockBubblophyIssueContributorWriteContext(tx, {
+      authUserId: input.authUserId,
+      projectKey: issueKey.projectKey,
+      issueNumber: issueKey.issueNumber,
+    });
+
+    if (writeContext.status !== 'ready') {
+      return writeContext;
+    }
+
     const [currentIssue] = await tx
       .select({
         id: bubblophyIssues.id,
@@ -66,35 +76,21 @@ async function updateIssueStatusWithEvent(
         projectId: bubblophyProjects.id,
         projectKey: bubblophyProjects.key,
         projectName: bubblophyProjects.name,
-        memberRole: bubblophyProjectMembers.role,
       })
       .from(bubblophyIssues)
       .innerJoin(
         bubblophyProjects,
         eq(bubblophyProjects.id, bubblophyIssues.projectId)
       )
-      .leftJoin(
-        bubblophyProjectMembers,
-        and(
-          eq(bubblophyProjectMembers.projectId, bubblophyProjects.id),
-          eq(bubblophyProjectMembers.authUserId, input.authUserId)
-        )
-      )
-      .where(
-        and(
-          eq(bubblophyProjects.key, issueKey.projectKey),
-          eq(bubblophyProjects.isArchived, false),
-          eq(bubblophyIssues.issueNumber, issueKey.issueNumber)
-        )
-      )
+      .where(eq(bubblophyIssues.id, writeContext.issueDatabaseId))
       .limit(1);
 
     if (!currentIssue) {
-      return { status: 'not_found' };
+      throw new Error('Locked Bubblophy issue could not be reloaded.');
     }
 
-    if (!canContributeToBubblophyProject(currentIssue.memberRole)) {
-      return { status: 'forbidden' };
+    if (input.expectedStatus && currentIssue.status !== input.expectedStatus) {
+      return { status: 'conflict' };
     }
 
     if (
@@ -138,6 +134,7 @@ async function updateIssueStatusWithEvent(
       buildBubblophyIssueStatusChangedEventInsert({
         issueDatabaseId: currentIssue.id,
         authUserId: input.authUserId,
+        oauthClientId: input.oauthClientId,
         issueId: input.issueId,
         previousStatus: currentIssue.status,
         nextStatus: input.status,
@@ -177,7 +174,7 @@ export function shouldSkipBubblophyIssueStatusChangeEvent(
 }
 
 /**
- * Builds the insert values for a human `status_changed` issue event.
+ * Builds the insert values for a human or OAuth status-change event.
  *
  * @param input Issue, actor, previous status, next status, and optional reason.
  * @returns Insert values for `bubblophy_issue_events`.
@@ -185,6 +182,7 @@ export function shouldSkipBubblophyIssueStatusChangeEvent(
 export function buildBubblophyIssueStatusChangedEventInsert(input: {
   issueDatabaseId: string;
   authUserId: string;
+  oauthClientId?: string;
   issueId: string;
   previousStatus: BubblophyIssueStatus;
   nextStatus: BubblophyIssueStatus;
@@ -194,11 +192,12 @@ export function buildBubblophyIssueStatusChangedEventInsert(input: {
     issueId: input.issueDatabaseId,
     eventType: 'status_changed',
     actorAuthUserId: input.authUserId,
+    actorOauthClientId: input.oauthClientId ?? null,
     actorAgentTokenId: null,
     agentRunId: null,
     summary: `Status ${input.issueId}: ${input.previousStatus} → ${input.nextStatus}.`,
     payload: {
-      source: 'human',
+      source: input.oauthClientId ? 'oauth_mcp' : 'human',
       issueId: input.issueId,
       previousStatus: input.previousStatus,
       nextStatus: input.nextStatus,

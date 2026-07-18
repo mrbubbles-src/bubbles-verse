@@ -3455,6 +3455,7 @@ function IssueStatusTransitionPanel({
       try {
         result = await updateIssueStatusAction({
           issueId: issue.id,
+          expectedStatus: issue.status,
           status: nextStatus,
           reason,
         });
@@ -5833,6 +5834,10 @@ function getIssueStatusActionErrorMessage(
 ) {
   if (result.status === 'unchanged') {
     return 'Dieser Status ist bereits gesetzt. Es wurde kein Audit-Event geschrieben.';
+  }
+
+  if (result.status === 'conflict') {
+    return 'Der Status wurde zwischenzeitlich geändert. Lade das Issue neu und versuche es erneut.';
   }
 
   if (result.status === 'not_found') {

@@ -559,10 +559,15 @@ describe('updateBubblophyIssueStatusAction', () => {
     const { updateBubblophyIssueStatusAction } = await import('@/app/actions');
     const result = await updateBubblophyIssueStatusAction({
       authUserId: 'user_client_spoof',
+      oauthClientId: 'client-spoof',
       issueId: 'BV-12',
+      expectedStatus: 'in_arbeit',
       status: 'bereit',
       reason: 'Plan geprüft.',
-    } as UpdateBubblophyIssueStatusActionInput & { authUserId: string });
+    } as UpdateBubblophyIssueStatusActionInput & {
+      authUserId: string;
+      oauthClientId: string;
+    });
 
     expect(requireBubblophySessionMock).toHaveBeenCalledWith({
       nextPath: '/',
@@ -570,9 +575,13 @@ describe('updateBubblophyIssueStatusAction', () => {
     expect(updateBubblophyIssueStatusMock).toHaveBeenCalledWith({
       authUserId: 'user_server',
       issueId: 'BV-12',
+      expectedStatus: 'in_arbeit',
       status: 'bereit',
       reason: 'Plan geprüft.',
     });
+    expect(
+      updateBubblophyIssueStatusMock.mock.calls[0]?.[0]
+    ).not.toHaveProperty('oauthClientId');
     expect(result).toEqual({
       status: 'updated',
       issue: {

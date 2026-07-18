@@ -569,3 +569,62 @@ OAuth-Attribution vom Client übernehmen.
 - [x] **Step 3: `request_run` als nicht-idempotenten HITL-Write registrieren**
 - [x] **Step 4: Dokumentation, Reviewer und vollständige Slice-Gates ausführen**
 - [x] **Step 5: Fertigen Slice separat committen**
+
+### Task 17: Bestehenden Issue-Status-Writer härten
+
+**Files:**
+
+- Create: `apps/bubblophy/__tests__/lib/issues/status-database-write.test.ts`
+- Modify: `apps/bubblophy/lib/issues/status.ts`
+- Modify: `apps/bubblophy/lib/issues/status-database-write.ts`
+- Modify: `apps/bubblophy/app/actions.ts`
+- Modify: `apps/bubblophy/components/dashboard/bubblophy-dashboard.tsx`
+- Modify: relevante Service-, Action- und Wiring-Tests
+- Modify: Bubblophy-README, Changelog und Security-Plan
+
+**Contract:** Der bestehende menschliche Statusvertrag bleibt unverändert: Alle
+sieben Statusziele sind für Contributor erreichbar, `done` kann wieder geöffnet
+werden und Gleichstand ist ein No-op. Der Writer sperrt jedoch vor jeder
+Mutation das aktive Projekt, das Issue und die aktuelle Membership. Ein
+optionaler `expectedStatus` wird erst unter diesem Lock geprüft; bei Abweichung
+entsteht `conflict` ohne Update oder Event.
+
+Der gemeinsame Service und Store unterstützen nullable OAuth-`client_id` für
+den unmittelbar folgenden MCP-Slice. Erfolgreiche Events unterscheiden
+`human` und `oauth_mcp`; die manuelle Server Action entfernt clientseitige
+OAuth-Attribution und whitelisted ihre Felder. Plan, Approval, Run und Assignee
+bleiben unverändert.
+
+- [x] **Step 1: Service-, Store-, Race-, Action- und Wiring-Tests zuerst schreiben**
+- [x] **Step 2: Gemeinsame Locks, Expected-Status und OAuth-Audit implementieren**
+- [x] **Step 3: Dokumentation, Reviewer und vollständige Slice-Gates ausführen**
+- [x] **Step 4: Fertigen Härtungs-Slice separat committen**
+
+### Task 18: Konfliktsichere MCP-Issue-Statusänderung `update_issue_status`
+
+**Files:**
+
+- Create: `apps/bubblophy/lib/mcp/update-issue-status.ts`
+- Create: `apps/bubblophy/lib/mcp/register-update-issue-status-tool.ts`
+- Create: `apps/bubblophy/__tests__/lib/mcp/update-issue-status.test.ts`
+- Modify: `apps/bubblophy/lib/mcp/register-tools.ts`
+- Modify: relevante MCP-Route-Tests
+- Modify: Bubblophy-README, Changelog, Roadmap, Security-Plan und MCP-Runbook
+
+**Contract:** `projectId`, positive `issueNumber`, `expectedStatus`, Zielstatus
+und ein maximal 240 Zeichen langer Grund ändern genau den Status eines
+sichtbaren aktiven Issues. Alle sieben bestehenden Statusziele bleiben wie im
+menschlichen UI erreichbar; Wechsel nach `blocked` oder `done` verlangen im
+Remote-Vertrag einen nicht leeren Grund. `expectedStatus` muss unter dem
+Issue-Lock noch aktuell sein, sonst endet der Aufruf mit `conflict` ohne Update
+oder Audit-Event.
+
+Der Output enthält nur öffentliche Projekt-/Issue-Felder und den neuen Status,
+keine internen Issue-, User-, OAuth-, Event- oder Run-IDs. Das Tool ist
+Closed-World, potenziell destruktiv und wiederholungssicher annotiert. Plan,
+Approval, Run und Assignee bleiben unverändert.
+
+- [ ] **Step 1: Service- und MCP-Route-Tests zuerst schreiben**
+- [ ] **Step 2: MCP-Service und Tool registrieren**
+- [ ] **Step 3: Dokumentation, Reviewer und vollständige Slice-Gates ausführen**
+- [ ] **Step 4: Fertigen MCP-Slice separat committen**

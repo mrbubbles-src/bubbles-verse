@@ -55,7 +55,10 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   nicht gespeichert.
 - Im Issue-Detail können Menschen bei aktiver Datenbankquelle den Status eines
   gespeicherten Issues ändern. Die Änderung schreibt ein `status_changed`-Event
-  und startet keinen Agent-Run.
+  und startet keinen Agent-Run. Projekt, Issue und Membership bleiben während
+  der Prüfung gesperrt; das UI sendet den sichtbaren Status als
+  `expectedStatus` und zeigt parallele Änderungen als Konflikt statt sie zu
+  überschreiben.
 - Im Issue-Detail können Menschen bei aktiver Datenbankquelle Titel und
   Beschreibung eines gespeicherten Issues bearbeiten. Die Änderung prüft
   Projektrolle, schreibt ein eindeutig als Issue-Update markiertes

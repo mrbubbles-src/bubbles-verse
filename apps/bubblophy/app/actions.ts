@@ -127,7 +127,7 @@ export type CreateBubblophyIssueNoteActionResult =
 
 export type UpdateBubblophyIssueStatusActionInput = Omit<
   UpdateBubblophyIssueStatusInput,
-  'authUserId'
+  'authUserId' | 'oauthClientId'
 >;
 
 export type UpdateBubblophyIssueStatusActionResult =
@@ -347,7 +347,10 @@ export async function updateBubblophyIssueStatusAction(
   const session = await requireBubblophySession({ nextPath: '/' });
 
   return updateBubblophyIssueStatus({
-    ...input,
+    issueId: input.issueId,
+    expectedStatus: input.expectedStatus,
+    status: input.status,
+    reason: input.reason,
     authUserId: session.authUserId,
   });
 }

@@ -11,14 +11,18 @@ import {
 
 export interface UpdateBubblophyIssueStatusInput {
   authUserId: string;
+  oauthClientId?: string;
   issueId: string;
+  expectedStatus?: IssueStatus;
   status: IssueStatus;
   reason?: string;
 }
 
 export interface BubblophyIssueStatusUpdateStoreInput {
   authUserId: string;
+  oauthClientId?: string;
   issueId: string;
+  expectedStatus?: BubblophyIssueStatus;
   status: BubblophyIssueStatus;
   reason: string;
 }
@@ -53,6 +57,9 @@ export interface BubblophyIssueStatusUpdateStore {
         status: 'unchanged';
       }
     | {
+        status: 'conflict';
+      }
+    | {
         status: 'not_found';
       }
     | {
@@ -68,6 +75,9 @@ export type UpdateBubblophyIssueStatusResult =
     }
   | {
       status: 'unchanged';
+    }
+  | {
+      status: 'conflict';
     }
   | {
       status: 'invalid';
@@ -87,7 +97,9 @@ export interface UpdateBubblophyIssueStatusOptions {
   store?: BubblophyIssueStatusUpdateStore;
 }
 
-const maxStatusReasonLength = 240;
+export const bubblophyIssueStatusLimits = {
+  maxReasonLength: 240,
+} as const;
 
 const statusByDashboardStatus = {
   triage: 'triage',
@@ -174,6 +186,9 @@ function normalizeIssueStatusInput(input: UpdateBubblophyIssueStatusInput):
   | Extract<UpdateBubblophyIssueStatusResult, { status: 'invalid' }> {
   const issueId = input.issueId.trim();
   const status = mapDashboardStatusToDatabaseStatus(input.status);
+  const expectedStatus = input.expectedStatus
+    ? mapDashboardStatusToDatabaseStatus(input.expectedStatus)
+    : undefined;
   const reason = input.reason?.trim() ?? '';
 
   if (!issueId) {
@@ -184,7 +199,11 @@ function normalizeIssueStatusInput(input: UpdateBubblophyIssueStatusInput):
     return { status: 'invalid', reason: 'invalid_status' };
   }
 
-  if (reason.length > maxStatusReasonLength) {
+  if (input.expectedStatus && !expectedStatus) {
+    return { status: 'invalid', reason: 'invalid_status' };
+  }
+
+  if (reason.length > bubblophyIssueStatusLimits.maxReasonLength) {
     return { status: 'invalid', reason: 'reason_too_long' };
   }
 
@@ -192,7 +211,11 @@ function normalizeIssueStatusInput(input: UpdateBubblophyIssueStatusInput):
     status: 'valid',
     input: {
       authUserId: input.authUserId,
+      ...(input.oauthClientId?.trim()
+        ? { oauthClientId: input.oauthClientId.trim() }
+        : {}),
       issueId,
+      ...(expectedStatus ? { expectedStatus } : {}),
       status,
       reason,
     },

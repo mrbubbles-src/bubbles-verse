@@ -171,6 +171,32 @@ describe('updateBubblophyIssueStatus', () => {
     });
   });
 
+  it('normalizes OAuth attribution and expected status for remote writes', async () => {
+    const store = createStore(async () => ({ status: 'conflict' }));
+
+    await expect(
+      updateBubblophyIssueStatus(
+        {
+          authUserId: 'user_owner',
+          oauthClientId: ' client-1 ',
+          issueId: 'BV-12',
+          expectedStatus: 'in_arbeit',
+          status: 'review',
+          reason: ' Zur Prüfung bereit. ',
+        },
+        { store }
+      )
+    ).resolves.toEqual({ status: 'conflict' });
+    expect(store.updateIssueStatusWithEvent).toHaveBeenCalledWith({
+      authUserId: 'user_owner',
+      oauthClientId: 'client-1',
+      issueId: 'BV-12',
+      expectedStatus: 'in_progress',
+      status: 'review',
+      reason: 'Zur Prüfung bereit.',
+    });
+  });
+
   it('returns store not_found, forbidden, and unchanged results unchanged', async () => {
     await expect(
       updateBubblophyIssueStatus(
@@ -272,6 +298,7 @@ describe('Bubblophy issue status helpers', () => {
       issueId: 'issue_bv_12',
       eventType: 'status_changed',
       actorAuthUserId: 'user_owner',
+      actorOauthClientId: null,
       actorAgentTokenId: null,
       agentRunId: null,
       summary: 'Status BV-12: triage → planned.',
@@ -282,6 +309,24 @@ describe('Bubblophy issue status helpers', () => {
         nextStatus: 'planned',
         reason: 'Plan ist geprüft.',
       },
+    });
+  });
+
+  it('builds an OAuth-attributed status event', () => {
+    expect(
+      buildBubblophyIssueStatusChangedEventInsert({
+        issueDatabaseId: 'issue_bv_12',
+        authUserId: 'user_owner',
+        oauthClientId: 'client-1',
+        issueId: 'BV-12',
+        previousStatus: 'in_progress',
+        nextStatus: 'review',
+        reason: 'Zur Prüfung bereit.',
+      })
+    ).toMatchObject({
+      actorAuthUserId: 'user_owner',
+      actorOauthClientId: 'client-1',
+      payload: { source: 'oauth_mcp' },
     });
   });
 });

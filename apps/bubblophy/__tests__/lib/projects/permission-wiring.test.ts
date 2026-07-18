@@ -5,13 +5,13 @@ import { describe, expect, it } from 'vitest';
 
 const contributorProtectedStores = [
   'lib/issues/database-write.ts',
-  'lib/issues/status-database-write.ts',
   'lib/agent-runs/human-transition-database-write.ts',
 ] as const;
 
 const sharedContributorContextStores = [
   'lib/issues/plan-database-write.ts',
   'lib/issues/notes-database-write.ts',
+  'lib/issues/status-database-write.ts',
   'lib/agent-runs/request-database-write.ts',
 ] as const;
 

@@ -1100,6 +1100,7 @@ describe('BubblophyDashboard interactions', () => {
     await waitFor(() => {
       expect(updateIssueStatusAction).toHaveBeenCalledWith({
         issueId: 'BV-12',
+        expectedStatus: 'geplant',
         status: 'bereit',
         reason: 'Plan ist bereit zur Prüfung.',
       });
@@ -1130,6 +1131,40 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       screen.getByRole('progressbar', { name: '5 bereit, 12 offen' })
     ).toBeInTheDocument();
+  });
+
+  it('shows a stale-write conflict without changing local issue status', async () => {
+    const updateIssueStatusAction = vi.fn<
+      (
+        input: UpdateBubblophyIssueStatusActionInput
+      ) => Promise<UpdateBubblophyIssueStatusActionResult>
+    >(async () => ({ status: 'conflict' }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        updateIssueStatusAction={updateIssueStatusAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+    fireEvent.change(within(detailPanel).getByLabelText('Neuer Status'), {
+      target: { value: 'bereit' },
+    });
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Status speichern' })
+    );
+
+    expect(await within(detailPanel).findByRole('alert')).toHaveTextContent(
+      'zwischenzeitlich geändert'
+    );
+    expect(within(detailPanel).getByText('Geplant')).toBeInTheDocument();
   });
 
   it('does not expose unsupported issue archive or delete controls', () => {
@@ -1562,6 +1597,7 @@ describe('BubblophyDashboard interactions', () => {
     await waitFor(() => {
       expect(updateIssueStatusAction).toHaveBeenCalledWith({
         issueId: 'BV-12',
+        expectedStatus: 'geplant',
         status: 'erledigt',
         reason: 'Soll abgeschlossen werden.',
       });
@@ -1622,6 +1658,7 @@ describe('BubblophyDashboard interactions', () => {
     await waitFor(() => {
       expect(updateIssueStatusAction).toHaveBeenCalledWith({
         issueId: 'BV-12',
+        expectedStatus: 'geplant',
         status: 'blockiert',
         reason: '',
       });
@@ -1679,6 +1716,7 @@ describe('BubblophyDashboard interactions', () => {
     await waitFor(() => {
       expect(updateIssueStatusAction).toHaveBeenCalledWith({
         issueId: 'BV-12',
+        expectedStatus: 'geplant',
         status: 'erledigt',
         reason: '',
       });
@@ -1742,6 +1780,7 @@ describe('BubblophyDashboard interactions', () => {
     await waitFor(() => {
       expect(updateIssueStatusAction).toHaveBeenCalledWith({
         issueId: 'BV-12',
+        expectedStatus: 'erledigt',
         status: 'triage',
         reason: '',
       });
