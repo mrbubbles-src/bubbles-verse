@@ -206,7 +206,7 @@ export type UpdateBubblophyAgentTokenLifecycleActionResult =
 
 export type RequestBubblophyAgentRunActionInput = Omit<
   RequestBubblophyAgentRunInput,
-  'authUserId'
+  'authUserId' | 'oauthClientId'
 >;
 
 export type RequestBubblophyAgentRunActionResult =
@@ -552,7 +552,9 @@ export async function requestBubblophyAgentRunAction(
   const session = await requireBubblophySession({ nextPath: '/' });
 
   return requestBubblophyAgentRun({
-    ...input,
+    issueId: input.issueId,
+    agentTokenId: input.agentTokenId,
+    instructions: input.instructions,
     authUserId: session.authUserId,
   });
 }

@@ -42,6 +42,10 @@ persönliche Client-Anmeldung. Es enthält keine echten Tokens oder Secrets.
 - `list_run_targets` liefert nur ID und Label aktuell ausführbarer
   Same-Project-Agent-Tokens für Contributor in aktiven Projekten. Token-Hash,
   Scopes, Zustand, Ablauf, Creator- und Nutzungsdaten bleiben serverintern.
+- Kontrolliertes Schreibwerkzeug `request_run`: legt für ein sichtbares Issue
+  und ein erneut geprüftes Run-Ziel nur einen OAuth-attributierten Run im
+  Zustand `requested` an. Approval, Ausführung und Issue-Status bleiben
+  unverändert; Token- und Actor-IDs fehlen im Output.
 
 ## Umgebungsvertrag
 
@@ -238,21 +242,28 @@ insbesondere Schritt 7 bleibt deshalb ein offenes Produktions-Gate.
    unvollständig berechtigte Tokens sowie alle Hash-, Scope-, Lifecycle-,
    Creator- und Nutzungsfelder müssen fehlen. Viewer, entfernte Membership und
    archivierte Projekte müssen scheitern.
-9. Beide Clients schließen und neu starten. Der Zugriff muss ohne erneuten
-   manuellen Token-Transfer funktionieren.
-10. In Staging die Access-Token-Laufzeit vorübergehend kurz genug setzen, um nach
+9. Eines der sichtbaren Ziele mit `request_run` für ein eigenes Staging-Issue
+   auswählen. Es müssen genau ein Run im Zustand `requested` und ein
+   `agent_run_requested`-Event mit User- plus OAuth-Client-Attribution entstehen.
+   Approval-, Start- und Abschlussfelder sowie Issue-Status müssen unverändert
+   bleiben. Der Output darf keine Token-, User-, OAuth-Client- oder Event-ID
+   enthalten. Viewer, entfernte Membership, archivierte Projekte und ein
+   zwischen Auswahl und Schreiben pausiertes Ziel müssen scheitern.
+10. Beide Clients schließen und neu starten. Der Zugriff muss ohne erneuten
+    manuellen Token-Transfer funktionieren.
+11. In Staging die Access-Token-Laufzeit vorübergehend kurz genug setzen, um nach
     Ablauf einen erneuten Werkzeugaufruf zu prüfen. Der Client muss per
     Refresh-Token fortfahren; danach die normale Laufzeit wiederherstellen.
-11. Mit einem echten OAuth-JWT gegen die Supabase Data API prüfen, dass Reads und
+12. Mit einem echten OAuth-JWT gegen die Supabase Data API prüfen, dass Reads und
     Writes auf alle acht Bubblophy-Tabellen durch `0004` blockiert bleiben.
     Dasselbe mit einer normalen menschlichen JWT und vorhandener Membership
     gegen die vorgesehenen Select-Policies gegenprüfen.
-12. Negativfälle prüfen: falsche Audience, abgelaufenes Token, entfernte
+13. Negativfälle prüfen: falsche Audience, abgelaufenes Token, entfernte
     Membership, unbekannter User und der Versuch, fremde Projekt-IDs zu erraten.
     Archivierte Mitgliedschaftsprojekte bleiben dagegen absichtlich sichtbar
     und müssen mit `isArchived: true` samt historischer Issue-Summaries
     zurückkommen; operative Mutationen bleiben für sie gesperrt.
-13. Keine Tokens in Terminalausgabe, Screenshots, Logs oder Testartefakte
+14. Keine Tokens in Terminalausgabe, Screenshots, Logs oder Testartefakte
     übernehmen. Nur Clientname, Testperson, erwartete/sichtbare Projekt-IDs,
     Zeitstempel und Pass/Fail dokumentieren.
 

@@ -1140,10 +1140,14 @@ describe('requestBubblophyAgentRunAction', () => {
     const { requestBubblophyAgentRunAction } = await import('@/app/actions');
     const result = await requestBubblophyAgentRunAction({
       authUserId: 'user_client_spoof',
+      oauthClientId: 'client_spoof',
       issueId: 'BV-12',
       agentTokenId: 'token_codex',
       instructions: 'Nur vorbereiten.',
-    } as RequestBubblophyAgentRunActionInput & { authUserId: string });
+    } as RequestBubblophyAgentRunActionInput & {
+      authUserId: string;
+      oauthClientId: string;
+    });
 
     expect(requireBubblophySessionMock).toHaveBeenCalledWith({
       nextPath: '/',
@@ -1154,6 +1158,9 @@ describe('requestBubblophyAgentRunAction', () => {
       agentTokenId: 'token_codex',
       instructions: 'Nur vorbereiten.',
     });
+    expect(requestBubblophyAgentRunMock.mock.calls[0]?.[0]).not.toHaveProperty(
+      'oauthClientId'
+    );
     expect(result).toEqual({
       status: 'requested',
       run: {

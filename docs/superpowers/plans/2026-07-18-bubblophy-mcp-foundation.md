@@ -534,3 +534,38 @@ Dieser read-only Slice ist die notwendige Auswahlgrenze für ein späteres
 - [x] **Step 3: `list_run_targets` als read-only Closed-World-Tool registrieren**
 - [x] **Step 4: Dokumentation, Reviewer und vollständige Slice-Gates ausführen**
 - [x] **Step 5: Fertigen Slice separat committen**
+
+### Task 16: Kontrollierte MCP-Run-Anfrage `request_run`
+
+**Files:**
+
+- Create: `apps/bubblophy/lib/mcp/request-run.ts`
+- Create: `apps/bubblophy/lib/mcp/register-request-run-tool.ts`
+- Create: `apps/bubblophy/__tests__/lib/mcp/request-run.test.ts`
+- Create: `apps/bubblophy/__tests__/lib/agent-runs/request-database-write.test.ts`
+- Modify: `apps/bubblophy/lib/agent-runs/request.ts`
+- Modify: `apps/bubblophy/lib/agent-runs/request-database-write.ts`
+- Modify: `apps/bubblophy/app/actions.ts`
+- Modify: relevante Service-, Action-, Wiring- und MCP-Route-Tests
+- Modify: Bubblophy-README, Changelog, Roadmap und MCP-Runbook
+
+**Contract:** `projectId`, `issueNumber`, eine zuvor über `list_run_targets`
+aufgelöste `runTargetId` und optional auf 500 Zeichen begrenzte Instructions
+erzeugen genau einen Run im Zustand `requested` plus ein
+`agent_run_requested`-Event. Das sichtbare Issue wird an der MCP-Read-Boundary
+aufgelöst; `list_run_targets` dient der vorherigen Auswahl. Der Writer sperrt
+aktives Projekt, Issue, Membership und den Same-Project-Agent-Token und prüft
+dessen Executability autoritativ. User und
+validierte OAuth-`client_id` werden attribuiert. Kein Approval, Worker,
+Tool-Aufruf, Polling, Issue-Statuswechsel oder anderer Autopilot entsteht.
+
+Der Output enthält nur öffentliche Projekt-/Issue-Felder und Run-ID, Zustand,
+Agent-Label sowie Erstellungszeit. Token-ID, User-/OAuth-/Event-IDs und
+Event-Payload bleiben verborgen. Die manuelle Action darf keine
+OAuth-Attribution vom Client übernehmen.
+
+- [x] **Step 1: Service-, Store-, Race-, Action- und MCP-Tests zuerst schreiben**
+- [x] **Step 2: Run-Request-Writer mit Locks und OAuth-Audit härten**
+- [x] **Step 3: `request_run` als nicht-idempotenten HITL-Write registrieren**
+- [x] **Step 4: Dokumentation, Reviewer und vollständige Slice-Gates ausführen**
+- [x] **Step 5: Fertigen Slice separat committen**

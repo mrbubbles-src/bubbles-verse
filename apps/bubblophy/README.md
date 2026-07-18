@@ -131,8 +131,13 @@ einem bewusst human-gesteuerten Kontrollzentrum.
 - Das read-only Werkzeug `list_run_targets` liefert Contributor-Rollen für ein
   aktives Projekt nur ID und Label aktuell ausführbarer Agent-Tokens. Zustand,
   Scopes, Ablauf, Hash, Creator- und Nutzungsdaten bleiben serverintern. Damit
-  kann ein späteres `request_run` ein Ziel referenzieren, ohne den breiteren
-  Token-Vertrag offenzulegen; Viewer und archivierte Projekte bleiben gesperrt.
+  kann `request_run` ein Ziel referenzieren, ohne den breiteren Token-Vertrag
+  offenzulegen; Viewer und archivierte Projekte bleiben gesperrt.
+- `request_run` erzeugt für ein sichtbares Issue und ein erneut geprüftes
+  Same-Project-Run-Ziel ausschließlich einen OAuth-attributierten Run im Zustand
+  `requested`. Projekt, Issue, Membership und Token werden transaktional
+  gesperrt; Approval, Worker, Tool-Aufruf, Polling und Issue-Status bleiben
+  unangetastet. Der Output enthält weder Token- noch Actor- oder Event-IDs.
 - `/oauth/consent` übernimmt die einmalige persönliche Zustimmung für neue
   MCP-Clients. Bubblophy zeigt Clientname, angeforderte Standard-Scopes und das
   registrierte Rücksprungziel; Erlauben oder Ablehnen läuft ausschließlich über

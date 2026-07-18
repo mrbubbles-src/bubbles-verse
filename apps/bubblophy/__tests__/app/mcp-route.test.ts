@@ -12,6 +12,7 @@ const proposeBubblophyMcpPlanMock = vi.fn();
 const addBubblophyMcpNoteMock = vi.fn();
 const createBubblophyMcpIssueMock = vi.fn();
 const listBubblophyMcpRunTargetsMock = vi.fn();
+const requestBubblophyMcpRunMock = vi.fn();
 
 vi.mock('@/lib/mcp/auth', () => ({
   verifyBubblophyMcpToken: (request: Request, bearerToken?: string) =>
@@ -94,6 +95,19 @@ vi.mock('@/lib/mcp/run-targets', () => ({
     authUserId: string,
     input: { projectId: string }
   ) => listBubblophyMcpRunTargetsMock(authUserId, input),
+}));
+
+vi.mock('@/lib/mcp/request-run', () => ({
+  requestBubblophyMcpRun: (
+    authUserId: string,
+    clientId: string,
+    input: {
+      projectId: string;
+      issueNumber: number;
+      runTargetId: string;
+      instructions?: string;
+    }
+  ) => requestBubblophyMcpRunMock(authUserId, clientId, input),
 }));
 
 function createInitializeRequest(token?: string) {
@@ -317,6 +331,31 @@ function createListRunTargetsRequest() {
   });
 }
 
+function createRequestRunRequest() {
+  return new Request('https://bubblophy.example.com/mcp', {
+    method: 'POST',
+    headers: {
+      accept: 'application/json, text/event-stream',
+      authorization: 'Bearer signed-token',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 12,
+      method: 'tools/call',
+      params: {
+        name: 'request_run',
+        arguments: {
+          projectId: 'project_bv',
+          issueNumber: 12,
+          runTargetId: 'token_codex',
+          instructions: 'Nur vorbereiten.',
+        },
+      },
+    }),
+  });
+}
+
 function createListToolsRequest() {
   return new Request('https://bubblophy.example.com/mcp', {
     method: 'POST',
@@ -364,6 +403,8 @@ describe('/mcp', () => {
     createBubblophyMcpIssueMock.mockResolvedValue({ status: 'not_found' });
     listBubblophyMcpRunTargetsMock.mockReset();
     listBubblophyMcpRunTargetsMock.mockResolvedValue({ status: 'not_found' });
+    requestBubblophyMcpRunMock.mockReset();
+    requestBubblophyMcpRunMock.mockResolvedValue({ status: 'not_found' });
     vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://bubblophy.example.com');
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://auth.example.com');
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'public-anon-key');
@@ -480,6 +521,7 @@ describe('/mcp', () => {
     expect(body).toContain('"name":"add_note"');
     expect(body).toContain('"name":"create_issue"');
     expect(body).toContain('"name":"list_run_targets"');
+    expect(body).toContain('"name":"request_run"');
   });
 
   it('lists bounded public issue summaries for the verified OAuth identity', async () => {
@@ -810,6 +852,54 @@ describe('/mcp', () => {
     expect(listBubblophyMcpRunTargetsMock).toHaveBeenCalledWith('user-1', {
       projectId: 'project_bv',
     });
+  });
+
+  it('requests one unapproved run without exposing target or actor IDs', async () => {
+    verifyBubblophyMcpTokenMock.mockResolvedValue({
+      token: 'signed-token',
+      clientId: 'client-1',
+      scopes: ['openid'],
+      expiresAt: 2_000_000_000,
+      resource: new URL('https://bubblophy.example.com/mcp'),
+      extra: { authUserId: 'user-1' },
+    });
+    requestBubblophyMcpRunMock.mockResolvedValue({
+      status: 'requested',
+      project: { id: 'project_bv', key: 'BV', isArchived: false },
+      issue: { key: 'BV-12', issueNumber: 12, title: 'Run vorbereiten' },
+      run: {
+        id: 'run_bv_12',
+        state: 'requested',
+        agentLabel: 'Codex',
+        createdAt: '2026-07-18T12:00:00.000Z',
+      },
+    });
+    const { POST } = await import('@/app/mcp/route');
+    const response = await POST(createRequestRunRequest());
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).toContain('"id":"run_bv_12"');
+    expect(body).toContain('"state":"requested"');
+    expect(body).toContain('"agentLabel":"Codex"');
+    expect(body).not.toContain('token_codex');
+    expect(body).not.toContain('agentTokenId');
+    expect(body).not.toContain('requestedByAuthUserId');
+    expect(body).not.toContain('approvedByAuthUserId');
+    expect(body).not.toContain('oauthClientId');
+    expect(body).not.toContain('signed-token');
+    expect(body).not.toContain('user-1');
+    expect(body).not.toContain('client-1');
+    expect(requestBubblophyMcpRunMock).toHaveBeenCalledWith(
+      'user-1',
+      'client-1',
+      {
+        projectId: 'project_bv',
+        issueNumber: 12,
+        runTargetId: 'token_codex',
+        instructions: 'Nur vorbereiten.',
+      }
+    );
   });
 
   it('does not call project reads without an authenticated user identity', async () => {

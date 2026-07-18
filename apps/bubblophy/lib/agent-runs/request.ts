@@ -4,6 +4,7 @@ import type { AgentRunSummary } from '@/lib/dashboard/types';
 
 export interface RequestBubblophyAgentRunInput {
   authUserId: string;
+  oauthClientId?: string;
   issueId: string;
   agentTokenId: string;
   instructions?: string;
@@ -11,6 +12,7 @@ export interface RequestBubblophyAgentRunInput {
 
 export interface BubblophyAgentRunRequestStoreInput {
   authUserId: string;
+  oauthClientId?: string;
   issueId: string;
   agentTokenId: string;
   instructions: string;
@@ -22,6 +24,7 @@ export interface BubblophyAgentRunRequestStoreResult {
   agentTokenLabel: string;
   requestedByAuthUserId: string;
   instructions: string;
+  createdAt: string;
 }
 
 export interface BubblophyAgentRunRequestStore {
@@ -46,6 +49,7 @@ export type RequestBubblophyAgentRunResult =
   | {
       status: 'requested';
       run: AgentRunSummary;
+      createdAt: string;
     }
   | {
       status: 'invalid';
@@ -68,7 +72,9 @@ export interface RequestBubblophyAgentRunOptions {
   store?: BubblophyAgentRunRequestStore;
 }
 
-const maxRunInstructionsLength = 500;
+export const bubblophyAgentRunRequestLimits = {
+  maxInstructionsLength: 500,
+} as const;
 
 /**
  * Requests a human-approved agent run without executing any agent work.
@@ -106,6 +112,7 @@ export async function requestBubblophyAgentRun(
   return {
     status: 'requested',
     run: mapRequestedAgentRunToSummary(result.run),
+    createdAt: result.run.createdAt,
   };
 }
 
@@ -154,7 +161,9 @@ function normalizeAgentRunRequestInput(input: RequestBubblophyAgentRunInput):
     return { status: 'invalid', reason: 'empty_agent_token' };
   }
 
-  if (instructions.length > maxRunInstructionsLength) {
+  if (
+    instructions.length > bubblophyAgentRunRequestLimits.maxInstructionsLength
+  ) {
     return { status: 'invalid', reason: 'instructions_too_long' };
   }
 
@@ -162,6 +171,7 @@ function normalizeAgentRunRequestInput(input: RequestBubblophyAgentRunInput):
     status: 'valid',
     input: {
       authUserId: input.authUserId,
+      oauthClientId: input.oauthClientId?.trim() || undefined,
       issueId,
       agentTokenId,
       instructions,

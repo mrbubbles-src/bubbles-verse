@@ -173,6 +173,12 @@ dauerhaften Autopilot-Rechte.
   serialisiert wird. Danach sperrt und prüft der Writer die aktuelle
   Membership. Das OAuth-attributierte Issue bleibt in `triage`, nicht
   zugewiesen und freigabepflichtig; kein Plan, Approval oder Run wird erzeugt.
+- `request_run` löst Issue und auswählbares Ziel über membership-gebundene
+  MCP-Reads auf und sperrt beim Schreiben Projekt, Issue, Membership und Token
+  erneut. Der Token muss im selben Projekt aktiv, nicht abgelaufen und mit
+  `issues:read` plus `runs:update` ausführbar sein. Gespeichert werden nur der
+  Zustand `requested` und das OAuth-attributierte Audit-Event; Freigabe,
+  Ausführung und Issue-Workflow bleiben getrennt.
 
 ## Audit und RLS
 
@@ -193,9 +199,9 @@ dauerhaften Autopilot-Rechte.
   menschliche User-ID und ergänzen `actor_oauth_client_id`; Planversionen nutzen
   entsprechend `created_by_oauth_client_id`. Die nullable Zusatzattribution
   verändert bestehende UI-/Agent-Schreibpfade nicht.
-- Die manuelle Server Action verwirft clientseitig eingereichte OAuth-
+- Manuelle Server Actions verwerfen clientseitig eingereichte OAuth-
   Attribution ausdrücklich. Nur der validierte MCP-Auth-Kontext darf eine
-  `client_id` an den gemeinsamen Plan-Store weitergeben.
+  `client_id` an gemeinsame Schreib-Services weitergeben.
 - RLS-Lesepolicies erlauben Projektmitgliedern nur projektgebundene, dafür
   vorgesehene Tabellen. Direkte `authenticated`-Reads auf
   `bubblophy_agent_runs` und `bubblophy_issue_events` sind geschlossen, weil

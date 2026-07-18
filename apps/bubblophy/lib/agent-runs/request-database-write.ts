@@ -7,8 +7,8 @@ import type {
 } from '@/lib/agent-runs/request';
 
 import { isExecutableBubblophyAgentToken } from '@/lib/agent-tokens/execution';
+import { lockBubblophyIssueContributorWriteContext } from '@/lib/issues/contributor-write-context-database';
 import { parseBubblophyIssueKey } from '@/lib/issues/plan-database-write';
-import { canContributeToBubblophyProject } from '@/lib/projects/permissions';
 
 import { and, eq } from 'drizzle-orm';
 
@@ -17,7 +17,6 @@ import {
   bubblophyAgentTokens,
   bubblophyIssueEvents,
   bubblophyIssues,
-  bubblophyProjectMembers,
   bubblophyProjects,
 } from '@/drizzle/db/schema';
 
@@ -25,6 +24,7 @@ export interface BubblophyAgentRunRequestedIssueEventInsert {
   issueId: string;
   eventType: 'agent_run_requested';
   actorAuthUserId: string;
+  actorOauthClientId: string | null;
   actorAgentTokenId: null;
   agentRunId: string;
   summary: string;
@@ -46,7 +46,11 @@ export function createDrizzleBubblophyAgentRunRequestStore(): BubblophyAgentRunR
 }
 
 /**
- * Creates a requested run after issue membership and token project checks.
+ * Creates a requested run after locking its active issue, membership, and token.
+ *
+ * The lock order is project `SHARE`, issue `UPDATE`, membership `UPDATE`, then
+ * token `UPDATE`. This serializes token lifecycle changes with the final
+ * executable-token check without approving or starting the requested run.
  *
  * @param input Authenticated human user and normalized run request fields.
  * @returns Requested run, `not_found`, `forbidden`, or `token_unavailable`.
@@ -63,40 +67,32 @@ async function requestAgentRun(
   const { db } = await import('@/drizzle/db');
 
   return db.transaction(async (tx) => {
+    const writeContext = await lockBubblophyIssueContributorWriteContext(tx, {
+      authUserId: input.authUserId,
+      projectKey: issueKey.projectKey,
+      issueNumber: issueKey.issueNumber,
+    });
+
+    if (writeContext.status !== 'ready') {
+      return writeContext;
+    }
+
     const [issue] = await tx
       .select({
         id: bubblophyIssues.id,
         projectId: bubblophyProjects.id,
         projectKey: bubblophyProjects.key,
-        memberRole: bubblophyProjectMembers.role,
       })
       .from(bubblophyIssues)
       .innerJoin(
         bubblophyProjects,
         eq(bubblophyProjects.id, bubblophyIssues.projectId)
       )
-      .leftJoin(
-        bubblophyProjectMembers,
-        and(
-          eq(bubblophyProjectMembers.projectId, bubblophyProjects.id),
-          eq(bubblophyProjectMembers.authUserId, input.authUserId)
-        )
-      )
-      .where(
-        and(
-          eq(bubblophyProjects.key, issueKey.projectKey),
-          eq(bubblophyProjects.isArchived, false),
-          eq(bubblophyIssues.issueNumber, issueKey.issueNumber)
-        )
-      )
+      .where(eq(bubblophyIssues.id, writeContext.issueDatabaseId))
       .limit(1);
 
     if (!issue) {
-      return { status: 'not_found' };
-    }
-
-    if (!canContributeToBubblophyProject(issue.memberRole)) {
-      return { status: 'forbidden' };
+      throw new Error('Locked Bubblophy issue could not be reloaded.');
     }
 
     const [agentToken] = await tx
@@ -114,7 +110,8 @@ async function requestAgentRun(
           eq(bubblophyAgentTokens.projectId, issue.projectId)
         )
       )
-      .limit(1);
+      .limit(1)
+      .for('update');
 
     if (!agentToken || !isExecutableBubblophyAgentToken(agentToken)) {
       return { status: 'token_unavailable' };
@@ -131,6 +128,7 @@ async function requestAgentRun(
       .returning({
         id: bubblophyAgentRuns.id,
         state: bubblophyAgentRuns.state,
+        createdAt: bubblophyAgentRuns.createdAt,
       });
 
     if (!run) {
@@ -143,6 +141,7 @@ async function requestAgentRun(
         issueId: input.issueId,
         runId: run.id,
         authUserId: input.authUserId,
+        oauthClientId: input.oauthClientId,
         agentTokenId: agentToken.id,
         agentTokenLabel: agentToken.label,
         projectKey: issue.projectKey,
@@ -158,13 +157,14 @@ async function requestAgentRun(
         agentTokenLabel: agentToken.label,
         requestedByAuthUserId: input.authUserId,
         instructions: input.instructions,
+        createdAt: run.createdAt,
       },
     };
   });
 }
 
 /**
- * Builds an issue event for a human-created run request.
+ * Builds an issue event for a human or OAuth-created run request.
  *
  * @param input Issue, run, token metadata, actor, and bounded instructions.
  * @returns Insert values for `bubblophy_issue_events`.
@@ -174,6 +174,7 @@ export function buildBubblophyAgentRunRequestedIssueEventInsert(input: {
   issueId: string;
   runId: string;
   authUserId: string;
+  oauthClientId?: string;
   agentTokenId: string;
   agentTokenLabel: string;
   projectKey: string;
@@ -183,11 +184,12 @@ export function buildBubblophyAgentRunRequestedIssueEventInsert(input: {
     issueId: input.issueDatabaseId,
     eventType: 'agent_run_requested',
     actorAuthUserId: input.authUserId,
+    actorOauthClientId: input.oauthClientId ?? null,
     actorAgentTokenId: null,
     agentRunId: input.runId,
     summary: `Run für ${input.issueId} mit "${input.agentTokenLabel}" angefragt.`,
     payload: {
-      source: 'human',
+      source: input.oauthClientId ? 'oauth_mcp' : 'human',
       projectKey: input.projectKey,
       issueId: input.issueId,
       runId: input.runId,

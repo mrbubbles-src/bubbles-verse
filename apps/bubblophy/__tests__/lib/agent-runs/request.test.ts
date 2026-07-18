@@ -4,6 +4,7 @@ import type {
 } from '@/lib/agent-runs/request';
 
 import {
+  bubblophyAgentRunRequestLimits,
   mapRequestedAgentRunToSummary,
   requestBubblophyAgentRun,
 } from '@/lib/agent-runs/request';
@@ -82,6 +83,7 @@ describe('requestBubblophyAgentRun', () => {
         agentTokenLabel: 'codex-local-lio',
         requestedByAuthUserId: input.authUserId,
         instructions: input.instructions,
+        createdAt: '2026-07-18T12:00:00.000Z',
       },
     }));
     const store: BubblophyAgentRunRequestStore = {
@@ -109,6 +111,7 @@ describe('requestBubblophyAgentRun', () => {
         lastEvent:
           'Anfrage gespeichert: Bitte den Plan prüfen, aber nichts ausführen.',
       },
+      createdAt: '2026-07-18T12:00:00.000Z',
     });
 
     expect(requestAgentRun).toHaveBeenCalledTimes(1);
@@ -118,6 +121,37 @@ describe('requestBubblophyAgentRun', () => {
       agentTokenId: 'token_codex',
       instructions: 'Bitte den Plan prüfen, aber nichts ausführen.',
     });
+  });
+
+  it('normalizes OAuth attribution and accepts exact instruction limits', async () => {
+    const store = createStore(async (input) => ({
+      status: 'requested',
+      run: {
+        id: 'run_bv_12',
+        issueId: input.issueId,
+        agentTokenLabel: 'Codex',
+        requestedByAuthUserId: input.authUserId,
+        instructions: input.instructions,
+        createdAt: '2026-07-18T12:00:00.000Z',
+      },
+    }));
+
+    await requestBubblophyAgentRun(
+      {
+        authUserId: 'user_owner',
+        oauthClientId: ' client-1 ',
+        issueId: 'BV-12',
+        agentTokenId: 'token_codex',
+        instructions: 'x'.repeat(
+          bubblophyAgentRunRequestLimits.maxInstructionsLength
+        ),
+      },
+      { store }
+    );
+
+    expect(store.requestAgentRun).toHaveBeenCalledWith(
+      expect.objectContaining({ oauthClientId: 'client-1' })
+    );
   });
 
   it('returns store not_found, forbidden, and token_unavailable results unchanged', async () => {
@@ -175,6 +209,7 @@ describe('Bubblophy agent run request helpers', () => {
         agentTokenLabel: 'codex-local-lio',
         requestedByAuthUserId: 'user_owner',
         instructions: '',
+        createdAt: '2026-07-18T12:00:00.000Z',
       })
     ).toEqual({
       id: 'run_bv_12',
@@ -202,6 +237,7 @@ describe('Bubblophy agent run request helpers', () => {
       issueId: 'issue_bv_12',
       eventType: 'agent_run_requested',
       actorAuthUserId: 'user_owner',
+      actorOauthClientId: null,
       actorAgentTokenId: null,
       agentRunId: 'run_bv_12',
       summary: 'Run für BV-12 mit "codex-local-lio" angefragt.',
@@ -215,6 +251,27 @@ describe('Bubblophy agent run request helpers', () => {
         instructions: 'Nur vorbereiten.',
         executionStarted: false,
       },
+    });
+  });
+
+  it('builds an OAuth-attributed request event without execution actor fields', () => {
+    expect(
+      buildBubblophyAgentRunRequestedIssueEventInsert({
+        issueDatabaseId: 'issue_bv_12',
+        issueId: 'BV-12',
+        runId: 'run_bv_12',
+        authUserId: 'user_owner',
+        oauthClientId: 'client-1',
+        agentTokenId: 'token_codex',
+        agentTokenLabel: 'Codex',
+        projectKey: 'BV',
+        instructions: '',
+      })
+    ).toMatchObject({
+      actorAuthUserId: 'user_owner',
+      actorOauthClientId: 'client-1',
+      actorAgentTokenId: null,
+      payload: { source: 'oauth_mcp', executionStarted: false },
     });
   });
 });

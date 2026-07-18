@@ -3940,6 +3940,7 @@ describe('BubblophyDashboard interactions', () => {
         requestedBy: 'Mensch',
         lastEvent: 'Anfrage gespeichert: Feedback-Flow prüfen.',
       },
+      createdAt: '2026-07-18T12:00:00.000Z',
     }));
 
     render(
@@ -5403,6 +5404,7 @@ describe('BubblophyDashboard interactions', () => {
         lastEvent:
           'Anfrage gespeichert: Bitte nur die Planung prüfen, nichts ausführen.',
       },
+      createdAt: '2026-07-18T12:00:00.000Z',
     }));
 
     render(

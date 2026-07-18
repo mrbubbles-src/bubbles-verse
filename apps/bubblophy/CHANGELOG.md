@@ -48,7 +48,10 @@
   per-project issue numbering without implicit plans, approvals, or runs.
 - Added the read-only `list_run_targets` MCP tool, exposing only IDs and labels
   of currently executable same-project agent tokens to active contributors as
-  the narrow selection boundary for future human-approved run requests.
+  the narrow selection boundary for human-approved run requests.
+- Added the controlled `request_run` MCP write tool with OAuth audit
+  attribution, locked contributor and token rechecks, and a public requested-run
+  response without approval, execution, workflow mutation, or internal IDs.
 
 All notable changes to this project will be documented in this file.
 

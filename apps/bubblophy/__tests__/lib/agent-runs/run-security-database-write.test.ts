@@ -16,6 +16,15 @@ let tokenState = 'active';
 let tokenExpiresAt: string | null = null;
 let updateRows: MockRow[] = [];
 
+const lockWriteContextMock = vi.fn(async () => ({
+  status: 'ready' as const,
+  issueDatabaseId: 'issue_bv_12',
+}));
+
+vi.mock('@/lib/issues/contributor-write-context-database', () => ({
+  lockBubblophyIssueContributorWriteContext: () => lockWriteContextMock(),
+}));
+
 class MockSelectQuery implements PromiseLike<MockRow[]> {
   private readonly call: SelectCall;
 
@@ -42,6 +51,10 @@ class MockSelectQuery implements PromiseLike<MockRow[]> {
   }
 
   limit() {
+    return this;
+  }
+
+  for() {
     return this;
   }
 
@@ -142,6 +155,7 @@ beforeEach(() => {
   updateReturning.mockClear();
   insertValues.mockClear();
   dbMock.transaction.mockClear();
+  lockWriteContextMock.mockClear();
 });
 
 describe('run request token execution boundary', () => {
