@@ -105,6 +105,16 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   Person zurück. Die Mitgliedschaften werden bei jedem Aufruf neu aus
   `bubblophy_project_members` gelesen; Agent-Token-, Issue-, Run-, Audit- und
   andere Userdaten gehören nicht zu diesem Read-Vertrag.
+- `/oauth/consent` übernimmt die einmalige persönliche Zustimmung für neue
+  MCP-Clients. Bubblophy zeigt Clientname, angeforderte Standard-Scopes und das
+  registrierte Rücksprungziel; Erlauben oder Ablehnen läuft ausschließlich über
+  einen Cookie-authentifizierten same-origin `POST`. Der Client-Callback stammt
+  danach nur aus Supabase und wird als `303 See Other` aufgerufen.
+- Supabase-OAuth-JWTs tragen `client_id`, laufen aber nicht durch die normalen
+  Browser-RLS-Freigaben: Eine restrictive Policy auf allen Bubblophy-Tabellen
+  sperrt ihren direkten Data-API-Zugriff. OAuth-Datenzugriff erfolgt dadurch nur
+  über die explizit registrierten MCP-Werkzeuge und deren serverseitige
+  Membership-/Rollenprüfung.
 - `/.well-known/oauth-protected-resource/mcp` veröffentlicht Bubblophys fest
   konfigurierte MCP-Resource und den Supabase-Auth-Issuer. Der Origin-Pfad ohne
   `/mcp` bleibt als kompatibler Alias verfügbar. Eingereichte Host- oder
@@ -154,6 +164,10 @@ bun run build
   gültiger Signatur, Issuer, Ablauf, `sub`, `client_id` und exakt Bubblophys
   `/mcp`-Audience erreichen den Transport. `list_projects` verwendet danach
   ausschließlich die validierte `sub` als Membership-Filter.
+- Ein Agent-Client startet die Supabase-OAuth-Verbindung. Nach dem einmaligen
+  Browser-Login und der Zustimmung speichert und erneuert der jeweilige Client
+  seine Access- und Refresh-Tokens selbst; Bubblophy persistiert diese Tokens
+  nicht.
 - Die Auth-Grundstruktur nutzt nur `NEXT_PUBLIC_*` Supabase-Anon-Konfiguration.
 - Das Dashboard unter `/` verlangt eine Supabase-Session und prüft
   serverseitig DB-basierten Zugang. Ein aktiver Eintrag in

@@ -77,6 +77,26 @@ describe('GET /auth/callback', () => {
     );
   });
 
+  it('returns to the exact OAuth consent request after human login', async () => {
+    getPublicBubblophyEnvMock.mockReturnValue({
+      NEXT_PUBLIC_APP_URL: 'http://bubblophy.mrbubbles.test:3005',
+    });
+    exchangeCodeForSessionMock.mockResolvedValue({ error: null });
+    getUserMock.mockResolvedValue({
+      data: { user: { email: 'owner@example.test' } },
+    });
+
+    const response = await GET(
+      new NextRequest(
+        'http://bubblophy.mrbubbles.test:3005/auth/callback?code=test-code&next=%2Foauth%2Fconsent%3Fauthorization_id%3Dauthorization-request-1'
+      )
+    );
+
+    expect(response.headers.get('location')).toBe(
+      'http://bubblophy.mrbubbles.test:3005/oauth/consent?authorization_id=authorization-request-1'
+    );
+  });
+
   it('falls back to home when callback next is unsafe', async () => {
     getPublicBubblophyEnvMock.mockReturnValue({
       NEXT_PUBLIC_APP_URL: 'http://bubblophy.mrbubbles.test:3005',

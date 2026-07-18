@@ -34,7 +34,7 @@ export function BubblophyLoginClient() {
     queueMicrotask(() => {
       setErrorMessage(loginErrorMessage);
     });
-    window.history.replaceState(null, '', window.location.pathname);
+    window.history.replaceState(null, '', getLoginUrlWithoutError());
   }, []);
 
   async function handleGithubLogin() {
@@ -110,4 +110,16 @@ export function BubblophyLoginClient() {
       </div>
     </main>
   );
+}
+
+/** Removes OAuth error details while preserving a safe post-login return path. */
+function getLoginUrlWithoutError() {
+  const url = new URL(window.location.href);
+
+  url.searchParams.delete('error');
+  url.searchParams.delete('error_code');
+  url.searchParams.delete('error_description');
+  url.hash = '';
+
+  return `${url.pathname}${url.search}`;
 }

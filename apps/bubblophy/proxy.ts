@@ -64,7 +64,10 @@ export function proxy(request: NextRequest) {
 
   if (pathname !== '/login' && !hasSession) {
     return NextResponse.redirect(
-      new URL(buildBubblophyLoginPath(getBubblophyRequestPath(request)), request.url)
+      new URL(
+        buildBubblophyLoginPath(getBubblophyRequestPath(request)),
+        request.url
+      )
     );
   }
 
@@ -79,5 +82,6 @@ export const config = {
     '/issues/:path*',
     '/runs/:path*',
     '/agent-tokens/:path*',
+    '/oauth/:path*',
   ],
 };

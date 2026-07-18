@@ -29,6 +29,13 @@
       "when": 1784387081550,
       "tag": "0003_close_sensitive_direct_reads",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1784393327952,
+      "tag": "0004_close_oauth_direct_reads",
+      "breakpoints": true
     }
   ]
 }

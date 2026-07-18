@@ -14,6 +14,7 @@
 - OAuth-Zugriffe erhalten weder Supabase-Service-Role-Key noch Agent-Token-Hashes.
 - Die aktuelle Projektmitgliedschaft und Rolle werden bei jedem Tool-Aufruf serverseitig geprüft.
 - Supabase unterstützt keine Bubblophy-spezifischen OAuth-Scopes. Werkzeugrechte folgen ausschließlich aktueller DB-Rolle und Bubblophy-Client-Policy.
+- OAuth-JWTs mit `client_id` dürfen bestehende Browser-RLS-Policies nicht direkt nutzen; restrictive Policies halten Tabellenzugriff hinter dem MCP-Werkzeugvertrag.
 - MCP-Werkzeuge bleiben zunächst read-only; Schreibwerkzeuge sind spätere Slices.
 - OAuth-Zustimmung muss Clientname, angeforderte Scopes und Ablehnen/Erlauben zeigen.
 - Produktionsbetrieb verlangt HTTPS, asymmetrische Supabase-JWT-Signaturen und eine MCP-spezifische Audience.
@@ -25,6 +26,7 @@
 ### Task 0: Sicherheitsgate schließen
 
 **Files:**
+
 - Modify: bestehende Auth-, Run- und RLS-Grenzen
 - Test: zugehörige Unit-, Store- und Migrationstests
 
@@ -49,12 +51,14 @@ Formatierung, Lint, Typecheck, Tests, Build und laufenden Reviewer abschließen.
 ### Task 1: MCP-Abhängigkeiten und Route-Handler-Vertrag
 
 **Files:**
+
 - Modify: `apps/bubblophy/package.json`
 - Modify: `bun.lock`
 - Create: `apps/bubblophy/app/mcp/route.ts`
 - Test: `apps/bubblophy/__tests__/app/mcp-route.test.ts`
 
 **Interfaces:**
+
 - Consumes: Web-Standard `Request`/`Response` aus Next.js Route Handlers.
 - Produces: `GET`, `POST` und `DELETE` für den stateless Streamable-HTTP-Endpunkt `/mcp`.
 
@@ -89,12 +93,14 @@ Expected: Der Auth-Vertrag schlägt bis Task 3 gezielt fehl; Transport-Imports u
 ### Task 2: OAuth-Discovery und MCP-Audience
 
 **Files:**
+
 - Create: `apps/bubblophy/lib/mcp/oauth-metadata.ts`
 - Create: `apps/bubblophy/app/.well-known/oauth-protected-resource/route.ts`
 - Create: `apps/bubblophy/app/.well-known/oauth-protected-resource/mcp/route.ts`
 - Test: `apps/bubblophy/__tests__/lib/mcp/oauth-metadata.test.ts`
 
 **Interfaces:**
+
 - Consumes: `NEXT_PUBLIC_APP_URL` und `NEXT_PUBLIC_SUPABASE_URL`.
 - Produces: `getBubblophyMcpResourceUrl(): string`, `getBubblophyOAuthIssuerUrl(): string` und RFC-9728-Metadaten für `/mcp`.
 
@@ -123,12 +129,14 @@ Expected: PASS.
 ### Task 3: Supabase-OAuth-Tokenvalidierung
 
 **Files:**
+
 - Create: `apps/bubblophy/lib/mcp/auth.ts`
 - Modify: `apps/bubblophy/app/mcp/route.ts`
 - Test: `apps/bubblophy/__tests__/lib/mcp/auth.test.ts`
 - Test: `apps/bubblophy/__tests__/app/mcp-route.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Authorization: Bearer <Supabase OAuth access token>`.
 - Produces: `verifyBubblophyMcpToken(request, bearerToken): Promise<AuthInfo | undefined>` mit `extra.authUserId`, `clientId` und validierter MCP-Audience.
 
@@ -157,6 +165,7 @@ Expected: PASS.
 ### Task 4: Mitgliedschaftsbasiertes `list_projects`
 
 **Files:**
+
 - Create: `apps/bubblophy/lib/mcp/projects.ts`
 - Create: `apps/bubblophy/lib/mcp/projects-database-read.ts`
 - Modify: `apps/bubblophy/app/mcp/route.ts`
@@ -164,6 +173,7 @@ Expected: PASS.
 - Test: `apps/bubblophy/__tests__/app/mcp-route.test.ts`
 
 **Interfaces:**
+
 - Consumes: validierte `authUserId` aus `AuthInfo.extra`.
 - Produces: `listBubblophyMcpProjects(authUserId, options?)` mit aktiven und archivierten Projekten, jeweils `id`, `key`, `name`, `description`, `role`, `isArchived`.
 
@@ -192,6 +202,7 @@ Expected: PASS.
 ### Task 5: Persönliche OAuth-Zustimmung
 
 **Files:**
+
 - Create: `apps/bubblophy/app/oauth/consent/page.tsx`
 - Create: `apps/bubblophy/app/oauth/consent/consent-form.tsx`
 - Create: `apps/bubblophy/app/api/oauth/decision/route.ts`
@@ -200,22 +211,23 @@ Expected: PASS.
 - Test: `apps/bubblophy/__tests__/app/oauth-decision-route.test.ts`
 
 **Interfaces:**
+
 - Consumes: Supabase `authorization_id` und bestehende menschliche Cookie-Session.
 - Produces: Consent-Seite mit Clientname, Scope-Anzeige, Erlauben/Ablehnen sowie sicherem Redirect zur Client-Callback-URL aus Supabase.
 
-- [ ] **Step 1: Failing Consent-Tests schreiben**
+- [x] **Step 1: Failing Consent-Tests schreiben**
 
 Abdecken: fehlende ID, anonymer Login-Redirect mit erhaltener ID, ungültige Anfrage, bereits erteilte Zustimmung, sichtbarer Clientname/Scopes sowie approve/deny.
 
-- [ ] **Step 2: Consent-Seite implementieren**
+- [x] **Step 2: Consent-Seite implementieren**
 
 Die Server-Komponente verwendet den vorhandenen Cookie-Supabase-Client, prüft die menschliche Session und lädt Details über `supabase.auth.oauth.getAuthorizationDetails`.
 
-- [ ] **Step 3: Decision-Route implementieren**
+- [x] **Step 3: Decision-Route implementieren**
 
-Die Route akzeptiert ausschließlich same-origin, CSRF-geschützte `POST`-Requests mit `approve` oder `deny`, validiert die ID, ruft die entsprechende Supabase-OAuth-Methode auf und redirectet erst nach Erfolg ausschließlich auf die von Supabase zurückgegebene URL.
+Die Route akzeptiert ausschließlich same-origin, CSRF-geschützte `POST`-Requests mit `approve` oder `deny`, validiert die ID, ruft die entsprechende Supabase-OAuth-Methode auf und redirectet erst nach Erfolg ausschließlich auf die von Supabase zurückgegebene URL. Restrictive RLS-Policies sperren OAuth-JWTs mit `client_id` zusätzlich vom direkten Data-API-Zugriff aus.
 
-- [ ] **Step 4: Consent-Tests ausführen**
+- [x] **Step 4: Consent-Tests ausführen**
 
 Run:
 
@@ -228,6 +240,7 @@ Expected: PASS.
 ### Task 6: Konfiguration, Dokumentation und Slice-Gates
 
 **Files:**
+
 - Modify: `apps/bubblophy/README.md`
 - Modify: `apps/bubblophy/CHANGELOG.md`
 - Modify: `apps/bubblophy/documentation/auth-security-plan.md`
@@ -235,6 +248,7 @@ Expected: PASS.
 - Modify: `apps/bubblophy/documentation/phase-2-roadmap.md`
 
 **Interfaces:**
+
 - Consumes: implementierten MCP-/OAuth-Vertrag.
 - Produces: genaue lokale, Staging- und Produktionsschritte für Supabase OAuth Server, Authorization Path `/oauth/consent`, dynamische Client-Registrierung, asymmetrische Signaturschlüssel, MCP-Audience-Hook sowie Codex-/Claude-Verbindung.
 

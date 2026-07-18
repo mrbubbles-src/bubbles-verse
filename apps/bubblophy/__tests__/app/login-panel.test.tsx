@@ -61,8 +61,7 @@ describe('BubblophyLoginPanel', () => {
       expect(signInWithOAuthMock).toHaveBeenCalledWith({
         provider: 'github',
         options: {
-          redirectTo:
-            `${window.location.origin}/auth/callback?next=%2Fissues%3Fstatus%3Dready`,
+          redirectTo: `${window.location.origin}/auth/callback?next=%2Fissues%3Fstatus%3Dready`,
         },
       });
     });
@@ -89,8 +88,7 @@ describe('BubblophyLoginPanel', () => {
       expect(signInWithOAuthMock).toHaveBeenCalledWith({
         provider: 'github',
         options: {
-          redirectTo:
-            `${window.location.origin}/auth/callback?next=%2F`,
+          redirectTo: `${window.location.origin}/auth/callback?next=%2F`,
         },
       });
     });
@@ -124,6 +122,22 @@ describe('BubblophyLoginPanel', () => {
       'Dieser User ist nicht autorisiert'
     );
     expect(toastErrorMock).not.toHaveBeenCalled();
+  });
+
+  it('removes only the login error and preserves the OAuth consent return path', async () => {
+    window.history.replaceState(
+      {},
+      '',
+      '/login?next=%2Foauth%2Fconsent%3Fauthorization_id%3Dauthorization-request-1&error=server_error'
+    );
+
+    render(<BubblophyLoginClient />);
+
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/login');
+    expect(window.location.search).toBe(
+      '?next=%2Foauth%2Fconsent%3Fauthorization_id%3Dauthorization-request-1'
+    );
   });
 
   it('resets pending state when GitHub OAuth cannot start', async () => {

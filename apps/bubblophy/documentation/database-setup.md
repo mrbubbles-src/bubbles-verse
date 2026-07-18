@@ -21,13 +21,15 @@ angewendet.
 
 ## Vorbereitete Migration
 
-Die Struktur und die erste RLS-Baseline liegen aktuell in drei lokalen
+Die Struktur und die RLS-Härtung liegen aktuell in fünf lokalen
 Migrationen:
 
 ```text
 apps/bubblophy/drizzle/0000_premium_psynapse.sql
 apps/bubblophy/drizzle/0001_chilly_hiroim.sql
 apps/bubblophy/drizzle/0002_bubblophy_rls_baseline.sql
+apps/bubblophy/drizzle/0003_close_sensitive_direct_reads.sql
+apps/bubblophy/drizzle/0004_close_oauth_direct_reads.sql
 ```
 
 `0000_premium_psynapse.sql` erzeugt:
@@ -83,6 +85,17 @@ Prüfung der vorbereiteten Migrationen:
 Diese RLS-Baseline ist additiv und lokal reviewbar. Sie liegt nicht als lose
 SQL-Datei neben dem Drizzle-Flow, sondern als journalisierte Custom-Migration
 vor.
+
+`0003_close_sensitive_direct_reads.sql` entzieht Browser-Sessions zusätzlich
+direkte Reads auf rohe Agent-Run-Ergebnisse und Issue-Events.
+
+`0004_close_oauth_direct_reads.sql` trennt normale menschliche Sessions von
+Supabase-OAuth-Clients. Jede Bubblophy-Tabelle erhält eine restrictive
+`FOR ALL`-Policy mit `USING` und `WITH CHECK`, die nur JWTs ohne `client_id`
+zulässt. Ein OAuth-Client kann damit weder bestehende permissive
+Membership-Policies noch spätere direkte Write-Policies über PostgREST nutzen.
+Sein Datenzugriff bleibt auf Bubblophys serverseitig registrierte MCP-Werkzeuge
+begrenzt.
 
 ## Lokal reviewen
 
@@ -160,6 +173,8 @@ Aktuelle Richtung:
 - Menschen melden sich über Supabase Auth an.
 - Projektzugriff für Menschen basiert auf `bubblophy_project_members` und
   `auth.uid()`.
+- Supabase-OAuth-Tokens mit `client_id` sind vom direkten Tabellenzugriff
+  ausgeschlossen; ihre Standard-Scopes steuern OIDC-Profildaten, nicht RLS.
 - Server Actions und server-only Loader verwenden `DATABASE_URL`, prüfen die
   menschliche Session und geben keine Client-`authUserId`-Eingaben weiter.
 - Agenten verwenden später Bubblophy-Agent-Tokens mit Hash, Scopes,

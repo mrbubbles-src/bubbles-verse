@@ -31,6 +31,16 @@ describe('proxy', () => {
     );
   });
 
+  it('preserves OAuth authorization requests through optimistic login', () => {
+    const response = proxy(
+      createRequest('/oauth/consent?authorization_id=authorization-request-1')
+    );
+
+    expect(response.headers.get('location')).toBe(
+      'http://bubblophy.mrbubbles.test:3005/login?next=%2Foauth%2Fconsent%3Fauthorization_id%3Dauthorization-request-1'
+    );
+  });
+
   it('redirects optimistic session login requests to home by default', () => {
     const response = proxy(createRequest('/login', 'token'));
 
@@ -131,6 +141,7 @@ describe('proxy', () => {
       '/issues/:path*',
       '/runs/:path*',
       '/agent-tokens/:path*',
+      '/oauth/:path*',
     ]);
   });
 });

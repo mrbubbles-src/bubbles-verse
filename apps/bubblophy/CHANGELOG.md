@@ -17,6 +17,12 @@
 - Added the read-only `list_projects` MCP tool, re-reading current project
   memberships per call and exposing only public project fields, archive state,
   and the authenticated person's current role.
+- Added the Supabase OAuth consent flow with a DB-authorized human session,
+  visible client/scopes, strict same-origin decisions, and Supabase-owned 303
+  callback redirects after explicit approval or denial.
+- Added restrictive RLS policies that block every OAuth JWT carrying a
+  `client_id` from direct Data API access to Bubblophy tables, keeping OAuth
+  data access behind the narrower MCP tool contract.
 
 All notable changes to this project will be documented in this file.
 

@@ -73,6 +73,22 @@ dauerhaften Autopilot-Rechte.
   liest Rollen bei jedem Aufruf neu und gibt nur Projekt-ID, Key, Name,
   Beschreibung, Archivstatus und aktuelle Rolle zurück. Agent-Token-, Issue-,
   Run-, Audit- und andere Userdaten werden nicht selektiert.
+- Die OAuth-Zustimmungsseite verlangt zusätzlich zur Supabase-Cookie-Session
+  den aktuellen DB-basierten Bubblophy-Zugang. Die Decision-Route akzeptiert nur
+  URL-encoded `POST`-Formulare mit exakt passendem kanonischem Origin; zusammen
+  mit den `SameSite=Lax`-Auth-Cookies bildet das den CSRF-Schutz. ID, Entscheidung
+  und User-Zuordnung werden vor jedem Approve/Deny erneut geprüft.
+- OAuth-Callback-URLs werden niemals aus Query- oder Formwerten übernommen.
+  Ausschließlich Supabases `redirect_url` nach erfolgreicher Entscheidung wird
+  als `303 See Other` verwendet, damit der Consent-POST nicht an den Client
+  weitergesendet wird. Authorization-ID, Code, State und rohe Auth-Fehler werden
+  weder angezeigt noch protokolliert.
+- Supabase-Standard-Scopes begrenzen keinen direkten Datenbankzugriff.
+  `0004_close_oauth_direct_reads.sql` ergänzt deshalb auf jeder
+  Bubblophy-Tabelle eine restrictive `FOR ALL`-Policy: JWTs mit `client_id`
+  scheitern bei `USING` und `WITH CHECK`. Normale menschliche Sessions ohne
+  `client_id` behalten die bestehenden Membership-Policies; MCP-Zugriffe laufen
+  über den serverseitigen Datenbankpfad und dessen eigenen Toolvertrag.
 - Tokens werden nur einmal im Klartext gezeigt. Persistiert wird ausschließlich
   ein starker Hash in `bubblophy_agent_tokens.token_hash`.
 - Jedes Token ist auf genau ein Projekt begrenzt.

@@ -20,6 +20,13 @@ const sensitiveReadHardeningPath = join(
 const sensitiveReadHardeningSql = existsSync(sensitiveReadHardeningPath)
   ? normalizeSql(readFileSync(sensitiveReadHardeningPath, 'utf8'))
   : '';
+const oauthDirectReadHardeningPath = join(
+  process.cwd(),
+  'drizzle/0004_close_oauth_direct_reads.sql'
+);
+const oauthDirectReadHardeningSql = existsSync(oauthDirectReadHardeningPath)
+  ? normalizeSql(readFileSync(oauthDirectReadHardeningPath, 'utf8'))
+  : '';
 
 const rlsProtectedTables = [
   'bubblophy_projects',
@@ -117,6 +124,31 @@ describe('bubblophy RLS migration', () => {
     expect(sensitiveReadHardeningSql).toContain(
       'drop policy if exists "bubblophy project members read issue events" on "public"."bubblophy_issue_events"'
     );
+  });
+
+  it('blocks OAuth client JWTs from every direct Bubblophy table operation', () => {
+    expect(drizzleJournalSql).toContain(
+      '"tag": "0004_close_oauth_direct_reads"'
+    );
+
+    for (const tableName of rlsProtectedTables) {
+      expect(oauthDirectReadHardeningSql).toContain(
+        `create policy "bubblophy direct sessions exclude oauth clients" on "public"."${tableName}" as restrictive for all to authenticated`
+      );
+    }
+
+    const policies = getPolicyStatements(oauthDirectReadHardeningSql);
+
+    expect(policies).toHaveLength(rlsProtectedTables.length);
+
+    for (const policy of policies) {
+      expect(policy).toContain(
+        `using (((select auth.jwt()) ->> 'client_id') is null)`
+      );
+      expect(policy).toContain(
+        `with check (((select auth.jwt()) ->> 'client_id') is null)`
+      );
+    }
   });
 
   it('limits direct authenticated reads to project membership boundaries', () => {
