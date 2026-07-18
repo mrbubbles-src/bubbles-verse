@@ -78,6 +78,13 @@ dauerhaften Autopilot-Rechte.
   liest Rollen bei jedem Aufruf neu und gibt nur Projekt-ID, Key, Name,
   Beschreibung, Archivstatus und aktuelle Rolle zurück. Agent-Token-, Issue-,
   Run-, Audit- und andere Userdaten werden nicht selektiert.
+- Das read-only MCP-Werkzeug `list_issues` startet ebenfalls bei
+  `bubblophy_project_members` und bindet User-ID plus angefragte Projekt-ID in
+  dieselbe Abfrage. Es liefert höchstens 100 öffentliche Summaries pro Seite;
+  Beschreibung, Assignee-/Creator-IDs, Pläne, Runs, Tokens und Events werden
+  nicht selektiert. Fehlende und fremde Projekte bleiben ununterscheidbar.
+  Archivierte Mitgliedschaftsprojekte sind nur für historische Reads sichtbar
+  und werden im Ergebnis ausdrücklich als archiviert markiert.
 - Die OAuth-Zustimmungsseite verlangt zusätzlich zur Supabase-Cookie-Session
   den aktuellen DB-basierten Bubblophy-Zugang. Die Decision-Route akzeptiert nur
   URL-encoded `POST`-Formulare mit exakt passendem kanonischem Origin; zusammen

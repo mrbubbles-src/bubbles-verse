@@ -285,4 +285,32 @@ Mit Commit-Writer aus dem tatsächlichen staged Diff einen fokussierten Conventi
 
 - [ ] **Step 5: Staging-Ende-zu-Ende-Smoke**
 
-Dynamische Client-Registrierung, PKCE, Consent, Tokenrefresh und `list_projects` mit getrennten Projektmitgliedschaften real gegen Staging prüfen: einmal mit Codex, einmal mit Claude. Erst dieser Smoke schließt den Slice ab.
+Dynamische Client-Registrierung, PKCE, Consent, Tokenrefresh, `list_projects`
+und `list_issues` mit getrennten Projektmitgliedschaften real gegen Staging
+prüfen: einmal mit Codex, einmal mit Claude. Erst dieser Smoke schließt den
+Slice ab.
+
+### Task 7: Paginiertes read-only `list_issues`
+
+**Files:**
+
+- Create: `apps/bubblophy/lib/mcp/issues.ts`
+- Create: `apps/bubblophy/lib/mcp/issues-database-read.ts`
+- Create: `apps/bubblophy/__tests__/lib/mcp/issues.test.ts`
+- Create: `apps/bubblophy/__tests__/lib/mcp/issues-database-read.test.ts`
+- Modify: `apps/bubblophy/lib/mcp/register-tools.ts`
+- Modify: `apps/bubblophy/__tests__/app/mcp-route.test.ts`
+
+**Contract:** Eine angefragte Projekt-ID wird in derselben Abfrage an die
+aktuelle OAuth-`sub`-Membership gebunden. Pro Aufruf werden höchstens 100
+öffentliche Issue-Summaries nach unveränderlicher Issue-Nummer geliefert.
+Beschreibung, User-IDs, Pläne, Runs, Tokens und Events bleiben außerhalb des
+Werkzeugvertrags; fremde und fehlende Projekte sind nicht unterscheidbar.
+Archivierte Mitgliedschaftsprojekte bleiben als markierte historische
+read-only Ansicht lesbar.
+
+- [x] **Step 1: Service- und Datenbanktests zuerst schreiben**
+- [x] **Step 2: Membership-gejointe Cursor-Abfrage implementieren**
+- [x] **Step 3: Read-only MCP-Werkzeug registrieren**
+- [x] **Step 4: Reviewer und vollständige Slice-Gates ausführen**
+- [x] **Step 5: Fertigen Slice separat committen**

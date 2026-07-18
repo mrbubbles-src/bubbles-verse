@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const verifyBubblophyMcpTokenMock = vi.fn();
 const listBubblophyMcpProjectsMock = vi.fn();
+const listBubblophyMcpIssuesMock = vi.fn();
 
 vi.mock('@/lib/mcp/auth', () => ({
   verifyBubblophyMcpToken: (request: Request, bearerToken?: string) =>
@@ -13,6 +14,17 @@ vi.mock('@/lib/mcp/auth', () => ({
 vi.mock('@/lib/mcp/projects', () => ({
   listBubblophyMcpProjects: (authUserId: string) =>
     listBubblophyMcpProjectsMock(authUserId),
+}));
+
+vi.mock('@/lib/mcp/issues', () => ({
+  listBubblophyMcpIssues: (
+    authUserId: string,
+    input: {
+      projectId: string;
+      limit?: number;
+      afterIssueNumber?: number;
+    }
+  ) => listBubblophyMcpIssuesMock(authUserId, input),
 }));
 
 function createInitializeRequest(token?: string) {
@@ -58,6 +70,30 @@ function createListProjectsRequest() {
   });
 }
 
+function createListIssuesRequest() {
+  return new Request('https://bubblophy.example.com/mcp', {
+    method: 'POST',
+    headers: {
+      accept: 'application/json, text/event-stream',
+      authorization: 'Bearer signed-token',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 4,
+      method: 'tools/call',
+      params: {
+        name: 'list_issues',
+        arguments: {
+          projectId: 'project_bv',
+          limit: 25,
+          afterIssueNumber: 10,
+        },
+      },
+    }),
+  });
+}
+
 function createListToolsRequest() {
   return new Request('https://bubblophy.example.com/mcp', {
     method: 'POST',
@@ -83,6 +119,13 @@ describe('/mcp', () => {
     listBubblophyMcpProjectsMock.mockResolvedValue({
       status: 'success',
       projects: [],
+    });
+    listBubblophyMcpIssuesMock.mockReset();
+    listBubblophyMcpIssuesMock.mockResolvedValue({
+      status: 'success',
+      project: { id: 'project_bv', key: 'BV', isArchived: false },
+      issues: [],
+      nextAfterIssueNumber: null,
     });
     vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://bubblophy.example.com');
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://auth.example.com');
@@ -192,6 +235,50 @@ describe('/mcp', () => {
     expect(body).toContain('"readOnlyHint":true');
     expect(body).toContain('"destructiveHint":false');
     expect(body).toContain('"openWorldHint":false');
+    expect(body).toContain('"name":"list_issues"');
+  });
+
+  it('lists bounded public issue summaries for the verified OAuth identity', async () => {
+    verifyBubblophyMcpTokenMock.mockResolvedValue({
+      token: 'signed-token',
+      clientId: 'client-1',
+      scopes: ['openid'],
+      expiresAt: 2_000_000_000,
+      resource: new URL('https://bubblophy.example.com/mcp'),
+      extra: { authUserId: 'user-1' },
+    });
+    listBubblophyMcpIssuesMock.mockResolvedValue({
+      status: 'success',
+      project: { id: 'project_bv', key: 'BV', isArchived: false },
+      issues: [
+        {
+          key: 'BV-12',
+          issueNumber: 12,
+          title: 'MCP-Zugriff ergänzen',
+          status: 'ready',
+          priority: 'high',
+          requiresHumanApproval: true,
+          updatedAt: '2026-07-18T12:00:00.000Z',
+        },
+      ],
+      nextAfterIssueNumber: null,
+    });
+    const { POST } = await import('@/app/mcp/route');
+    const response = await POST(createListIssuesRequest());
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).toContain('"key":"BV-12"');
+    expect(body).toContain('"requiresHumanApproval":true');
+    expect(body).not.toContain('description');
+    expect(body).not.toContain('assignedAuthUserId');
+    expect(body).not.toContain('signed-token');
+    expect(body).not.toContain('user-1');
+    expect(listBubblophyMcpIssuesMock).toHaveBeenCalledWith('user-1', {
+      projectId: 'project_bv',
+      limit: 25,
+      afterIssueNumber: 10,
+    });
   });
 
   it('does not call project reads without an authenticated user identity', async () => {

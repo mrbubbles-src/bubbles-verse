@@ -26,6 +26,9 @@
 - Added the cross-platform MCP operations runbook for environment-specific
   Supabase OAuth configuration, exact audience hooks, personal Codex and Claude
   Code login, credential persistence, staging isolation smokes, and rollback.
+- Added the membership-scoped, read-only `list_issues` MCP tool with bounded
+  issue-number pagination and a public summary contract that excludes issue
+  descriptions, user identifiers, plans, runs, tokens, and audit data.
 
 All notable changes to this project will be documented in this file.
 

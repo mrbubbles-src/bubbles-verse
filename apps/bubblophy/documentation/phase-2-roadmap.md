@@ -102,7 +102,8 @@ Status: abgeschlossen.
 
 Das Sicherheitsgate ist abgeschlossen. Transport, Protected-Resource-Discovery,
 lokale Supabase-JWT-Validierung, das membership-basierte read-only Werkzeug
-`list_projects`, die OAuth-vs.-Data-API-RLS-Grenze und der persönliche
+`list_projects`, das paginierte membership-basierte `list_issues`, die
+OAuth-vs.-Data-API-RLS-Grenze und der persönliche
 OAuth-Consent-Flow sind vorhanden. Ohne
 gültige Signatur, Issuer, Ablauf, Subject, OAuth-Client-ID und exakte
 MCP-Audience bleibt der Zugriff fail-closed. Als Nächstes folgen die genaue

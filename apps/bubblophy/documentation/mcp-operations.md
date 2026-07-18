@@ -28,7 +28,8 @@ persönliche Client-Anmeldung. Es enthält keine echten Tokens oder Secrets.
 - Lokale Prüfung asymmetrisch signierter Supabase-JWTs gegen Issuer, Ablauf,
   `sub`, `client_id` und die exakte Audience `<APP_URL>/mcp`.
 - Persönlicher Consent unter `/oauth/consent` mit explizitem Erlauben/Ablehnen.
-- Read-only-Werkzeug `list_projects` mit request-aktueller Membership-Prüfung.
+- Read-only-Werkzeuge `list_projects` und paginiertes `list_issues` mit
+  request-aktueller Membership-Prüfung.
 
 ## Umgebungsvertrag
 
@@ -182,10 +183,12 @@ Der MCP-Foundation-Slice ist erst nach diesem realen Smoke vollständig:
    dritte gemeinsame Mitgliedschaft darf unterschiedliche Rollen haben.
 2. Person A über Codex verbinden. Person B getrennt über Claude Code verbinden.
 3. In beiden Clients `list_projects` aufrufen. Jeder Client darf nur seine
-   aktuelle Projektmenge und Rolle sehen; keine Issues, Runs, Tokens oder
-   Audit-Payloads dürfen im Ergebnis stehen.
-4. Eine Membership ändern und das Werkzeug ohne neue Anmeldung erneut aufrufen.
-   Das Ergebnis muss die Änderung sofort widerspiegeln.
+   aktuelle Projektmenge und Rolle sehen. Anschließend `list_issues` für ein
+   eigenes, ein gemeinsames und eine fremde Projekt-ID aufrufen. Issue-Listen
+   dürfen nur für aktuelle Memberships erscheinen und keine Beschreibungen,
+   User-IDs, Pläne, Runs, Tokens oder Audit-Payloads enthalten.
+4. Eine Membership ändern und beide Werkzeuge ohne neue Anmeldung erneut
+   aufrufen. Das Ergebnis muss die Änderung sofort widerspiegeln.
 5. Beide Clients schließen und neu starten. Der Zugriff muss ohne erneuten
    manuellen Token-Transfer funktionieren.
 6. In Staging die Access-Token-Laufzeit vorübergehend kurz genug setzen, um nach
@@ -198,7 +201,8 @@ Der MCP-Foundation-Slice ist erst nach diesem realen Smoke vollständig:
 8. Negativfälle prüfen: falsche Audience, abgelaufenes Token, entfernte
    Membership, unbekannter User und der Versuch, fremde Projekt-IDs zu erraten.
    Archivierte Mitgliedschaftsprojekte bleiben dagegen absichtlich sichtbar
-   und müssen mit `isArchived: true` zurückkommen.
+   und müssen mit `isArchived: true` samt historischer Issue-Summaries
+   zurückkommen; operative Mutationen bleiben für sie gesperrt.
 9. Keine Tokens in Terminalausgabe, Screenshots, Logs oder Testartefakte
    übernehmen. Nur Clientname, Testperson, erwartete/sichtbare Projekt-IDs,
    Zeitstempel und Pass/Fail dokumentieren.

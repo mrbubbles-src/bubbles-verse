@@ -108,6 +108,13 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   Person zurück. Die Mitgliedschaften werden bei jedem Aufruf neu aus
   `bubblophy_project_members` gelesen; Agent-Token-, Issue-, Run-, Audit- und
   andere Userdaten gehören nicht zu diesem Read-Vertrag.
+- Das read-only Werkzeug `list_issues` lädt nach einer aktuellen
+  Projektmitgliedschaft maximal 100 Issue-Summaries pro Seite. Es liefert
+  sichtbaren Issue-Key, Titel, Status, Priorität, Human-Approval-Flag und
+  Aktualisierungszeit, aber keine Beschreibungen, User-IDs, Pläne, Runs,
+  Agent-Tokens oder Auditdaten. Der stabile Cursor ist die Issue-Nummer.
+  Archivierte Mitgliedschaftsprojekte bleiben als markierte historische
+  read-only Ansicht lesbar; operative Mutationen bleiben gesperrt.
 - `/oauth/consent` übernimmt die einmalige persönliche Zustimmung für neue
   MCP-Clients. Bubblophy zeigt Clientname, angeforderte Standard-Scopes und das
   registrierte Rücksprungziel; Erlauben oder Ablehnen läuft ausschließlich über
@@ -171,7 +178,9 @@ bun run build
 - Der neue Remote-MCP-Transport ist fail-closed: Nur Supabase-OAuth-JWTs mit
   gültiger Signatur, Issuer, Ablauf, `sub`, `client_id` und exakt Bubblophys
   `/mcp`-Audience erreichen den Transport. `list_projects` verwendet danach
-  ausschließlich die validierte `sub` als Membership-Filter.
+  ausschließlich die validierte `sub` als Membership-Filter. `list_issues`
+  verlangt zusätzlich eine aktuelle Membership für die angefragte Projekt-ID;
+  fremde und nicht vorhandene Projekte liefern denselben Fehler.
 - Ein Agent-Client startet die Supabase-OAuth-Verbindung. Nach dem einmaligen
   Browser-Login und der Zustimmung speichert und erneuert der jeweilige Client
   seine Access- und Refresh-Tokens selbst; Bubblophy persistiert diese Tokens
