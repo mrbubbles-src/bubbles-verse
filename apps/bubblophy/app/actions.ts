@@ -49,6 +49,14 @@ import type {
   CreateBubblophyProjectResult,
 } from '@/lib/projects/create';
 import type {
+  CreateBubblophyProjectInvitationInput,
+  CreateBubblophyProjectInvitationResult,
+  ReinviteBubblophyProjectInvitationInput,
+  ReinviteBubblophyProjectInvitationResult,
+  RevokeBubblophyProjectInvitationInput,
+  RevokeBubblophyProjectInvitationResult,
+} from '@/lib/projects/invitations';
+import type {
   TransitionBubblophyProjectArchiveInput,
   TransitionBubblophyProjectArchiveResult,
   UpdateBubblophyProjectContentInput,
@@ -76,6 +84,11 @@ import { createOrUpdateBubblophyIssuePlanDraft } from '@/lib/issues/plans';
 import { updateBubblophyIssuePriority } from '@/lib/issues/priority';
 import { updateBubblophyIssueStatus } from '@/lib/issues/status';
 import { createBubblophyProject } from '@/lib/projects/create';
+import {
+  createBubblophyProjectInvitation,
+  reinviteBubblophyProjectInvitation,
+  revokeBubblophyProjectInvitation,
+} from '@/lib/projects/invitations';
 import {
   transitionBubblophyProjectArchive,
   updateBubblophyProjectContent,
@@ -187,6 +200,30 @@ export type RemoveBubblophyProjectMemberActionInput = Omit<
 
 export type RemoveBubblophyProjectMemberActionResult =
   RemoveBubblophyProjectMemberResult;
+
+export type CreateBubblophyProjectInvitationActionInput = Omit<
+  CreateBubblophyProjectInvitationInput,
+  'authUserId'
+>;
+
+export type CreateBubblophyProjectInvitationActionResult =
+  CreateBubblophyProjectInvitationResult;
+
+export type ReinviteBubblophyProjectInvitationActionInput = Omit<
+  ReinviteBubblophyProjectInvitationInput,
+  'authUserId'
+>;
+
+export type ReinviteBubblophyProjectInvitationActionResult =
+  ReinviteBubblophyProjectInvitationResult;
+
+export type RevokeBubblophyProjectInvitationActionInput = Omit<
+  RevokeBubblophyProjectInvitationInput,
+  'authUserId'
+>;
+
+export type RevokeBubblophyProjectInvitationActionResult =
+  RevokeBubblophyProjectInvitationResult;
 
 export type CreateBubblophyAgentTokenActionInput = Omit<
   CreateBubblophyAgentTokenInput,
@@ -493,6 +530,57 @@ export async function removeBubblophyProjectMemberAction(
   const session = await requireBubblophySession({ nextPath: '/' });
 
   return removeBubblophyProjectMember({
+    ...input,
+    authUserId: session.authUserId,
+  });
+}
+
+/**
+ * Creates a pending project invitation for the current manager session.
+ *
+ * @param input Project key, email address, and invited non-owner role.
+ * @returns Created invitation with a one-time token or a safe status.
+ */
+export async function createBubblophyProjectInvitationAction(
+  input: CreateBubblophyProjectInvitationActionInput
+): Promise<CreateBubblophyProjectInvitationActionResult> {
+  const session = await requireBubblophySession({ nextPath: '/' });
+
+  return createBubblophyProjectInvitation({
+    ...input,
+    authUserId: session.authUserId,
+  });
+}
+
+/**
+ * Rotates an open invitation token and expiry for the current manager session.
+ *
+ * @param input Invitation ID and expected update time.
+ * @returns Updated invitation with a new one-time token or a safe status.
+ */
+export async function reinviteBubblophyProjectInvitationAction(
+  input: ReinviteBubblophyProjectInvitationActionInput
+): Promise<ReinviteBubblophyProjectInvitationActionResult> {
+  const session = await requireBubblophySession({ nextPath: '/' });
+
+  return reinviteBubblophyProjectInvitation({
+    ...input,
+    authUserId: session.authUserId,
+  });
+}
+
+/**
+ * Revokes an open invitation for the current manager session.
+ *
+ * @param input Invitation ID and expected update time.
+ * @returns Revoked invitation reference or a safe status.
+ */
+export async function revokeBubblophyProjectInvitationAction(
+  input: RevokeBubblophyProjectInvitationActionInput
+): Promise<RevokeBubblophyProjectInvitationActionResult> {
+  const session = await requireBubblophySession({ nextPath: '/' });
+
+  return revokeBubblophyProjectInvitation({
     ...input,
     authUserId: session.authUserId,
   });

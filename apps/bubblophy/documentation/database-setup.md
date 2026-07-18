@@ -115,6 +115,15 @@ RLS ist aktiviert; direkte Grants und Policies für `public`, `anon` und
 `authenticated` fehlen absichtlich, damit E-Mail und Token-Hash nur über
 serverseitige Verträge gelesen werden können.
 
+Die serverseitigen Create-/Reinvite-/Revoke-Verträge sperren zuerst Projekt
+und handelnde Mitgliedschaft, danach die betroffene offene Einladung. Nur
+Owner und Maintainer dürfen Nicht-Owner-Rollen einladen. Reinvite rotiert
+Token-Hash und Sieben-Tage-Ablauf; Reinvite und Revoke vergleichen zusätzlich
+`updated_at`; erfolgreiche Übergänge erhöhen diese Version auch bei gleicher
+oder rückläufiger Instanzuhr strikt. Dadurch enden parallele Entscheidungen als
+Konflikt und erzeugen kein veraltetes Audit-Ereignis. Klartext-Tokens werden
+ausschließlich beim erfolgreichen Create oder Reinvite einmalig zurückgegeben.
+
 Die Zielumgebung braucht zusätzlich einen Supabase-Custom-Access-Token-Hook,
 der JWTs mit `client_id` die exakte Audience `<NEXT_PUBLIC_APP_URL>/mcp` gibt.
 Der Hook ist absichtlich umgebungsspezifische Auth-Infrastruktur und nicht Teil

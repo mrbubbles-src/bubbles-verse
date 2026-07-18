@@ -72,8 +72,10 @@ Status: abgeschlossen.
   Einladungspersistenz abgeschlossen.
 - Die Einladungspersistenz ist mit normalisierter E-Mail, Nicht-Owner-Rolle,
   gehashtem Token, Ablauf- und konfliktfreien Terminalzuständen angelegt.
-  Direkte RLS-Reads bleiben vollständig geschlossen; Create/Reinvite/Revoke
-  und Annahme folgen als getrennte Slices.
+  Direkte RLS-Reads bleiben vollständig geschlossen. Create, Reinvite und
+  Revoke verwenden gesperrte Manager-Autorisierung, rotierende Einmal-Tokens,
+  Compare-and-set und E-Mail-/Token-freie Audit-Ereignisse. Redigierter
+  Manager-Snapshot und Annahme folgen als getrennte Slices.
 - Mitglieder über Profil oder E-Mail statt technischer Auth-User-ID einladen.
 - Einladungszustände, Ablauf, Annahme und Widerruf auditierbar machen.
 - Rollenansichten und Mutationsrechte für Owner, Maintainer, Member und Viewer

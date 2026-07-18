@@ -63,7 +63,7 @@ Einladungspersistenz.
 - [x] Invarianten für Nicht-Owner-Rollen und widerspruchsfreie Zustände in der
       Datenbank absichern.
 - [x] Direkte RLS-Reads auf Einladungsdaten schließen.
-- [ ] Create-/Reinvite-/Revoke-Verträge mit gesperrter Manager-Autorisierung,
+- [x] Create-/Reinvite-/Revoke-Verträge mit gesperrter Manager-Autorisierung,
       sicheren Tokens und E-Mail-freien Audit-Ereignissen implementieren.
 - [ ] Nur Owner/Maintainer erhalten einen serverseitig redigierten
       Einladungs-Snapshot.

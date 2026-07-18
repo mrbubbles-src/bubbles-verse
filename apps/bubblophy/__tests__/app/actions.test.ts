@@ -5,8 +5,11 @@ import type {
   CreateBubblophyIssueNoteActionInput,
   CreateBubblophyIssuePlanActionInput,
   CreateBubblophyProjectActionInput,
+  CreateBubblophyProjectInvitationActionInput,
+  ReinviteBubblophyProjectInvitationActionInput,
   RemoveBubblophyProjectMemberActionInput,
   RequestBubblophyAgentRunActionInput,
+  RevokeBubblophyProjectInvitationActionInput,
   TransitionBubblophyAgentRunActionInput,
   TransitionBubblophyProjectArchiveActionInput,
   UpdateBubblophyAgentTokenLifecycleActionInput,
@@ -29,6 +32,11 @@ import type { CreateOrUpdateBubblophyIssuePlanDraftInput } from '@/lib/issues/pl
 import type { UpdateBubblophyIssuePriorityInput } from '@/lib/issues/priority';
 import type { UpdateBubblophyIssueStatusInput } from '@/lib/issues/status';
 import type { CreateBubblophyProjectInput } from '@/lib/projects/create';
+import type {
+  CreateBubblophyProjectInvitationInput,
+  ReinviteBubblophyProjectInvitationInput,
+  RevokeBubblophyProjectInvitationInput,
+} from '@/lib/projects/invitations';
 import type {
   TransitionBubblophyProjectArchiveInput,
   UpdateBubblophyProjectContentInput,
@@ -55,6 +63,9 @@ const transitionBubblophyProjectArchiveMock = vi.fn();
 const addBubblophyProjectMemberMock = vi.fn();
 const updateBubblophyProjectMemberRoleMock = vi.fn();
 const removeBubblophyProjectMemberMock = vi.fn();
+const createBubblophyProjectInvitationMock = vi.fn();
+const reinviteBubblophyProjectInvitationMock = vi.fn();
+const revokeBubblophyProjectInvitationMock = vi.fn();
 const createBubblophyAgentTokenMock = vi.fn();
 const updateBubblophyAgentTokenLifecycleMock = vi.fn();
 const requestBubblophyAgentRunMock = vi.fn();
@@ -122,6 +133,18 @@ vi.mock('@/lib/projects/members', () => ({
   ) => updateBubblophyProjectMemberRoleMock(input),
   removeBubblophyProjectMember: (input: RemoveBubblophyProjectMemberInput) =>
     removeBubblophyProjectMemberMock(input),
+}));
+
+vi.mock('@/lib/projects/invitations', () => ({
+  createBubblophyProjectInvitation: (
+    input: CreateBubblophyProjectInvitationInput
+  ) => createBubblophyProjectInvitationMock(input),
+  reinviteBubblophyProjectInvitation: (
+    input: ReinviteBubblophyProjectInvitationInput
+  ) => reinviteBubblophyProjectInvitationMock(input),
+  revokeBubblophyProjectInvitation: (
+    input: RevokeBubblophyProjectInvitationInput
+  ) => revokeBubblophyProjectInvitationMock(input),
 }));
 
 vi.mock('@/lib/agent-tokens/create', () => ({
@@ -998,6 +1021,104 @@ describe('project member actions', () => {
       projectKey: 'BV',
       memberAuthUserId: 'user_martin',
       memberCount: 1,
+    });
+  });
+});
+
+describe('project invitation actions', () => {
+  beforeEach(() => {
+    requireBubblophySessionMock.mockReset();
+    createBubblophyProjectInvitationMock.mockReset();
+    reinviteBubblophyProjectInvitationMock.mockReset();
+    revokeBubblophyProjectInvitationMock.mockReset();
+  });
+
+  it('uses the server session for invitation creation', async () => {
+    requireBubblophySessionMock.mockResolvedValue({
+      authUserId: 'user_server',
+      email: 'owner@example.test',
+      user: {},
+    });
+    createBubblophyProjectInvitationMock.mockResolvedValue({
+      status: 'created',
+      invitation: {
+        id: 'invitation_1',
+        projectKey: 'BV',
+        email: 'martin@example.test',
+        role: 'member',
+        expiresAt: '2026-07-25T10:00:00.000Z',
+        updatedAt: '2026-07-18T10:00:00.000Z',
+        plaintextToken: 'bubblophy_invite_secret',
+      },
+    });
+
+    const { createBubblophyProjectInvitationAction } =
+      await import('@/app/actions');
+    const result = await createBubblophyProjectInvitationAction({
+      authUserId: 'user_client_spoof',
+      projectKey: 'BV',
+      email: 'martin@example.test',
+      role: 'member',
+    } as CreateBubblophyProjectInvitationActionInput & {
+      authUserId: string;
+    });
+
+    expect(createBubblophyProjectInvitationMock).toHaveBeenCalledWith({
+      authUserId: 'user_server',
+      projectKey: 'BV',
+      email: 'martin@example.test',
+      role: 'member',
+    });
+    expect(result).toMatchObject({
+      status: 'created',
+      invitation: { plaintextToken: 'bubblophy_invite_secret' },
+    });
+  });
+
+  it('uses the server session for reinvite and revoke decisions', async () => {
+    requireBubblophySessionMock.mockResolvedValue({
+      authUserId: 'user_server',
+      email: 'owner@example.test',
+      user: {},
+    });
+    reinviteBubblophyProjectInvitationMock.mockResolvedValue({
+      status: 'conflict',
+    });
+    revokeBubblophyProjectInvitationMock.mockResolvedValue({
+      status: 'revoked',
+      invitationId: 'invitation_1',
+      projectKey: 'BV',
+      updatedAt: '2026-07-18T10:00:00.000Z',
+    });
+
+    const {
+      reinviteBubblophyProjectInvitationAction,
+      revokeBubblophyProjectInvitationAction,
+    } = await import('@/app/actions');
+    await reinviteBubblophyProjectInvitationAction({
+      authUserId: 'user_client_spoof',
+      invitationId: 'invitation_1',
+      expectedUpdatedAt: '2026-07-18T09:00:00.000Z',
+    } as ReinviteBubblophyProjectInvitationActionInput & {
+      authUserId: string;
+    });
+    await revokeBubblophyProjectInvitationAction({
+      authUserId: 'user_client_spoof',
+      invitationId: 'invitation_1',
+      expectedUpdatedAt: '2026-07-18T10:00:00.000Z',
+    } as RevokeBubblophyProjectInvitationActionInput & {
+      authUserId: string;
+    });
+
+    expect(reinviteBubblophyProjectInvitationMock).toHaveBeenCalledWith({
+      authUserId: 'user_server',
+      invitationId: 'invitation_1',
+      expectedUpdatedAt: '2026-07-18T09:00:00.000Z',
+    });
+    expect(revokeBubblophyProjectInvitationMock).toHaveBeenCalledWith({
+      authUserId: 'user_server',
+      invitationId: 'invitation_1',
+      expectedUpdatedAt: '2026-07-18T10:00:00.000Z',
     });
   });
 });

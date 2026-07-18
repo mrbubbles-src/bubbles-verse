@@ -307,6 +307,11 @@ bun run build
   widerspruchsfreien Annahme-/Widerrufsfeldern. Direkte RLS-Grants oder
   -Policies gibt es für diese Tabelle nicht; eine Einladung gewährt vor der
   späteren atomaren Annahme keinerlei Mitgliedschaft oder MCP-Zugriff.
+- Owner und Maintainer können Einladungen serverseitig erstellen, erneut
+  ausstellen und widerrufen. Erneutes Ausstellen rotiert Token und Ablauf;
+  konkurrierende oder terminale Änderungen überschreiben sich nicht. Nur der
+  erfolgreiche Create-/Reinvite-Aufruf erhält das Klartext-Token einmalig,
+  während Audit-Ereignisse weder E-Mail noch Token oder Token-Hash enthalten.
 - Persistierte Plan-Erfassung läuft serverseitig über Issue-Projektmitgliedschaft,
   schreibt eine neue Planversion plus `plan_updated`-Event und startet keine
   Agent-Runs.

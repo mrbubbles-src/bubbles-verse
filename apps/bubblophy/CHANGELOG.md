@@ -76,6 +76,9 @@
 - Added the server-only project invitation schema with normalized email,
   non-owner roles, hashed tokens, lifecycle invariants, one open invite per
   project/email, and no direct RLS grants or policies.
+- Added manager-only project invitation create, reinvite, and revoke actions
+  with ordered authorization locks, seven-day one-time token rotation,
+  compare-and-set conflict handling, and email/token-free audit events.
 
 All notable changes to this project will be documented in this file.
 

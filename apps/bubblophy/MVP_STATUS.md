@@ -63,6 +63,8 @@ persönlich authentifizierter Remote-MCP mit Supabase OAuth 2.1.
   eindeutiger Laufzeit-Hinweise für externe Agenten.
 - Rollen- und Einladungsmodell ausbauen, damit Mitglieder komfortabler über
   Profile oder E-Mail statt technischer Auth-User-IDs verwaltet werden können.
+  Die serverseitigen Create-/Reinvite-/Revoke-Verträge sind abgeschlossen;
+  Manager-Snapshot, Annahme und Team-UX folgen.
 - Deployment-Härtung vorbereiten: Domain-Konfiguration, Supabase Redirects,
   Runtime-Umgebungen, Monitoring und Backup-/Restore-Strategie.
 - RLS-Policies und Security-Verträge vor Remote-/Produktionsnutzung nochmal
