@@ -165,6 +165,12 @@ dauerhaften Autopilot-Rechte.
   `expectedStatus` verhindert nach dem Issue-Lock veraltete Updates; Konflikt
   und Gleichstand schreiben weder Änderung noch Audit-Event. Der Writer kann
   für persönliche MCP-Aufrufe zusätzlich die OAuth-Client-ID attribuieren.
+- `update_issue_status` verlangt im persönlichen MCP-Vertrag den zuletzt
+  gelesenen `expectedStatus`; ein Statusrennen liefert `conflict` und schreibt
+  nichts. Alle bestehenden Statusziele bleiben verfügbar. `blocked` und `done`
+  verlangen zusätzlich einen nicht leeren, begrenzten Grund. Der öffentliche
+  Tool-Output enthält weder Actor-/OAuth-/Event-IDs noch Plan-, Approval- oder
+  Run-Daten.
 - Agenten dürfen keine dauerhaften Hintergrund-Runs planen.
 - Persönliche OAuth-Clients dürfen über `propose_plan` nur neue ungeprüfte
   Planversionen vorschlagen. Der MCP-Read löst das sichtbare Issue auf; der

@@ -55,6 +55,9 @@
 - Hardened the shared issue-status writer with locked contributor
   authorization, optional expected-status conflict detection, OAuth audit
   attribution, and explicit server-action field forwarding.
+- Added the conflict-safe `update_issue_status` MCP tool with all existing
+  status targets, required reasons for blocked/done, and public output without
+  actor, audit, run, plan, or approval data.
 
 All notable changes to this project will be documented in this file.
 

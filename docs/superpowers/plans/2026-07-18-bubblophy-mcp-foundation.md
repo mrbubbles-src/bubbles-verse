@@ -624,7 +624,7 @@ keine internen Issue-, User-, OAuth-, Event- oder Run-IDs. Das Tool ist
 Closed-World, potenziell destruktiv und wiederholungssicher annotiert. Plan,
 Approval, Run und Assignee bleiben unverändert.
 
-- [ ] **Step 1: Service- und MCP-Route-Tests zuerst schreiben**
-- [ ] **Step 2: MCP-Service und Tool registrieren**
-- [ ] **Step 3: Dokumentation, Reviewer und vollständige Slice-Gates ausführen**
-- [ ] **Step 4: Fertigen MCP-Slice separat committen**
+- [x] **Step 1: Service- und MCP-Route-Tests zuerst schreiben**
+- [x] **Step 2: MCP-Service und Tool registrieren**
+- [x] **Step 3: Dokumentation, Reviewer und vollständige Slice-Gates ausführen**
+- [x] **Step 4: Fertigen MCP-Slice separat committen**

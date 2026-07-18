@@ -40,8 +40,8 @@ Status: abgeschlossen.
   Agent-Entwurf, `add_note` als append-only Aktivität und `create_issue` als
   freigabepflichtiger Triage-Draft sind vorhanden. `request_run` legt nach
   erneuter Rollen- und Tokenprüfung ausschließlich einen ungeprüften Run an.
-  Danach folgen kontrollierte Statusänderungen; menschliche Freigabe bleibt
-  getrennt.
+  `update_issue_status` ergänzt konfliktgeschützte Statusänderungen mit
+  aktuellem Expected-Status. Menschliche Run-Freigabe bleibt getrennt.
 - Bestehende projektgebundene Agent-Tokens bleiben für unbeaufsichtigte
   Runner und Service-Accounts erhalten. Persönliche Codex-/Claude-Verbindungen
   verwenden OAuth statt gemeinsam genutzter Agent-Tokens.
@@ -112,11 +112,12 @@ membership-basierten Detailwerkzeuge `get_issue`, `get_issue_plan` und
 OAuth-Consent-Flow sowie die kontrollierten Schreibwerkzeuge `propose_plan`,
 `add_note` und `create_issue` sowie die sichere Run-Zielauswahl
 `list_run_targets` und die kontrollierte Run-Anfrage `request_run` sind
-vorhanden. Ohne
+vorhanden. Konfliktsichere Statusänderungen laufen über
+`update_issue_status`. Ohne
 gültige Signatur, Issuer, Ablauf, Subject, OAuth-Client-ID und exakte
 MCP-Audience bleibt der Zugriff fail-closed. Als Nächstes folgen die genaue
 Supabase-Staging-Konfiguration, der reale Codex-/Claude-Smoke und weitere
-Human-in-the-loop-Schreibwerkzeuge wie Statusänderungen nach
+weitere Human-in-the-loop-Schreibwerkzeuge nach
 `documentation/mcp-operations.md`.
 Der detaillierte Plan liegt unter
 `docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md`.

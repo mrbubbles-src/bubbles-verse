@@ -13,6 +13,7 @@ const addBubblophyMcpNoteMock = vi.fn();
 const createBubblophyMcpIssueMock = vi.fn();
 const listBubblophyMcpRunTargetsMock = vi.fn();
 const requestBubblophyMcpRunMock = vi.fn();
+const updateBubblophyMcpIssueStatusMock = vi.fn();
 
 vi.mock('@/lib/mcp/auth', () => ({
   verifyBubblophyMcpToken: (request: Request, bearerToken?: string) =>
@@ -108,6 +109,20 @@ vi.mock('@/lib/mcp/request-run', () => ({
       instructions?: string;
     }
   ) => requestBubblophyMcpRunMock(authUserId, clientId, input),
+}));
+
+vi.mock('@/lib/mcp/update-issue-status', () => ({
+  updateBubblophyMcpIssueStatus: (
+    authUserId: string,
+    clientId: string,
+    input: {
+      projectId: string;
+      issueNumber: number;
+      expectedStatus: string;
+      status: string;
+      reason?: string;
+    }
+  ) => updateBubblophyMcpIssueStatusMock(authUserId, clientId, input),
 }));
 
 function createInitializeRequest(token?: string) {
@@ -356,6 +371,32 @@ function createRequestRunRequest() {
   });
 }
 
+function createUpdateIssueStatusRequest() {
+  return new Request('https://bubblophy.example.com/mcp', {
+    method: 'POST',
+    headers: {
+      accept: 'application/json, text/event-stream',
+      authorization: 'Bearer signed-token',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 13,
+      method: 'tools/call',
+      params: {
+        name: 'update_issue_status',
+        arguments: {
+          projectId: 'project_bv',
+          issueNumber: 12,
+          expectedStatus: 'in_progress',
+          status: 'review',
+          reason: 'Zur Prüfung bereit.',
+        },
+      },
+    }),
+  });
+}
+
 function createListToolsRequest() {
   return new Request('https://bubblophy.example.com/mcp', {
     method: 'POST',
@@ -405,6 +446,10 @@ describe('/mcp', () => {
     listBubblophyMcpRunTargetsMock.mockResolvedValue({ status: 'not_found' });
     requestBubblophyMcpRunMock.mockReset();
     requestBubblophyMcpRunMock.mockResolvedValue({ status: 'not_found' });
+    updateBubblophyMcpIssueStatusMock.mockReset();
+    updateBubblophyMcpIssueStatusMock.mockResolvedValue({
+      status: 'not_found',
+    });
     vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://bubblophy.example.com');
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://auth.example.com');
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'public-anon-key');
@@ -522,6 +567,10 @@ describe('/mcp', () => {
     expect(body).toContain('"name":"create_issue"');
     expect(body).toContain('"name":"list_run_targets"');
     expect(body).toContain('"name":"request_run"');
+    expect(body).toContain('"name":"update_issue_status"');
+    expect(body).toMatch(
+      /"name":"update_issue_status".*?"destructiveHint":true.*?"idempotentHint":true.*?"openWorldHint":false/
+    );
   });
 
   it('lists bounded public issue summaries for the verified OAuth identity', async () => {
@@ -900,6 +949,74 @@ describe('/mcp', () => {
         instructions: 'Nur vorbereiten.',
       }
     );
+  });
+
+  it('updates issue status without exposing actor or audit identifiers', async () => {
+    verifyBubblophyMcpTokenMock.mockResolvedValue({
+      token: 'signed-token',
+      clientId: 'client-1',
+      scopes: ['openid'],
+      expiresAt: 2_000_000_000,
+      resource: new URL('https://bubblophy.example.com/mcp'),
+      extra: { authUserId: 'user-1' },
+    });
+    updateBubblophyMcpIssueStatusMock.mockResolvedValue({
+      status: 'updated',
+      project: { id: 'project_bv', key: 'BV', isArchived: false },
+      issue: {
+        key: 'BV-12',
+        issueNumber: 12,
+        title: 'Status sicher ändern',
+        status: 'review',
+      },
+    });
+    const { POST } = await import('@/app/mcp/route');
+    const response = await POST(createUpdateIssueStatusRequest());
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).toContain('"key":"BV-12"');
+    expect(body).toContain('"status":"review"');
+    expect(body).not.toContain('issue_bv_12');
+    expect(body).not.toContain('actorAuthUserId');
+    expect(body).not.toContain('actorOauthClientId');
+    expect(body).not.toContain('eventId');
+    expect(body).not.toContain('user-1');
+    expect(body).not.toContain('client-1');
+    expect(updateBubblophyMcpIssueStatusMock).toHaveBeenCalledWith(
+      'user-1',
+      'client-1',
+      {
+        projectId: 'project_bv',
+        issueNumber: 12,
+        expectedStatus: 'in_progress',
+        status: 'review',
+        reason: 'Zur Prüfung bereit.',
+      }
+    );
+  });
+
+  it('returns a safe tool error for stale issue-status writes', async () => {
+    verifyBubblophyMcpTokenMock.mockResolvedValue({
+      token: 'signed-token',
+      clientId: 'client-1',
+      scopes: ['openid'],
+      expiresAt: 2_000_000_000,
+      resource: new URL('https://bubblophy.example.com/mcp'),
+      extra: { authUserId: 'user-1' },
+    });
+    updateBubblophyMcpIssueStatusMock.mockResolvedValue({
+      status: 'conflict',
+    });
+    const { POST } = await import('@/app/mcp/route');
+    const response = await POST(createUpdateIssueStatusRequest());
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).toContain('"isError":true');
+    expect(body).toContain('zwischenzeitlich geändert');
+    expect(body).not.toContain('user-1');
+    expect(body).not.toContain('client-1');
   });
 
   it('does not call project reads without an authenticated user identity', async () => {

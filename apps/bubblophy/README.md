@@ -141,6 +141,11 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   `requested`. Projekt, Issue, Membership und Token werden transaktional
   gesperrt; Approval, Worker, Tool-Aufruf, Polling und Issue-Status bleiben
   unangetastet. Der Output enthält weder Token- noch Actor- oder Event-IDs.
+- `update_issue_status` ändert für Contributor den Status eines sichtbaren
+  aktiven Issues nur, wenn `expectedStatus` unter dem Issue-Lock noch aktuell
+  ist. Alle sieben menschlichen Statusziele bleiben erreichbar; `blocked` und
+  `done` verlangen im Remote-Vertrag einen Grund. Der Output enthält keine
+  Actor-, Audit-, Plan-, Approval- oder Run-Daten.
 - `/oauth/consent` übernimmt die einmalige persönliche Zustimmung für neue
   MCP-Clients. Bubblophy zeigt Clientname, angeforderte Standard-Scopes und das
   registrierte Rücksprungziel; Erlauben oder Ablehnen läuft ausschließlich über

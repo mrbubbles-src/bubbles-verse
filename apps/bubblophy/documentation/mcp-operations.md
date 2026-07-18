@@ -46,6 +46,11 @@ persönliche Client-Anmeldung. Es enthält keine echten Tokens oder Secrets.
   und ein erneut geprüftes Run-Ziel nur einen OAuth-attributierten Run im
   Zustand `requested` an. Approval, Ausführung und Issue-Status bleiben
   unverändert; Token- und Actor-IDs fehlen im Output.
+- Kontrolliertes Schreibwerkzeug `update_issue_status`: setzt einen der sieben
+  bestehenden Issue-Status nur, wenn der zuvor gelesene `expectedStatus` unter
+  dem Writer-Lock weiterhin gilt. `blocked` und `done` brauchen einen Grund;
+  Konflikte erzeugen weder Update noch Event. Der Tool-Output bleibt frei von
+  Actor-, Audit-, Plan-, Approval- und Run-Daten.
 
 ## Umgebungsvertrag
 
@@ -249,21 +254,29 @@ insbesondere Schritt 7 bleibt deshalb ein offenes Produktions-Gate.
    bleiben. Der Output darf keine Token-, User-, OAuth-Client- oder Event-ID
    enthalten. Viewer, entfernte Membership, archivierte Projekte und ein
    zwischen Auswahl und Schreiben pausiertes Ziel müssen scheitern.
-10. Beide Clients schließen und neu starten. Der Zugriff muss ohne erneuten
+10. `get_issue` aufrufen, dessen Status als `expectedStatus` in
+    `update_issue_status` verwenden und einen nichtterminalen Status setzen.
+    Das `status_changed`-Event muss User plus OAuth-Client attribuieren; Plan,
+    Approval, Runs und Assignee bleiben unverändert. Danach zwischen
+    `get_issue` und Write den Status menschlich ändern: Der MCP-Aufruf muss mit
+    Konflikt ohne zweites Update/Event enden. Viewer, entfernte Membership und
+    archivierte Projekte müssen scheitern. `blocked` und `done` ohne Grund
+    müssen bereits an der Toolgrenze scheitern.
+11. Beide Clients schließen und neu starten. Der Zugriff muss ohne erneuten
     manuellen Token-Transfer funktionieren.
-11. In Staging die Access-Token-Laufzeit vorübergehend kurz genug setzen, um nach
+12. In Staging die Access-Token-Laufzeit vorübergehend kurz genug setzen, um nach
     Ablauf einen erneuten Werkzeugaufruf zu prüfen. Der Client muss per
     Refresh-Token fortfahren; danach die normale Laufzeit wiederherstellen.
-12. Mit einem echten OAuth-JWT gegen die Supabase Data API prüfen, dass Reads und
+13. Mit einem echten OAuth-JWT gegen die Supabase Data API prüfen, dass Reads und
     Writes auf alle acht Bubblophy-Tabellen durch `0004` blockiert bleiben.
     Dasselbe mit einer normalen menschlichen JWT und vorhandener Membership
     gegen die vorgesehenen Select-Policies gegenprüfen.
-13. Negativfälle prüfen: falsche Audience, abgelaufenes Token, entfernte
+14. Negativfälle prüfen: falsche Audience, abgelaufenes Token, entfernte
     Membership, unbekannter User und der Versuch, fremde Projekt-IDs zu erraten.
     Archivierte Mitgliedschaftsprojekte bleiben dagegen absichtlich sichtbar
     und müssen mit `isArchived: true` samt historischer Issue-Summaries
     zurückkommen; operative Mutationen bleiben für sie gesperrt.
-14. Keine Tokens in Terminalausgabe, Screenshots, Logs oder Testartefakte
+15. Keine Tokens in Terminalausgabe, Screenshots, Logs oder Testartefakte
     übernehmen. Nur Clientname, Testperson, erwartete/sichtbare Projekt-IDs,
     Zeitstempel und Pass/Fail dokumentieren.
 
