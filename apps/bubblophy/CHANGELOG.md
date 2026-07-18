@@ -23,6 +23,9 @@
 - Added restrictive RLS policies that block every OAuth JWT carrying a
   `client_id` from direct Data API access to Bubblophy tables, keeping OAuth
   data access behind the narrower MCP tool contract.
+- Added the cross-platform MCP operations runbook for environment-specific
+  Supabase OAuth configuration, exact audience hooks, personal Codex and Claude
+  Code login, credential persistence, staging isolation smokes, and rollback.
 
 All notable changes to this project will be documented in this file.
 

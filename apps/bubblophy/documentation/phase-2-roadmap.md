@@ -54,6 +54,8 @@ Status: abgeschlossen.
   durchführen; für dringende Revocations einen getesteten Cache-Bust- oder
   Remote-Validation-Ablauf festlegen.
 - Staging-Smoke für Codex und Claude vor dem Produktions-Rollout.
+- Plattformübergreifendes Verbindungs- und Betriebsrunbook für Codex und Claude
+  Code: abgeschlossen; realer Staging-Smoke bleibt offen.
 
 ### 4. Rollen und Einladungen
 
@@ -104,6 +106,7 @@ lokale Supabase-JWT-Validierung, das membership-basierte read-only Werkzeug
 OAuth-Consent-Flow sind vorhanden. Ohne
 gültige Signatur, Issuer, Ablauf, Subject, OAuth-Client-ID und exakte
 MCP-Audience bleibt der Zugriff fail-closed. Als Nächstes folgen die genaue
-Supabase-Betriebsdokumentation, vollständige Slice-Gates und ein Staging-Smoke.
+Supabase-Staging-Konfiguration, vollständige Slice-Gates und der reale
+Codex-/Claude-Smoke nach `documentation/mcp-operations.md`.
 Der detaillierte Plan liegt unter
 `docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md`.

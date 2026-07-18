@@ -48,6 +48,11 @@ dauerhaften Autopilot-Rechte.
   über projektgebundene Bubblophy-Agent-Tokens. Persönliche Codex-, Claude- und
   andere MCP-Verbindungen authentifizieren die handelnde Person über Supabase
   OAuth 2.1 und erhalten keine gemeinsam genutzten Agent-Tokens.
+- Jede Person autorisiert jeden lokalen Client selbst. Codex beziehungsweise
+  Claude Code speichert und erneuert die eigenen OAuth-Credentials im lokalen
+  Credential Store; Bubblophy persistiert weder Access- noch Refresh-Tokens.
+  Betriebssystem und Agent-Anbieter ändern die serverseitige Membership-Prüfung
+  nicht.
 - Agent/API-Routen bleiben außerhalb des menschlichen Login-Proxys. Fehlende
   oder ungültige Bearer-Tokens müssen als route-spezifische JSON/Auth-Fehler
   zurückkommen, nicht als Redirect zu `/login`.
@@ -89,6 +94,10 @@ dauerhaften Autopilot-Rechte.
   scheitern bei `USING` und `WITH CHECK`. Normale menschliche Sessions ohne
   `client_id` behalten die bestehenden Membership-Policies; MCP-Zugriffe laufen
   über den serverseitigen Datenbankpfad und dessen eigenen Toolvertrag.
+- Der umgebungsspezifische Custom-Access-Token-Hook setzt `aud` nur für JWTs
+  mit `client_id` auf Bubblophys exakte `/mcp`-Resource. Normale Browser-JWTs
+  bleiben unverändert. Der vollständige Betriebs- und Smoke-Vertrag liegt in
+  `mcp-operations.md`.
 - Tokens werden nur einmal im Klartext gezeigt. Persistiert wird ausschließlich
   ein starker Hash in `bubblophy_agent_tokens.token_hash`.
 - Jedes Token ist auf genau ein Projekt begrenzt.

@@ -246,19 +246,21 @@ Expected: PASS.
 - Modify: `apps/bubblophy/documentation/auth-security-plan.md`
 - Modify: `apps/bubblophy/documentation/database-setup.md`
 - Modify: `apps/bubblophy/documentation/phase-2-roadmap.md`
+- Create: `apps/bubblophy/documentation/mcp-operations.md`
+- Modify: `apps/bubblophy/.env.example`
 
 **Interfaces:**
 
 - Consumes: implementierten MCP-/OAuth-Vertrag.
 - Produces: genaue lokale, Staging- und Produktionsschritte für Supabase OAuth Server, Authorization Path `/oauth/consent`, dynamische Client-Registrierung, asymmetrische Signaturschlüssel, MCP-Audience-Hook sowie Codex-/Claude-Verbindung.
 
-- [ ] **Step 1: Betriebsvertrag dokumentieren**
+- [x] **Step 1: Betriebsvertrag dokumentieren**
 
 Keine geheimen Werte oder echten Tokens aufnehmen. Klar trennen zwischen Repository-Code und einmaliger Supabase-Dashboard-Konfiguration.
 
 Vor späteren OAuth-Schreibwerkzeugen wird das Audit-Aktormodell um menschliche `authUserId` plus OAuth-`client_id`/Verbindung erweitert, damit MCP- und manuelle UI-Schreibvorgänge unterscheidbar bleiben.
 
-- [ ] **Step 2: Vollständige Checks ausführen**
+- [x] **Step 2: Vollständige Checks ausführen**
 
 Run aus `apps/bubblophy`:
 
@@ -273,11 +275,11 @@ git diff --check
 
 Expected: Alle Befehle exit `0`.
 
-- [ ] **Step 3: Laufenden Reviewer beauftragen**
+- [x] **Step 3: Laufenden Reviewer beauftragen**
 
 Der Reviewer prüft Diff und betroffene Dateien auf Auth-Bypass, falsche Audience, Projekt-Leaks, Token-Logging, unnötige Komplexität, fehlende Tests und Regressionen bestehender Agent-Token-Routen. P0/P1/P2 werden vor dem Commit behoben oder explizit blockierend dokumentiert.
 
-- [ ] **Step 4: Fertigen Slice committen**
+- [x] **Step 4: Fertigen Slice committen**
 
 Mit Commit-Writer aus dem tatsächlichen staged Diff einen fokussierten Conventional Commit erstellen.
 

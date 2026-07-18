@@ -97,6 +97,12 @@ Membership-Policies noch spätere direkte Write-Policies über PostgREST nutzen.
 Sein Datenzugriff bleibt auf Bubblophys serverseitig registrierte MCP-Werkzeuge
 begrenzt.
 
+Die Zielumgebung braucht zusätzlich einen Supabase-Custom-Access-Token-Hook,
+der JWTs mit `client_id` die exakte Audience `<NEXT_PUBLIC_APP_URL>/mcp` gibt.
+Der Hook ist absichtlich umgebungsspezifische Auth-Infrastruktur und nicht Teil
+der portablen Schema-Migrationen. Vollständiges SQL, Grants und Dashboard-
+Aktivierung stehen in `mcp-operations.md`.
+
 ## Lokal reviewen
 
 Aus dem App-Ordner:
@@ -175,6 +181,9 @@ Aktuelle Richtung:
   `auth.uid()`.
 - Supabase-OAuth-Tokens mit `client_id` sind vom direkten Tabellenzugriff
   ausgeschlossen; ihre Standard-Scopes steuern OIDC-Profildaten, nicht RLS.
+- Die OAuth-Audience kommt aus dem pro Umgebung konfigurierten Access-Token-
+  Hook und muss bytegenau mit Bubblophys kanonischer `/mcp`-Resource
+  übereinstimmen.
 - Server Actions und server-only Loader verwenden `DATABASE_URL`, prüfen die
   menschliche Session und geben keine Client-`authUserId`-Eingaben weiter.
 - Agenten verwenden später Bubblophy-Agent-Tokens mit Hash, Scopes,

@@ -95,6 +95,9 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   `documentation/auth-security-plan.md`.
 - Der Nach-MVP-Umfang, beginnend mit einem providerneutralen Remote-MCP über
   Supabase OAuth 2.1, liegt in `documentation/phase-2-roadmap.md`.
+- Das plattformübergreifende Setup für Supabase, Codex und Claude Code samt
+  Audience-Hook, Staging-Gate und Fehlerdiagnose liegt in
+  `documentation/mcp-operations.md`.
 - `/mcp` stellt den stateless Streamable-HTTP-Transport für den kommenden
   persönlichen OAuth-Zugriff bereit. Die Route validiert Supabase-OAuth-JWTs
   lokal über öffentliche asymmetrische JWKS und verweist bei fehlender oder
@@ -146,6 +149,11 @@ bun run dev
 Der Dev-Server bindet an `http://bubblophy.mrbubbles.test:3005`.
 Der Hostname braucht lokal einen Hostfile-Eintrag auf `127.0.0.1`, analog zu
 den anderen Bubblesverse-Apps.
+
+Ein echter persönlicher Remote-MCP-Login braucht eine kanonische HTTPS-
+Staging- oder Produktions-URL. Nach dem einmaligen Supabase-Browserlogin
+speichert der jeweilige Codex-/Claude-Client seine eigenen OAuth-Credentials;
+niemand muss Agent-Tokens zwischen Rechnern oder Betriebssystemen kopieren.
 
 ## Qualität
 
