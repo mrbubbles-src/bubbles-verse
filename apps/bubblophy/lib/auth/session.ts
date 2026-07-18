@@ -7,13 +7,15 @@ import {
   buildBubblophyLoginPath,
   buildBubblophyLogoutPath,
 } from '@/lib/auth/redirects';
+import { BUBBLOPHY_PROJECT_INVITATION_ACCEPT_PATH } from '@/lib/projects/invitation-links';
 import { createBubblophyServerSupabaseClient } from '@/lib/supabase/server';
 
-import { hasSupabaseAuthSessionCookie } from '@bubbles/supabase-access/auth';
 import { cache } from 'react';
 
-import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+
+import { hasSupabaseAuthSessionCookie } from '@bubbles/supabase-access/auth';
 
 export type BubblophySession = {
   user: User;
@@ -77,16 +79,7 @@ export function isDeniedBubblophySessionResult(
  * @returns Allowed, anonymous, or denied session state.
  */
 async function loadOptionalBubblophySession(): Promise<BubblophySessionResult> {
-  const cookieStore = await cookies();
-
-  if (!hasSupabaseAuthSessionCookie(cookieStore.getAll())) {
-    return { status: 'anonymous' };
-  }
-
-  const supabase = await createBubblophyServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthenticatedUser();
 
   if (!user) {
     return { status: 'anonymous' };
@@ -107,7 +100,24 @@ async function loadOptionalBubblophySession(): Promise<BubblophySessionResult> {
   };
 }
 
+/** Reads the current Supabase user without applying Bubblophy access rules. */
+async function loadAuthenticatedBubblophyUser(): Promise<User | null> {
+  const cookieStore = await cookies();
+
+  if (!hasSupabaseAuthSessionCookie(cookieStore.getAll())) {
+    return null;
+  }
+
+  const supabase = await createBubblophyServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  return user;
+}
+
 const getOptionalSession = cache(loadOptionalBubblophySession);
+const getAuthenticatedUser = cache(loadAuthenticatedBubblophyUser);
 
 /**
  * Loads and authorizes the current human Bubblophy session.
@@ -157,4 +167,23 @@ export async function requireBubblophySession(options?: { nextPath?: string }) {
  */
 export async function getOptionalBubblophySession() {
   return getOptionalSession();
+}
+
+/**
+ * Requires a real Supabase user without requiring existing project access.
+ *
+ * This narrow gate exists for invitation acceptance only. Normal dashboard and
+ * server-action routes must continue to call `requireBubblophySession()`.
+ *
+ * @returns Authenticated Supabase user, including verified session email.
+ */
+export async function requireAuthenticatedBubblophyUser() {
+  const user = await getAuthenticatedUser();
+
+  if (!user) {
+    redirect(buildBubblophyLoginPath(BUBBLOPHY_PROJECT_INVITATION_ACCEPT_PATH));
+    throw new Error('Missing authenticated Bubblophy user.');
+  }
+
+  return user;
 }

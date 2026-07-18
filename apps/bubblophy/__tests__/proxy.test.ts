@@ -41,6 +41,14 @@ describe('proxy', () => {
     );
   });
 
+  it('preserves the token-free invitation acceptance path through login', () => {
+    const response = proxy(createRequest('/invitations/accept'));
+
+    expect(response.headers.get('location')).toBe(
+      'http://bubblophy.mrbubbles.test:3005/login?next=%2Finvitations%2Faccept'
+    );
+  });
+
   it('redirects optimistic session login requests to home by default', () => {
     const response = proxy(createRequest('/login', 'token'));
 
@@ -141,6 +149,7 @@ describe('proxy', () => {
       '/issues/:path*',
       '/runs/:path*',
       '/agent-tokens/:path*',
+      '/invitations/:path*',
       '/oauth/:path*',
     ]);
   });

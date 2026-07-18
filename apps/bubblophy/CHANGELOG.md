@@ -82,6 +82,10 @@
 - Added a manager-only project invitation snapshot that binds role
   authorization and invitation rows in one query while excluding token hashes
   and inviter, acceptor, and revoker user IDs.
+- Added the secure invitation acceptance boundary: public deep links stage the
+  secret in a short-lived HttpOnly cookie, OAuth resumes only the exact
+  token-free acceptance path, and matching verified identities atomically gain
+  membership with race-safe, email- and token-free audit events.
 
 All notable changes to this project will be documented in this file.
 

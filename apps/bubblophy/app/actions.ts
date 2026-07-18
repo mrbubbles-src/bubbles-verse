@@ -44,6 +44,7 @@ import type {
   UpdateBubblophyIssueStatusInput,
   UpdateBubblophyIssueStatusResult,
 } from '@/lib/issues/status';
+import type { AcceptBubblophyProjectInvitationResult } from '@/lib/projects/accept-invitation';
 import type {
   CreateBubblophyProjectInput,
   CreateBubblophyProjectResult,
@@ -76,7 +77,10 @@ import { transitionBubblophyAgentRun } from '@/lib/agent-runs/human-transition';
 import { requestBubblophyAgentRun } from '@/lib/agent-runs/request';
 import { createBubblophyAgentToken } from '@/lib/agent-tokens/create';
 import { updateBubblophyAgentTokenLifecycle } from '@/lib/agent-tokens/lifecycle';
-import { requireBubblophySession } from '@/lib/auth/session';
+import {
+  requireAuthenticatedBubblophyUser,
+  requireBubblophySession,
+} from '@/lib/auth/session';
 import { updateBubblophyIssueAssignee } from '@/lib/issues/assignment';
 import { createBubblophyIssueDraft } from '@/lib/issues/create';
 import { updateBubblophyIssueContent } from '@/lib/issues/edit';
@@ -84,7 +88,12 @@ import { createBubblophyIssueNote } from '@/lib/issues/notes';
 import { createOrUpdateBubblophyIssuePlanDraft } from '@/lib/issues/plans';
 import { updateBubblophyIssuePriority } from '@/lib/issues/priority';
 import { updateBubblophyIssueStatus } from '@/lib/issues/status';
+import { acceptBubblophyProjectInvitation } from '@/lib/projects/accept-invitation';
 import { createBubblophyProject } from '@/lib/projects/create';
+import {
+  BUBBLOPHY_PROJECT_INVITATION_COOKIE,
+  BUBBLOPHY_PROJECT_INVITATION_COOKIE_PATH,
+} from '@/lib/projects/invitation-links';
 import { readBubblophyProjectInvitationManagerSnapshot } from '@/lib/projects/invitation-snapshot';
 import {
   createBubblophyProjectInvitation,
@@ -100,6 +109,8 @@ import {
   removeBubblophyProjectMember,
   updateBubblophyProjectMemberRole,
 } from '@/lib/projects/members';
+
+import { cookies } from 'next/headers';
 
 export type CreateBubblophyIssueActionInput = Omit<
   CreateBubblophyIssueDraftInput,
@@ -233,6 +244,9 @@ export interface ReadBubblophyProjectInvitationManagerSnapshotActionInput {
 
 export type ReadBubblophyProjectInvitationManagerSnapshotActionResult =
   ReadBubblophyProjectInvitationManagerSnapshotResult;
+
+export type AcceptBubblophyProjectInvitationActionResult =
+  AcceptBubblophyProjectInvitationResult;
 
 export type CreateBubblophyAgentTokenActionInput = Omit<
   CreateBubblophyAgentTokenInput,
@@ -610,6 +624,42 @@ export async function readBubblophyProjectInvitationManagerSnapshotAction(
     authUserId: session.authUserId,
     projectKey: input.projectKey,
   });
+}
+
+/**
+ * Accepts the staged invitation for the current verified Supabase identity.
+ *
+ * The plaintext token is read only from the HttpOnly handoff cookie. Browser
+ * input cannot choose an identity, email address, token, or project.
+ *
+ * @returns Membership result or a safe invitation lifecycle status.
+ */
+export async function acceptBubblophyProjectInvitationAction(): Promise<AcceptBubblophyProjectInvitationActionResult> {
+  const user = await requireAuthenticatedBubblophyUser();
+  const cookieStore = await cookies();
+  const plaintextToken =
+    cookieStore.get(BUBBLOPHY_PROJECT_INVITATION_COOKIE)?.value ?? '';
+  const result = await acceptBubblophyProjectInvitation({
+    authUserId: user.id,
+    email: user.email,
+    plaintextToken,
+  });
+
+  if (
+    result.status !== 'conflict' &&
+    result.status !== 'database_unavailable' &&
+    result.status !== 'email_mismatch' &&
+    !(result.status === 'invalid' && result.reason === 'missing_email')
+  ) {
+    cookieStore.set(BUBBLOPHY_PROJECT_INVITATION_COOKIE, '', {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: BUBBLOPHY_PROJECT_INVITATION_COOKIE_PATH,
+      maxAge: 0,
+    });
+  }
+
+  return result;
 }
 
 /**

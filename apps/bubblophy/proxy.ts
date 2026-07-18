@@ -82,6 +82,7 @@ export const config = {
     '/issues/:path*',
     '/runs/:path*',
     '/agent-tokens/:path*',
+    '/invitations/:path*',
     '/oauth/:path*',
   ],
 };

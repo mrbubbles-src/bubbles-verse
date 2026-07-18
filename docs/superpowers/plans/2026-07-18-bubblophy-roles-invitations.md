@@ -70,13 +70,13 @@ Einladungspersistenz.
 
 ## Task 4: Annahme und Auth-Grenze
 
-- [ ] Einen eigenen Einladungs-Deep-Link definieren, der anonyme Nutzer über
+- [x] Einen eigenen Einladungs-Deep-Link definieren, der anonyme Nutzer über
       den bestehenden GitHub-/Supabase-Login zurückführt.
-- [ ] Den Callback nur für diesen engen Annahmepfad vor dem normalen
+- [x] Den Callback nur für diesen engen Annahmepfad vor dem normalen
       Bubblophy-Zugangsgate passieren lassen.
-- [ ] Token, Session-E-Mail, Projektzustand und Einladungszustand unter Locks
+- [x] Token, Session-E-Mail, Projektzustand und Einladungszustand unter Locks
       prüfen und Mitgliedschaft plus Audit-Ereignis atomar schreiben.
-- [ ] Wiederholung, Ablauf, Widerruf, falsche E-Mail und parallele Annahme
+- [x] Wiederholung, Ablauf, Widerruf, falsche E-Mail und parallele Annahme
       fail-closed und verständlich abbilden.
 
 ## Task 5: Team-UX und verständliche Identität

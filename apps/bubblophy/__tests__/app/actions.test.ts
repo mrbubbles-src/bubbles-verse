@@ -32,6 +32,7 @@ import type { CreateBubblophyIssueNoteInput } from '@/lib/issues/notes';
 import type { CreateOrUpdateBubblophyIssuePlanDraftInput } from '@/lib/issues/plans';
 import type { UpdateBubblophyIssuePriorityInput } from '@/lib/issues/priority';
 import type { UpdateBubblophyIssueStatusInput } from '@/lib/issues/status';
+import type { AcceptBubblophyProjectInvitationInput } from '@/lib/projects/accept-invitation';
 import type { CreateBubblophyProjectInput } from '@/lib/projects/create';
 import type { ReadBubblophyProjectInvitationManagerSnapshotResult } from '@/lib/projects/invitation-snapshot';
 import type {
@@ -52,6 +53,14 @@ import type {
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const requireBubblophySessionMock = vi.fn();
+const requireAuthenticatedBubblophyUserMock = vi.fn();
+const acceptBubblophyProjectInvitationMock = vi.fn();
+const getCookieMock = vi.fn();
+const setCookieMock = vi.fn();
+const cookiesMock = vi.fn(async () => ({
+  get: getCookieMock,
+  set: setCookieMock,
+}));
 const createBubblophyIssueDraftMock = vi.fn();
 const updateBubblophyIssueAssigneeMock = vi.fn();
 const updateBubblophyIssueContentMock = vi.fn();
@@ -77,6 +86,18 @@ const transitionBubblophyAgentRunMock = vi.fn();
 vi.mock('@/lib/auth/session', () => ({
   requireBubblophySession: (options: { nextPath?: string }) =>
     requireBubblophySessionMock(options),
+  requireAuthenticatedBubblophyUser: () =>
+    requireAuthenticatedBubblophyUserMock(),
+}));
+
+vi.mock('next/headers', () => ({
+  cookies: () => cookiesMock(),
+}));
+
+vi.mock('@/lib/projects/accept-invitation', () => ({
+  acceptBubblophyProjectInvitation: (
+    input: AcceptBubblophyProjectInvitationInput
+  ) => acceptBubblophyProjectInvitationMock(input),
 }));
 
 vi.mock('@/lib/issues/create', () => ({
@@ -1174,6 +1195,94 @@ describe('project invitation actions', () => {
         invitations: [],
       },
     });
+  });
+});
+
+describe('acceptBubblophyProjectInvitationAction', () => {
+  const token = `bubblophy_invite_${'a'.repeat(43)}`;
+
+  beforeEach(() => {
+    requireAuthenticatedBubblophyUserMock.mockReset();
+    acceptBubblophyProjectInvitationMock.mockReset();
+    getCookieMock.mockReset();
+    setCookieMock.mockReset();
+    cookiesMock.mockClear();
+    requireAuthenticatedBubblophyUserMock.mockResolvedValue({
+      id: 'user_martin',
+      email: 'martin@example.test',
+    });
+    getCookieMock.mockReturnValue({ value: token });
+  });
+
+  it('uses only the verified identity and HttpOnly handoff token', async () => {
+    acceptBubblophyProjectInvitationMock.mockResolvedValue({
+      status: 'accepted',
+      projectKey: 'BV',
+      role: 'member',
+      membershipCreated: true,
+    });
+
+    const { acceptBubblophyProjectInvitationAction } =
+      await import('@/app/actions');
+    const result = await acceptBubblophyProjectInvitationAction();
+
+    expect(requireAuthenticatedBubblophyUserMock).toHaveBeenCalledWith();
+    expect(getCookieMock).toHaveBeenCalledWith('bubblophy_project_invitation');
+    expect(acceptBubblophyProjectInvitationMock).toHaveBeenCalledWith({
+      authUserId: 'user_martin',
+      email: 'martin@example.test',
+      plaintextToken: token,
+    });
+    expect(setCookieMock).toHaveBeenCalledWith(
+      'bubblophy_project_invitation',
+      '',
+      {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/invitations/accept',
+        maxAge: 0,
+      }
+    );
+    expect(result).toMatchObject({ status: 'accepted', projectKey: 'BV' });
+  });
+
+  it.each([
+    { status: 'email_mismatch' as const },
+    { status: 'conflict' as const },
+    { status: 'database_unavailable' as const },
+    { status: 'invalid' as const, reason: 'missing_email' as const },
+  ])(
+    'retains the staged token after a retryable $status result',
+    async (result) => {
+      acceptBubblophyProjectInvitationMock.mockResolvedValue(result);
+
+      const { acceptBubblophyProjectInvitationAction } =
+        await import('@/app/actions');
+      await acceptBubblophyProjectInvitationAction();
+
+      expect(setCookieMock).not.toHaveBeenCalled();
+    }
+  );
+
+  it('clears a terminal staged token', async () => {
+    acceptBubblophyProjectInvitationMock.mockResolvedValue({
+      status: 'expired',
+    });
+
+    const { acceptBubblophyProjectInvitationAction } =
+      await import('@/app/actions');
+    await acceptBubblophyProjectInvitationAction();
+
+    expect(setCookieMock).toHaveBeenCalledWith(
+      'bubblophy_project_invitation',
+      '',
+      {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/invitations/accept',
+        maxAge: 0,
+      }
+    );
   });
 });
 

@@ -317,6 +317,16 @@ bun run build
   und Lebenszyklus-Zeitpunkte, schließt aber Token-Hash sowie Einladenden-,
   Annahme- und Widerruf-User-ID aus. Nicht-Manager erhalten kein
   unterscheidbares Einladungs-Ergebnis.
+- Öffentliche Einladungslinks legen das Klartext-Token höchstens 30 Minuten in
+  einem `HttpOnly`-/`SameSite=Lax`-Cookie ab und leiten sofort auf den
+  tokenfreien Pfad `/invitations/accept` um. Nur dieser exakte Pfad darf einen
+  bereits bei Supabase angemeldeten Nutzer vor der ersten Mitgliedschaft durch
+  das normale Bubblophy-Zugangsgate führen. Die Annahme bindet Token und
+  verifizierte Session-E-Mail unter Projekt-, Membership- und Einladungs-Locks,
+  erstellt Mitgliedschaft und Audit atomar. Das Token erscheint weder in
+  Client-JavaScript, Markup noch Action-Ergebnis; die E-Mail ist nur für den
+  authentifizierten Nutzer sichtbar. Audit-Payloads enthalten weder E-Mail,
+  Token noch Hash.
 - Persistierte Plan-Erfassung läuft serverseitig über Issue-Projektmitgliedschaft,
   schreibt eine neue Planversion plus `plan_updated`-Event und startet keine
   Agent-Runs.

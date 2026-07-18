@@ -3,6 +3,7 @@ import {
   getOptionalBubblophySession,
   isDeniedBubblophySessionResult,
 } from '@/lib/auth/session';
+import { isBubblophyProjectInvitationAcceptancePath } from '@/lib/projects/invitation-links';
 
 import { Suspense } from 'react';
 
@@ -77,6 +78,13 @@ export async function BubblophyLoginGate({
   const sessionResult = await getOptionalBubblophySession();
 
   if (sessionResult.status === 'allowed') {
+    redirect(nextPath);
+  }
+
+  if (
+    isDeniedBubblophySessionResult(sessionResult) &&
+    isBubblophyProjectInvitationAcceptancePath(nextPath)
+  ) {
     redirect(nextPath);
   }
 

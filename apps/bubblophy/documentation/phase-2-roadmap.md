@@ -77,7 +77,15 @@ Status: abgeschlossen.
   Compare-and-set und E-Mail-/Token-freie Audit-Ereignisse. Der redigierte
   Manager-Snapshot bindet Owner-/Maintainer-Autorisierung und Einladungsdaten
   in einem Statement und projiziert keine Token-Hashes oder Actor-IDs. Damit
-  ist Task 3 abgeschlossen; Annahme und Auth-Grenze folgen als nächster Slice.
+  ist Task 3 abgeschlossen.
+- Die Annahme- und Auth-Grenze ist abgeschlossen: Ein öffentlicher Deep-Link
+  entfernt das Token vor dem Login aus der URL, hält es kurzlebig und
+  `HttpOnly`, und nur der exakte tokenfreie Annahmepfad darf eine verifizierte
+  Supabase-Identität vor ihrer ersten Projektmitgliedschaft passieren. Die
+  Annahme gleicht Session-E-Mail und Token unter geordneten Locks ab und
+  schreibt Mitgliedschaft plus redigiertes Audit atomar. Terminale,
+  konkurrierende und falsche Identitäten bleiben fail-closed. Als Nächstes
+  folgt die Manager- und Identitäts-UX aus Task 5.
 - Mitglieder über Profil oder E-Mail statt technischer Auth-User-ID einladen.
 - Einladungszustände, Ablauf, Annahme und Widerruf auditierbar machen.
 - Rollenansichten und Mutationsrechte für Owner, Maintainer, Member und Viewer
@@ -133,8 +141,8 @@ vorhanden. Konfliktsichere Statusänderungen laufen über
 `update_issue_status`. Ohne
 gültige Signatur, Issuer, Ablauf, Subject, OAuth-Client-ID und exakte
 MCP-Audience bleibt der Zugriff fail-closed. Der reale Codex-/Claude-Staging-
-Smoke bleibt bis zum gemeinsamen Deployment geparkt. Als nächster lokaler
-Phase-2-Bereich folgen Rollen und Einladungen nach
+Smoke bleibt bis zum gemeinsamen Deployment geparkt. Der lokale Rollen- und
+Einladungsbereich wird mit Manager- und Identitäts-UX fortgesetzt nach
 `docs/superpowers/plans/2026-07-18-bubblophy-roles-invitations.md`; die
 MCP-Grundlage bleibt unter
 `docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md` dokumentiert.

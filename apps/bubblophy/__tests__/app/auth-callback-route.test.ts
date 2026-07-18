@@ -32,7 +32,7 @@ vi.mock('@/lib/supabase/server', () => ({
 }));
 
 vi.mock('@/lib/auth/session', () => ({
-  getAllowedBubblophySessionForUser: (user: unknown) =>
+  getAllowedBubblophySessionForUser: (user: object | null) =>
     getAllowedBubblophySessionForUserMock(user),
 }));
 
@@ -190,6 +190,53 @@ describe('GET /auth/callback', () => {
     expect(response.headers.get('location')).toBe(
       'http://bubblophy.mrbubbles.test:3005/auth/logout?next=%2Flogin%3Ferror%3Daccess_denied'
     );
+  });
+
+  it('lets a signed-in invitee reach only the fixed acceptance path', async () => {
+    getAllowedBubblophySessionForUserMock.mockResolvedValue(null);
+    getPublicBubblophyEnvMock.mockReturnValue({
+      NEXT_PUBLIC_APP_URL: 'http://bubblophy.mrbubbles.test:3005',
+    });
+    exchangeCodeForSessionMock.mockResolvedValue({ error: null });
+    getUserMock.mockResolvedValue({
+      data: { user: { email: 'invitee@example.test' } },
+    });
+
+    const response = await GET(
+      new NextRequest(
+        'http://bubblophy.mrbubbles.test:3005/auth/callback?code=test-code&next=%2Finvitations%2Faccept'
+      )
+    );
+
+    expect(response.headers.get('location')).toBe(
+      'http://bubblophy.mrbubbles.test:3005/invitations/accept'
+    );
+  });
+
+  it('does not widen the invitee bypass to similar paths or query strings', async () => {
+    getAllowedBubblophySessionForUserMock.mockResolvedValue(null);
+    getPublicBubblophyEnvMock.mockReturnValue({
+      NEXT_PUBLIC_APP_URL: 'http://bubblophy.mrbubbles.test:3005',
+    });
+    exchangeCodeForSessionMock.mockResolvedValue({ error: null });
+    getUserMock.mockResolvedValue({
+      data: { user: { email: 'invitee@example.test' } },
+    });
+
+    for (const nextPath of [
+      '/invitations/accept/extra',
+      '/invitations/accept?token=secret',
+    ]) {
+      const response = await GET(
+        new NextRequest(
+          `http://bubblophy.mrbubbles.test:3005/auth/callback?code=test-code&next=${encodeURIComponent(nextPath)}`
+        )
+      );
+
+      expect(response.headers.get('location')).toBe(
+        'http://bubblophy.mrbubbles.test:3005/auth/logout?next=%2Flogin%3Ferror%3Daccess_denied'
+      );
+    }
   });
 
   it('redirects back to login when the auth code is missing', async () => {

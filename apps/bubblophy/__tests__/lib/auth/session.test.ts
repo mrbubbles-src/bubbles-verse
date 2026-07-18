@@ -2,6 +2,7 @@ import type { User } from '@supabase/supabase-js';
 
 import {
   getAllowedBubblophySessionForUser,
+  requireAuthenticatedBubblophyUser,
   requireBubblophySession,
 } from '@/lib/auth/session';
 
@@ -102,6 +103,23 @@ describe('Bubblophy session helpers', () => {
 
     await expect(requireBubblophySession({ nextPath: '/' })).rejects.toThrow(
       'NEXT_REDIRECT:/auth/logout?next=%2Flogin%3Ferror%3Daccess_denied'
+    );
+  });
+
+  it('allows an authenticated invitation user before membership exists', async () => {
+    const user = createUser('Invitee@Example.Test');
+    getBubblophyDbAccessForUserMock.mockResolvedValue(null);
+    getUserMock.mockResolvedValue({ data: { user } });
+
+    await expect(requireAuthenticatedBubblophyUser()).resolves.toEqual(user);
+    expect(redirectMock).not.toHaveBeenCalled();
+  });
+
+  it('redirects anonymous invitation users through the normal login', async () => {
+    cookieGetAllMock.mockReturnValue([]);
+
+    await expect(requireAuthenticatedBubblophyUser()).rejects.toThrow(
+      'NEXT_REDIRECT:/login?next=%2Finvitations%2Faccept'
     );
   });
 

@@ -132,6 +132,17 @@ Zustandszeitpunkte und `updated_at`, aber weder Token-Hash noch eine der
 Einladungs-Actor-IDs. Ein fehlendes Projekt und fehlende Managerrechte werden
 beide als `not_found` ausgegeben.
 
+Die Annahme startet über `/invite/<token>`, entfernt das Secret vor jedem
+OAuth-Redirect aus der URL und hält es höchstens 30 Minuten in einem
+`HttpOnly`-/`SameSite=Lax`-Cookie. Der tokenfreie Annahmepfad akzeptiert eine
+echte Supabase-Session auch vor dem ersten Bubblophy-Zugriff, während alle
+anderen App- und Server-Action-Pfade weiterhin eine bestehende Mitgliedschaft
+verlangen. Die Transaktion sperrt Projekt, vorhandene Mitgliedschaft und
+Einladung in dieser Reihenfolge, gleicht die normalisierte verifizierte
+Session-E-Mail ab und schreibt Annahme, Mitgliedschaft und E-Mail-/Token-freies
+Audit atomar. Ablauf, Widerruf, Archivierung, falsche Identität und verlorene
+Compare-and-set-Races erzeugen keine Teilmutation.
+
 Die Zielumgebung braucht zusätzlich einen Supabase-Custom-Access-Token-Hook,
 der JWTs mit `client_id` die exakte Audience `<NEXT_PUBLIC_APP_URL>/mcp` gibt.
 Der Hook ist absichtlich umgebungsspezifische Auth-Infrastruktur und nicht Teil

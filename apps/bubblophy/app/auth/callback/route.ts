@@ -5,6 +5,7 @@ import {
 } from '@/lib/auth/redirects';
 import { getAllowedBubblophySessionForUser } from '@/lib/auth/session';
 import { getPublicBubblophyEnv } from '@/lib/env';
+import { isBubblophyProjectInvitationAcceptancePath } from '@/lib/projects/invitation-links';
 import { createBubblophyServerSupabaseClient } from '@/lib/supabase/server';
 
 import { connection, NextRequest, NextResponse } from 'next/server';
@@ -48,7 +49,10 @@ export async function GET(request: NextRequest) {
   } = await supabase.auth.getUser();
   const session = await getAllowedBubblophySessionForUser(user);
 
-  if (!session) {
+  if (
+    !user ||
+    (!session && !isBubblophyProjectInvitationAcceptancePath(nextPath))
+  ) {
     return NextResponse.redirect(
       new URL(
         buildBubblophyLogoutPath('/login?error=access_denied'),
