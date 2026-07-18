@@ -36,6 +36,13 @@
       "when": 1784393327952,
       "tag": "0004_close_oauth_direct_reads",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784397709657,
+      "tag": "0005_add_oauth_audit_attribution",
+      "breakpoints": true
     }
   ]
 }

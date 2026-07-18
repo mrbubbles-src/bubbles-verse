@@ -138,6 +138,10 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   sperrt ihren direkten Data-API-Zugriff. OAuth-Datenzugriff erfolgt dadurch nur
   über die explizit registrierten MCP-Werkzeuge und deren serverseitige
   Membership-/Rollenprüfung.
+- Planversionen sowie Issue-/Projekt-Audit-Events besitzen getrennte nullable
+  OAuth-Client-Attribution. Persönliche MCP-Schreibvorgänge können dadurch die
+  menschliche `authUserId` und zusätzlich die konkrete `client_id` festhalten,
+  ohne bestehende UI- oder Agent-Actor-Verträge umzudeuten.
 - `/.well-known/oauth-protected-resource/mcp` veröffentlicht Bubblophys fest
   konfigurierte MCP-Resource und den Supabase-Auth-Issuer. Der Origin-Pfad ohne
   `/mcp` bleibt als kompatibler Alias verfügbar. Eingereichte Host- oder

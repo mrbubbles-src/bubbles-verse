@@ -221,6 +221,7 @@ export const bubblophyIssuePlans = pgTable(
     summary: text().notNull().default(''),
     steps: jsonb().$type<JsonValue>().notNull(),
     createdByAuthUserId: text('created_by_auth_user_id'),
+    createdByOauthClientId: text('created_by_oauth_client_id'),
     createdByAgentTokenId: text('created_by_agent_token_id'),
     approvedByAuthUserId: text('approved_by_auth_user_id'),
     approvedAt: timestamp('approved_at', { mode: 'string', precision: 3 }),
@@ -319,6 +320,7 @@ export const bubblophyIssueEvents = pgTable(
       .references(() => bubblophyIssues.id, { onDelete: 'cascade' }),
     eventType: bubblophyIssueEventType('event_type').notNull(),
     actorAuthUserId: text('actor_auth_user_id'),
+    actorOauthClientId: text('actor_oauth_client_id'),
     actorAgentTokenId: text('actor_agent_token_id').references(
       () => bubblophyAgentTokens.id,
       { onDelete: 'set null' }
@@ -340,6 +342,9 @@ export const bubblophyIssueEvents = pgTable(
     actorAuthUserIdx: index('bubblophy_issue_events_actor_auth_user_idx').on(
       table.actorAuthUserId
     ),
+    actorOauthClientIdx: index(
+      'bubblophy_issue_events_actor_oauth_client_idx'
+    ).on(table.actorOauthClientId),
     actorAgentTokenIdx: index(
       'bubblophy_issue_events_actor_agent_token_idx'
     ).on(table.actorAgentTokenId),
@@ -360,6 +365,7 @@ export const bubblophyProjectEvents = pgTable(
       .references(() => bubblophyProjects.id, { onDelete: 'cascade' }),
     eventType: bubblophyProjectEventType('event_type').notNull(),
     actorAuthUserId: text('actor_auth_user_id'),
+    actorOauthClientId: text('actor_oauth_client_id'),
     actorAgentTokenId: text('actor_agent_token_id').references(
       () => bubblophyAgentTokens.id,
       { onDelete: 'set null' }
@@ -381,6 +387,9 @@ export const bubblophyProjectEvents = pgTable(
     actorAuthUserIdx: index('bubblophy_project_events_actor_auth_user_idx').on(
       table.actorAuthUserId
     ),
+    actorOauthClientIdx: index(
+      'bubblophy_project_events_actor_oauth_client_idx'
+    ).on(table.actorOauthClientId),
     actorAgentTokenIdx: index(
       'bubblophy_project_events_actor_agent_token_idx'
     ).on(table.actorAgentTokenId),

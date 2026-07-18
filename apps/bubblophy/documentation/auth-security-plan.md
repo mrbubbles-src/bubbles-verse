@@ -170,7 +170,11 @@ dauerhaften Autopilot-Rechte.
 - `bubblophy_project_events` ist projektgebunden (`project_id NOT NULL`) und
   hält nur öffentliche Metadaten. Token-Plaintext und Token-Hash gehören weder
   in Audit-Payloads noch in Logs.
-- Events erfassen entweder `actor_auth_user_id` oder `actor_agent_token_id`.
+- Events erfassen den menschlichen `actor_auth_user_id` oder einen
+  `actor_agent_token_id`. Persönliche MCP-Schreibvorgänge behalten die
+  menschliche User-ID und ergänzen `actor_oauth_client_id`; Planversionen nutzen
+  entsprechend `created_by_oauth_client_id`. Die nullable Zusatzattribution
+  verändert bestehende UI-/Agent-Schreibpfade nicht.
 - RLS-Lesepolicies erlauben Projektmitgliedern nur projektgebundene, dafür
   vorgesehene Tabellen. Direkte `authenticated`-Reads auf
   `bubblophy_agent_runs` und `bubblophy_issue_events` sind geschlossen, weil

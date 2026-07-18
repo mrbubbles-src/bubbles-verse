@@ -36,6 +36,8 @@
   latest draft or approved plan without internal issue, plan, or actor IDs.
 - Added the membership-scoped, read-only `get_run` MCP tool with public run
   metadata and a secret-filtered result summary instead of raw result JSON.
+- Added nullable OAuth client attribution to issue plans and issue/project
+  audit events as groundwork for distinguishable personal MCP writes.
 
 All notable changes to this project will be documented in this file.
 

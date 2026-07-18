@@ -1,4 +1,4 @@
-import { getTableName } from 'drizzle-orm';
+import { getTableColumns, getTableName } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -36,5 +36,17 @@ describe('bubblophy schema', () => {
       'runs:create',
       'runs:update',
     ]);
+  });
+
+  it('keeps OAuth client attribution separate from human and agent actors', () => {
+    expect(getTableColumns(bubblophyIssuePlans)).toHaveProperty(
+      'createdByOauthClientId'
+    );
+    expect(getTableColumns(bubblophyIssueEvents)).toHaveProperty(
+      'actorOauthClientId'
+    );
+    expect(getTableColumns(bubblophyProjectEvents)).toHaveProperty(
+      'actorOauthClientId'
+    );
   });
 });

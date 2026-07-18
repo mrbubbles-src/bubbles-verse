@@ -388,3 +388,26 @@ read-only Ansichten.
 - [x] **Step 3: Read-only MCP-Werkzeug registrieren**
 - [x] **Step 4: Reviewer und vollständige Slice-Gates ausführen**
 - [x] **Step 5: Fertigen Slice separat committen**
+
+### Task 11: OAuth-Audit-Attribution für Schreibwerkzeuge
+
+**Files:**
+
+- Modify: `apps/bubblophy/drizzle/db/schema.ts`
+- Create: `apps/bubblophy/drizzle/0005_add_oauth_audit_attribution.sql`
+- Create: `apps/bubblophy/drizzle/meta/0005_snapshot.json`
+- Modify: `apps/bubblophy/drizzle/meta/_journal.json`
+- Modify: `apps/bubblophy/__tests__/drizzle/schema.test.ts`
+- Create: `apps/bubblophy/__tests__/drizzle/oauth-audit-attribution-migration.test.ts`
+
+**Contract:** Planversionen speichern optional `created_by_oauth_client_id`;
+Issue- und Projekt-Events optional `actor_oauth_client_id`. Persönliche
+MCP-Schreibvorgänge können dadurch menschliche `authUserId` plus OAuth-
+`client_id` unterscheiden. Bestehende UI-/Agent-Schreiber bleiben durch
+nullable additive Spalten kompatibel; Tokens oder Secrets werden nicht
+persistiert.
+
+- [x] **Step 1: Schema- und Migrationstests zuerst schreiben**
+- [x] **Step 2: Additive Drizzle-Migration generieren**
+- [x] **Step 3: Reviewer und vollständige Slice-Gates ausführen**
+- [x] **Step 4: Fertigen Slice separat committen**
