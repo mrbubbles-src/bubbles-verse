@@ -29,7 +29,8 @@ persönliche Client-Anmeldung. Es enthält keine echten Tokens oder Secrets.
   `sub`, `client_id` und die exakte Audience `<APP_URL>/mcp`.
 - Persönlicher Consent unter `/oauth/consent` mit explizitem Erlauben/Ablehnen.
 - Read-only-Werkzeuge `list_projects`, paginiertes `list_issues`, `get_issue`,
-  `get_issue_plan` und `get_run` mit request-aktueller Membership-Prüfung.
+  `get_issue_plan`, `get_run` und `list_run_targets` mit request-aktueller
+  Membership-Prüfung.
 - Kontrolliertes Schreibwerkzeug `propose_plan`: neue OAuth-attributierte
   Draft-Version nur für Contributor-Rollen in aktiven Projekten, ohne Approval
   oder Run-Start.
@@ -38,6 +39,9 @@ persönliche Client-Anmeldung. Es enthält keine echten Tokens oder Secrets.
 - Kontrolliertes Schreibwerkzeug `create_issue`: OAuth-attributierter,
   nicht zugewiesener Triage-Draft für Contributor in aktiven Projekten, ohne
   Plan, Approval oder Run.
+- `list_run_targets` liefert nur ID und Label aktuell ausführbarer
+  Same-Project-Agent-Tokens für Contributor in aktiven Projekten. Token-Hash,
+  Scopes, Zustand, Ablauf, Creator- und Nutzungsdaten bleiben serverintern.
 
 ## Umgebungsvertrag
 
@@ -228,21 +232,27 @@ insbesondere Schritt 7 bleibt deshalb ein offenes Produktions-Gate.
    jeweiligen User und OAuth-Client ausweisen. Es dürfen keine Pläne, Approvals
    oder Runs entstehen. Viewer, entfernte Membership und archivierte Projekte
    müssen scheitern.
-8. Beide Clients schließen und neu starten. Der Zugriff muss ohne erneuten
+8. `list_run_targets` als Contributor aufrufen. Nur aktuell aktive,
+   nicht abgelaufene Same-Project-Tokens mit `issues:read` und `runs:update`
+   dürfen mit ID und Label erscheinen. Pausierte, widerrufene, abgelaufene oder
+   unvollständig berechtigte Tokens sowie alle Hash-, Scope-, Lifecycle-,
+   Creator- und Nutzungsfelder müssen fehlen. Viewer, entfernte Membership und
+   archivierte Projekte müssen scheitern.
+9. Beide Clients schließen und neu starten. Der Zugriff muss ohne erneuten
    manuellen Token-Transfer funktionieren.
-9. In Staging die Access-Token-Laufzeit vorübergehend kurz genug setzen, um nach
-   Ablauf einen erneuten Werkzeugaufruf zu prüfen. Der Client muss per
-   Refresh-Token fortfahren; danach die normale Laufzeit wiederherstellen.
-10. Mit einem echten OAuth-JWT gegen die Supabase Data API prüfen, dass Reads und
+10. In Staging die Access-Token-Laufzeit vorübergehend kurz genug setzen, um nach
+    Ablauf einen erneuten Werkzeugaufruf zu prüfen. Der Client muss per
+    Refresh-Token fortfahren; danach die normale Laufzeit wiederherstellen.
+11. Mit einem echten OAuth-JWT gegen die Supabase Data API prüfen, dass Reads und
     Writes auf alle acht Bubblophy-Tabellen durch `0004` blockiert bleiben.
     Dasselbe mit einer normalen menschlichen JWT und vorhandener Membership
     gegen die vorgesehenen Select-Policies gegenprüfen.
-11. Negativfälle prüfen: falsche Audience, abgelaufenes Token, entfernte
+12. Negativfälle prüfen: falsche Audience, abgelaufenes Token, entfernte
     Membership, unbekannter User und der Versuch, fremde Projekt-IDs zu erraten.
     Archivierte Mitgliedschaftsprojekte bleiben dagegen absichtlich sichtbar
     und müssen mit `isArchived: true` samt historischer Issue-Summaries
     zurückkommen; operative Mutationen bleiben für sie gesperrt.
-12. Keine Tokens in Terminalausgabe, Screenshots, Logs oder Testartefakte
+13. Keine Tokens in Terminalausgabe, Screenshots, Logs oder Testartefakte
     übernehmen. Nur Clientname, Testperson, erwartete/sichtbare Projekt-IDs,
     Zeitstempel und Pass/Fail dokumentieren.
 

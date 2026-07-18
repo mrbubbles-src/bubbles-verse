@@ -505,3 +505,32 @@ OAuth-Attribution vom Client übernehmen.
 - [x] **Step 3: `create_issue` mit nicht-idempotentem Write-Vertrag registrieren**
 - [x] **Step 4: Reviewer und vollständige Slice-Gates ausführen**
 - [x] **Step 5: Fertigen Slice separat committen**
+
+### Task 15: Ausführbare MCP-Run-Ziele sicher auflisten
+
+**Files:**
+
+- Create: `apps/bubblophy/lib/mcp/run-targets.ts`
+- Create: `apps/bubblophy/lib/mcp/run-targets-database-read.ts`
+- Create: `apps/bubblophy/lib/mcp/register-run-targets-tool.ts`
+- Create: `apps/bubblophy/__tests__/lib/mcp/run-targets.test.ts`
+- Create: `apps/bubblophy/__tests__/lib/mcp/run-targets-database-read.test.ts`
+- Modify: `apps/bubblophy/lib/mcp/register-tools.ts`
+- Modify: `apps/bubblophy/__tests__/app/mcp-route.test.ts`
+- Modify: Bubblophy-README, Changelog, Roadmap und MCP-Runbook
+
+**Contract:** `list_run_targets` nimmt eine sichtbare aktive `projectId` und
+liefert Contributor-Rollen ausschließlich `{id, label}` für aktuell
+ausführbare Same-Project-Agent-Tokens. Ausführbar bedeutet `active`, nicht
+abgelaufen und mit `issues:read` plus `runs:update`. Viewer, entfernte
+Memberships, archivierte oder fremde Projekte bleiben gesperrt. Token-Hash,
+Scopes, Lifecycle-, Creator- und Nutzungsdaten verlassen den Server nicht.
+
+Dieser read-only Slice ist die notwendige Auswahlgrenze für ein späteres
+`request_run`; die Token-ID erscheint nicht im späteren Create-Output.
+
+- [x] **Step 1: Service-, DB-Read- und MCP-Route-Tests zuerst schreiben**
+- [x] **Step 2: Membership-gebundenen ausführbaren Run-Target-Read umsetzen**
+- [x] **Step 3: `list_run_targets` als read-only Closed-World-Tool registrieren**
+- [x] **Step 4: Dokumentation, Reviewer und vollständige Slice-Gates ausführen**
+- [x] **Step 5: Fertigen Slice separat committen**

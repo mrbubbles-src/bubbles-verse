@@ -102,6 +102,11 @@ dauerhaften Autopilot-Rechte.
   verlässt den server-only Mapper nicht; ausgegeben wird höchstens die bestehende
   Secret-filternde Kurzfassung. Fremde und fehlende Ressourcen bleiben
   ununterscheidbar, archivierte Mitgliedschaftsprojekte nur historisch lesbar.
+- `list_run_targets` beginnt ebenfalls bei der aktuellen Membership und ist
+  auf aktive Contributor-Projekte begrenzt. Der Server prüft Zustand, Ablauf
+  und beide Ausführungsscopes, gibt aber nur Token-ID und Label als spätere
+  Run-Auswahl zurück. Hash, Scopes, Lifecycle-, Creator- und Nutzungsdaten
+  bleiben außerhalb des MCP-Vertrags.
 - Die OAuth-Zustimmungsseite verlangt zusätzlich zur Supabase-Cookie-Session
   den aktuellen DB-basierten Bubblophy-Zugang. Die Decision-Route akzeptiert nur
   URL-encoded `POST`-Formulare mit exakt passendem kanonischem Origin; zusammen

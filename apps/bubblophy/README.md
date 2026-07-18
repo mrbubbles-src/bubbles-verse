@@ -128,6 +128,11 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   Projekt-Token. Es liefert State, Agent-Label und Zeitstempel; rohe
   Result-JSON wird ausschließlich serverintern in die bestehende
   Secret-filternde Kurzfassung überführt. User- und Token-IDs bleiben verborgen.
+- Das read-only Werkzeug `list_run_targets` liefert Contributor-Rollen für ein
+  aktives Projekt nur ID und Label aktuell ausführbarer Agent-Tokens. Zustand,
+  Scopes, Ablauf, Hash, Creator- und Nutzungsdaten bleiben serverintern. Damit
+  kann ein späteres `request_run` ein Ziel referenzieren, ohne den breiteren
+  Token-Vertrag offenzulegen; Viewer und archivierte Projekte bleiben gesperrt.
 - `/oauth/consent` übernimmt die einmalige persönliche Zustimmung für neue
   MCP-Clients. Bubblophy zeigt Clientname, angeforderte Standard-Scopes und das
   registrierte Rücksprungziel; Erlauben oder Ablehnen läuft ausschließlich über

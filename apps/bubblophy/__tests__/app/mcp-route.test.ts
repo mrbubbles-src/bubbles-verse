@@ -11,6 +11,7 @@ const getBubblophyMcpRunMock = vi.fn();
 const proposeBubblophyMcpPlanMock = vi.fn();
 const addBubblophyMcpNoteMock = vi.fn();
 const createBubblophyMcpIssueMock = vi.fn();
+const listBubblophyMcpRunTargetsMock = vi.fn();
 
 vi.mock('@/lib/mcp/auth', () => ({
   verifyBubblophyMcpToken: (request: Request, bearerToken?: string) =>
@@ -86,6 +87,13 @@ vi.mock('@/lib/mcp/create-issue', () => ({
       priority: 'low' | 'medium' | 'high';
     }
   ) => createBubblophyMcpIssueMock(authUserId, clientId, input),
+}));
+
+vi.mock('@/lib/mcp/run-targets', () => ({
+  listBubblophyMcpRunTargets: (
+    authUserId: string,
+    input: { projectId: string }
+  ) => listBubblophyMcpRunTargetsMock(authUserId, input),
 }));
 
 function createInitializeRequest(token?: string) {
@@ -289,6 +297,26 @@ function createCreateIssueRequest() {
   });
 }
 
+function createListRunTargetsRequest() {
+  return new Request('https://bubblophy.example.com/mcp', {
+    method: 'POST',
+    headers: {
+      accept: 'application/json, text/event-stream',
+      authorization: 'Bearer signed-token',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 11,
+      method: 'tools/call',
+      params: {
+        name: 'list_run_targets',
+        arguments: { projectId: 'project_bv' },
+      },
+    }),
+  });
+}
+
 function createListToolsRequest() {
   return new Request('https://bubblophy.example.com/mcp', {
     method: 'POST',
@@ -334,6 +362,8 @@ describe('/mcp', () => {
     addBubblophyMcpNoteMock.mockResolvedValue({ status: 'not_found' });
     createBubblophyMcpIssueMock.mockReset();
     createBubblophyMcpIssueMock.mockResolvedValue({ status: 'not_found' });
+    listBubblophyMcpRunTargetsMock.mockReset();
+    listBubblophyMcpRunTargetsMock.mockResolvedValue({ status: 'not_found' });
     vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://bubblophy.example.com');
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://auth.example.com');
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'public-anon-key');
@@ -449,6 +479,7 @@ describe('/mcp', () => {
     expect(body).toContain('"name":"propose_plan"');
     expect(body).toContain('"name":"add_note"');
     expect(body).toContain('"name":"create_issue"');
+    expect(body).toContain('"name":"list_run_targets"');
   });
 
   it('lists bounded public issue summaries for the verified OAuth identity', async () => {
@@ -746,6 +777,39 @@ describe('/mcp', () => {
         priority: 'high',
       }
     );
+  });
+
+  it('lists only executable public run targets for the verified identity', async () => {
+    verifyBubblophyMcpTokenMock.mockResolvedValue({
+      token: 'signed-token',
+      clientId: 'client-1',
+      scopes: ['openid'],
+      expiresAt: 2_000_000_000,
+      resource: new URL('https://bubblophy.example.com/mcp'),
+      extra: { authUserId: 'user-1' },
+    });
+    listBubblophyMcpRunTargetsMock.mockResolvedValue({
+      status: 'success',
+      project: { id: 'project_bv', key: 'BV', isArchived: false },
+      targets: [{ id: 'token_codex', label: 'Codex' }],
+    });
+    const { POST } = await import('@/app/mcp/route');
+    const response = await POST(createListRunTargetsRequest());
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).toContain('"id":"token_codex"');
+    expect(body).toContain('"label":"Codex"');
+    expect(body).not.toContain('tokenHash');
+    expect(body).not.toContain('scopes');
+    expect(body).not.toContain('state');
+    expect(body).not.toContain('expiresAt');
+    expect(body).not.toContain('createdByAuthUserId');
+    expect(body).not.toContain('signed-token');
+    expect(body).not.toContain('user-1');
+    expect(listBubblophyMcpRunTargetsMock).toHaveBeenCalledWith('user-1', {
+      projectId: 'project_bv',
+    });
   });
 
   it('does not call project reads without an authenticated user identity', async () => {

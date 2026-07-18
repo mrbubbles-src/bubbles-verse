@@ -34,7 +34,8 @@ Status: abgeschlossen.
 - Supabase-OAuth-Scopes beschränken keine Bubblophy-Werkzeuge. Toolzugriff wird
   ausschließlich aus aktueller DB-Rolle und Bubblophy-Client-Policy bestimmt.
 - Read-first-Werkzeuge: `list_projects`, `list_issues`, `get_issue`,
-  `get_issue_plan` und `get_run`.
+  `get_issue_plan`, `get_run` und die enge Auswahl ausführbarer Agent-Tokens
+  über `list_run_targets`.
 - Kontrollierte Schreibwerkzeuge folgen separat: `propose_plan` als ungeprüfter
   Agent-Entwurf, `add_note` als append-only Aktivität und `create_issue` als
   freigabepflichtiger Triage-Draft sind vorhanden. Danach folgen
@@ -108,7 +109,8 @@ lokale Supabase-JWT-Validierung, das membership-basierte read-only Werkzeug
 membership-basierten Detailwerkzeuge `get_issue`, `get_issue_plan` und
 `get_run`, die OAuth-vs.-Data-API-RLS-Grenze und der persönliche
 OAuth-Consent-Flow sowie die kontrollierten Schreibwerkzeuge `propose_plan`,
-`add_note` und `create_issue` sind vorhanden. Ohne
+`add_note` und `create_issue` sowie die sichere Run-Zielauswahl
+`list_run_targets` sind vorhanden. Ohne
 gültige Signatur, Issuer, Ablauf, Subject, OAuth-Client-ID und exakte
 MCP-Audience bleibt der Zugriff fail-closed. Als Nächstes folgen die genaue
 Supabase-Staging-Konfiguration, der reale Codex-/Claude-Smoke und weitere

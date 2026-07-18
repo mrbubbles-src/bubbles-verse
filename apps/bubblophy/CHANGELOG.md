@@ -46,6 +46,9 @@
 - Added the controlled `create_issue` MCP write tool with bounded public input,
   OAuth audit attribution, locked contributor authorization, and serialized
   per-project issue numbering without implicit plans, approvals, or runs.
+- Added the read-only `list_run_targets` MCP tool, exposing only IDs and labels
+  of currently executable same-project agent tokens to active contributors as
+  the narrow selection boundary for future human-approved run requests.
 
 All notable changes to this project will be documented in this file.
 

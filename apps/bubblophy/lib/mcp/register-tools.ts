@@ -10,6 +10,7 @@ import { getBubblophyMcpIssuePlan } from '@/lib/mcp/issue-plan';
 import { listBubblophyMcpIssues } from '@/lib/mcp/issues';
 import { listBubblophyMcpProjects } from '@/lib/mcp/projects';
 import { proposeBubblophyMcpPlan } from '@/lib/mcp/propose-plan';
+import { registerBubblophyMcpRunTargetsTool } from '@/lib/mcp/register-run-targets-tool';
 import { getBubblophyMcpRun } from '@/lib/mcp/run-detail';
 
 import * as z from 'zod';
@@ -614,6 +615,8 @@ export function registerBubblophyMcpTools(server: McpServer) {
       };
     }
   );
+
+  registerBubblophyMcpRunTargetsTool(server);
 }
 
 /** Returns a normalized OAuth user ID from MCP auth context data. */
