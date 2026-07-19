@@ -164,6 +164,31 @@ export const bubblophyProjectMembers = pgTable(
   })
 );
 
+export const bubblophyUserProfiles = pgTable(
+  'bubblophy_user_profiles',
+  {
+    authUserId: text('auth_user_id').primaryKey(),
+    normalizedEmail: text('normalized_email').notNull(),
+    displayName: text('display_name'),
+    createdAt: timestamp('created_at', { mode: 'string', precision: 3 })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { mode: 'string', precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    normalizedEmailCheck: check(
+      'bubblophy_user_profiles_normalized_email_check',
+      sql`${table.normalizedEmail} = lower(btrim(${table.normalizedEmail})) and length(${table.normalizedEmail}) between 3 and 320 and position('@' in ${table.normalizedEmail}) > 1`
+    ),
+    displayNameCheck: check(
+      'bubblophy_user_profiles_display_name_check',
+      sql`${table.displayName} is null or (${table.displayName} = btrim(${table.displayName}) and length(${table.displayName}) between 1 and 120)`
+    ),
+  })
+);
+
 export const bubblophyProjectInvitations = pgTable(
   'bubblophy_project_invitations',
   {

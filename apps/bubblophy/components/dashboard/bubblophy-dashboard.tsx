@@ -684,17 +684,31 @@ export function BubblophyDashboard({
         const issueWithNotes = notes
           ? { ...issueWithUpdate, notes }
           : issueWithUpdate;
+        const issueWithAssignee = {
+          ...issueWithNotes,
+          assigneeLabel: getIssueAssigneeLabel(
+            issueWithNotes,
+            allProjectMembers
+          ),
+        };
 
         if (!plan) {
-          return issueWithNotes;
+          return issueWithAssignee;
         }
 
         return {
-          ...issueWithNotes,
+          ...issueWithAssignee,
           planSteps: plan.steps.length,
         };
       }),
-    [baseIssues, issueNotesById, issuePlansById, localDrafts, updatedIssuesById]
+    [
+      allProjectMembers,
+      baseIssues,
+      issueNotesById,
+      issuePlansById,
+      localDrafts,
+      updatedIssuesById,
+    ]
   );
 
   const allProjects = useMemo(
@@ -890,7 +904,8 @@ export function BubblophyDashboard({
       projectKey: input.projectKey,
       status: 'triage',
       priority: input.priority,
-      owner: 'Lokaler Draft',
+      assigneeAuthUserId: null,
+      assigneeLabel: 'Lokaler Draft',
       planSteps: 0,
       approvalRequired: true,
       createdLabel: 'gerade eben',
@@ -948,9 +963,20 @@ export function BubblophyDashboard({
     member: ProjectMemberSummary,
     memberCount: number
   ) => {
+    const currentMember = allProjectMembers.find(
+      (candidate) => candidate.id === member.id
+    );
+    const displayedMember = currentMember
+      ? {
+          ...member,
+          label: currentMember.label,
+          email: currentMember.email ?? null,
+        }
+      : member;
+
     setUpdatedProjectMembersById((currentMembers) => ({
       ...currentMembers,
-      [member.id]: member,
+      [member.id]: displayedMember,
     }));
 
     const project = allProjects.find(
@@ -964,7 +990,7 @@ export function BubblophyDashboard({
     }
 
     setRecentMutationFeedback(
-      `Mitglied ${member.authUserId} wurde in ${member.projectKey} aktualisiert.`
+      `Mitglied ${displayedMember.label} wurde in ${member.projectKey} aktualisiert.`
     );
   };
 
@@ -2274,9 +2300,15 @@ function ProjectMembersPanel({
                 return (
                   <TableRow key={member.id}>
                     <TableCell className="max-w-[14rem]">
-                      <span className="block truncate font-mono text-xs">
+                      <span
+                        className={`block truncate ${member.label === member.authUserId ? 'font-mono text-xs' : 'text-sm font-medium'}`}>
                         {member.label}
                       </span>
+                      {member.email && member.email !== member.label ? (
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {member.email}
+                        </span>
+                      ) : null}
                     </TableCell>
                     <TableCell>
                       {canChangeThisMember ? (
@@ -2653,7 +2685,7 @@ function IssueQueue({
                   <TableCell className="tabular-nums">
                     {issue.planSteps} Schritte
                   </TableCell>
-                  <TableCell>{issue.owner}</TableCell>
+                  <TableCell>{issue.assigneeLabel}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -3239,7 +3271,7 @@ function IssueContentPanel({
         ) : null}
         <h3 className="text-base font-semibold text-pretty">{issue.title}</h3>
         <p className="text-sm text-muted-foreground">
-          Projekt {issue.projectKey} · Owner {issue.owner}
+          Projekt {issue.projectKey} · Zuständig {issue.assigneeLabel}
         </p>
       </div>
       {visibleDescription ? (
@@ -3399,7 +3431,7 @@ const issuePriorityOptions = [
 ] satisfies IssuePriority[];
 
 /**
- * Resolves the currently selected assignee from the public owner label.
+ * Resolves the currently selected assignee from its stable Auth user ID.
  *
  * @param issue Selected dashboard issue.
  * @param projectMembers Members of the selected issue's project.
@@ -3410,11 +3442,37 @@ function getCurrentIssueAssigneeAuthUserId(
   projectMembers: ProjectMemberSummary[]
 ) {
   const member = projectMembers.find(
-    (candidate) =>
-      candidate.label === issue.owner || candidate.authUserId === issue.owner
+    (candidate) => candidate.authUserId === issue.assigneeAuthUserId
   );
 
   return member?.authUserId ?? '';
+}
+
+/**
+ * Resolves a human-facing assignee label without using it as an identifier.
+ *
+ * @param issue Issue with a stable optional assignee Auth user ID.
+ * @param projectMembers Membership-scoped display profiles.
+ * @returns Profile label, persisted fallback, or unassigned label.
+ */
+function getIssueAssigneeLabel(
+  issue: Pick<
+    DashboardIssue,
+    'projectKey' | 'assigneeAuthUserId' | 'assigneeLabel'
+  >,
+  projectMembers: ProjectMemberSummary[]
+) {
+  if (!issue.assigneeAuthUserId) {
+    return issue.assigneeLabel || 'Nicht zugewiesen';
+  }
+
+  return (
+    projectMembers.find(
+      (member) =>
+        member.projectKey === issue.projectKey &&
+        member.authUserId === issue.assigneeAuthUserId
+    )?.label ?? issue.assigneeLabel
+  );
 }
 
 /**
@@ -3538,7 +3596,11 @@ function IssueAssigneeUpdatePanel({
               <option value="">Nicht zugewiesen</option>
               {projectMembers.map((member) => (
                 <option key={member.id} value={member.authUserId}>
-                  {member.label} · {projectMemberRoleLabels[member.role]}
+                  {member.label}
+                  {member.email && member.email !== member.label
+                    ? ` · ${member.email}`
+                    : ''}{' '}
+                  · {projectMemberRoleLabels[member.role]}
                 </option>
               ))}
             </select>

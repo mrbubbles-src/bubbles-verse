@@ -146,7 +146,8 @@ export function mapCreatedIssueToSummary(
     projectKey: created.project.key,
     status: status ?? 'triage',
     priority: mapBubblophyIssuePriority(created.issue.priority),
-    owner: created.issue.assignedAuthUserId ?? 'Nicht zugewiesen',
+    assigneeAuthUserId: created.issue.assignedAuthUserId,
+    assigneeLabel: created.issue.assignedAuthUserId ?? 'Nicht zugewiesen',
     planSteps: 0,
     approvalRequired: created.issue.requiresHumanApproval,
   };

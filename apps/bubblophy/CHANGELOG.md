@@ -90,6 +90,9 @@
   email invitation UI, including redacted lifecycle states, archived-project
   guards, conflict refreshes, confirmation before revoke, and dismissible
   one-time links returned as entry paths instead of separate plaintext tokens.
+- Added server-synchronized display profiles with closed direct RLS access,
+  membership-scoped names, manager/self-only e-mail visibility, stable
+  assignee ID/label separation, and technical Auth IDs only as a fallback.
 
 All notable changes to this project will be documented in this file.
 

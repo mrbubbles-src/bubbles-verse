@@ -76,6 +76,8 @@ export interface BubblophyAgentRunPersistenceRow {
 export interface BubblophyProjectMemberPersistenceRow {
   projectKey: string;
   authUserId: string;
+  displayName?: string | null;
+  normalizedEmail?: string | null;
   role: ProjectMemberRole;
   createdAt: string;
 }
@@ -304,7 +306,8 @@ export function buildBubblophyProjectIssueSnapshot(
       projectKey: row.projectKey,
       status: mapBubblophyIssueStatus(row.issueStatus),
       priority: mapBubblophyIssuePriority(row.issuePriority),
-      owner: formatIssueOwner(row.issueAssignedAuthUserId),
+      assigneeAuthUserId: row.issueAssignedAuthUserId,
+      assigneeLabel: formatIssueAssigneeLabel(row.issueAssignedAuthUserId),
       planSteps: getIssuePlanStepCount(row),
       latestPlan: mapBubblophyIssueLatestPlan(row),
       notes: row.issueNotes,
@@ -452,8 +455,9 @@ export function buildBubblophyAgentTokenSummaries(
 /**
  * Converts membership rows into public project member summaries.
  *
- * The MVP has no profile or invite lookup, so the Auth user ID is the explicit
- * technical fallback label and no email-like fields are invented.
+ * A profile name wins over the verified e-mail. The Auth user ID remains an
+ * explicit fallback for legacy memberships whose user has not returned since
+ * profile synchronization was introduced.
  *
  * @param rows Membership rows already constrained to visible projects.
  * @returns Public project member summaries for the dashboard.
@@ -466,7 +470,8 @@ export function buildBubblophyProjectMemberSummaries(
       id: formatBubblophyProjectMemberId(row.projectKey, row.authUserId),
       projectKey: row.projectKey,
       authUserId: row.authUserId,
-      label: row.authUserId,
+      label: row.displayName ?? row.normalizedEmail ?? row.authUserId,
+      email: row.normalizedEmail ?? null,
       role: row.role,
       createdAt: row.createdAt,
     }))
@@ -727,9 +732,9 @@ function formatActivityActor(row: BubblophyActivityPersistenceRow) {
  * Formats the assignee for UI DTOs without exposing raw Auth identifiers.
  *
  * @param assignedAuthUserId Optional stored assignee identifier or display key.
- * @returns A quiet public owner label for the dashboard.
+ * @returns A quiet public assignee label for the dashboard.
  */
-function formatIssueOwner(assignedAuthUserId: string | null) {
+function formatIssueAssigneeLabel(assignedAuthUserId: string | null) {
   if (!assignedAuthUserId) {
     return 'Nicht zugewiesen';
   }

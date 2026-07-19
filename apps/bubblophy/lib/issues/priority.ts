@@ -1,6 +1,9 @@
 import 'server-only';
 
-import type { BubblophyIssuePriority, BubblophyIssueStatus } from '@/drizzle/db/schema';
+import type {
+  BubblophyIssuePriority,
+  BubblophyIssueStatus,
+} from '@/drizzle/db/schema';
 import type { IssuePriority, IssueSummary } from '@/lib/dashboard/types';
 
 import {
@@ -146,7 +149,8 @@ export function mapUpdatedIssuePriorityToSummary(
     projectKey: updated.project.key,
     status: mapBubblophyIssueStatus(updated.issue.status),
     priority: mapBubblophyIssuePriority(updated.issue.priority),
-    owner: updated.issue.assignedAuthUserId ?? 'Nicht zugewiesen',
+    assigneeAuthUserId: updated.issue.assignedAuthUserId,
+    assigneeLabel: updated.issue.assignedAuthUserId ?? 'Nicht zugewiesen',
     planSteps: Math.max(0, updated.issue.planStepCount),
     approvalRequired: updated.issue.requiresHumanApproval,
   };

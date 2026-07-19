@@ -133,12 +133,16 @@ const tableRows = {
     {
       projectKey: 'BV',
       authUserId: 'user_owner',
+      displayName: 'Owner Name',
+      normalizedEmail: 'owner@example.test',
       role: 'owner',
       createdAt: '2026-06-13T10:00:00.000Z',
     },
     {
       projectKey: 'BV',
       authUserId: 'user_viewer',
+      displayName: 'Viewer Name',
+      normalizedEmail: 'viewer@example.test',
       role: 'viewer',
       createdAt: '2026-06-13T11:00:00.000Z',
     },
@@ -377,12 +381,16 @@ describe('selectBubblophyDashboardRowsForUser', () => {
       {
         projectKey: 'BV',
         authUserId: 'user_owner',
+        displayName: 'Owner Name',
+        normalizedEmail: 'owner@example.test',
         role: 'owner',
         createdAt: '2026-06-13T10:00:00.000Z',
       },
       {
         projectKey: 'BV',
         authUserId: 'user_viewer',
+        displayName: 'Viewer Name',
+        normalizedEmail: 'viewer@example.test',
         role: 'viewer',
         createdAt: '2026-06-13T11:00:00.000Z',
       },
@@ -396,6 +404,11 @@ describe('selectBubblophyDashboardRowsForUser', () => {
     );
     const issuePlanCall = calls.find(
       (call) => call.tableName === 'bubblophy_issue_plans'
+    );
+    const projectMemberCall = calls.find(
+      (call) =>
+        call.tableName === 'bubblophy_project_members' &&
+        call.selectedKeys.includes('displayName')
     );
     const selectedKeys = calls.flatMap((call) => call.selectedKeys);
 
@@ -417,6 +430,14 @@ describe('selectBubblophyDashboardRowsForUser', () => {
       ]),
       whereCalled: true,
       groupByCalled: false,
+    });
+    expect(projectMemberCall).toMatchObject({
+      joinedTableNames: expect.arrayContaining([
+        'bubblophy_projects',
+        'bubblophy_actor_memberships',
+        'bubblophy_user_profiles',
+      ]),
+      whereCalled: true,
     });
     expect(selectedKeys).not.toContain('tokenHash');
     expect(selectedKeys).not.toContain('plaintextToken');

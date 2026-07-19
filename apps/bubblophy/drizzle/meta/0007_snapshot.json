@@ -1,0 +1,1561 @@
+{
+  "id": "54152385-b9f9-4f28-9c07-201123b77223",
+  "prevId": "902bb177-d76d-49e3-a437-9b99d4c59638",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.bubblophy_agent_runs": {
+      "name": "bubblophy_agent_runs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "issue_id": {
+          "name": "issue_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "agent_token_id": {
+          "name": "agent_token_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "state": {
+          "name": "state",
+          "type": "bubblophy_agent_run_state",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'requested'"
+        },
+        "requested_by_auth_user_id": {
+          "name": "requested_by_auth_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "approved_by_auth_user_id": {
+          "name": "approved_by_auth_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "approved_at": {
+          "name": "approved_at",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "finished_at": {
+          "name": "finished_at",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "result": {
+          "name": "result",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "bubblophy_agent_runs_issue_state_idx": {
+          "name": "bubblophy_agent_runs_issue_state_idx",
+          "columns": [
+            {
+              "expression": "issue_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "state",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "bubblophy_agent_runs_agent_token_idx": {
+          "name": "bubblophy_agent_runs_agent_token_idx",
+          "columns": [
+            {
+              "expression": "agent_token_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "bubblophy_agent_runs_issue_id_bubblophy_issues_id_fk": {
+          "name": "bubblophy_agent_runs_issue_id_bubblophy_issues_id_fk",
+          "tableFrom": "bubblophy_agent_runs",
+          "tableTo": "bubblophy_issues",
+          "columnsFrom": [
+            "issue_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "bubblophy_agent_runs_agent_token_id_bubblophy_agent_tokens_id_fk": {
+          "name": "bubblophy_agent_runs_agent_token_id_bubblophy_agent_tokens_id_fk",
+          "tableFrom": "bubblophy_agent_runs",
+          "tableTo": "bubblophy_agent_tokens",
+          "columnsFrom": [
+            "agent_token_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.bubblophy_agent_tokens": {
+      "name": "bubblophy_agent_tokens",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scopes": {
+          "name": "scopes",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "state": {
+          "name": "state",
+          "type": "bubblophy_agent_token_state",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'active'"
+        },
+        "created_by_auth_user_id": {
+          "name": "created_by_auth_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_used_at": {
+          "name": "last_used_at",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "bubblophy_agent_tokens_token_hash_idx": {
+          "name": "bubblophy_agent_tokens_token_hash_idx",
+          "columns": [
+            {
+              "expression": "token_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "bubblophy_agent_tokens_project_state_idx": {
+          "name": "bubblophy_agent_tokens_project_state_idx",
+          "columns": [
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "state",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "bubblophy_agent_tokens_project_id_bubblophy_projects_id_fk": {
+          "name": "bubblophy_agent_tokens_project_id_bubblophy_projects_id_fk",
+          "tableFrom": "bubblophy_agent_tokens",
+          "tableTo": "bubblophy_projects",
+          "columnsFrom": [
+            "project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.bubblophy_issue_events": {
+      "name": "bubblophy_issue_events",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "issue_id": {
+          "name": "issue_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_type": {
+          "name": "event_type",
+          "type": "bubblophy_issue_event_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_auth_user_id": {
+          "name": "actor_auth_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actor_oauth_client_id": {
+          "name": "actor_oauth_client_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actor_agent_token_id": {
+          "name": "actor_agent_token_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "agent_run_id": {
+          "name": "agent_run_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "summary": {
+          "name": "summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "bubblophy_issue_events_issue_created_idx": {
+          "name": "bubblophy_issue_events_issue_created_idx",
+          "columns": [
+            {
+              "expression": "issue_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "bubblophy_issue_events_actor_auth_user_idx": {
+          "name": "bubblophy_issue_events_actor_auth_user_idx",
+          "columns": [
+            {
+              "expression": "actor_auth_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "bubblophy_issue_events_actor_oauth_client_idx": {
+          "name": "bubblophy_issue_events_actor_oauth_client_idx",
+          "columns": [
+            {
+              "expression": "actor_oauth_client_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "bubblophy_issue_events_actor_agent_token_idx": {
+          "name": "bubblophy_issue_events_actor_agent_token_idx",
+          "columns": [
+            {
+              "expression": "actor_agent_token_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "bubblophy_issue_events_agent_run_idx": {
+          "name": "bubblophy_issue_events_agent_run_idx",
+          "columns": [
+            {
+              "expression": "agent_run_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "bubblophy_issue_events_issue_id_bubblophy_issues_id_fk": {
+          "name": "bubblophy_issue_events_issue_id_bubblophy_issues_id_fk",
+          "tableFrom": "bubblophy_issue_events",
+          "tableTo": "bubblophy_issues",
+          "columnsFrom": [
+            "issue_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "bubblophy_issue_events_actor_agent_token_id_bubblophy_agent_tokens_id_fk": {
+          "name": "bubblophy_issue_events_actor_agent_token_id_bubblophy_agent_tokens_id_fk",
+          "tableFrom": "bubblophy_issue_events",
+          "tableTo": "bubblophy_agent_tokens",
+          "columnsFrom": [
+            "actor_agent_token_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "bubblophy_issue_events_agent_run_id_bubblophy_agent_runs_id_fk": {
+          "name": "bubblophy_issue_events_agent_run_id_bubblophy_agent_runs_id_fk",
+          "tableFrom": "bubblophy_issue_events",
+          "tableTo": "bubblophy_agent_runs",
+          "columnsFrom": [
+            "agent_run_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.bubblophy_issue_plans": {
+      "name": "bubblophy_issue_plans",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "issue_id": {
+          "name": "issue_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "summary": {
+          "name": "summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "steps": {
+          "name": "steps",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by_auth_user_id": {
+          "name": "created_by_auth_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by_oauth_client_id": {
+          "name": "created_by_oauth_client_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by_agent_token_id": {
+          "name": "created_by_agent_token_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "approved_by_auth_user_id": {
+          "name": "approved_by_auth_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "approved_at": {
+          "name": "approved_at",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "bubblophy_issue_plans_issue_version_idx": {
+          "name": "bubblophy_issue_plans_issue_version_idx",
+          "columns": [
+            {
+              "expression": "issue_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "version",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "bubblophy_issue_plans_approved_idx": {
+          "name": "bubblophy_issue_plans_approved_idx",
+          "columns": [
+            {
+              "expression": "approved_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "bubblophy_issue_plans_issue_id_bubblophy_issues_id_fk": {
+          "name": "bubblophy_issue_plans_issue_id_bubblophy_issues_id_fk",
+          "tableFrom": "bubblophy_issue_plans",
+          "tableTo": "bubblophy_issues",
+          "columnsFrom": [
+            "issue_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.bubblophy_issues": {
+      "name": "bubblophy_issues",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parent_issue_id": {
+          "name": "parent_issue_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "issue_number": {
+          "name": "issue_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "status": {
+          "name": "status",
+          "type": "bubblophy_issue_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'triage'"
+        },
+        "priority": {
+          "name": "priority",
+          "type": "bubblophy_issue_priority",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'medium'"
+        },
+        "created_by_auth_user_id": {
+          "name": "created_by_auth_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "assigned_auth_user_id": {
+          "name": "assigned_auth_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "requires_human_approval": {
+          "name": "requires_human_approval",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "bubblophy_issues_project_number_idx": {
+          "name": "bubblophy_issues_project_number_idx",
+          "columns": [
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "issue_number",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "bubblophy_issues_project_status_idx": {
+          "name": "bubblophy_issues_project_status_idx",
+          "columns": [
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "bubblophy_issues_parent_issue_idx": {
+          "name": "bubblophy_issues_parent_issue_idx",
+          "columns": [
+            {
+              "expression": "parent_issue_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "bubblophy_issues_assigned_user_idx": {
+          "name": "bubblophy_issues_assigned_user_idx",
+          "columns": [
+            {
+              "expression": "assigned_auth_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "bubblophy_issues_project_id_bubblophy_projects_id_fk": {
+          "name": "bubblophy_issues_project_id_bubblophy_projects_id_fk",
+          "tableFrom": "bubblophy_issues",
+          "tableTo": "bubblophy_projects",
+          "columnsFrom": [
+            "project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "bubblophy_issues_parent_issue_id_bubblophy_issues_id_fk": {
+          "name": "bubblophy_issues_parent_issue_id_bubblophy_issues_id_fk",
+          "tableFrom": "bubblophy_issues",
+          "tableTo": "bubblophy_issues",
+          "columnsFrom": [
+            "parent_issue_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.bubblophy_project_events": {
+      "name": "bubblophy_project_events",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_type": {
+          "name": "event_type",
+          "type": "bubblophy_project_event_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_auth_user_id": {
+          "name": "actor_auth_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actor_oauth_client_id": {
+          "name": "actor_oauth_client_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actor_agent_token_id": {
+          "name": "actor_agent_token_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "agent_run_id": {
+          "name": "agent_run_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "summary": {
+          "name": "summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "bubblophy_project_events_project_created_idx": {
+          "name": "bubblophy_project_events_project_created_idx",
+          "columns": [
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "bubblophy_project_events_actor_auth_user_idx": {
+          "name": "bubblophy_project_events_actor_auth_user_idx",
+          "columns": [
+            {
+              "expression": "actor_auth_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "bubblophy_project_events_actor_oauth_client_idx": {
+          "name": "bubblophy_project_events_actor_oauth_client_idx",
+          "columns": [
+            {
+              "expression": "actor_oauth_client_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "bubblophy_project_events_actor_agent_token_idx": {
+          "name": "bubblophy_project_events_actor_agent_token_idx",
+          "columns": [
+            {
+              "expression": "actor_agent_token_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "bubblophy_project_events_agent_run_idx": {
+          "name": "bubblophy_project_events_agent_run_idx",
+          "columns": [
+            {
+              "expression": "agent_run_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "bubblophy_project_events_project_id_bubblophy_projects_id_fk": {
+          "name": "bubblophy_project_events_project_id_bubblophy_projects_id_fk",
+          "tableFrom": "bubblophy_project_events",
+          "tableTo": "bubblophy_projects",
+          "columnsFrom": [
+            "project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "bubblophy_project_events_actor_agent_token_id_bubblophy_agent_tokens_id_fk": {
+          "name": "bubblophy_project_events_actor_agent_token_id_bubblophy_agent_tokens_id_fk",
+          "tableFrom": "bubblophy_project_events",
+          "tableTo": "bubblophy_agent_tokens",
+          "columnsFrom": [
+            "actor_agent_token_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "bubblophy_project_events_agent_run_id_bubblophy_agent_runs_id_fk": {
+          "name": "bubblophy_project_events_agent_run_id_bubblophy_agent_runs_id_fk",
+          "tableFrom": "bubblophy_project_events",
+          "tableTo": "bubblophy_agent_runs",
+          "columnsFrom": [
+            "agent_run_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.bubblophy_project_invitations": {
+      "name": "bubblophy_project_invitations",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "normalized_email": {
+          "name": "normalized_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "bubblophy_project_role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "invited_by_auth_user_id": {
+          "name": "invited_by_auth_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "accepted_by_auth_user_id": {
+          "name": "accepted_by_auth_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revoked_by_auth_user_id": {
+          "name": "revoked_by_auth_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "accepted_at": {
+          "name": "accepted_at",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "bubblophy_project_invitations_token_hash_idx": {
+          "name": "bubblophy_project_invitations_token_hash_idx",
+          "columns": [
+            {
+              "expression": "token_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "bubblophy_project_invitations_open_email_idx": {
+          "name": "bubblophy_project_invitations_open_email_idx",
+          "columns": [
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "normalized_email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"bubblophy_project_invitations\".\"accepted_at\" is null and \"bubblophy_project_invitations\".\"revoked_at\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "bubblophy_project_invitations_project_created_idx": {
+          "name": "bubblophy_project_invitations_project_created_idx",
+          "columns": [
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "bubblophy_project_invitations_project_id_bubblophy_projects_id_fk": {
+          "name": "bubblophy_project_invitations_project_id_bubblophy_projects_id_fk",
+          "tableFrom": "bubblophy_project_invitations",
+          "tableTo": "bubblophy_projects",
+          "columnsFrom": [
+            "project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "bubblophy_project_invitations_role_check": {
+          "name": "bubblophy_project_invitations_role_check",
+          "value": "\"bubblophy_project_invitations\".\"role\" <> 'owner'"
+        },
+        "bubblophy_project_invitations_normalized_email_check": {
+          "name": "bubblophy_project_invitations_normalized_email_check",
+          "value": "\"bubblophy_project_invitations\".\"normalized_email\" = lower(btrim(\"bubblophy_project_invitations\".\"normalized_email\")) and length(\"bubblophy_project_invitations\".\"normalized_email\") between 3 and 320 and position('@' in \"bubblophy_project_invitations\".\"normalized_email\") > 1"
+        },
+        "bubblophy_project_invitations_token_hash_check": {
+          "name": "bubblophy_project_invitations_token_hash_check",
+          "value": "\"bubblophy_project_invitations\".\"token_hash\" ~ '^sha256:[0-9a-f]{64}$'"
+        },
+        "bubblophy_project_invitations_expiry_check": {
+          "name": "bubblophy_project_invitations_expiry_check",
+          "value": "\"bubblophy_project_invitations\".\"expires_at\" > \"bubblophy_project_invitations\".\"created_at\""
+        },
+        "bubblophy_project_invitations_acceptance_pair_check": {
+          "name": "bubblophy_project_invitations_acceptance_pair_check",
+          "value": "(\"bubblophy_project_invitations\".\"accepted_at\" is null) = (\"bubblophy_project_invitations\".\"accepted_by_auth_user_id\" is null)"
+        },
+        "bubblophy_project_invitations_revocation_pair_check": {
+          "name": "bubblophy_project_invitations_revocation_pair_check",
+          "value": "(\"bubblophy_project_invitations\".\"revoked_at\" is null) = (\"bubblophy_project_invitations\".\"revoked_by_auth_user_id\" is null)"
+        },
+        "bubblophy_project_invitations_terminal_state_check": {
+          "name": "bubblophy_project_invitations_terminal_state_check",
+          "value": "not (\"bubblophy_project_invitations\".\"accepted_at\" is not null and \"bubblophy_project_invitations\".\"revoked_at\" is not null)"
+        },
+        "bubblophy_project_invitations_terminal_time_check": {
+          "name": "bubblophy_project_invitations_terminal_time_check",
+          "value": "(\"bubblophy_project_invitations\".\"accepted_at\" is null or (\"bubblophy_project_invitations\".\"accepted_at\" >= \"bubblophy_project_invitations\".\"created_at\" and \"bubblophy_project_invitations\".\"accepted_at\" < \"bubblophy_project_invitations\".\"expires_at\")) and (\"bubblophy_project_invitations\".\"revoked_at\" is null or \"bubblophy_project_invitations\".\"revoked_at\" >= \"bubblophy_project_invitations\".\"created_at\")"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.bubblophy_project_members": {
+      "name": "bubblophy_project_members",
+      "schema": "",
+      "columns": {
+        "project_id": {
+          "name": "project_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "auth_user_id": {
+          "name": "auth_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "bubblophy_project_role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'member'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "bubblophy_project_members_auth_user_idx": {
+          "name": "bubblophy_project_members_auth_user_idx",
+          "columns": [
+            {
+              "expression": "auth_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "bubblophy_project_members_project_id_bubblophy_projects_id_fk": {
+          "name": "bubblophy_project_members_project_id_bubblophy_projects_id_fk",
+          "tableFrom": "bubblophy_project_members",
+          "tableTo": "bubblophy_projects",
+          "columnsFrom": [
+            "project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "bubblophy_project_members_pkey": {
+          "name": "bubblophy_project_members_pkey",
+          "columns": [
+            "project_id",
+            "auth_user_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.bubblophy_projects": {
+      "name": "bubblophy_projects",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "repository_url": {
+          "name": "repository_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_archived": {
+          "name": "is_archived",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_by_auth_user_id": {
+          "name": "created_by_auth_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "bubblophy_projects_slug_idx": {
+          "name": "bubblophy_projects_slug_idx",
+          "columns": [
+            {
+              "expression": "slug",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "bubblophy_projects_key_idx": {
+          "name": "bubblophy_projects_key_idx",
+          "columns": [
+            {
+              "expression": "key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.bubblophy_user_profiles": {
+      "name": "bubblophy_user_profiles",
+      "schema": "",
+      "columns": {
+        "auth_user_id": {
+          "name": "auth_user_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "normalized_email": {
+          "name": "normalized_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "bubblophy_user_profiles_normalized_email_check": {
+          "name": "bubblophy_user_profiles_normalized_email_check",
+          "value": "\"bubblophy_user_profiles\".\"normalized_email\" = lower(btrim(\"bubblophy_user_profiles\".\"normalized_email\")) and length(\"bubblophy_user_profiles\".\"normalized_email\") between 3 and 320 and position('@' in \"bubblophy_user_profiles\".\"normalized_email\") > 1"
+        },
+        "bubblophy_user_profiles_display_name_check": {
+          "name": "bubblophy_user_profiles_display_name_check",
+          "value": "\"bubblophy_user_profiles\".\"display_name\" is null or (\"bubblophy_user_profiles\".\"display_name\" = btrim(\"bubblophy_user_profiles\".\"display_name\") and length(\"bubblophy_user_profiles\".\"display_name\") between 1 and 120)"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.bubblophy_agent_run_state": {
+      "name": "bubblophy_agent_run_state",
+      "schema": "public",
+      "values": [
+        "requested",
+        "approved",
+        "running",
+        "needs_review",
+        "completed",
+        "cancelled",
+        "failed"
+      ]
+    },
+    "public.bubblophy_agent_token_state": {
+      "name": "bubblophy_agent_token_state",
+      "schema": "public",
+      "values": [
+        "active",
+        "paused",
+        "revoked"
+      ]
+    },
+    "public.bubblophy_issue_event_type": {
+      "name": "bubblophy_issue_event_type",
+      "schema": "public",
+      "values": [
+        "created",
+        "status_changed",
+        "plan_updated",
+        "human_approved",
+        "agent_token_created",
+        "agent_run_requested",
+        "agent_run_event",
+        "commented"
+      ]
+    },
+    "public.bubblophy_issue_priority": {
+      "name": "bubblophy_issue_priority",
+      "schema": "public",
+      "values": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "public.bubblophy_issue_status": {
+      "name": "bubblophy_issue_status",
+      "schema": "public",
+      "values": [
+        "triage",
+        "planned",
+        "ready",
+        "in_progress",
+        "review",
+        "blocked",
+        "done"
+      ]
+    },
+    "public.bubblophy_project_event_type": {
+      "name": "bubblophy_project_event_type",
+      "schema": "public",
+      "values": [
+        "agent_token_created",
+        "agent_token_revoked",
+        "agent_run_requested",
+        "agent_run_approved",
+        "project_updated"
+      ]
+    },
+    "public.bubblophy_project_role": {
+      "name": "bubblophy_project_role",
+      "schema": "public",
+      "values": [
+        "owner",
+        "maintainer",
+        "member",
+        "viewer"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

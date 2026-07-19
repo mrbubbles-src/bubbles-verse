@@ -1,5 +1,6 @@
 import 'server-only';
 
+import type { JsonValue } from '@/drizzle/db/schema';
 import type { BubblophyDashboardPersistenceRows } from '@/lib/dashboard/data';
 import type { IssueNoteSummary } from '@/lib/dashboard/types';
 import type {
@@ -15,6 +16,7 @@ import type {
 import { buildBubblophyProjectIssueSnapshotForUser } from '@/lib/issues/repository';
 
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 
 import { db } from '@/drizzle/db';
 import {
@@ -26,7 +28,7 @@ import {
   bubblophyProjectEvents,
   bubblophyProjectMembers,
   bubblophyProjects,
-  type JsonValue,
+  bubblophyUserProfiles,
 } from '@/drizzle/db/schema';
 
 type CountByProjectId = Record<string, number>;
@@ -100,7 +102,7 @@ export async function selectBubblophyDashboardRowsForUser(
     activityRows,
   ] = await Promise.all([
     selectBubblophyProjectIssueRowsForProjectIds(authUserId, projectIds),
-    selectBubblophyProjectMemberRowsForProjectIds(projectIds),
+    selectBubblophyProjectMemberRowsForUser(authUserId, projectIds),
     selectBubblophyAgentTokenRowsForProjectIds(projectIds),
     selectBubblophyAgentRunRowsForProjectIds(projectIds),
     selectBubblophyProjectActivityRowsForProjectIds(projectIds),
@@ -341,19 +343,34 @@ async function selectBubblophyAgentTokenRowsForProjectIds(
 /**
  * Selects public project member rows for visible projects.
  *
- * The row has no profile lookup in this schema, so only the technical Auth
- * user ID, role, and membership timestamp cross the read boundary.
+ * Profiles are display-only. The same statement rechecks the actor membership
+ * before reading member names or manager-visible e-mail addresses, so the
+ * earlier project-ID lookup cannot outlive a concurrent membership removal.
  *
+ * @param authUserId Current verified session user.
  * @param projectIds Project IDs already constrained by membership.
  * @returns Public membership rows for the dashboard.
  */
-async function selectBubblophyProjectMemberRowsForProjectIds(
+async function selectBubblophyProjectMemberRowsForUser(
+  authUserId: string,
   projectIds: string[]
 ): Promise<BubblophyProjectMemberPersistenceRow[]> {
+  const actorMemberships = alias(
+    bubblophyProjectMembers,
+    'bubblophy_actor_memberships'
+  );
+
   return db
     .select({
       projectKey: bubblophyProjects.key,
       authUserId: bubblophyProjectMembers.authUserId,
+      displayName: bubblophyUserProfiles.displayName,
+      normalizedEmail: sql<string | null>`case
+        when ${actorMemberships.role} in ('owner', 'maintainer')
+          or ${bubblophyProjectMembers.authUserId} = ${authUserId}
+        then ${bubblophyUserProfiles.normalizedEmail}
+        else null
+      end`,
       role: bubblophyProjectMembers.role,
       createdAt: bubblophyProjectMembers.createdAt,
     })
@@ -361,6 +378,17 @@ async function selectBubblophyProjectMemberRowsForProjectIds(
     .innerJoin(
       bubblophyProjects,
       eq(bubblophyProjects.id, bubblophyProjectMembers.projectId)
+    )
+    .innerJoin(
+      actorMemberships,
+      and(
+        eq(actorMemberships.projectId, bubblophyProjectMembers.projectId),
+        eq(actorMemberships.authUserId, authUserId)
+      )
+    )
+    .leftJoin(
+      bubblophyUserProfiles,
+      eq(bubblophyUserProfiles.authUserId, bubblophyProjectMembers.authUserId)
     )
     .where(inArray(bubblophyProjectMembers.projectId, projectIds))
     .orderBy(

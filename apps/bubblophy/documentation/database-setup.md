@@ -143,6 +143,18 @@ Session-E-Mail ab und schreibt Annahme, Mitgliedschaft und E-Mail-/Token-freies
 Audit atomar. Ablauf, Widerruf, Archivierung, falsche Identität und verlorene
 Compare-and-set-Races erzeugen keine Teilmutation.
 
+`0007_add_bubblophy_user_profiles.sql` ergänzt eine optionale, reine
+Anzeigeprojektion pro Supabase-Auth-User. Der geschützte Dashboard-Pfad
+synchronisiert normalisierte Session-E-Mail und einen bereinigten Namen aus der
+Provider-Identität; Browserdaten bestimmen weder Auth-User-ID noch E-Mail. Der
+Sync ist best effort und wird nie zum Dashboard-Zugangsgate.
+RLS ist aktiv und direkte Zugriffe für `public`, `anon` und `authenticated`
+bleiben vollständig widerrufen. Der serverseitige Mitglieder-Read verbindet
+Zielmitgliedschaften, aktuelle Actor-Mitgliedschaft und Profile in einem
+Statement. Namen sind projektweit sichtbar, E-Mail-Adressen nur für
+Owner/Maintainer und die eigene Person. Die Profilzeile besitzt absichtlich
+keinen Membership-Fremdschlüssel und gewährt allein keinen Projektzugriff.
+
 Die Zielumgebung braucht zusätzlich einen Supabase-Custom-Access-Token-Hook,
 der JWTs mit `client_id` die exakte Audience `<NEXT_PUBLIC_APP_URL>/mcp` gibt.
 Der Hook ist absichtlich umgebungsspezifische Auth-Infrastruktur und nicht Teil

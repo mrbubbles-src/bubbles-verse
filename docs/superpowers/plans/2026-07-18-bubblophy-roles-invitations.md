@@ -27,6 +27,9 @@ Projekt-Snapshots, RLS-Reads und MCP-Werkzeugen ausgeschlossen.
   E-Mail-Adresse und keinen Token.
 - Allgemeine Projektmitglieder sehen keine ausstehenden E-Mail-Adressen;
   Einladungsverwaltung ist auf Owner und Maintainer begrenzt.
+- Gemeinsame Projektmitglieder sehen Profilnamen. Profil-E-Mails sehen nur
+  Owner/Maintainer sowie die jeweils eigene Identität; Profile sind niemals
+  Zugriffs- oder Einladungsnachweis.
 - Bestehende direkte Mitgliedschaften und Rollen bleiben kompatibel, bis der
   Einladungsfluss vollständig produktionsreif ist.
 
@@ -84,7 +87,7 @@ Einladungspersistenz.
 - [x] Technische Auth-ID-Eingabe durch E-Mail-Einladung ersetzen.
 - [x] Offene, abgelaufene und widerrufene Einladungen für Manager verständlich
       anzeigen; Link nur unmittelbar nach Erzeugung kopierbar machen.
-- [ ] Ein minimales eigenes Profil aus verifizierter Session-Identität pflegen,
+- [x] Ein minimales eigenes Profil aus verifizierter Session-Identität pflegen,
       damit Mitgliedslisten Name/E-Mail mit technischer ID nur als Fallback zeigen.
 - [ ] Rollenrechte für Owner, Maintainer, Member und Viewer im UI klar
       beschreiben und unerlaubte Aktionen serverseitig weiterhin abweisen.

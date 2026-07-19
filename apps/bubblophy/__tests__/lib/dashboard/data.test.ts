@@ -251,7 +251,10 @@ describe('getBubblophyDashboardSnapshot', () => {
     expect(serializedSnapshot).not.toContain('plaintextToken');
     expect(serializedSnapshot).not.toContain('requestedByAuthUserId');
     expect(serializedSnapshot).not.toContain('actorAuthUserId');
-    expect(snapshot.issues[0]?.owner).toBe('Mensch');
+    expect(snapshot.issues[0]).toMatchObject({
+      assigneeAuthUserId: 'user_owner',
+      assigneeLabel: 'Mensch',
+    });
     expect(snapshot.projectMembers).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

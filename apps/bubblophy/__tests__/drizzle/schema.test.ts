@@ -12,6 +12,7 @@ import {
   bubblophyProjectInvitations,
   bubblophyProjectMembers,
   bubblophyProjects,
+  bubblophyUserProfiles,
 } from '@/drizzle/db/schema';
 
 describe('bubblophy schema', () => {
@@ -20,6 +21,7 @@ describe('bubblophy schema', () => {
     expect(getTableName(bubblophyProjectMembers)).toBe(
       'bubblophy_project_members'
     );
+    expect(getTableName(bubblophyUserProfiles)).toBe('bubblophy_user_profiles');
     expect(getTableName(bubblophyProjectInvitations)).toBe(
       'bubblophy_project_invitations'
     );
@@ -30,6 +32,25 @@ describe('bubblophy schema', () => {
       'bubblophy_project_events'
     );
     expect(getTableName(bubblophyAgentTokens)).toBe('bubblophy_agent_tokens');
+  });
+
+  it('keeps display profiles separate from memberships and constrained', () => {
+    const config = getTableConfig(bubblophyUserProfiles);
+
+    expect(getTableColumns(bubblophyUserProfiles)).toEqual(
+      expect.objectContaining({
+        authUserId: expect.any(Object),
+        normalizedEmail: expect.any(Object),
+        displayName: expect.any(Object),
+      })
+    );
+    expect(config.checks.map((constraint) => constraint.name)).toEqual(
+      expect.arrayContaining([
+        'bubblophy_user_profiles_normalized_email_check',
+        'bubblophy_user_profiles_display_name_check',
+      ])
+    );
+    expect(config.foreignKeys).toEqual([]);
   });
 
   it('enforces invitation identity, role, token, and lifecycle invariants', () => {

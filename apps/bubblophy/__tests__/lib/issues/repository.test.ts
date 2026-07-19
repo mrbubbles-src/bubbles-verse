@@ -6,8 +6,8 @@ import {
   buildBubblophyAgentTokenSummaries,
   buildBubblophyProjectIssueSnapshot,
   buildBubblophyProjectIssueSnapshotForUser,
-  buildSafeAgentRunResultSummary,
   buildBubblophyProjectMemberSummaries,
+  buildSafeAgentRunResultSummary,
   deriveBubblophyProjectHealth,
   formatBubblophyIssueKey,
   formatBubblophyProjectMemberId,
@@ -92,7 +92,7 @@ describe('Bubblophy issue repository mapping', () => {
     expect(formatBubblophyIssueKey('BV', 14)).toBe('BV-14');
   });
 
-  it('maps project member rows without inventing profile or email fields', () => {
+  it('maps display profiles and preserves a technical fallback', () => {
     expect(formatBubblophyProjectMemberId('BV', 'user_martin')).toBe(
       'BV:user_martin'
     );
@@ -107,6 +107,8 @@ describe('Bubblophy issue repository mapping', () => {
         {
           projectKey: 'BV',
           authUserId: 'user_owner',
+          displayName: 'Mara Owner',
+          normalizedEmail: 'owner@example.test',
           role: 'owner',
           createdAt: '2026-06-13T10:00:00.000Z',
         },
@@ -116,7 +118,8 @@ describe('Bubblophy issue repository mapping', () => {
         id: 'BV:user_owner',
         projectKey: 'BV',
         authUserId: 'user_owner',
-        label: 'user_owner',
+        label: 'Mara Owner',
+        email: 'owner@example.test',
         role: 'owner',
         createdAt: '2026-06-13T10:00:00.000Z',
       },
@@ -125,6 +128,7 @@ describe('Bubblophy issue repository mapping', () => {
         projectKey: 'BV',
         authUserId: 'user_viewer',
         label: 'user_viewer',
+        email: null,
         role: 'viewer',
         createdAt: '2026-06-13T11:00:00.000Z',
       },
@@ -182,7 +186,8 @@ describe('Bubblophy issue repository mapping', () => {
         projectKey: 'BV',
         status: 'bereit',
         priority: 'hoch',
-        owner: 'mrbubbles',
+        assigneeAuthUserId: 'mrbubbles',
+        assigneeLabel: 'mrbubbles',
         planSteps: 5,
         latestPlan: undefined,
         notes: [],
@@ -195,7 +200,8 @@ describe('Bubblophy issue repository mapping', () => {
         projectKey: 'BV',
         status: 'blockiert',
         priority: 'mittel',
-        owner: 'Nicht zugewiesen',
+        assigneeAuthUserId: null,
+        assigneeLabel: 'Nicht zugewiesen',
         planSteps: 0,
         latestPlan: undefined,
         notes: [],
@@ -208,7 +214,8 @@ describe('Bubblophy issue repository mapping', () => {
         projectKey: 'BV',
         status: 'erledigt',
         priority: 'hoch',
-        owner: 'mrbubbles',
+        assigneeAuthUserId: 'mrbubbles',
+        assigneeLabel: 'mrbubbles',
         planSteps: 3,
         latestPlan: undefined,
         notes: [],
@@ -249,7 +256,7 @@ describe('Bubblophy issue repository mapping', () => {
     ]);
   });
 
-  it('masks raw auth identifiers in issue owner UI labels', () => {
+  it('separates stable assignee IDs from redacted fallback labels', () => {
     const snapshot = buildBubblophyProjectIssueSnapshot([
       makeIssueRow({
         issueAssignedAuthUserId: 'user_owner',
@@ -264,17 +271,15 @@ describe('Bubblophy issue repository mapping', () => {
     expect(snapshot.issues).toEqual([
       expect.objectContaining({
         id: 'BV-01',
-        owner: 'Mensch',
+        assigneeAuthUserId: 'user_owner',
+        assigneeLabel: 'Mensch',
       }),
       expect.objectContaining({
         id: 'BV-02',
-        owner: 'Mensch',
+        assigneeAuthUserId: '2e3f7004-3065-449f-84f8-0ecb68c1cb46',
+        assigneeLabel: 'Mensch',
       }),
     ]);
-    expect(JSON.stringify(snapshot)).not.toContain('user_owner');
-    expect(JSON.stringify(snapshot)).not.toContain(
-      '2e3f7004-3065-449f-84f8-0ecb68c1cb46'
-    );
   });
 
   it('keeps empty projects visible and archived projects non-operative', () => {

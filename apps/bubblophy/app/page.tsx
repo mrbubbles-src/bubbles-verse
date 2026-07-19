@@ -1,5 +1,6 @@
 import { requireBubblophySession } from '@/lib/auth/session';
 import { getBubblophyDashboardSnapshot } from '@/lib/dashboard/data';
+import { syncBubblophyUserProfile } from '@/lib/profiles/database-write';
 
 import { Suspense } from 'react';
 
@@ -75,6 +76,11 @@ function BubblophyDashboardGateFallback() {
 export async function ProtectedBubblophyDashboard() {
   await connection();
   const session = await requireBubblophySession({ nextPath: '/' });
+
+  await syncBubblophyUserProfile({
+    user: session.user,
+    normalizedEmail: session.email,
+  }).catch(() => undefined);
 
   const dashboardSnapshot = await getBubblophyDashboardSnapshot({ session });
 

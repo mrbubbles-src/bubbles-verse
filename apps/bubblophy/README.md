@@ -41,8 +41,9 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   Autorisierungsentscheidung, sodass paralleler Rollenentzug zuerst wirksam
   wird.
 - Der Projektbereich zeigt Mitglieder eines ausgewählten Projekts aus
-  `bubblophy_project_members`. Ohne Profil- oder Invite-Modell zeigt die UI die
-  technische Auth-User-ID als Fallback und bietet noch kein Add-by-E-Mail an.
+  `bubblophy_project_members` und ergänzt aus `bubblophy_user_profiles` nur
+  verständliche Anzeigedaten. Profile gewähren keinen Zugriff; bei fehlendem
+  Profil bleibt die technische Auth-User-ID der sichtbare Fallback.
 - Owner und Maintainer können Nicht-Owner-Mitglieder zwischen `maintainer`,
   `member` und `viewer` umstellen oder entfernen. Owner-Rollen, Owner-Removal
   und Self-Removal bleiben im MVP konservativ gesperrt. Projekt und beteiligte
@@ -335,6 +336,15 @@ bun run build
   offene, abgelaufene, angenommene und widerrufene Zustände ohne Tokenmaterial;
   abgelaufene Einladungen können nur erneuert, offene zusätzlich nach Dialog
   widerrufen und archivierte Projekte ausschließlich gelesen werden.
+- Das minimale Bubblophy-Profil wird nach dem geschützten Session-Gate nur aus
+  der verifizierten Supabase-Identität synchronisiert. Provider-Name und
+  Session-E-Mail sind reine, best-effort gepflegte Anzeigedaten; ein Sync-Fehler
+  sperrt das Dashboard nicht. Mitgliedschaften bleiben die einzige
+  Zugriffsquelle. Gemeinsame Projektmitglieder sehen Namen, E-Mail-Adressen
+  dagegen nur Owner/Maintainer sowie die jeweils eigene Person. Der Read-Pfad
+  revalidiert die handelnde Mitgliedschaft im selben Statement wie den
+  Profil-Join. Issue-Zuweisungen trennen die stabile Auth-User-ID vom
+  Anzeigelabel, sodass gleichnamige Profile keine Mutation umlenken können.
 - Persistierte Plan-Erfassung läuft serverseitig über Issue-Projektmitgliedschaft,
   schreibt eine neue Planversion plus `plan_updated`-Event und startet keine
   Agent-Runs.

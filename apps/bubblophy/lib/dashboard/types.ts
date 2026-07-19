@@ -50,7 +50,8 @@ export interface IssueSummary {
   projectKey: string;
   status: IssueStatus;
   priority: IssuePriority;
-  owner: string;
+  assigneeAuthUserId: string | null;
+  assigneeLabel: string;
   planSteps: number;
   latestPlan?: IssuePlanSummary;
   notes?: IssueNoteSummary[];
@@ -90,6 +91,7 @@ export interface ProjectMemberSummary {
   projectKey: string;
   authUserId: string;
   label: string;
+  email?: string | null;
   role: ProjectMemberRole;
   createdAt: string;
 }

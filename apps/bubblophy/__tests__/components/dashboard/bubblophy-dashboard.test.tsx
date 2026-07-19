@@ -93,7 +93,8 @@ const databaseSnapshotWithManageableMembers = {
       id: 'BV:user_owner',
       projectKey: 'BV',
       authUserId: 'user_owner',
-      label: 'user_owner',
+      label: 'Mara Owner',
+      email: 'owner@example.test',
       role: 'owner',
       createdAt: '2026-06-13T10:00:00.000Z',
     },
@@ -101,7 +102,8 @@ const databaseSnapshotWithManageableMembers = {
       id: 'BV:user_martin',
       projectKey: 'BV',
       authUserId: 'user_martin',
-      label: 'user_martin',
+      label: 'Martin',
+      email: 'martin@example.test',
       role: 'member',
       createdAt: '2026-06-13T11:00:00.000Z',
     },
@@ -109,7 +111,8 @@ const databaseSnapshotWithManageableMembers = {
       id: 'BV:user_viewer',
       projectKey: 'BV',
       authUserId: 'user_viewer',
-      label: 'user_viewer',
+      label: 'Viewer',
+      email: null,
       role: 'viewer',
       createdAt: '2026-06-13T12:00:00.000Z',
     },
@@ -740,7 +743,7 @@ describe('BubblophyDashboard interactions', () => {
     expect(issueButton).toHaveAttribute('aria-pressed', 'true');
     expect(within(detailPanel).getByText('BV-12')).toBeInTheDocument();
     expect(
-      within(detailPanel).getByText('Projekt BV · Owner mrbubbles')
+      within(detailPanel).getByText('Projekt BV · Zuständig mrbubbles')
     ).toBeInTheDocument();
     expect(navigationMocks.routerPush).toHaveBeenCalledWith('/?issue=BV-12');
   });
@@ -766,7 +769,7 @@ describe('BubblophyDashboard interactions', () => {
     expect(issueRow).toHaveAttribute('aria-selected', 'true');
     expect(within(detailPanel).getByText('NO-08')).toBeInTheDocument();
     expect(
-      within(detailPanel).getByText('Projekt NO · Owner Martin')
+      within(detailPanel).getByText('Projekt NO · Zuständig Martin')
     ).toBeInTheDocument();
   });
 
@@ -838,7 +841,8 @@ describe('BubblophyDashboard interactions', () => {
         projectKey: 'BV',
         status: 'geplant',
         priority: 'hoch',
-        owner: 'mrbubbles',
+        assigneeAuthUserId: 'user_mrbubbles',
+        assigneeLabel: 'mrbubbles',
         planSteps: 3,
         approvalRequired: true,
       },
@@ -1058,7 +1062,8 @@ describe('BubblophyDashboard interactions', () => {
         projectKey: 'BV',
         status: 'bereit',
         priority: 'hoch',
-        owner: 'mrbubbles',
+        assigneeAuthUserId: 'user_mrbubbles',
+        assigneeLabel: 'mrbubbles',
         planSteps: 3,
         approvalRequired: true,
       },
@@ -1217,7 +1222,8 @@ describe('BubblophyDashboard interactions', () => {
         projectKey: 'BV',
         status: 'geplant',
         priority: 'mittel',
-        owner: 'mrbubbles',
+        assigneeAuthUserId: 'user_mrbubbles',
+        assigneeLabel: 'mrbubbles',
         planSteps: 3,
         approvalRequired: true,
       },
@@ -1326,7 +1332,8 @@ describe('BubblophyDashboard interactions', () => {
         projectKey: 'BV',
         status: 'geplant',
         priority: 'hoch',
-        owner: 'user_martin',
+        assigneeAuthUserId: 'user_martin',
+        assigneeLabel: 'user_martin',
         planSteps: 3,
         approvalRequired: true,
       },
@@ -1376,14 +1383,14 @@ describe('BubblophyDashboard interactions', () => {
       await within(detailPanel).findByText('Zuweisung gespeichert.')
     ).toBeInTheDocument();
     expect(
-      within(detailPanel).getByText(/Owner user_martin/i)
+      within(detailPanel).getByText(/Zuständig Martin/i)
     ).toBeInTheDocument();
     expect(
       within(
         screen.getByRole('row', {
           name: 'Issue BV-12: Issue-Plan als strukturierte Arbeitsnotiz speichern auswählen',
         })
-      ).getByText('user_martin')
+      ).getByText('Martin')
     ).toBeInTheDocument();
     expect(requestAgentRunAction).not.toHaveBeenCalled();
   });
@@ -1395,7 +1402,8 @@ describe('BubblophyDashboard interactions', () => {
         issue.id === 'BV-12'
           ? {
               ...issue,
-              owner: 'user_martin',
+              assigneeAuthUserId: 'user_martin',
+              assigneeLabel: 'user_martin',
             }
           : issue
       ),
@@ -1412,7 +1420,8 @@ describe('BubblophyDashboard interactions', () => {
         projectKey: 'BV',
         status: 'geplant',
         priority: 'hoch',
-        owner: 'Nicht zugewiesen',
+        assigneeAuthUserId: null,
+        assigneeLabel: 'Nicht zugewiesen',
         planSteps: 3,
         approvalRequired: true,
       },
@@ -1454,7 +1463,7 @@ describe('BubblophyDashboard interactions', () => {
       });
     });
     expect(
-      await within(detailPanel).findByText(/Owner Nicht zugewiesen/i)
+      await within(detailPanel).findByText(/Zuständig Nicht zugewiesen/i)
     ).toBeInTheDocument();
     expect(requestAgentRunAction).not.toHaveBeenCalled();
   });
@@ -1507,7 +1516,7 @@ describe('BubblophyDashboard interactions', () => {
     expect(alert.textContent).not.toContain('membership SQL');
     expect(assigneeSelect).toHaveValue('user_martin');
     expect(
-      within(detailPanel).getByText(/Owner mrbubbles/i)
+      within(detailPanel).getByText(/Zuständig mrbubbles/i)
     ).toBeInTheDocument();
     expect(requestAgentRunAction).not.toHaveBeenCalled();
   });
@@ -1626,7 +1635,8 @@ describe('BubblophyDashboard interactions', () => {
         projectKey: 'BV',
         status: 'blockiert',
         priority: 'hoch',
-        owner: 'mrbubbles',
+        assigneeAuthUserId: 'user_mrbubbles',
+        assigneeLabel: 'mrbubbles',
         planSteps: 3,
         approvalRequired: true,
       },
@@ -1684,7 +1694,8 @@ describe('BubblophyDashboard interactions', () => {
         projectKey: 'BV',
         status: 'erledigt',
         priority: 'hoch',
-        owner: 'mrbubbles',
+        assigneeAuthUserId: 'user_mrbubbles',
+        assigneeLabel: 'mrbubbles',
         planSteps: 3,
         approvalRequired: true,
       },
@@ -1739,7 +1750,8 @@ describe('BubblophyDashboard interactions', () => {
         projectKey: 'BV',
         status: 'triage',
         priority: 'hoch',
-        owner: 'mrbubbles',
+        assigneeAuthUserId: 'user_mrbubbles',
+        assigneeLabel: 'mrbubbles',
         planSteps: 3,
         approvalRequired: true,
       },
@@ -3065,7 +3077,10 @@ describe('BubblophyDashboard interactions', () => {
     );
 
     expect(within(projectsSection).getByText('Mitglieder')).toBeInTheDocument();
-    expect(within(projectsSection).getByText('user_owner')).toBeInTheDocument();
+    expect(within(projectsSection).getByText('Mara Owner')).toBeInTheDocument();
+    expect(
+      within(projectsSection).getByText('owner@example.test')
+    ).toBeInTheDocument();
     expect(
       within(projectsSection).getByText('Owner geschützt')
     ).toBeInTheDocument();
@@ -3074,7 +3089,7 @@ describe('BubblophyDashboard interactions', () => {
     ).toBeInTheDocument();
 
     fireEvent.change(
-      within(projectsSection).getByLabelText('Rolle für user_martin'),
+      within(projectsSection).getByLabelText('Rolle für Martin'),
       {
         target: { value: 'viewer' },
       }
@@ -3096,6 +3111,10 @@ describe('BubblophyDashboard interactions', () => {
         within(projectsSection).getAllByText('Viewer').length
       ).toBeGreaterThan(0);
     });
+    expect(within(projectsSection).getByText('Martin')).toBeInTheDocument();
+    expect(
+      within(projectsSection).getByText('martin@example.test')
+    ).toBeInTheDocument();
   });
 
   it('loads the email invitation manager without exposing technical member handoff', async () => {
@@ -3187,9 +3206,8 @@ describe('BubblophyDashboard interactions', () => {
       })
     );
 
-    const martinRoleSelect = within(projectsSection).getByLabelText(
-      'Rolle für user_martin'
-    );
+    const martinRoleSelect =
+      within(projectsSection).getByLabelText('Rolle für Martin');
 
     fireEvent.change(martinRoleSelect, {
       target: { value: 'viewer' },
@@ -3211,11 +3229,9 @@ describe('BubblophyDashboard interactions', () => {
     );
     expect(alert.textContent).not.toContain('membership mutation');
     expect(
-      within(projectsSection).getByLabelText('Rolle für user_martin')
+      within(projectsSection).getByLabelText('Rolle für Martin')
     ).toHaveValue('member');
-    expect(
-      within(projectsSection).getByText('user_martin')
-    ).toBeInTheDocument();
+    expect(within(projectsSection).getByText('Martin')).toBeInTheDocument();
   });
 
   it('shows a stale member-role conflict and keeps the visible role unchanged', async () => {
@@ -3244,7 +3260,7 @@ describe('BubblophyDashboard interactions', () => {
       })
     );
     fireEvent.change(
-      within(projectsSection).getByLabelText('Rolle für user_martin'),
+      within(projectsSection).getByLabelText('Rolle für Martin'),
       { target: { value: 'viewer' } }
     );
 
@@ -3252,7 +3268,7 @@ describe('BubblophyDashboard interactions', () => {
       'Die Rolle wurde zwischenzeitlich geändert. Lade die aktuellen Projektdaten neu.'
     );
     expect(
-      within(projectsSection).getByLabelText('Rolle für user_martin')
+      within(projectsSection).getByLabelText('Rolle für Martin')
     ).toHaveValue('member');
   });
 
@@ -3301,7 +3317,7 @@ describe('BubblophyDashboard interactions', () => {
       })
     );
     expect(
-      within(projectsSection).getByLabelText('Rolle für user_martin')
+      within(projectsSection).getByLabelText('Rolle für Martin')
     ).toBeInTheDocument();
 
     fireEvent.change(within(projectsSection).getByLabelText('Name'), {
@@ -3317,7 +3333,7 @@ describe('BubblophyDashboard interactions', () => {
       ).toBeInTheDocument();
     });
     expect(
-      within(projectsSection).getByLabelText('Rolle für user_martin')
+      within(projectsSection).getByLabelText('Rolle für Martin')
     ).toBeInTheDocument();
   });
 
@@ -3346,7 +3362,7 @@ describe('BubblophyDashboard interactions', () => {
       })
     );
 
-    const martinRow = screen.getByText('user_martin').closest('tr');
+    const martinRow = screen.getByText('Martin').closest('tr');
 
     expect(martinRow).toBeInstanceOf(HTMLTableRowElement);
 
@@ -3372,7 +3388,7 @@ describe('BubblophyDashboard interactions', () => {
       });
     });
     await waitFor(() => {
-      expect(screen.queryByText('user_martin')).not.toBeInTheDocument();
+      expect(screen.queryByText('Martin')).not.toBeInTheDocument();
     });
   });
 
@@ -3398,7 +3414,7 @@ describe('BubblophyDashboard interactions', () => {
       })
     );
 
-    const martinRow = screen.getByText('user_martin').closest('tr');
+    const martinRow = screen.getByText('Martin').closest('tr');
 
     expect(martinRow).toBeInstanceOf(HTMLTableRowElement);
 
@@ -3429,7 +3445,7 @@ describe('BubblophyDashboard interactions', () => {
       'Das Mitglied konnte gerade nicht entfernt werden. Versuche es erneut.'
     );
     expect(alert.textContent).not.toContain('member delete');
-    expect(screen.getByText('user_martin')).toBeInTheDocument();
+    expect(screen.getByText('Martin')).toBeInTheDocument();
     expect(
       within(martinRow).getByRole('button', {
         name: 'Endgültig entfernen',
@@ -3466,7 +3482,7 @@ describe('BubblophyDashboard interactions', () => {
     );
 
     fireEvent.change(
-      within(projectsSection).getByLabelText('Rolle für user_martin'),
+      within(projectsSection).getByLabelText('Rolle für Martin'),
       {
         target: { value: 'viewer' },
       }
@@ -3500,9 +3516,7 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       screen.getByText('Archivierte Projekte zeigen Mitglieder nur lesend an.')
     ).toBeInTheDocument();
-    expect(
-      screen.queryByLabelText('Rolle für user_martin')
-    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Rolle für Martin')).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'Entfernen' })
     ).not.toBeInTheDocument();
@@ -3662,7 +3676,8 @@ describe('BubblophyDashboard interactions', () => {
         projectKey: 'ZEN',
         status: 'triage',
         priority: 'hoch',
-        owner: 'Nicht zugewiesen',
+        assigneeAuthUserId: null,
+        assigneeLabel: 'Nicht zugewiesen',
         planSteps: 0,
         approvalRequired: true,
         description: 'Direkt aus dem neuen Projekt angelegt.',
@@ -3784,7 +3799,8 @@ describe('BubblophyDashboard interactions', () => {
         projectKey: input.projectKey,
         status: 'triage',
         priority: input.priority ?? 'mittel',
-        owner: 'Nicht zugewiesen',
+        assigneeAuthUserId: null,
+        assigneeLabel: 'Nicht zugewiesen',
         planSteps: 0,
         approvalRequired: true,
         description: input.description,
@@ -3853,7 +3869,8 @@ describe('BubblophyDashboard interactions', () => {
         projectKey: input.projectKey,
         status: 'triage',
         priority: input.priority ?? 'mittel',
-        owner: 'Nicht zugewiesen',
+        assigneeAuthUserId: null,
+        assigneeLabel: 'Nicht zugewiesen',
         planSteps: 0,
         approvalRequired: true,
         description: input.description,
@@ -3940,7 +3957,8 @@ describe('BubblophyDashboard interactions', () => {
         projectKey: input.projectKey,
         status: 'triage',
         priority: input.priority ?? 'mittel',
-        owner: 'Nicht zugewiesen',
+        assigneeAuthUserId: null,
+        assigneeLabel: 'Nicht zugewiesen',
         planSteps: 0,
         approvalRequired: true,
         description: input.description,
@@ -5046,7 +5064,8 @@ describe('BubblophyDashboard interactions', () => {
         projectKey: input.projectKey,
         status: 'triage',
         priority: input.priority ?? 'mittel',
-        owner: 'Nicht zugewiesen',
+        assigneeAuthUserId: null,
+        assigneeLabel: 'Nicht zugewiesen',
         planSteps: 0,
         approvalRequired: true,
         description: input.description,
@@ -5141,7 +5160,8 @@ describe('BubblophyDashboard interactions', () => {
         projectKey: input.projectKey,
         status: 'triage',
         priority: input.priority ?? 'mittel',
-        owner: 'Nicht zugewiesen',
+        assigneeAuthUserId: null,
+        assigneeLabel: 'Nicht zugewiesen',
         planSteps: 0,
         approvalRequired: true,
         description: input.description,

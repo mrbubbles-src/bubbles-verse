@@ -21,6 +21,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const requireBubblophySessionMock = vi.fn();
 const getBubblophyDashboardSnapshotMock = vi.fn();
+const syncBubblophyUserProfileMock = vi.fn();
 const BubblophyDashboardMock = vi.fn(
   (props: {
     snapshot: DashboardSnapshot;
@@ -60,6 +61,13 @@ vi.mock('@/lib/dashboard/data', () => ({
     getBubblophyDashboardSnapshotMock(input),
 }));
 
+vi.mock('@/lib/profiles/database-write', () => ({
+  syncBubblophyUserProfile: (input: {
+    user: object;
+    normalizedEmail: string;
+  }) => syncBubblophyUserProfileMock(input),
+}));
+
 vi.mock('@/components/dashboard/bubblophy-dashboard', () => ({
   BubblophyDashboard: (props: {
     snapshot: DashboardSnapshot;
@@ -84,6 +92,8 @@ describe('Bubblophy home page', () => {
   beforeEach(() => {
     requireBubblophySessionMock.mockReset();
     getBubblophyDashboardSnapshotMock.mockReset();
+    syncBubblophyUserProfileMock.mockReset();
+    syncBubblophyUserProfileMock.mockResolvedValue(undefined);
     BubblophyDashboardMock.mockClear();
   });
 
@@ -131,6 +141,10 @@ describe('Bubblophy home page', () => {
 
     expect(requireBubblophySessionMock).toHaveBeenCalledWith({
       nextPath: '/',
+    });
+    expect(syncBubblophyUserProfileMock).toHaveBeenCalledWith({
+      normalizedEmail: 'owner@example.test',
+      user: {},
     });
     expect(getBubblophyDashboardSnapshotMock).toHaveBeenCalledWith({
       session: {
@@ -185,5 +199,40 @@ describe('Bubblophy home page', () => {
       'NEXT_REDIRECT:/login?next=%2F'
     );
     expect(getBubblophyDashboardSnapshotMock).not.toHaveBeenCalled();
+    expect(syncBubblophyUserProfileMock).not.toHaveBeenCalled();
+  });
+
+  it('keeps display-profile failures outside the dashboard access gate', async () => {
+    const session = {
+      authUserId: 'user_owner',
+      email: 'owner@example.test',
+      user: {},
+    };
+    const snapshot = {
+      meta: {
+        dataSource: 'database',
+        label: 'Datenbankdaten',
+        description: 'Read-only Testdaten.',
+      },
+      currentUser: { authUserId: 'user_owner' },
+      projects: [],
+      issues: [],
+      projectMembers: [],
+      agentTokens: [],
+      agentRuns: [],
+      activity: [],
+    } satisfies DashboardSnapshot;
+
+    requireBubblophySessionMock.mockResolvedValue(session);
+    syncBubblophyUserProfileMock.mockRejectedValue(
+      new Error('profile table unavailable')
+    );
+    getBubblophyDashboardSnapshotMock.mockResolvedValue(snapshot);
+
+    const { ProtectedBubblophyDashboard } = await import('@/app/page');
+    const element = await ProtectedBubblophyDashboard();
+
+    expect(getBubblophyDashboardSnapshotMock).toHaveBeenCalledWith({ session });
+    expect(element.props.snapshot).toBe(snapshot);
   });
 });

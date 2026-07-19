@@ -104,7 +104,8 @@ describe('updateBubblophyIssueAssignee', () => {
         projectKey: 'BV',
         status: 'geplant',
         priority: 'mittel',
-        owner: 'user_member',
+        assigneeAuthUserId: 'user_member',
+        assigneeLabel: 'user_member',
         planSteps: 2,
         approvalRequired: true,
       },
@@ -152,7 +153,8 @@ describe('updateBubblophyIssueAssignee', () => {
     ).resolves.toMatchObject({
       status: 'updated',
       issue: {
-        owner: 'Nicht zugewiesen',
+        assigneeAuthUserId: null,
+        assigneeLabel: 'Nicht zugewiesen',
       },
     });
 
@@ -247,7 +249,8 @@ describe('Bubblophy issue assignment helpers', () => {
       projectKey: 'BV',
       status: 'bereit',
       priority: 'mittel',
-      owner: 'user_member',
+      assigneeAuthUserId: 'user_member',
+      assigneeLabel: 'user_member',
       planSteps: 1,
       approvalRequired: true,
     });

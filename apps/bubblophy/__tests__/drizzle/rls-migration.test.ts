@@ -34,6 +34,13 @@ const invitationMigrationPath = join(
 const invitationMigrationSql = existsSync(invitationMigrationPath)
   ? normalizeSql(readFileSync(invitationMigrationPath, 'utf8'))
   : '';
+const profileMigrationPath = join(
+  process.cwd(),
+  'drizzle/0007_add_bubblophy_user_profiles.sql'
+);
+const profileMigrationSql = existsSync(profileMigrationPath)
+  ? normalizeSql(readFileSync(profileMigrationPath, 'utf8'))
+  : '';
 const allMigrationSql = readdirSync(join(process.cwd(), 'drizzle'))
   .filter((fileName) => /^\d{4}_.+\.sql$/.test(fileName))
   .sort()
@@ -210,6 +217,20 @@ describe('bubblophy RLS migration', () => {
         .filter(grantsDirectInvitationAccess)
     ).toEqual([]);
     expect(normalizedAllMigrationSql).not.toMatch(invitationPolicyPattern);
+  });
+
+  it('keeps display profiles behind the membership-scoped server read', () => {
+    expect(drizzleJournalSql).toContain(
+      '"tag": "0007_add_bubblophy_user_profiles"'
+    );
+    expect(profileMigrationSql).toContain(
+      'alter table "public"."bubblophy_user_profiles" enable row level security'
+    );
+    expect(profileMigrationSql).toContain(
+      'revoke all on table "public"."bubblophy_user_profiles" from public, anon, authenticated'
+    );
+    expect(profileMigrationSql).not.toContain('grant ');
+    expect(profileMigrationSql).not.toContain('create policy');
   });
 
   it('detects future invitation grants and policies across SQL variants', () => {
