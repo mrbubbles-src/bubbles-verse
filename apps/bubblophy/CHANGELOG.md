@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added a server-only, membership-scoped dashboard issue-page contract with
+  fixed 25-item issue-number cursors, newest/oldest ordering, same-query latest
+  plan counts, a fail-closed final membership gate, and no internal project or
+  issue IDs in the browser DTO.
 - Added the Bubblophy Phase 2 roadmap and the detailed first-slice plan for a
   provider-neutral Remote MCP using personal Supabase OAuth 2.1 access.
 - Hardened relative auth redirects, contributor/viewer mutation boundaries,

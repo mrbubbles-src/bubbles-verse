@@ -115,6 +115,11 @@ Status: abgeschlossen.
 - Der bestehende Projekt-/Issue-Deep-Link-Vertrag reagiert nach dem Mount auf
   Browser-Zurück und -Vorwärts, ohne die History-Auswahl mit veraltetem lokalen
   State zu überschreiben. Das ist das URL-Gate vor zusätzlichen Queue-Filtern.
+- Der server-only IssuePage-Vertrag ist als getrennte Dashboard-Datengrenze
+  vorhanden: ein konkretes sichtbares Projekt, feste 25er-Seiten, Cursor über
+  die unveränderliche Issue-Nummer, `newest`/`oldest`, leichte rohe DTOs und ein
+  finales Membership-Gate ohne interne Projekt-/Issue-IDs. Der unabhängige
+  IssueDetail-Read und die UI-/URL-Integration folgen als eigene Slices.
 - Suche, Filter, Sortierung und Pagination für Projekte, Issues, Runs und
   Audit-Ereignisse ergänzen.
 - Filterzustand in URL und Deep Links stabil halten.
@@ -172,6 +177,8 @@ session-synchronisierte Identitäts-UX gemäß
 `docs/superpowers/plans/2026-07-18-bubblophy-roles-invitations.md`. Die erneute
 Membership- und Rollenbindung aller Dashboard-Datengruppen ist ebenfalls
 abgeschlossen. Die verständliche Rollenrechte-Erklärung ist ebenfalls im UI
-vorhanden. Als nächster Produktslice folgt der erste begrenzte Vertrag für
-Suche, Filter und Sortierung größerer Datenmengen; die MCP-Grundlage bleibt unter
-`docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md` dokumentiert.
+vorhanden. Der begrenzte server-only IssuePage-Vertrag ist ebenfalls vorhanden;
+als Nächstes folgen der unabhängige IssueDetail-Read und danach die
+Queue-/URL-Integration für Suche, Filter und Sortierung. Die MCP-Grundlage
+bleibt unter `docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md`
+dokumentiert.

@@ -388,6 +388,12 @@ bun run build
   vor dem DTO-Mapping werden aktuelle Mitgliedschaften und Rollen erneut
   fail-closed gebunden; Entzug entfernt sämtliche betroffenen Datengruppen und
   eine Manager-Demotion redigiert fremde E-Mail-Adressen erneut.
+- Der neue server-only Queue-Read lädt für ein konkretes sichtbares Projekt
+  höchstens 25 leichte Issue-Zeilen plus einen Cursor. Latest-Plan-Zähler
+  bleiben in derselben Datenbankabfrage; ein finales Membership-Gate liefert
+  Rolle und Archivzustand und verhindert interne Projekt-/Issue-IDs im
+  Browser-DTO. Die bestehende UI nutzt bis zur folgenden Integration weiterhin
+  den vollständigen Snapshot.
 - Sample-Daten markieren Agent-Tokens und Audit-Aktivität als Beispielvorschau.
   Wenn die Datenbank nicht bereit ist, bleibt der Snapshot leer und zeigt einen
   Setup-Hinweis statt Beispielprojekte als stillen Ersatz. Der Run-Bereich zeigt
