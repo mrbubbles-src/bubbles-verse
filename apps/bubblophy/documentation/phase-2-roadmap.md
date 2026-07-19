@@ -146,11 +146,19 @@ Status: abgeschlossen.
   Projekts vor dem Client-DTO redigiert und ein konkurrierend erfolgreiches
   Detail verworfen. Frisch gelesene Rollen und Archivzustände sind für die
   Issue-Write-Gates autoritativ.
-- Die projektübergreifende Übersicht verwendet übergangsweise weiter den
-  vorhandenen Snapshot. Dieser lädt außerdem noch die vollständigen Issues für
-  Run-Auflösung. Projektmetriken kommen inzwischen aus unabhängigen
-  SQL-Aggregaten; Plan- und Notes-Historie sind ebenfalls begrenzt. Als
-  Nächstes kann der Legacy-Issue-Graph durch bounded All-Reads entfallen.
+- Der server-only AllProjectIssuePage-Vertrag ist vorhanden: feste 25er-Seiten,
+  serverseitige Suche sowie Status-/Prioritätsfilter, `newest`/`oldest` und ein
+  stabiler öffentlicher `(updatedAt, projectKey, issueNumber)`-Cursor. Die
+  Candidate-Abfrage beginnt bei der aktuellen Mitgliedschaft und schließt
+  archivierte Projekte aus; ein zweiter Access-Read aktualisiert Rolle, Name,
+  Key und Archivstand und bindet jedes Issue erneut an dasselbe Projekt. Bei
+  gleichzeitig entzogenen Kandidaten füllt ein interner Rohcursor weiter bis
+  zur gültigen 25er-Seite plus Sentinel auf. Interne Projekt-/Issue-IDs bleiben
+  aus dem DTO. Die projektübergreifende UI verwendet übergangsweise weiter den
+  vorhandenen Snapshot, der außerdem noch vollständige Issues für die
+  Run-Auflösung lädt. Projektmetriken kommen aus unabhängigen SQL-Aggregaten;
+  Plan- und Notes-Historie sind begrenzt. Als Nächstes folgen UI-Integration und
+  Entfernung des Legacy-Issue-Graphs.
 - Agent-Run-Statusupdates begrenzen den gesamten PATCH-Envelope beim Streamen
   auf 64 KiB tatsächliche UTF-8-Bytes. Die Service-Grenze akzeptiert auch bei
   direkten Aufrufern höchstens 48 KiB Result-JSON mit 12 Ebenen und 1000
@@ -237,8 +245,9 @@ im direkten IssueDetail sind ebenfalls vorhanden. Der Legacy-Snapshot nutzt
 denselben 50-plus-Sentinel-Vertrag nun je Issue. Die Run-Result-
 Größenhärtung begrenzt nun Route und Service unabhängig voneinander. Die
 projektgebundene 20er-RunPage mit stabilem URL-Cursor ist ebenfalls vorhanden.
-Als Nächstes folgen die Ablösung des unbeschränkten Legacy-Issue-Snapshots sowie
-begrenzte Reads für Audit und
-weitere größere Datenmengen. Die
+Der begrenzte server-only AllProjectIssuePage-Read ist ebenfalls vorhanden.
+Als Nächstes folgen dessen UI-Integration, die Ablösung des unbeschränkten
+Legacy-Issue-Graphs sowie begrenzte Reads für Audit und weitere größere
+Datenmengen. Die
 MCP-Grundlage bleibt unter
 `docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md` dokumentiert.

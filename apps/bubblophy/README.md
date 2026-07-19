@@ -423,9 +423,16 @@ bun run build
   Same-Project-Pages bei URL-Navigation wiederverwendet werden. Ein finales
   `not_found` am Page-Gate redigiert alle Snapshot-Datengruppen des betroffenen
   Projekts und verwirft konkurrierende Details fail-closed; revalidierte Rollen
-  und Archivstände steuern die Issue-Aktionen. Die projektübergreifende
-  Übersicht, Metriken und Run-Auflösung hängen übergangsweise noch am
-  vollständigen Snapshot.
+  und Archivstände steuern die Issue-Aktionen. Für die projektübergreifende
+  Übersicht steht ebenfalls ein getrennter server-only Read bereit: höchstens
+  25 Issues plus Sentinel, serverseitige Suche und Filter sowie ein stabiler
+  öffentlicher `(updatedAt, projectKey, issueNumber)`-Cursor. Er startet bei
+  der Mitgliedschaft, schließt archivierte Projekte aus und prüft Rolle,
+  Projekt-Key, Archivstand und die Issue-Projekt-Zuordnung vor dem Browser-DTO
+  erneut. Bei gleichzeitig entzogenen Treffern läuft der interne Rohcursor bis
+  zu 25 weiterhin gültigen Issues plus Sentinel weiter. UI-Integration und
+  Entfernung des alten Issue-Graphs folgen separat; die bisherige
+  Run-Auflösung hängt übergangsweise noch am Snapshot.
 - Konkrete Projekt-RunQueues ersetzen den global vorbegrenzten Snapshot-Anteil
   durch eine unabhängige 20er-RunPage. Jeder Run bleibt im Run-Statement an
   aktuelle Membership, Projekt, Issue und projektgleiches Agent-Token gebunden;

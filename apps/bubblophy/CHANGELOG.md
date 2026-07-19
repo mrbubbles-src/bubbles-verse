@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added a server-only all-project issue page with membership-bound search,
+  status and priority filters, 25-item newest/oldest keyset pagination over
+  public `(updatedAt, projectKey, issueNumber)` values, same-query latest-plan
+  summaries, and a final per-issue project, membership, and archive recheck.
+  Invalidated race candidates are skipped with an internal cursor so later
+  visible issues remain reachable.
 - Moved dashboard project metrics to dedicated SQL aggregates for all candidate
   issues, so open, ready, and blocked counts no longer depend on how many issue
   detail rows remain hydrated in the legacy snapshot.
