@@ -1,10 +1,10 @@
 import type { BubblophyDashboardPersistenceRows } from '@/lib/dashboard/data';
-import type { BubblophyProjectIssuePersistenceRow } from '@/lib/issues/repository';
+import type { BubblophyProjectPersistenceRow } from '@/lib/issues/repository';
 
 import {
   cloneDashboardSnapshot,
   getBubblophyDashboardSnapshot,
-  loadBubblophyProjectIssueDashboardSnapshot,
+  loadBubblophyDashboardSnapshot,
 } from '@/lib/dashboard/data';
 import { dashboardSnapshot } from '@/lib/dashboard/sample-data';
 
@@ -14,34 +14,21 @@ const session = {
   authUserId: 'user_owner',
 };
 
-function makeRow(
-  row: Partial<BubblophyProjectIssuePersistenceRow> = {}
-): BubblophyProjectIssuePersistenceRow {
+function makeProjectRow(
+  row: Partial<BubblophyProjectPersistenceRow> = {}
+): BubblophyProjectPersistenceRow {
   return {
-    projectId: 'project_bubblesverse',
-    projectName: 'Bubblesverse',
-    projectKey: 'BV',
-    projectDescription: 'Projektbeschreibung aus dem Read-Pfad.',
-    projectIsArchived: false,
-    projectMemberCount: 2,
+    id: 'project_bubblesverse',
+    name: 'Bubblesverse',
+    key: 'BV',
+    description: 'Projektbeschreibung aus dem Read-Pfad.',
+    isArchived: false,
+    memberCount: 2,
     activeAgentTokenCount: 1,
-    projectOpenIssueCount: 1,
-    projectReadyIssueCount: 1,
-    projectBlockedIssueCount: 0,
-    issueDatabaseId: 'issue_bv_7',
-    issueNumber: 7,
-    issueTitle: 'Persistenten Read-Pfad anschließen',
-    issueDescription: 'Beschreibung aus dem Read-Pfad.',
-    issueStatus: 'ready',
-    issuePriority: 'high',
-    issueAssignedAuthUserId: 'user_owner',
-    issueRequiresHumanApproval: true,
-    issuePlanStepCount: 4,
-    issuePlanVersion: null,
-    issuePlanSummary: null,
-    issuePlanSteps: null,
-    issueNotes: [],
-    issueHasMoreNotes: false,
+    openIssueCount: 1,
+    readyIssueCount: 1,
+    blockedIssueCount: 0,
+    currentUserRole: 'owner',
     ...row,
   };
 }
@@ -50,7 +37,7 @@ function makeDatabaseRows(
   rows: Partial<BubblophyDashboardPersistenceRows> = {}
 ): BubblophyDashboardPersistenceRows {
   return {
-    projectIssueRows: [makeRow()],
+    projectRows: [makeProjectRow()],
     projectMemberRows: [
       {
         projectKey: 'BV',
@@ -117,21 +104,7 @@ describe('getBubblophyDashboardSnapshot', () => {
   });
 
   it('returns database metadata and mapped rows when the loader succeeds', async () => {
-    const selectRows = vi.fn(async () =>
-      makeDatabaseRows({
-        projectIssueRows: [
-          makeRow({
-            issuePlanStepCount: 99,
-            issuePlanVersion: 3,
-            issuePlanSummary: 'Reload lädt den neuesten Plan.',
-            issuePlanSteps: [
-              { id: 'step_1', text: 'Summary aus DB lesen' },
-              { id: 'step_2', text: 'Schritte im Detail zeigen' },
-            ],
-          }),
-        ],
-      })
-    );
+    const selectRows = vi.fn(async () => makeDatabaseRows());
 
     await expect(
       getBubblophyDashboardSnapshot({ session, loadRows: selectRows })
@@ -148,24 +121,6 @@ describe('getBubblophyDashboardSnapshot', () => {
           key: 'BV',
           openIssues: 1,
           readyIssues: 1,
-        },
-      ],
-      issues: [
-        {
-          id: 'BV-07',
-          title: 'Persistenten Read-Pfad anschließen',
-          description: 'Beschreibung aus dem Read-Pfad.',
-          priority: 'hoch',
-          status: 'bereit',
-          planSteps: 2,
-          latestPlan: {
-            version: 3,
-            summary: 'Reload lädt den neuesten Plan.',
-            steps: [
-              { id: 'step_1', text: 'Summary aus DB lesen' },
-              { id: 'step_2', text: 'Schritte im Detail zeigen' },
-            ],
-          },
         },
       ],
       projectMembers: [
@@ -240,14 +195,7 @@ describe('getBubblophyDashboardSnapshot', () => {
   it('does not expose token secrets in database snapshots', async () => {
     const snapshot = await getBubblophyDashboardSnapshot({
       session,
-      loadRows: async () =>
-        makeDatabaseRows({
-          projectIssueRows: [
-            makeRow({
-              issueAssignedAuthUserId: 'user_owner',
-            }),
-          ],
-        }),
+      loadRows: async () => makeDatabaseRows(),
     });
     const serializedSnapshot = JSON.stringify(snapshot);
 
@@ -255,10 +203,7 @@ describe('getBubblophyDashboardSnapshot', () => {
     expect(serializedSnapshot).not.toContain('plaintextToken');
     expect(serializedSnapshot).not.toContain('requestedByAuthUserId');
     expect(serializedSnapshot).not.toContain('actorAuthUserId');
-    expect(snapshot.issues[0]).toMatchObject({
-      assigneeAuthUserId: 'user_owner',
-      assigneeLabel: 'Mensch',
-    });
+    expect(serializedSnapshot).not.toContain('assigneeAuthUserId');
     expect(snapshot.projectMembers).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -275,7 +220,7 @@ describe('getBubblophyDashboardSnapshot', () => {
         session,
         loadRows: async () =>
           makeDatabaseRows({
-            projectIssueRows: [],
+            projectRows: [],
             projectMemberRows: [],
             agentTokenRows: [],
             agentRunRows: [],
@@ -288,7 +233,6 @@ describe('getBubblophyDashboardSnapshot', () => {
         label: 'Leere Datenbank',
       },
       projects: [],
-      issues: [],
       projectMembers: [],
       agentTokens: [],
       agentRuns: [],
@@ -307,7 +251,6 @@ describe('getBubblophyDashboardSnapshot', () => {
     expect(snapshot.meta.hint).toContain('DATABASE_URL');
     expect(snapshot.currentUser.authUserId).toBe('user_owner');
     expect(snapshot.projects).toEqual([]);
-    expect(snapshot.issues).toEqual([]);
     expect(snapshot.agentTokens).toEqual([]);
     expect(snapshot.activity).toEqual([]);
   });
@@ -323,7 +266,6 @@ describe('getBubblophyDashboardSnapshot', () => {
     expect(snapshot.meta.dataSource).toBe('database_unavailable');
     expect(snapshot.meta.reason).toBe('schema_missing');
     expect(snapshot.meta.hint).toContain('Bubblophy-Tabellen');
-    expect(snapshot.issues).toEqual([]);
     expect(JSON.stringify(snapshot)).not.toContain('bubblophy_projects');
   });
 
@@ -344,10 +286,10 @@ describe('getBubblophyDashboardSnapshot', () => {
   });
 });
 
-describe('loadBubblophyProjectIssueDashboardSnapshot', () => {
+describe('loadBubblophyDashboardSnapshot', () => {
   it('builds a database snapshot through an injected row selector', async () => {
     await expect(
-      loadBubblophyProjectIssueDashboardSnapshot({
+      loadBubblophyDashboardSnapshot({
         authUserId: 'user_owner',
         selectRows: async () => makeDatabaseRows(),
       })
@@ -356,7 +298,6 @@ describe('loadBubblophyProjectIssueDashboardSnapshot', () => {
         dataSource: 'database',
       },
       projects: [{ key: 'BV' }],
-      issues: [{ id: 'BV-07' }],
     });
   });
 });

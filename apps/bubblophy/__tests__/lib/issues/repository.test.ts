@@ -1,12 +1,9 @@
-import type { BubblophyProjectIssuePersistenceRow } from '@/lib/issues/repository';
-
 import {
   buildBubblophyActivityEvents,
   buildBubblophyAgentRunSummaries,
   buildBubblophyAgentTokenSummaries,
-  buildBubblophyProjectIssueSnapshot,
-  buildBubblophyProjectIssueSnapshotForUser,
   buildBubblophyProjectMemberSummaries,
+  buildBubblophyProjectSummaries,
   buildSafeAgentRunResultSummary,
   deriveBubblophyProjectHealth,
   formatBubblophyIssueKey,
@@ -18,54 +15,6 @@ import {
 } from '@/lib/issues/repository';
 
 import { describe, expect, it } from 'vitest';
-
-const baseProjectRow = {
-  projectId: 'project_bubblesverse',
-  projectName: 'Bubblesverse',
-  projectKey: 'BV',
-  projectDescription: 'Projektbeschreibung aus der Datenbank.',
-  projectIsArchived: false,
-  projectMemberCount: 3,
-  activeAgentTokenCount: 2,
-  projectOpenIssueCount: 2,
-  projectReadyIssueCount: 1,
-  projectBlockedIssueCount: 1,
-} satisfies Pick<
-  BubblophyProjectIssuePersistenceRow,
-  | 'projectId'
-  | 'projectName'
-  | 'projectKey'
-  | 'projectDescription'
-  | 'projectIsArchived'
-  | 'projectMemberCount'
-  | 'activeAgentTokenCount'
-  | 'projectOpenIssueCount'
-  | 'projectReadyIssueCount'
-  | 'projectBlockedIssueCount'
->;
-
-function makeIssueRow(
-  row: Partial<BubblophyProjectIssuePersistenceRow>
-): BubblophyProjectIssuePersistenceRow {
-  return {
-    ...baseProjectRow,
-    issueDatabaseId: 'issue_bv_1',
-    issueNumber: 1,
-    issueTitle: 'Projekt-Issue vorbereiten',
-    issueDescription: 'Beschreibung aus der Datenbank.',
-    issueStatus: 'ready',
-    issuePriority: 'high',
-    issueAssignedAuthUserId: 'mrbubbles',
-    issueRequiresHumanApproval: true,
-    issuePlanStepCount: 3,
-    issuePlanVersion: null,
-    issuePlanSummary: null,
-    issuePlanSteps: null,
-    issueNotes: [],
-    issueHasMoreNotes: false,
-    ...row,
-  };
-}
 
 describe('Bubblophy issue repository mapping', () => {
   it('maps database enum values into dashboard labels', () => {
@@ -142,262 +91,92 @@ describe('Bubblophy issue repository mapping', () => {
     ]);
   });
 
-  it('builds project and issue summaries without opening a database connection', () => {
-    const snapshot = buildBubblophyProjectIssueSnapshot([
-      makeIssueRow({
-        issueDatabaseId: 'issue_bv_14',
-        issueNumber: 14,
-        issueTitle: 'Agent-Zugriff mit projektbezogenen Tokens',
-        issueStatus: 'ready',
-        issuePriority: 'high',
-        issuePlanStepCount: 5,
-      }),
-      makeIssueRow({
-        issueDatabaseId: 'issue_bv_15',
-        issueNumber: 15,
-        issueTitle: 'Blockierte RLS-Frage klären',
-        issueStatus: 'blocked',
-        issuePriority: 'medium',
-        issueAssignedAuthUserId: null,
-        issueRequiresHumanApproval: null,
-        issuePlanStepCount: -1,
-      }),
-      makeIssueRow({
-        issueDatabaseId: 'issue_bv_16',
-        issueNumber: 16,
-        issueStatus: 'done',
-      }),
-    ]);
-
-    expect(snapshot.projects).toEqual([
-      {
-        id: 'project_bubblesverse',
-        name: 'Bubblesverse',
-        key: 'BV',
-        description: 'Projektbeschreibung aus der Datenbank.',
-        isArchived: false,
-        health: 'blockiert',
-        openIssues: 2,
-        readyIssues: 1,
-        blockedIssues: 1,
-        memberCount: 3,
-        agentTokenCount: 2,
-      },
-    ]);
-
-    expect(snapshot.issues).toEqual([
-      {
-        id: 'BV-14',
-        title: 'Agent-Zugriff mit projektbezogenen Tokens',
-        description: 'Beschreibung aus der Datenbank.',
-        projectKey: 'BV',
-        status: 'bereit',
-        priority: 'hoch',
-        assigneeAuthUserId: 'mrbubbles',
-        assigneeLabel: 'mrbubbles',
-        planSteps: 5,
-        latestPlan: undefined,
-        notes: [],
-        hasMoreNotes: false,
-        approvalRequired: true,
-      },
-      {
-        id: 'BV-15',
-        title: 'Blockierte RLS-Frage klären',
-        description: 'Beschreibung aus der Datenbank.',
-        projectKey: 'BV',
-        status: 'blockiert',
-        priority: 'mittel',
-        assigneeAuthUserId: null,
-        assigneeLabel: 'Nicht zugewiesen',
-        planSteps: 0,
-        latestPlan: undefined,
-        notes: [],
-        hasMoreNotes: false,
-        approvalRequired: true,
-      },
-      {
-        id: 'BV-16',
-        title: 'Projekt-Issue vorbereiten',
-        description: 'Beschreibung aus der Datenbank.',
-        projectKey: 'BV',
-        status: 'erledigt',
-        priority: 'hoch',
-        assigneeAuthUserId: 'mrbubbles',
-        assigneeLabel: 'mrbubbles',
-        planSteps: 3,
-        latestPlan: undefined,
-        notes: [],
-        hasMoreNotes: false,
-        approvalRequired: true,
-      },
-    ]);
-  });
-
-  it('maps latest plan content into issue summaries', () => {
-    const snapshot = buildBubblophyProjectIssueSnapshot([
-      makeIssueRow({
-        issueDatabaseId: 'issue_bv_14',
-        issueNumber: 14,
-        issuePlanStepCount: 99,
-        issuePlanVersion: 3,
-        issuePlanSummary: 'Reload zeigt den letzten Plan.',
-        issuePlanSteps: [
-          { id: 'step_1', text: 'Kontext nach Reload lesen' },
-          { id: 'step_2', text: 'UI-Details prüfen' },
-          { id: 'broken', text: '   ' },
-        ],
-      }),
-    ]);
-
-    expect(snapshot.issues).toEqual([
-      expect.objectContaining({
-        id: 'BV-14',
-        planSteps: 2,
-        latestPlan: {
-          version: 3,
-          summary: 'Reload zeigt den letzten Plan.',
-          steps: [
-            { id: 'step_1', text: 'Kontext nach Reload lesen' },
-            { id: 'step_2', text: 'UI-Details prüfen' },
-          ],
-        },
-      }),
-    ]);
-  });
-
-  it('keeps project metrics independent from hydrated issue rows', () => {
-    const snapshot = buildBubblophyProjectIssueSnapshot([
-      makeIssueRow({
-        projectOpenIssueCount: 120,
-        projectReadyIssueCount: 17,
-        projectBlockedIssueCount: 4,
-      }),
-    ]);
-
-    expect(snapshot.projects[0]).toEqual(
-      expect.objectContaining({
-        openIssues: 120,
-        readyIssues: 17,
-        blockedIssues: 4,
-        health: 'blockiert',
-      })
-    );
-    expect(snapshot.issues).toHaveLength(1);
-  });
-
-  it('separates stable assignee IDs from redacted fallback labels', () => {
-    const snapshot = buildBubblophyProjectIssueSnapshot([
-      makeIssueRow({
-        issueAssignedAuthUserId: 'user_owner',
-      }),
-      makeIssueRow({
-        issueDatabaseId: 'issue_bv_2',
-        issueNumber: 2,
-        issueAssignedAuthUserId: '2e3f7004-3065-449f-84f8-0ecb68c1cb46',
-      }),
-    ]);
-
-    expect(snapshot.issues).toEqual([
-      expect.objectContaining({
-        id: 'BV-01',
-        assigneeAuthUserId: 'user_owner',
-        assigneeLabel: 'Mensch',
-      }),
-      expect.objectContaining({
-        id: 'BV-02',
-        assigneeAuthUserId: '2e3f7004-3065-449f-84f8-0ecb68c1cb46',
-        assigneeLabel: 'Mensch',
-      }),
-    ]);
-  });
-
-  it('keeps empty projects visible and archived projects non-operative', () => {
-    const snapshot = buildBubblophyProjectIssueSnapshot([
-      makeIssueRow({
-        projectId: 'project_empty',
-        projectName: 'Leeres Projekt',
-        projectKey: 'LP',
-        projectMemberCount: -1,
-        activeAgentTokenCount: -1,
-        projectOpenIssueCount: -1,
-        projectReadyIssueCount: -1,
-        projectBlockedIssueCount: -1,
-        issueDatabaseId: null,
-        issueNumber: null,
-        issueTitle: null,
-        issueDescription: null,
-        issueStatus: null,
-        issuePriority: null,
-      }),
-      makeIssueRow({
-        projectId: 'project_archived',
-        projectName: 'Archiv',
-        projectKey: 'AR',
-        projectIsArchived: true,
-      }),
-    ]);
-
-    expect(snapshot.projects).toHaveLength(2);
-    expect(snapshot.projects).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
+  it('maps independent project aggregates without hydrating issues', () => {
+    expect(
+      buildBubblophyProjectSummaries([
+        {
           id: 'project_empty',
           name: 'Leeres Projekt',
           key: 'LP',
+          description: 'Noch ohne Issues.',
           isArchived: false,
-          health: 'stabil',
-          openIssues: 0,
-          readyIssues: 0,
-          blockedIssues: 0,
-          memberCount: 0,
-          agentTokenCount: 0,
-        }),
-        expect.objectContaining({
+          memberCount: -1,
+          activeAgentTokenCount: -1,
+          openIssueCount: -1,
+          readyIssueCount: -1,
+          blockedIssueCount: -1,
+          currentUserRole: 'member',
+        },
+        {
+          id: 'project_active',
+          name: 'Bubblesverse',
+          key: 'BV',
+          description: 'Aktives Projekt.',
+          isArchived: false,
+          memberCount: 3,
+          activeAgentTokenCount: 2,
+          openIssueCount: 120,
+          readyIssueCount: 17,
+          blockedIssueCount: 4,
+          currentUserRole: 'owner',
+        },
+        {
           id: 'project_archived',
           name: 'Archiv',
           key: 'AR',
+          description: 'Nicht mehr operativ.',
           isArchived: true,
-          health: 'stabil',
-          openIssues: 0,
-          readyIssues: 0,
-          blockedIssues: 0,
-        }),
+          memberCount: 2,
+          activeAgentTokenCount: 1,
+          openIssueCount: 8,
+          readyIssueCount: 3,
+          blockedIssueCount: 2,
+          currentUserRole: 'viewer',
+        },
       ])
-    );
-    expect(snapshot.issues).toEqual([]);
-  });
-
-  it('filters membership-aware rows to the authenticated user', () => {
-    const snapshot = buildBubblophyProjectIssueSnapshotForUser('user_owner', [
+    ).toEqual([
       {
-        ...makeIssueRow({
-          projectId: 'project_allowed',
-          projectName: 'Allowed',
-          projectKey: 'AL',
-        }),
-        projectMemberAuthUserId: 'user_owner',
+        id: 'project_archived',
+        name: 'Archiv',
+        key: 'AR',
+        description: 'Nicht mehr operativ.',
+        isArchived: true,
+        openIssues: 0,
+        readyIssues: 0,
+        blockedIssues: 0,
+        memberCount: 2,
+        agentTokenCount: 1,
+        currentUserRole: 'viewer',
+        health: 'stabil',
       },
       {
-        ...makeIssueRow({
-          projectId: 'project_foreign',
-          projectName: 'Foreign',
-          projectKey: 'FR',
-        }),
-        projectMemberAuthUserId: 'user_other',
+        id: 'project_active',
+        name: 'Bubblesverse',
+        key: 'BV',
+        description: 'Aktives Projekt.',
+        isArchived: false,
+        openIssues: 120,
+        readyIssues: 17,
+        blockedIssues: 4,
+        memberCount: 3,
+        agentTokenCount: 2,
+        currentUserRole: 'owner',
+        health: 'blockiert',
       },
-    ]);
-
-    expect(snapshot.projects).toEqual([
-      expect.objectContaining({
-        id: 'project_allowed',
-        key: 'AL',
-      }),
-    ]);
-    expect(snapshot.issues).toEqual([
-      expect.objectContaining({
-        projectKey: 'AL',
-      }),
+      {
+        id: 'project_empty',
+        name: 'Leeres Projekt',
+        key: 'LP',
+        description: 'Noch ohne Issues.',
+        isArchived: false,
+        openIssues: 0,
+        readyIssues: 0,
+        blockedIssues: 0,
+        memberCount: 0,
+        agentTokenCount: 0,
+        currentUserRole: 'member',
+        health: 'stabil',
+      },
     ]);
   });
 

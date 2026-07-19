@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Removed the unbounded legacy issue graph from `DashboardSnapshot`. Dashboard
+  reads now load only project metadata with complete SQL aggregates plus bounded
+  run and audit groups plus membership-scoped member and token groups; issue
+  queues and details come exclusively from the paginated page/detail contracts.
+  Global run cards deep-link by public issue key, including issues outside the
+  current page.
 - Connected the all-project dashboard queue to its bounded server page with
   canonical shared filters, separate three-field URL cursors, exact request
   fingerprints, cross-project direct details, revalidated role-based write
@@ -15,11 +21,12 @@
 - Moved dashboard project metrics to dedicated SQL aggregates for all candidate
   issues, so open, ready, and blocked counts no longer depend on how many issue
   detail rows remain hydrated in the legacy snapshot.
-- Bounded legacy dashboard notes to the newest 50 explicit `issue_note`
+- Before removing the legacy issue graph, bounded its dashboard notes to the
+  newest 50 explicit `issue_note`
   events plus one history sentinel per issue, using SQL-side payload filtering
   and stable per-issue window ranks without cross-issue starvation. Project
   and issue IDs stay paired through mapping to fail closed during issue moves.
-- Bounded the legacy dashboard's latest-plan lookup to one database-selected
+- Before removing the legacy issue graph, bounded its latest-plan lookup to one database-selected
   version per visible issue instead of loading every historical plan version.
 - Added a membership-scoped 20-item project run page with a stable
   `(updated_at, run_id)` URL cursor, same-statement project/issue/token binding,

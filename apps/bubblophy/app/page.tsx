@@ -322,7 +322,6 @@ function redactDashboardProject(
   return {
     ...snapshot,
     projects: snapshot.projects.filter((project) => project.key !== projectKey),
-    issues: snapshot.issues.filter((issue) => issue.projectKey !== projectKey),
     projectMembers: snapshot.projectMembers.filter(
       (member) => member.projectKey !== projectKey
     ),

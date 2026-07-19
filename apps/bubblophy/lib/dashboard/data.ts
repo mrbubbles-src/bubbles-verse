@@ -9,20 +9,20 @@ import type {
   BubblophyActivityPersistenceRow,
   BubblophyAgentRunPersistenceRow,
   BubblophyAgentTokenPersistenceRow,
-  BubblophyProjectIssuePersistenceRow,
   BubblophyProjectMemberPersistenceRow,
+  BubblophyProjectPersistenceRow,
 } from '@/lib/issues/repository';
 
 import {
   buildBubblophyActivityEvents,
   buildBubblophyAgentRunSummaries,
   buildBubblophyAgentTokenSummaries,
-  buildBubblophyProjectIssueSnapshot,
   buildBubblophyProjectMemberSummaries,
+  buildBubblophyProjectSummaries,
 } from '@/lib/issues/repository';
 
 export interface BubblophyDashboardPersistenceRows {
-  projectIssueRows: BubblophyProjectIssuePersistenceRow[];
+  projectRows: BubblophyProjectPersistenceRow[];
   projectMemberRows: BubblophyProjectMemberPersistenceRow[];
   agentTokenRows: BubblophyAgentTokenPersistenceRow[];
   agentRunRows: BubblophyAgentRunPersistenceRow[];
@@ -51,15 +51,6 @@ export function cloneDashboardSnapshot(
     meta: { ...snapshot.meta },
     currentUser: { ...snapshot.currentUser },
     projects: snapshot.projects.map((project) => ({ ...project })),
-    issues: snapshot.issues.map((issue) => ({
-      ...issue,
-      latestPlan: issue.latestPlan
-        ? {
-            ...issue.latestPlan,
-            steps: issue.latestPlan.steps.map((step) => ({ ...step })),
-          }
-        : undefined,
-    })),
     projectMembers: snapshot.projectMembers.map((member) => ({ ...member })),
     agentTokens: snapshot.agentTokens.map((token) => ({
       ...token,
@@ -71,7 +62,7 @@ export function cloneDashboardSnapshot(
 }
 
 /**
- * Builds a dashboard snapshot from read-only project and issue rows.
+ * Builds a dashboard snapshot from project aggregates and scoped row groups.
  *
  * Empty row sets represent a real empty database state and intentionally do
  * not fall back to sample data.
@@ -80,7 +71,7 @@ export function cloneDashboardSnapshot(
  * @param input.selectRows Injected read function for tests or the DB adapter.
  * @returns Database-sourced dashboard snapshot.
  */
-export async function loadBubblophyProjectIssueDashboardSnapshot({
+export async function loadBubblophyDashboardSnapshot({
   authUserId,
   selectRows,
 }: {
@@ -88,12 +79,9 @@ export async function loadBubblophyProjectIssueDashboardSnapshot({
   selectRows: BubblophyDashboardRowSelector;
 }): Promise<DashboardSnapshot> {
   const rows = await selectRows(authUserId);
-  const { projects, issues } = buildBubblophyProjectIssueSnapshot(
-    rows.projectIssueRows
-  );
+  const projects = buildBubblophyProjectSummaries(rows.projectRows);
   const isEmptyDatabase =
     projects.length === 0 &&
-    issues.length === 0 &&
     rows.projectMemberRows.length === 0 &&
     rows.agentTokenRows.length === 0 &&
     rows.agentRunRows.length === 0 &&
@@ -111,7 +99,6 @@ export async function loadBubblophyProjectIssueDashboardSnapshot({
       authUserId,
     },
     projects,
-    issues,
     projectMembers: buildBubblophyProjectMemberSummaries(
       rows.projectMemberRows
     ),
@@ -129,13 +116,12 @@ export async function loadBubblophyProjectIssueDashboardSnapshot({
  * empty setup state instead of silently hiding the problem behind sample data.
  *
  * @param input Authorized human session and optional injected row loader.
- * @returns Snapshot of projects, issues, agent tokens, runs, and activity.
+ * @returns Snapshot of projects, members, agent tokens, runs, and activity.
  */
 export async function getBubblophyDashboardSnapshot(
   input: BubblophyDashboardSnapshotInput
 ) {
-  const loadRows =
-    input.loadRows ?? (await getDefaultProjectIssueRowSelector());
+  const loadRows = input.loadRows ?? (await getDefaultDashboardRowSelector());
 
   if (!loadRows) {
     return createDatabaseUnavailableSnapshot(
@@ -145,7 +131,7 @@ export async function getBubblophyDashboardSnapshot(
   }
 
   try {
-    return await loadBubblophyProjectIssueDashboardSnapshot({
+    return await loadBubblophyDashboardSnapshot({
       authUserId: input.session.authUserId,
       selectRows: loadRows,
     });
@@ -164,7 +150,7 @@ export async function getBubblophyDashboardSnapshot(
  *
  * @returns Row selector or null when the local DB is intentionally unavailable.
  */
-async function getDefaultProjectIssueRowSelector() {
+async function getDefaultDashboardRowSelector() {
   if (!process.env.DATABASE_URL) {
     return null;
   }
@@ -198,7 +184,6 @@ function createDatabaseUnavailableSnapshot(
       authUserId,
     },
     projects: [],
-    issues: [],
     projectMembers: [],
     agentTokens: [],
     agentRuns: [],

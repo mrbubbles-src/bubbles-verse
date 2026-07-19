@@ -13,49 +13,28 @@ import type {
   AgentRunSummary,
   AgentTokenState,
   AgentTokenSummary,
-  IssueNoteSummary,
   IssuePlanStepSummary,
   IssuePriority,
   IssueStatus,
-  IssueSummary,
   ProjectHealth,
   ProjectMemberRole,
   ProjectMemberSummary,
   ProjectSummary,
 } from '@/lib/dashboard/types';
 
-export interface BubblophyProjectIssuePersistenceRow {
-  projectId: string;
-  projectName: string;
-  projectKey: string;
-  projectDescription: string;
-  projectIsArchived: boolean;
-  projectMemberCount: number;
+export interface BubblophyProjectPersistenceRow {
+  id: string;
+  name: string;
+  key: string;
+  description: string;
+  isArchived: boolean;
+  memberCount: number;
   activeAgentTokenCount: number;
-  projectOpenIssueCount: number;
-  projectReadyIssueCount: number;
-  projectBlockedIssueCount: number;
-  projectCurrentUserRole?: ProjectMemberRole;
-  issueDatabaseId: string | null;
-  issueNumber: number | null;
-  issueTitle: string | null;
-  issueDescription: string | null;
-  issueStatus: BubblophyIssueStatus | null;
-  issuePriority: BubblophyIssuePriority | null;
-  issueAssignedAuthUserId: string | null;
-  issueRequiresHumanApproval: boolean | null;
-  issuePlanStepCount: number | null;
-  issuePlanVersion: number | null;
-  issuePlanSummary: string | null;
-  issuePlanSteps: JsonValue | null;
-  issueNotes: IssueNoteSummary[];
-  issueHasMoreNotes: boolean;
+  openIssueCount: number;
+  readyIssueCount: number;
+  blockedIssueCount: number;
+  currentUserRole: ProjectMemberRole;
 }
-
-export type BubblophyProjectIssueMembershipRow =
-  BubblophyProjectIssuePersistenceRow & {
-    projectMemberAuthUserId: string;
-  };
 
 export interface BubblophyAgentTokenPersistenceRow {
   id: string;
@@ -96,11 +75,6 @@ export interface BubblophyActivityPersistenceRow {
   issueNumber: number | null;
 }
 
-export interface BubblophyProjectIssueRepositorySnapshot {
-  projects: ProjectSummary[];
-  issues: IssueSummary[];
-}
-
 const issueStatusLabels = {
   triage: 'triage',
   planned: 'geplant',
@@ -132,20 +106,6 @@ const agentRunStateLabels = {
   cancelled: 'abgebrochen',
   failed: 'fehlgeschlagen',
 } satisfies Record<BubblophyAgentRunPersistenceRow['state'], AgentRunState>;
-
-interface MutableProjectSummary {
-  id: string;
-  name: string;
-  key: string;
-  description: string;
-  isArchived: boolean;
-  openIssues: number;
-  readyIssues: number;
-  blockedIssues: number;
-  memberCount: number;
-  agentTokenCount: number;
-  currentUserRole?: ProjectMemberRole;
-}
 
 /**
  * Maps the database issue status into the dashboard status vocabulary.
@@ -259,90 +219,36 @@ export function deriveBubblophyProjectHealth(
 }
 
 /**
- * Converts flat project/issue persistence rows into dashboard DTOs.
+ * Maps one membership-scoped row per project into dashboard summaries.
  *
- * The function is deliberately pure so repository tests can validate mapping
- * behavior without opening a database connection or touching Supabase data.
- *
- * @param rows Joined or pre-aggregated rows from a server-only data source.
- * @returns Project and issue summaries ready for the dashboard DTO boundary.
+ * @param rows Project metadata and independently aggregated counters.
+ * @returns Stable project summaries without hydrating any issue records.
  */
-export function buildBubblophyProjectIssueSnapshot(
-  rows: BubblophyProjectIssuePersistenceRow[]
-): BubblophyProjectIssueRepositorySnapshot {
-  const projectMap = new Map<string, MutableProjectSummary>();
-  const issues: IssueSummary[] = [];
+export function buildBubblophyProjectSummaries(
+  rows: BubblophyProjectPersistenceRow[]
+): ProjectSummary[] {
+  return rows
+    .map((row) => {
+      const project = {
+        id: row.id,
+        name: row.name,
+        key: row.key,
+        description: row.description,
+        isArchived: row.isArchived,
+        openIssues: row.isArchived ? 0 : Math.max(0, row.openIssueCount),
+        readyIssues: row.isArchived ? 0 : Math.max(0, row.readyIssueCount),
+        blockedIssues: row.isArchived ? 0 : Math.max(0, row.blockedIssueCount),
+        memberCount: Math.max(0, row.memberCount),
+        agentTokenCount: Math.max(0, row.activeAgentTokenCount),
+        currentUserRole: row.currentUserRole,
+      };
 
-  for (const row of rows) {
-    const project =
-      projectMap.get(row.projectId) ?? createMutableProjectSummary(row);
-
-    projectMap.set(row.projectId, project);
-
-    if (
-      row.projectIsArchived ||
-      row.issueDatabaseId === null ||
-      row.issueNumber === null ||
-      row.issueTitle === null ||
-      row.issueStatus === null ||
-      row.issuePriority === null
-    ) {
-      continue;
-    }
-
-    issues.push({
-      id: formatBubblophyIssueKey(row.projectKey, row.issueNumber),
-      title: row.issueTitle,
-      description: row.issueDescription ?? undefined,
-      projectKey: row.projectKey,
-      status: mapBubblophyIssueStatus(row.issueStatus),
-      priority: mapBubblophyIssuePriority(row.issuePriority),
-      assigneeAuthUserId: row.issueAssignedAuthUserId,
-      assigneeLabel: formatIssueAssigneeLabel(row.issueAssignedAuthUserId),
-      planSteps: getIssuePlanStepCount(row),
-      latestPlan: mapBubblophyIssueLatestPlan(row),
-      notes: row.issueNotes,
-      hasMoreNotes: row.issueHasMoreNotes,
-      approvalRequired: row.issueRequiresHumanApproval ?? true,
-    });
-  }
-
-  return {
-    projects: [...projectMap.values()]
-      .map((project) => ({
+      return {
         ...project,
         health: deriveBubblophyProjectHealth(project),
-      }))
-      .sort((left, right) => left.key.localeCompare(right.key)),
-    issues: issues.sort((left, right) => left.id.localeCompare(right.id)),
-  };
-}
-
-/**
- * Maps a latest persisted plan row into the dashboard plan DTO.
- *
- * Invalid or legacy step entries are ignored instead of rendered as hardcoded
- * demo content. The issue still keeps its explicit empty plan state when no
- * plan version exists.
- *
- * @param row Issue persistence row with optional latest plan fields.
- * @returns Latest plan DTO, or `undefined` when no plan exists.
- */
-export function mapBubblophyIssueLatestPlan(
-  row: Pick<
-    BubblophyProjectIssuePersistenceRow,
-    'issuePlanVersion' | 'issuePlanSummary' | 'issuePlanSteps'
-  >
-): IssueSummary['latestPlan'] {
-  if (row.issuePlanVersion === null) {
-    return undefined;
-  }
-
-  return {
-    version: row.issuePlanVersion,
-    summary: row.issuePlanSummary ?? '',
-    steps: mapBubblophyIssuePlanSteps(row.issuePlanSteps),
-  };
+      };
+    })
+    .sort((left, right) => left.key.localeCompare(right.key));
 }
 
 /**
@@ -379,40 +285,6 @@ export function mapBubblophyIssuePlanSteps(
       },
     ];
   });
-}
-
-/**
- * Derives the visible plan step count from latest plan content when present.
- *
- * @param row Issue persistence row with legacy count and latest plan fields.
- * @returns Non-negative visible step count.
- */
-function getIssuePlanStepCount(row: BubblophyProjectIssuePersistenceRow) {
-  if (row.issuePlanVersion !== null) {
-    return mapBubblophyIssuePlanSteps(row.issuePlanSteps).length;
-  }
-
-  return Math.max(0, row.issuePlanStepCount ?? 0);
-}
-
-/**
- * Converts membership-aware persistence rows into dashboard DTOs for one user.
- *
- * This keeps the object-level authorization contract close to the read model:
- * callers must provide the authenticated Supabase user ID, and rows for other
- * project members are ignored before the UI DTO is built.
- *
- * @param authUserId Supabase Auth user ID from the human session.
- * @param rows Membership-aware project and issue rows.
- * @returns Project and issue summaries visible to that user.
- */
-export function buildBubblophyProjectIssueSnapshotForUser(
-  authUserId: string,
-  rows: BubblophyProjectIssueMembershipRow[]
-): BubblophyProjectIssueRepositorySnapshot {
-  return buildBubblophyProjectIssueSnapshot(
-    rows.filter((row) => row.projectMemberAuthUserId === authUserId)
-  );
 }
 
 /**
@@ -679,36 +551,6 @@ export function buildBubblophyActivityEvents(
 }
 
 /**
- * Creates a mutable project accumulator from the project portion of a row.
- *
- * @param row Persistence row containing project fields.
- * @returns Project counter object used while mapping rows.
- */
-function createMutableProjectSummary(
-  row: BubblophyProjectIssuePersistenceRow
-): MutableProjectSummary {
-  return {
-    id: row.projectId,
-    name: row.projectName,
-    key: row.projectKey,
-    description: row.projectDescription,
-    isArchived: row.projectIsArchived,
-    openIssues: row.projectIsArchived
-      ? 0
-      : Math.max(0, row.projectOpenIssueCount),
-    readyIssues: row.projectIsArchived
-      ? 0
-      : Math.max(0, row.projectReadyIssueCount),
-    blockedIssues: row.projectIsArchived
-      ? 0
-      : Math.max(0, row.projectBlockedIssueCount),
-    memberCount: Math.max(0, row.projectMemberCount),
-    agentTokenCount: Math.max(0, row.activeAgentTokenCount),
-    currentUserRole: row.projectCurrentUserRole,
-  };
-}
-
-/**
  * Formats a quiet activity actor label for the dashboard.
  *
  * @param row Activity row with optional human or agent actor.
@@ -724,39 +566,6 @@ function formatActivityActor(row: BubblophyActivityPersistenceRow) {
   }
 
   return 'System';
-}
-
-/**
- * Formats the assignee for UI DTOs without exposing raw Auth identifiers.
- *
- * @param assignedAuthUserId Optional stored assignee identifier or display key.
- * @returns A quiet public assignee label for the dashboard.
- */
-function formatIssueAssigneeLabel(assignedAuthUserId: string | null) {
-  if (!assignedAuthUserId) {
-    return 'Nicht zugewiesen';
-  }
-
-  if (isRawAuthIdentifier(assignedAuthUserId)) {
-    return 'Mensch';
-  }
-
-  return assignedAuthUserId;
-}
-
-/**
- * Detects common raw Supabase/Auth ID shapes before data reaches UI DTOs.
- *
- * @param value Stored assignee value.
- * @returns Whether the value looks like an internal auth identifier.
- */
-function isRawAuthIdentifier(value: string) {
-  return (
-    value.startsWith('user_') ||
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      value
-    )
-  );
 }
 
 /**

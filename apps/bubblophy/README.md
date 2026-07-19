@@ -434,26 +434,23 @@ bun run build
   nutzt diesen Vertrag mit denselben Filtern und eigenen URL-Feldern für den
   dreiteiligen Cursor. Direkte Issue-Details bleiben unabhängig von der Seite
   erreichbar; alte oder fehlgeschlagene All-Page-Props fallen nicht auf
-  Snapshot-Issues zurück. Die Entfernung des nun nur noch für andere
-  Datengruppen benötigten Legacy-Issue-Graphs folgt separat; die bisherige
-  Run-Auflösung hängt übergangsweise noch am Snapshot.
+  Snapshot-Issues zurück. `DashboardSnapshot` enthält keinen Issue-Graph mehr:
+  Listen und Details stammen ausschließlich aus IssuePage, AllProjectIssuePage
+  und IssueDetail. Bestätigte Mutationen bleiben bis zum Server-Reload nur für
+  ihren aktuell ausgewählten öffentlichen Key als lokales Overlay sichtbar.
+  Globale Run-Karten öffnen ihren öffentlichen Issue-Key direkt und sind damit
+  nicht von der aktuell geladenen Queue-Seite abhängig.
 - Konkrete Projekt-RunQueues ersetzen den global vorbegrenzten Snapshot-Anteil
   durch eine unabhängige 20er-RunPage. Jeder Run bleibt im Run-Statement an
   aktuelle Membership, Projekt, Issue und projektgleiches Agent-Token gebunden;
   legitime leere Seiten werden durch ein abschließendes Membership-Recheck vom
   Zugriffsentzug unterschieden.
-- Der verbleibende Legacy-Snapshot liest pro sichtbarem Issue nur noch die
-  neueste Planversion per SQL `DISTINCT ON`; ältere Planhistorie gelangt nicht
-  mehr in den Dashboard-Read. Notizen werden vor dem SQL-Ranking auf echte
-  `issue_note`-Events gefiltert und je Issue stabil auf 50 Einträge plus einen
-  `hasMoreNotes`-Sentinel begrenzt. Ein aktives Issue kann damit keine Notizen
-  anderer Issues aus dem Snapshot verdrängen. Projekt- und Issue-ID bleiben
-  bis zum Mapper gekoppelt, damit ein gleichzeitiger Issue-Umzug keine Notiz
-  an die alte Projektzeile hängen kann.
-- Projektmetriken stammen aus separaten SQL-Aggregaten über alle Candidate-
-  Issues. Offen-, Bereit- und Blockiert-Zähler bleiben damit vollständig, auch
-  wenn der verbliebene Issue-Graph im nächsten Schritt begrenzt wird;
-  archivierte Projekte bleiben operativ bei null.
+- Der Dashboard-Read lädt keine ungruppierten Issue-, Plan- oder Notizzeilen.
+  Projektmetriken stammen aus separaten SQL-Aggregaten über alle Candidate-
+  Issues. Offen-, Bereit- und Blockiert-Zähler bleiben vollständig;
+  archivierte Projekte bleiben operativ bei null. Ein finales Membership-
+  Recheck aktualisiert Projekt-Key und Rolle und entfernt alle abhängigen
+  Datengruppen fail-closed bei Zugriffsentzug oder Key-Reuse.
 - Sample-Daten markieren Agent-Tokens und Audit-Aktivität als Beispielvorschau.
   Wenn die Datenbank nicht bereit ist, bleibt der Snapshot leer und zeigt einen
   Setup-Hinweis statt Beispielprojekte als stillen Ersatz. Der Run-Bereich zeigt

@@ -317,9 +317,7 @@ type IssuePageStatus =
   | ReadDashboardAllIssuePageResult['status']
   | 'loading';
 
-type SnapshotIssue = DashboardSnapshot['issues'][number];
-
-type DashboardIssue = SnapshotIssue | LocalDraftIssue;
+type DashboardIssue = IssueSummary | LocalDraftIssue;
 
 /** Merges issue sources by stable public key while preserving source order. */
 function mergeIssuesById(...sources: IssueSummary[][]) {
@@ -354,7 +352,7 @@ function mergeAgentRunsById(...sources: AgentRunSummary[][]) {
   return [...runsById.values()];
 }
 
-type LocalDraftIssue = SnapshotIssue & {
+type LocalDraftIssue = IssueSummary & {
   createdLabel: string;
   description: string;
   isLocalDraft: true;
@@ -925,25 +923,29 @@ export function BubblophyDashboard({
       return [];
     }
 
-    const snapshotIssue = snapshot.issues.find(
-      (issue) => issue.id === currentSuccessfulIssueDetail.issue.key
+    return [mapDashboardIssueDetailToSummary(currentSuccessfulIssueDetail)];
+  }, [currentSuccessfulIssueDetail]);
+  const serverConfirmedPersistedIssueIds = useMemo(() => {
+    const persistedIssueIds = new Set(
+      visiblePersistedIssues.map((issue) => issue.id)
     );
 
-    return [
-      mapDashboardIssueDetailToSummary(
-        currentSuccessfulIssueDetail,
-        snapshotIssue
-      ),
-    ];
-  }, [currentSuccessfulIssueDetail, snapshot.issues]);
+    return new Set(
+      [...serverQueueIssues, ...serverDetailIssue]
+        .map((issue) => issue.id)
+        .filter((issueId) => persistedIssueIds.has(issueId))
+    );
+  }, [serverDetailIssue, serverQueueIssues, visiblePersistedIssues]);
+
+  if (serverConfirmedPersistedIssueIds.size > 0) {
+    setPersistedIssues((currentIssues) =>
+      currentIssues.filter(
+        (issue) => !serverConfirmedPersistedIssueIds.has(issue.id)
+      )
+    );
+  }
+
   const baseIssues = useMemo<IssueSummary[]>(() => {
-    const snapshotIssues = snapshot.issues.filter(
-      (issue) =>
-        issue.projectKey !== deniedProjectKey &&
-        !hasAllIssuePageBoundary &&
-        (!hasConcreteIssuePageBoundary || issue.projectKey !== urlProjectKey)
-    );
-
     const queueSafePersistedIssues =
       hasAllIssuePageBoundary && currentAllIssuePageResult?.status !== 'success'
         ? []
@@ -957,23 +959,24 @@ export function BubblophyDashboard({
     const currentPersistedIssues = queueSafePersistedIssues.filter(
       (issue) => issue.id !== currentMissingRequestedIssueKey
     );
+    const unconfirmedPersistedIssues = currentPersistedIssues.filter(
+      (issue) => !serverConfirmedPersistedIssueIds.has(issue.id)
+    );
 
     return mergeIssuesById(
-      snapshotIssues,
       serverQueueIssues,
       serverDetailIssue,
-      currentPersistedIssues
+      unconfirmedPersistedIssues
     );
   }, [
     currentAllIssuePageResult,
     currentIssuePageResult,
     currentMissingRequestedIssueKey,
-    deniedProjectKey,
     hasAllIssuePageBoundary,
     hasConcreteIssuePageBoundary,
+    serverConfirmedPersistedIssueIds,
     serverDetailIssue,
     serverQueueIssues,
-    snapshot.issues,
     urlProjectKey,
     visiblePersistedIssues,
   ]);
@@ -1162,6 +1165,9 @@ export function BubblophyDashboard({
         baseIssues,
         updatedIssuesById,
       }).map((project) => {
+        const hasConfirmedProjectMutation = Boolean(
+          updatedProjectsByKey[project.key]
+        );
         const currentAccess = combineDashboardProjectAccess(
           allPageProjectAccessByKey.get(project.key) ?? null,
           project.key === latestSelectedProjectAccess?.key
@@ -1183,8 +1189,12 @@ export function BubblophyDashboard({
         return currentAccess
           ? {
               ...project,
-              name: currentAccess.name,
-              isArchived: currentAccess.isArchived,
+              name: hasConfirmedProjectMutation
+                ? project.name
+                : currentAccess.name,
+              isArchived: hasConfirmedProjectMutation
+                ? project.isArchived
+                : currentAccess.isArchived,
               currentUserRole: currentAccess.currentUserRole,
             }
           : project;
@@ -1196,6 +1206,7 @@ export function BubblophyDashboard({
       hasAllIssuePageBoundary,
       latestSelectedProjectAccess,
       selectedProjectKey,
+      updatedProjectsByKey,
       updatedIssuesById,
     ]
   );
@@ -1242,18 +1253,25 @@ export function BubblophyDashboard({
     const localDraftIssueIds = new Set(
       visibleLocalDrafts.map((issue) => issue.id)
     );
+    const confirmedPersistedIssueIds = new Set(
+      visiblePersistedIssues.map((issue) => issue.id)
+    );
 
     return allIssues.filter((issue) => {
+      const isSelectedConfirmedIssue =
+        issue.id === rawUrlIssueId && confirmedPersistedIssueIds.has(issue.id);
       const belongsToCurrentPage =
         selectedProjectKey === 'all'
           ? !hasAllIssuePageBoundary ||
             (allIssueQuery.after === null &&
               localDraftIssueIds.has(issue.id)) ||
+            isSelectedConfirmedIssue ||
             (currentAllIssuePageResult?.status === 'success' &&
               serverQueueIssueIds.has(issue.id))
           : !hasConcreteIssuePageBoundary ||
             (issueQuery.afterIssueNumber === null &&
               localDraftIssueIds.has(issue.id)) ||
+            isSelectedConfirmedIssue ||
             (currentIssuePageResult?.status === 'success' &&
               serverQueueIssueIds.has(issue.id));
 
@@ -1272,7 +1290,9 @@ export function BubblophyDashboard({
     hasAllIssuePageBoundary,
     hasConcreteIssuePageBoundary,
     issueQuery,
+    rawUrlIssueId,
     visibleLocalDrafts,
+    visiblePersistedIssues,
     selectedProjectKey,
     serverQueueIssueIds,
   ]);
@@ -1374,23 +1394,6 @@ export function BubblophyDashboard({
     activeProjects.length === 0 &&
     canUseDatabase &&
     Boolean(createProjectAction);
-  const runIssueIds = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          [...snapshot.issues, ...visiblePersistedIssues, ...visibleLocalDrafts]
-            .filter((issue) => issue.projectKey !== deniedProjectKey)
-            .map((issue) => issue.id)
-        )
-      ),
-    [
-      deniedProjectKey,
-      snapshot.issues,
-      visibleLocalDrafts,
-      visiblePersistedIssues,
-    ]
-  );
-
   const pushDashboardParams = (nextParams: URLSearchParams) => {
     const currentQuery = searchParams.toString();
     const sourceHref = buildDashboardHref(
@@ -1770,7 +1773,7 @@ export function BubblophyDashboard({
     setLocalDrafts((currentDrafts) =>
       currentDrafts.filter((draft) => draft.id !== issueId)
     );
-    updateSelectionUrl('all', snapshot.issues[0]?.id ?? '');
+    updateSelectionUrl('all', '');
   };
 
   return (
@@ -2051,7 +2054,6 @@ export function BubblophyDashboard({
                     ? currentRunPageResult.nextAfter
                     : null
                 }
-                issueIds={runIssueIds}
                 writableIssueIds={writableRunIssueIds}
                 transitionAgentRunAction={transitionAgentRunAction}
                 onAgentRunTransitioned={handleAgentRunTransitioned}
@@ -5810,7 +5812,6 @@ function RunQueue({
   runPageStatus,
   runCursor,
   nextAfter,
-  issueIds,
   writableIssueIds,
   transitionAgentRunAction,
   onAgentRunTransitioned,
@@ -5825,7 +5826,6 @@ function RunQueue({
   runPageStatus: ReadDashboardRunPageResult['status'] | 'loading' | null;
   runCursor: DashboardRunCursor | null;
   nextAfter: DashboardRunCursor | null;
-  issueIds: string[];
   writableIssueIds: ReadonlySet<string>;
   transitionAgentRunAction?: (
     input: TransitionBubblophyAgentRunActionInput
@@ -5909,7 +5909,6 @@ function RunQueue({
         {isDatabaseSource
           ? agentRuns.map((run) => {
               const runProjectKey = getProjectKeyFromIssueId(run.issueId);
-              const canOpenIssue = issueIds.includes(run.issueId);
               const canTransitionRun = writableIssueIds.has(run.issueId);
               const canUpdateThisRun = agentTokens.some(
                 (token) =>
@@ -5933,17 +5932,15 @@ function RunQueue({
                       {agentRunStateLabels[run.state]}
                     </Badge>
                   </div>
-                  {canOpenIssue ? (
-                    <div>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => onIssueSelect(run.issueId)}>
-                        Issue öffnen
-                      </Button>
-                    </div>
-                  ) : null}
+                  <div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onIssueSelect(run.issueId)}>
+                      Issue öffnen
+                    </Button>
+                  </div>
                   <dl className="grid gap-1 text-xs sm:grid-cols-2">
                     <div>
                       <dt className="text-muted-foreground">Run-ID</dt>

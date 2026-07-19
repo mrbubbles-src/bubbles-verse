@@ -144,7 +144,6 @@ export interface DashboardSnapshot {
     authUserId: string;
   };
   projects: ProjectSummary[];
-  issues: IssueSummary[];
   projectMembers: ProjectMemberSummary[];
   agentTokens: AgentTokenSummary[];
   agentRuns: AgentRunSummary[];

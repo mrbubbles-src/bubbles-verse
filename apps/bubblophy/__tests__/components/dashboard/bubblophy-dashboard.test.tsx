@@ -38,9 +38,19 @@ import type {
   ReadDashboardIssueDetailResult,
   ReadDashboardIssuePageResult,
 } from '@/lib/dashboard/issues';
-import type { DashboardSnapshot } from '@/lib/dashboard/types';
+import type {
+  DashboardSnapshot,
+  IssuePriority,
+  IssueStatus,
+  IssueSummary,
+} from '@/lib/dashboard/types';
 
-import { dashboardSnapshot } from '@/lib/dashboard/sample-data';
+import { parseDashboardAllIssueQuery } from '@/lib/dashboard/all-issue-query';
+import { parseDashboardIssueQuery } from '@/lib/dashboard/issue-query';
+import {
+  dashboardIssueFixtures,
+  dashboardSnapshot,
+} from '@/lib/dashboard/sample-data';
 import { bubblophySidebarData } from '@/lib/sidebar';
 
 import React from 'react';
@@ -55,7 +65,7 @@ import {
 } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { BubblophyDashboard } from '@/components/dashboard/bubblophy-dashboard';
+import { BubblophyDashboard as ProductionBubblophyDashboard } from '@/components/dashboard/bubblophy-dashboard';
 
 const navigationListeners = new Set<() => void>();
 let autoCommitMockNavigation = true;
@@ -96,7 +106,23 @@ function getBubblophySidebarSectionIds() {
     .map((href) => href.slice(2));
 }
 
-const databaseSnapshot = {
+const issueFixturesBySnapshot = new WeakMap<
+  DashboardSnapshot,
+  IssueSummary[]
+>();
+
+/** Associates page/detail fixtures without putting issues back into snapshots. */
+function withIssueFixtures<T extends DashboardSnapshot>(
+  snapshot: T,
+  issues: IssueSummary[] = dashboardIssueFixtures
+) {
+  issueFixturesBySnapshot.set(snapshot, issues);
+  return snapshot;
+}
+
+withIssueFixtures(dashboardSnapshot);
+
+const databaseSnapshot = withIssueFixtures({
   ...dashboardSnapshot,
   projects: dashboardSnapshot.projects.map((project) => ({
     ...project,
@@ -107,7 +133,7 @@ const databaseSnapshot = {
     label: 'Datenbankdaten',
     description: 'Read-only Testdaten.',
   },
-} satisfies DashboardSnapshot;
+} satisfies DashboardSnapshot);
 
 const bvIssuePageResult = {
   status: 'success',
@@ -205,7 +231,7 @@ const bvOffPageIssueDetailResult = {
   },
 } satisfies ReadDashboardIssueDetailResult;
 
-const databaseSnapshotWithManageableMembers = {
+const databaseSnapshotWithManageableMembers = withIssueFixtures({
   ...databaseSnapshot,
   projects: databaseSnapshot.projects.map((project) =>
     project.key === 'BV'
@@ -244,31 +270,31 @@ const databaseSnapshotWithManageableMembers = {
       createdAt: '2026-06-13T12:00:00.000Z',
     },
   ],
-} satisfies DashboardSnapshot;
+} satisfies DashboardSnapshot);
 
-const databaseSnapshotWithViewerAccess = {
+const databaseSnapshotWithViewerAccess = withIssueFixtures({
   ...databaseSnapshot,
   projects: databaseSnapshot.projects.map((project) => ({
     ...project,
     currentUserRole: 'viewer',
   })),
-} satisfies DashboardSnapshot;
+} satisfies DashboardSnapshot);
 
-const databaseSnapshotWithIssueDescription = {
-  ...databaseSnapshot,
-  issues: databaseSnapshot.issues.map((issue, index) =>
+const databaseSnapshotWithIssueDescription = withIssueFixtures(
+  { ...databaseSnapshot } satisfies DashboardSnapshot,
+  dashboardIssueFixtures.map((issue, index) =>
     index === 0
       ? {
           ...issue,
           description: 'Beschreibung aus dem Dashboard-Snapshot.',
         }
       : issue
-  ),
-} satisfies DashboardSnapshot;
+  )
+);
 
-const databaseSnapshotWithReloadedPlan = {
-  ...databaseSnapshot,
-  issues: databaseSnapshot.issues.map((issue) =>
+const databaseSnapshotWithReloadedPlan = withIssueFixtures(
+  { ...databaseSnapshot } satisfies DashboardSnapshot,
+  dashboardIssueFixtures.map((issue) =>
     issue.id === 'BV-12'
       ? {
           ...issue,
@@ -283,12 +309,12 @@ const databaseSnapshotWithReloadedPlan = {
           },
         }
       : issue
-  ),
-} satisfies DashboardSnapshot;
+  )
+);
 
-const databaseSnapshotWithIssueNote = {
-  ...databaseSnapshot,
-  issues: databaseSnapshot.issues.map((issue) =>
+const databaseSnapshotWithIssueNote = withIssueFixtures(
+  { ...databaseSnapshot } satisfies DashboardSnapshot,
+  dashboardIssueFixtures.map((issue) =>
     issue.id === 'BV-12'
       ? {
           ...issue,
@@ -302,35 +328,38 @@ const databaseSnapshotWithIssueNote = {
           ],
         }
       : issue
-  ),
-} satisfies DashboardSnapshot;
+  )
+);
 
-const databaseSnapshotWithIssueNoteActivity = {
-  ...databaseSnapshotWithIssueNote,
-  activity: [
-    {
-      id: 'event_issue_note',
-      label: 'Plan-Review als Issue-Notiz festgehalten.',
-      actor: 'Mensch',
-      occurredAt: '2026-06-14T10:00:00.000Z',
-      projectKey: 'BV',
-      issueId: 'BV-12',
-    },
-    ...databaseSnapshot.activity,
-  ],
-} satisfies DashboardSnapshot;
+const databaseSnapshotWithIssueNoteActivity = withIssueFixtures(
+  {
+    ...databaseSnapshotWithIssueNote,
+    activity: [
+      {
+        id: 'event_issue_note',
+        label: 'Plan-Review als Issue-Notiz festgehalten.',
+        actor: 'Mensch',
+        occurredAt: '2026-06-14T10:00:00.000Z',
+        projectKey: 'BV',
+        issueId: 'BV-12',
+      },
+      ...databaseSnapshot.activity,
+    ],
+  } satisfies DashboardSnapshot,
+  issueFixturesBySnapshot.get(databaseSnapshotWithIssueNote)
+);
 
-const databaseSnapshotWithDoneIssue = {
-  ...databaseSnapshot,
-  issues: databaseSnapshot.issues.map((issue) =>
+const databaseSnapshotWithDoneIssue = withIssueFixtures(
+  { ...databaseSnapshot } satisfies DashboardSnapshot,
+  dashboardIssueFixtures.map((issue) =>
     issue.id === 'BV-12'
       ? {
           ...issue,
           status: 'erledigt',
         }
       : issue
-  ),
-} satisfies DashboardSnapshot;
+  )
+);
 
 const emptyDatabaseSnapshot = {
   ...databaseSnapshot,
@@ -341,7 +370,6 @@ const emptyDatabaseSnapshot = {
       'Datenbank erreichbar, aber für diesen User gibt es noch keine Projekte.',
   },
   projects: [],
-  issues: [],
   projectMembers: [],
   agentTokens: [],
   agentRuns: [],
@@ -624,6 +652,217 @@ function getMetricValue(label: string) {
 
 function getMetricCaption(label: string) {
   return within(getMetricSection(label)).getByText(/bereit|lokal|Blocker/i);
+}
+
+const rawIssueStatus = {
+  triage: 'triage',
+  geplant: 'planned',
+  bereit: 'ready',
+  in_arbeit: 'in_progress',
+  review: 'review',
+  blockiert: 'blocked',
+  erledigt: 'done',
+} satisfies Record<
+  IssueStatus,
+  'triage' | 'planned' | 'ready' | 'in_progress' | 'review' | 'blocked' | 'done'
+>;
+
+const rawIssuePriority = {
+  niedrig: 'low',
+  mittel: 'medium',
+  hoch: 'high',
+} satisfies Record<IssuePriority, 'low' | 'medium' | 'high'>;
+
+type TestDashboardProps = React.ComponentProps<
+  typeof ProductionBubblophyDashboard
+>;
+
+/** Supplies explicit page/detail fixtures to tests without snapshot issues. */
+function BubblophyDashboard(props: TestDashboardProps) {
+  React.useSyncExternalStore(
+    subscribeToMockNavigation,
+    () => navigationMocks.searchParams().toString(),
+    () => navigationMocks.searchParams().toString()
+  );
+  const params = navigationMocks.searchParams();
+  const requestedProjectKey = params.get('project')?.trim().toUpperCase();
+  const selectedProject = props.snapshot.projects.find(
+    (project) => project.key === requestedProjectKey
+  );
+  const issues =
+    issueFixturesBySnapshot.get(props.snapshot) ?? dashboardIssueFixtures;
+  const selectedIssues = selectedProject
+    ? issues.filter((issue) => issue.projectKey === selectedProject.key)
+    : issues.filter((issue) =>
+        props.snapshot.projects.some(
+          (project) => project.key === issue.projectKey && !project.isArchived
+        )
+      );
+  const hasExplicitPage = selectedProject
+    ? Object.hasOwn(props, 'issuePageRequest') ||
+      Object.hasOwn(props, 'issuePageResult')
+    : Object.hasOwn(props, 'allIssuePageRequest') ||
+      Object.hasOwn(props, 'allIssuePageResult');
+  const pageProps = hasExplicitPage
+    ? {}
+    : selectedProject
+      ? buildConcreteIssuePageTestProps(params, selectedProject, selectedIssues)
+      : buildAllIssuePageTestProps(params, props.snapshot, selectedIssues);
+  const requestedIssueKey = params.get('issue')?.trim().toUpperCase() ?? null;
+  const detailIssue = requestedIssueKey
+    ? issues.find((issue) => issue.id === requestedIssueKey)
+    : hasExplicitPage
+      ? null
+      : selectedIssues[0];
+  const detailProps =
+    Object.hasOwn(props, 'issueDetailResult') ||
+    Object.hasOwn(props, 'issueDetailRequestKey') ||
+    !detailIssue
+      ? {}
+      : buildIssueDetailTestProps(props.snapshot, detailIssue);
+
+  return (
+    <ProductionBubblophyDashboard {...pageProps} {...detailProps} {...props} />
+  );
+}
+
+/** Builds one canonical concrete-project page fixture from presentation issues. */
+function buildConcreteIssuePageTestProps(
+  params: URLSearchParams,
+  project: DashboardSnapshot['projects'][number],
+  issues: IssueSummary[]
+): Pick<TestDashboardProps, 'issuePageRequest' | 'issuePageResult'> {
+  const query = parseDashboardIssueQuery({
+    query: params.get('q'),
+    status: params.get('status'),
+    priority: params.get('priority'),
+    sort: params.get('sort'),
+    after: params.get('after'),
+  });
+
+  return {
+    issuePageRequest: { projectKey: project.key, ...query },
+    issuePageResult: {
+      status: 'success',
+      project: {
+        key: project.key,
+        name: project.name,
+        isArchived: project.isArchived,
+        currentUserRole: project.currentUserRole ?? 'viewer',
+      },
+      sort: query.sort,
+      filters: query.filters,
+      items: issues.map(mapIssueSummaryToPageItem),
+      nextAfterIssueNumber: null,
+    },
+  };
+}
+
+/** Builds one canonical all-project page fixture from presentation issues. */
+function buildAllIssuePageTestProps(
+  params: URLSearchParams,
+  snapshot: DashboardSnapshot,
+  issues: IssueSummary[]
+): Pick<TestDashboardProps, 'allIssuePageRequest' | 'allIssuePageResult'> {
+  const query = parseDashboardAllIssueQuery({
+    query: params.get('q'),
+    status: params.get('status'),
+    priority: params.get('priority'),
+    sort: params.get('sort'),
+    afterAt: params.get('allAfterAt'),
+    afterProject: params.get('allAfterProject'),
+    afterIssue: params.get('allAfterIssue'),
+  });
+
+  return {
+    allIssuePageRequest: query,
+    allIssuePageResult: {
+      status: 'success',
+      sort: query.sort,
+      filters: query.filters,
+      items: issues.flatMap((issue, index) => {
+        const project = snapshot.projects.find(
+          (candidate) => candidate.key === issue.projectKey
+        );
+
+        return project
+          ? [
+              {
+                ...mapIssueSummaryToPageItem(issue),
+                project: {
+                  key: project.key,
+                  name: project.name,
+                  currentUserRole: project.currentUserRole ?? 'viewer',
+                },
+                updatedAt: `2026-07-19T${String(23 - index).padStart(2, '0')}:00:00.000Z`,
+              },
+            ]
+          : [];
+      }),
+      nextAfter: null,
+    },
+  };
+}
+
+/** Maps one presentation issue into the bounded page DTO. */
+function mapIssueSummaryToPageItem(issue: IssueSummary) {
+  return {
+    key: issue.id,
+    issueNumber: Number(issue.id.slice(issue.projectKey.length + 1)),
+    title: issue.title,
+    status: rawIssueStatus[issue.status],
+    priority: rawIssuePriority[issue.priority],
+    requiresHumanApproval: issue.approvalRequired,
+    assignedAuthUserId: issue.assigneeAuthUserId,
+    latestPlan: issue.latestPlan
+      ? {
+          version: issue.latestPlan.version,
+          stepCount: issue.latestPlan.steps.length,
+        }
+      : null,
+  } as const;
+}
+
+/** Builds a direct detail fixture for one public issue summary. */
+function buildIssueDetailTestProps(
+  snapshot: DashboardSnapshot,
+  issue: IssueSummary
+): Pick<TestDashboardProps, 'issueDetailRequestKey' | 'issueDetailResult'> {
+  const project = snapshot.projects.find(
+    (candidate) => candidate.key === issue.projectKey
+  );
+
+  if (!project) {
+    return { issueDetailRequestKey: null, issueDetailResult: null };
+  }
+
+  return {
+    issueDetailRequestKey: issue.id,
+    issueDetailResult: {
+      status: 'success',
+      project: {
+        key: project.key,
+        name: project.name,
+        isArchived: project.isArchived,
+        currentUserRole: project.currentUserRole ?? 'viewer',
+      },
+      issue: {
+        key: issue.id,
+        issueNumber: Number(issue.id.slice(issue.projectKey.length + 1)),
+        title: issue.title,
+        description: issue.description ?? '',
+        status: rawIssueStatus[issue.status],
+        priority: rawIssuePriority[issue.priority],
+        requiresHumanApproval: issue.approvalRequired,
+        assignedAuthUserId: issue.assigneeAuthUserId,
+        createdAt: '2026-07-18T10:00:00.000Z',
+        updatedAt: '2026-07-19T10:00:00.000Z',
+        latestPlan: issue.latestPlan ?? null,
+        notes: issue.notes ?? [],
+        hasMoreNotes: issue.hasMoreNotes ?? false,
+      },
+    },
+  };
 }
 
 describe('BubblophyDashboard interactions', () => {
@@ -1780,9 +2019,6 @@ describe('BubblophyDashboard interactions', () => {
       projects: databaseSnapshot.projects.filter(
         (project) => project.key !== 'BV'
       ),
-      issues: databaseSnapshot.issues.filter(
-        (issue) => issue.projectKey !== 'BV'
-      ),
       projectMembers: databaseSnapshot.projectMembers.filter(
         (member) => member.projectKey !== 'BV'
       ),
@@ -2673,9 +2909,9 @@ describe('BubblophyDashboard interactions', () => {
   });
 
   it('removes an issue assignment through the persisted assignment action', async () => {
-    const assignedSnapshot = {
-      ...databaseSnapshotWithManageableMembers,
-      issues: databaseSnapshotWithManageableMembers.issues.map((issue) =>
+    const assignedSnapshot = withIssueFixtures(
+      { ...databaseSnapshotWithManageableMembers } satisfies DashboardSnapshot,
+      dashboardIssueFixtures.map((issue) =>
         issue.id === 'BV-12'
           ? {
               ...issue,
@@ -2683,8 +2919,8 @@ describe('BubblophyDashboard interactions', () => {
               assigneeLabel: 'user_martin',
             }
           : issue
-      ),
-    } satisfies DashboardSnapshot;
+      )
+    );
     const updateIssueAssigneeAction = vi.fn<
       (
         input: UpdateBubblophyIssueAssigneeActionInput
@@ -2793,7 +3029,7 @@ describe('BubblophyDashboard interactions', () => {
     expect(alert.textContent).not.toContain('membership SQL');
     expect(assigneeSelect).toHaveValue('user_martin');
     expect(
-      within(detailPanel).getByText(/Zuständig mrbubbles/i)
+      within(detailPanel).getByText(/Zuständig Mensch/i)
     ).toBeInTheDocument();
     expect(requestAgentRunAction).not.toHaveBeenCalled();
   });
@@ -3747,12 +3983,12 @@ describe('BubblophyDashboard interactions', () => {
       screen.queryByRole('button', { name: 'Lokaler Test-Draft' })
     ).not.toBeInTheDocument();
     expect(navigationMocks.routerPush).toHaveBeenCalledTimes(1);
-    expect(navigationMocks.routerPush).toHaveBeenCalledWith('/?issue=BV-14');
+    expect(navigationMocks.routerPush).toHaveBeenCalledWith('/');
     expect(navigationMocks.routerReplace).not.toHaveBeenCalled();
 
-    commitMockNavigation('/?issue=BV-14');
+    commitMockNavigation('/');
 
-    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('BV-14');
+    expect(navigationMocks.searchParams().get('issue')).toBeNull();
   });
 
   it('returns to the first queue page when a local draft is created', () => {
@@ -6451,6 +6687,9 @@ describe('BubblophyDashboard interactions', () => {
   });
 
   it('persists a title-only issue from the dialog when database data and an action are available', async () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('sort=oldest')
+    );
     const createIssueAction = vi.fn<
       (
         input: CreateBubblophyIssueActionInput
@@ -6467,11 +6706,11 @@ describe('BubblophyDashboard interactions', () => {
         assigneeLabel: 'Nicht zugewiesen',
         planSteps: 0,
         approvalRequired: true,
-        description: input.description,
+        description: input.description || 'Lokale Beschreibung vor Reload.',
       },
     }));
 
-    render(
+    const { rerender } = render(
       <BubblophyDashboard
         snapshot={databaseSnapshot}
         createIssueAction={createIssueAction}
@@ -6523,7 +6762,7 @@ describe('BubblophyDashboard interactions', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
     expect(navigationMocks.routerPush).toHaveBeenCalledWith(
-      '/?project=BV&issue=BV-15'
+      '/?sort=oldest&project=BV&issue=BV-15'
     );
     expect(
       screen.getByRole('button', { name: 'Persistiertes Test-Issue' })
@@ -6544,6 +6783,68 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       within(detailPanel).getByText(/Nutze „Plan entwerfen“/i)
     ).toBeInTheDocument();
+
+    const reloadedSnapshot = withIssueFixtures({ ...databaseSnapshot }, [
+      {
+        id: 'BV-14',
+        title: 'Server-Reihenfolge zuerst',
+        description: 'Älteres Issue in der autoritativen Serverreihenfolge.',
+        projectKey: 'BV',
+        status: 'bereit',
+        priority: 'hoch',
+        assigneeAuthUserId: null,
+        assigneeLabel: 'Nicht zugewiesen',
+        planSteps: 0,
+        approvalRequired: true,
+      },
+      {
+        id: 'BV-15',
+        title: 'Server-Detail nach Reload',
+        description: 'Autoritative Beschreibung vom Server.',
+        projectKey: 'BV',
+        status: 'geplant',
+        priority: 'mittel',
+        assigneeAuthUserId: null,
+        assigneeLabel: 'Nicht zugewiesen',
+        planSteps: 0,
+        approvalRequired: true,
+      },
+    ]);
+
+    rerender(
+      <BubblophyDashboard
+        snapshot={reloadedSnapshot}
+        createIssueAction={createIssueAction}
+      />
+    );
+
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent(
+      'Server-Detail nach Reload'
+    );
+    expect(screen.getByLabelText('Issue-Details')).not.toHaveTextContent(
+      'Persistiertes Test-Issue'
+    );
+    expect(
+      screen
+        .getAllByRole('button', { name: /Server-(Reihenfolge|Detail)/ })
+        .map((button) => button.textContent)
+    ).toEqual(['Server-Reihenfolge zuerst', 'Server-Detail nach Reload']);
+
+    rerender(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        issueDetailRequestKey="BV-15"
+        issueDetailResult={{ status: 'database_unavailable' }}
+        createIssueAction={createIssueAction}
+      />
+    );
+
+    expect(screen.getByLabelText('Issue-Details')).not.toHaveTextContent(
+      'Persistiertes Test-Issue'
+    );
+    expect(screen.getByLabelText('Issue-Details')).not.toHaveTextContent(
+      'Lokale Beschreibung vor Reload.'
+    );
   });
 
   it('labels local issue drafts as not persisted', async () => {
@@ -7539,7 +7840,7 @@ describe('BubblophyDashboard interactions', () => {
     );
   });
 
-  it('does not render issue navigation for runs without resolvable issue', () => {
+  it('opens an off-page run issue through its direct detail URL', () => {
     render(<BubblophyDashboard snapshot={databaseSnapshotWithUnresolvedRun} />);
 
     const runsSection = document.getElementById('runs');
@@ -7560,9 +7861,13 @@ describe('BubblophyDashboard interactions', () => {
       throw new Error('Expected the unresolved run card to render.');
     }
 
-    expect(
-      within(runCard).queryByRole('button', { name: 'Issue öffnen' })
-    ).not.toBeInTheDocument();
+    fireEvent.click(
+      within(runCard).getByRole('button', { name: 'Issue öffnen' })
+    );
+
+    expect(navigationMocks.routerPush).toHaveBeenLastCalledWith(
+      '/?issue=BV-404'
+    );
   });
 
   it('does not show human review resolution guidance for non-review runs', () => {
@@ -7825,9 +8130,10 @@ describe('BubblophyDashboard interactions', () => {
     const unavailableWithIssueAndToken = {
       ...databaseUnavailableSnapshot,
       projects: databaseSnapshot.projects,
-      issues: databaseSnapshot.issues,
       agentTokens: databaseSnapshot.agentTokens,
     } satisfies DashboardSnapshot;
+
+    withIssueFixtures(unavailableWithIssueAndToken);
 
     render(
       <BubblophyDashboard

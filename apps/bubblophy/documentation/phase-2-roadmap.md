@@ -159,11 +159,11 @@ Status: abgeschlossen.
   `allAfterIssue`-URL-Feldern. Direkte Details werden unabhängig von der Seite
   über den öffentlichen Issue-Key geladen. Exakte Request-Fingerprints,
   fail-closed Fehlerzustände und revalidierte Rollen verhindern Snapshot-
-  Fallbacks und veraltete Schreib-Gates. Der Snapshot lädt übergangsweise noch
-  vollständige Issues für andere Datengruppen, insbesondere die globale
-  Run-Auflösung. Projektmetriken kommen aus unabhängigen SQL-Aggregaten; Plan-
-  und Notes-Historie sind begrenzt. Als Nächstes folgt die Entfernung des
-  Legacy-Issue-Graphs.
+  Fallbacks und veraltete Schreib-Gates. Der Snapshot enthält keine Issues
+  mehr; Page-, AllPage- und Detail-Verträge sind die einzigen serverseitigen
+  Issue-Quellen. Bestätigte Mutationen bleiben nur für den aktuell ausgewählten
+  Key als lokales Overlay sichtbar. Projektmetriken kommen aus unabhängigen
+  SQL-Aggregaten.
 - Agent-Run-Statusupdates begrenzen den gesamten PATCH-Envelope beim Streamen
   auf 64 KiB tatsächliche UTF-8-Bytes. Die Service-Grenze akzeptiert auch bei
   direkten Aufrufern höchstens 48 KiB Result-JSON mit 12 Ebenen und 1000
@@ -176,19 +176,17 @@ Status: abgeschlossen.
   erhalten ein finales Membership-Gate. Runs anderer Projekte können das
   ausgewählte Projekt damit nicht mehr aus dem alten globalen 20er-Limit
   verdrängen. Ein `(issue_id, updated_at, id)`-Index unterstützt den
-  projektgebundenen Join und Cursor. Die projektübergreifende Übersicht bleibt
-  bis zur Ablösung des Legacy-Snapshots bewusst unverändert.
-- Der Legacy-Snapshot lädt Planhistorie nicht mehr vollständig: SQL wählt pro
-  sichtbarem Issue genau die neueste Version nach Version und Erstellzeit.
-- Legacy-Notizen werden SQL-seitig zuerst auf echte `issue_note`-Events
-  gefiltert, dann je Issue stabil gerankt und als neueste 50 plus
-  `hasMoreNotes`-Sentinel geladen. Das Limit gilt pro Issue statt global;
-  Projekt- und Issue-ID bleiben für Concurrent-Move-Sicherheit gekoppelt.
-- Offen-, Bereit- und Blockiert-Metriken werden pro Projekt unabhängig vom
-  hydratisierten Issue-Graph in SQL aggregiert. Dadurch bleiben vollständige
-  Projektzähler erhalten, wenn die All-Project-Issue-Liste begrenzt wird.
+  projektgebundenen Join und Cursor. Globale Run-Karten navigieren unabhängig
+  von der geladenen Issue-Seite direkt zum öffentlichen Issue-Key.
+- Der Legacy-Issue-Graph ist entfernt. Der Dashboard-Read lädt keine
+  ungruppierten Issue-Details, Planhistorien oder Notizen mehr. Projektmetriken
+  werden weiterhin vollständig pro Projekt aggregiert; leere und archivierte
+  Projekte bleiben sichtbar. Das finale Membership-Gate bindet Projektzeilen
+  und alle abhängigen Key-Gruppen erneut an aktuelle IDs, Keys und Rollen.
 - Suche, Filter, Sortierung und Pagination für Projekte, Runs und
   Audit-Ereignisse ergänzen. Die Issue-Queue ist abgeschlossen.
+- Projektmitglieder und Agent-Tokens sind membership-scoped, aber noch nicht
+  paginiert. Begrenzte Reads und UI-Pagination bleiben ein eigener Slice.
 - Datenbankabfragen und Cache-Tags auf größere Projektmengen prüfen.
 
 ### 6. Benachrichtigungen und Team-Arbeit
@@ -246,13 +244,16 @@ abgeschlossen. Die verständliche Rollenrechte-Erklärung ist ebenfalls im UI
 vorhanden. Die begrenzten server-only IssuePage- und direkten IssueDetail-
 Verträge einschließlich des serverseitigen IssuePage-Filtervertrags und ihre
 konkrete Queue-/URL-Integration sowie der auf 50 Einträge begrenzte Notes-Read
-im direkten IssueDetail sind ebenfalls vorhanden. Der Legacy-Snapshot nutzt
-denselben 50-plus-Sentinel-Vertrag nun je Issue. Die Run-Result-
-Größenhärtung begrenzt nun Route und Service unabhängig voneinander. Die
+im direkten IssueDetail sind ebenfalls vorhanden. Der inzwischen entfernte
+Legacy-Issue-Graph war vor seiner Ablösung ebenfalls auf diesen Vertrag
+gehärtet. Die Run-Result-Größenhärtung begrenzt nun Route und Service
+unabhängig voneinander. Die
 projektgebundene 20er-RunPage mit stabilem URL-Cursor ist ebenfalls vorhanden.
 Der begrenzte server-only AllProjectIssuePage-Read und seine konkrete
-All-Projekte-URL-/Dashboard-Integration sind ebenfalls vorhanden. Als Nächstes
-folgen die Ablösung des unbeschränkten Legacy-Issue-Graphs sowie begrenzte Reads
-für Audit und weitere größere Datenmengen. Die
+All-Projekte-URL-/Dashboard-Integration sind ebenfalls vorhanden. Der
+unbeschränkte Legacy-Issue-Graph wurde aus dem Dashboard-Snapshot entfernt;
+Issue-Listen und Details stammen nur noch aus den begrenzten Page-/Detail-
+Verträgen. Als Nächstes folgen begrenzte Reads für Audit und weitere größere
+Datenmengen. Die
 MCP-Grundlage bleibt unter
 `docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md` dokumentiert.

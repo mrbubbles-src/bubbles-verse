@@ -87,7 +87,6 @@ const homeDatabaseSnapshot = {
       agentTokenCount: 0,
     },
   ],
-  issues: [],
   projectMembers: [],
   agentTokens: [],
   agentRuns: [],
@@ -230,7 +229,6 @@ describe('Bubblophy home page', () => {
           agentTokenCount: 0,
         },
       ],
-      issues: [],
       projectMembers: [],
       agentTokens: [],
       agentRuns: [],
@@ -324,7 +322,6 @@ describe('Bubblophy home page', () => {
       },
       currentUser: { authUserId: 'user_owner' },
       projects: [],
-      issues: [],
       projectMembers: [],
       agentTokens: [],
       agentRuns: [],
@@ -483,19 +480,6 @@ describe('Bubblophy home page', () => {
   it('redacts a project when the final page membership gate loses access', async () => {
     const snapshot = {
       ...homeDatabaseSnapshot,
-      issues: [
-        {
-          id: 'AP-5',
-          title: 'Nicht mehr sichtbares Issue',
-          projectKey: 'AP',
-          status: 'bereit',
-          priority: 'mittel',
-          assigneeAuthUserId: null,
-          assigneeLabel: 'Nicht zugewiesen',
-          planSteps: 0,
-          approvalRequired: false,
-        },
-      ],
       projectMembers: [
         {
           id: 'AP:user_owner',
@@ -574,7 +558,6 @@ describe('Bubblophy home page', () => {
     });
 
     expect(element.props.snapshot.projects).toEqual([]);
-    expect(element.props.snapshot.issues).toEqual([]);
     expect(element.props.snapshot.projectMembers).toEqual([]);
     expect(element.props.snapshot.agentTokens).toEqual([]);
     expect(element.props.snapshot.agentRuns).toEqual([]);
