@@ -1,4 +1,7 @@
+import type { SQLWrapper } from 'drizzle-orm';
+
 import { getTableName } from 'drizzle-orm';
+import { PgDialect } from 'drizzle-orm/pg-core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 type DrizzleTable = Parameters<typeof getTableName>[0];
@@ -21,6 +24,9 @@ interface QueryCall {
   tableName: string | null;
   joinedTableNames: string[];
   selectedKeys: string[];
+  distinctOnCalled: boolean;
+  distinctOnSql: string[];
+  orderBySql: string[];
   whereCalled: boolean;
   groupByCalled: boolean;
   limitValue: number | null;
@@ -164,6 +170,12 @@ const tableRows = {
         { id: 'step_2', text: 'Detailpanel prüfen' },
       ],
     },
+    {
+      issueId: 'issue_visible',
+      version: 1,
+      summary: 'Veralteter Plan.',
+      steps: [{ id: 'step_old', text: 'Nicht mehr laden' }],
+    },
   ],
   projectEvents: [
     {
@@ -187,17 +199,21 @@ const tableRows = {
 } satisfies Record<string, MockRow[]>;
 
 const calls: QueryCall[] = [];
+const pgDialect = new PgDialect();
 let membershipReadResults: (MockRow[] | Error)[] = [];
 let tableRowOverrides: Partial<Record<keyof typeof tableRows, MockRow[]>> = {};
 
 class MockSelectQuery implements PromiseLike<MockRow[]> {
   private readonly call: QueryCall;
 
-  constructor(selectedKeys: string[]) {
+  constructor(selectedKeys: string[], distinctOnSql: string[] = []) {
     this.call = {
       tableName: null,
       joinedTableNames: [],
       selectedKeys,
+      distinctOnCalled: distinctOnSql.length > 0,
+      distinctOnSql,
+      orderBySql: [],
       whereCalled: false,
       groupByCalled: false,
       limitValue: null,
@@ -225,7 +241,10 @@ class MockSelectQuery implements PromiseLike<MockRow[]> {
     return this;
   }
 
-  orderBy() {
+  orderBy(...expressions: SQLWrapper[]) {
+    this.call.orderBySql = expressions.map(
+      (expression) => pgDialect.sqlToQuery(expression.getSQL()).sql
+    );
     return this;
   }
 
@@ -256,6 +275,13 @@ const dbMock = {
   select: vi.fn((selection: Record<string, object>) => {
     return new MockSelectQuery(Object.keys(selection));
   }),
+  selectDistinctOn: vi.fn(
+    (on: SQLWrapper[], selection: Record<string, object>) =>
+      new MockSelectQuery(
+        Object.keys(selection),
+        on.map((expression) => pgDialect.sqlToQuery(expression.getSQL()).sql)
+      )
+  ),
 };
 
 vi.mock('@/drizzle/db', () => ({
@@ -306,7 +332,26 @@ function rowsForCall(call: QueryCall): MockRow[] {
   }
 
   if (call.tableName === 'bubblophy_issue_plans') {
-    return rowsForTable('plans');
+    const planRows = rowsForTable('plans');
+
+    if (!call.distinctOnCalled) {
+      return planRows;
+    }
+
+    const seenIssueIds = new Set<string>();
+
+    return planRows.filter((row) => {
+      if (typeof row.issueId !== 'string') {
+        return false;
+      }
+
+      if (seenIssueIds.has(row.issueId)) {
+        return false;
+      }
+
+      seenIssueIds.add(row.issueId);
+      return true;
+    });
   }
 
   if (call.tableName === 'bubblophy_agent_runs') {
@@ -337,6 +382,7 @@ describe('selectBubblophyDashboardRowsForUser', () => {
     membershipReadResults = [];
     tableRowOverrides = {};
     dbMock.select.mockClear();
+    dbMock.selectDistinctOn.mockClear();
   });
 
   it('loads project and issue activity through membership-scoped queries', async () => {
@@ -447,6 +493,13 @@ describe('selectBubblophyDashboardRowsForUser', () => {
       ]),
       whereCalled: true,
       groupByCalled: false,
+      distinctOnCalled: true,
+      distinctOnSql: ['"bubblophy_issue_plans"."issue_id"'],
+      orderBySql: [
+        '"bubblophy_issue_plans"."issue_id" asc',
+        '"bubblophy_issue_plans"."version" desc',
+        '"bubblophy_issue_plans"."created_at" desc',
+      ],
     });
     expect(projectMemberCall).toMatchObject({
       joinedTableNames: expect.arrayContaining([

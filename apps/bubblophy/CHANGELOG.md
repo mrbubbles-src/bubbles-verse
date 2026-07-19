@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Bounded the legacy dashboard's latest-plan lookup to one database-selected
+  version per visible issue instead of loading every historical plan version.
 - Added a membership-scoped 20-item project run page with a stable
   `(updated_at, run_id)` URL cursor, same-statement project/issue/token binding,
   safe result summaries, honest empty-project access rechecks, and concrete

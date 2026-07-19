@@ -377,7 +377,7 @@ async function selectBubblophyProjectIssueRowsForProjectIds(
       ? {}
       : toLatestPlanByIssueId(
           await db
-            .select({
+            .selectDistinctOn([bubblophyIssuePlans.issueId], {
               issueId: bubblophyIssuePlans.issueId,
               version: bubblophyIssuePlans.version,
               summary: bubblophyIssuePlans.summary,

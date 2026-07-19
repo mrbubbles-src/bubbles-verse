@@ -165,6 +165,8 @@ Status: abgeschlossen.
   verdrängen. Ein `(issue_id, updated_at, id)`-Index unterstützt den
   projektgebundenen Join und Cursor. Die projektübergreifende Übersicht bleibt
   bis zur Ablösung des Legacy-Snapshots bewusst unverändert.
+- Der Legacy-Snapshot lädt Planhistorie nicht mehr vollständig: SQL wählt pro
+  sichtbarem Issue genau die neueste Version nach Version und Erstellzeit.
 - Suche, Filter, Sortierung und Pagination für Projekte, Runs und
   Audit-Ereignisse ergänzen. Die Issue-Queue ist abgeschlossen.
 - Datenbankabfragen und Cache-Tags auf größere Projektmengen prüfen.

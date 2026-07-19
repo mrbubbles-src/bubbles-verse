@@ -432,6 +432,9 @@ bun run build
   aktuelle Membership, Projekt, Issue und projektgleiches Agent-Token gebunden;
   legitime leere Seiten werden durch ein abschließendes Membership-Recheck vom
   Zugriffsentzug unterschieden.
+- Der verbleibende Legacy-Snapshot liest pro sichtbarem Issue nur noch die
+  neueste Planversion per SQL `DISTINCT ON`; ältere Planhistorie gelangt nicht
+  mehr in den Dashboard-Read.
 - Sample-Daten markieren Agent-Tokens und Audit-Aktivität als Beispielvorschau.
   Wenn die Datenbank nicht bereit ist, bleibt der Snapshot leer und zeigt einen
   Setup-Hinweis statt Beispielprojekte als stillen Ersatz. Der Run-Bereich zeigt
