@@ -9,6 +9,12 @@ import type { IssuePlanStepSummary } from '@/lib/dashboard/types';
 
 export type DashboardIssueSort = 'newest' | 'oldest';
 
+export interface DashboardIssueFilters {
+  query: string | null;
+  status: BubblophyIssueStatus | null;
+  priority: BubblophyIssuePriority | null;
+}
+
 export interface DashboardIssuePageItem {
   key: string;
   issueNumber: number;
@@ -31,6 +37,7 @@ export interface DashboardIssuePage {
     currentUserRole: BubblophyProjectRole;
   };
   sort: DashboardIssueSort;
+  filters: DashboardIssueFilters;
   items: DashboardIssuePageItem[];
   nextAfterIssueNumber: number | null;
 }
@@ -66,6 +73,7 @@ export interface DashboardIssuePageReadInput {
   projectKey: string;
   sort: DashboardIssueSort;
   afterIssueNumber: number | null;
+  filters: DashboardIssueFilters;
 }
 
 export type DashboardIssuePageReader = (
@@ -86,6 +94,9 @@ export interface ReadDashboardIssuePageInput {
   projectKey: string;
   sort?: DashboardIssueSort;
   afterIssueNumber?: number;
+  query?: string;
+  status?: BubblophyIssueStatus | 'all';
+  priority?: BubblophyIssuePriority | 'all';
 }
 
 export interface ReadDashboardIssuePageOptions {
@@ -108,7 +119,10 @@ export type ReadDashboardIssuePageResult =
         | 'empty_auth_user'
         | 'invalid_project_key'
         | 'invalid_sort'
-        | 'invalid_cursor';
+        | 'invalid_cursor'
+        | 'query_too_long'
+        | 'invalid_status'
+        | 'invalid_priority';
     }
   | { status: 'not_found' }
   | { status: 'database_unavailable' };
@@ -127,6 +141,21 @@ export const DASHBOARD_ISSUE_PAGE_SIZE = 25;
 const projectKeyPattern = /^[A-Z0-9]{2,8}$/;
 const issueKeyPattern = /^([A-Z0-9]{2,8})-(\d+)$/;
 const maxPostgresInteger = 2_147_483_647;
+const maxIssueQueryLength = 100;
+const issueStatuses = new Set<BubblophyIssueStatus>([
+  'triage',
+  'planned',
+  'ready',
+  'in_progress',
+  'review',
+  'blocked',
+  'done',
+]);
+const issuePriorities = new Set<BubblophyIssuePriority>([
+  'low',
+  'medium',
+  'high',
+]);
 
 /**
  * Reads one bounded issue-number page for a concrete visible project.
@@ -148,6 +177,9 @@ export async function readDashboardIssuePage(
   const normalizedProjectKey = input.projectKey.trim().toUpperCase();
   const sort = input.sort ?? 'newest';
   const afterIssueNumber = input.afterIssueNumber ?? null;
+  const query = input.query?.trim() || null;
+  const status = input.status ?? 'all';
+  const priority = input.priority ?? 'all';
 
   if (!normalizedAuthUserId) {
     return { status: 'invalid', reason: 'empty_auth_user' };
@@ -159,6 +191,18 @@ export async function readDashboardIssuePage(
 
   if (sort !== 'newest' && sort !== 'oldest') {
     return { status: 'invalid', reason: 'invalid_sort' };
+  }
+
+  if (query && query.length > maxIssueQueryLength) {
+    return { status: 'invalid', reason: 'query_too_long' };
+  }
+
+  if (status !== 'all' && !issueStatuses.has(status)) {
+    return { status: 'invalid', reason: 'invalid_status' };
+  }
+
+  if (priority !== 'all' && !issuePriorities.has(priority)) {
+    return { status: 'invalid', reason: 'invalid_priority' };
   }
 
   if (
@@ -182,6 +226,11 @@ export async function readDashboardIssuePage(
       projectKey: normalizedProjectKey,
       sort,
       afterIssueNumber,
+      filters: {
+        query,
+        status: status === 'all' ? null : status,
+        priority: priority === 'all' ? null : priority,
+      },
     });
 
     return page ? { status: 'success', ...page } : { status: 'not_found' };

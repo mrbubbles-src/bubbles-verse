@@ -119,6 +119,7 @@ const input: DashboardIssuePageReadInput = {
   projectKey: 'BV',
   sort: 'newest',
   afterIssueNumber: 30,
+  filters: { query: 'BV-2', status: 'ready', priority: 'high' },
 };
 
 function makeCandidate(issueNumber: number | null): DatabaseRow {
@@ -196,6 +197,7 @@ describe('selectDashboardIssuePageForUser', () => {
         currentUserRole: 'viewer',
       },
       sort: 'newest',
+      filters: { query: 'BV-2', status: 'ready', priority: 'high' },
       items: [],
       nextAfterIssueNumber: null,
     });
@@ -218,6 +220,11 @@ describe('selectDashboardIssuePageForUser', () => {
       limit: 26,
     });
     expect(calls[0]?.joinSql[1]).toContain('issue_number');
+    expect(calls[0]?.joinSql[1]).toContain('title');
+    expect(calls[0]?.joinSql[1]).toContain('status');
+    expect(calls[0]?.joinSql[1]).toContain('priority');
+    expect(calls[0]?.joinSql[1]).toContain('position');
+    expect(calls[0]?.joinSql[1]).toContain('lpad');
     expect(calls[0]?.joinSql[1]).toContain('<');
     expect(calls[0]?.joinSql[1]).toContain('30');
     expect(calls[0]?.orderBySql).toContain('desc');
@@ -295,6 +302,21 @@ describe('selectDashboardIssuePageForUser', () => {
 
     expect(calls[0]?.joinSql[1]).toContain('>');
     expect(calls[0]?.orderBySql).toContain('asc');
+  });
+
+  it('preserves an authorized empty project after all issue filters', async () => {
+    queryRows = [[makeCandidate(null)], [makeFinalMembership()]];
+    const { selectDashboardIssuePageForUser } =
+      await import('@/lib/dashboard/issues-database-read');
+
+    const result = await selectDashboardIssuePageForUser(input);
+
+    expect(result).toMatchObject({
+      project: { key: 'BV' },
+      filters: { query: 'BV-2', status: 'ready', priority: 'high' },
+      items: [],
+    });
+    expect(calls[0]?.whereParams).toBe('["user-1","BV"]');
   });
 
   it.each([

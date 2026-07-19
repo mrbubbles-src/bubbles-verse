@@ -20,6 +20,7 @@ const page: DashboardIssuePage = {
     currentUserRole: 'member',
   },
   sort: 'oldest',
+  filters: { query: 'oauth', status: 'ready', priority: 'high' },
   items: [],
   nextAfterIssueNumber: null,
 };
@@ -32,7 +33,14 @@ describe('readDashboardIssuePage', () => {
     await expect(
       readDashboardIssuePage(
         ' user-1 ',
-        { projectKey: ' bv ', sort: 'oldest', afterIssueNumber: 12 },
+        {
+          projectKey: ' bv ',
+          sort: 'oldest',
+          afterIssueNumber: 12,
+          query: ' oauth ',
+          status: 'ready',
+          priority: 'high',
+        },
         { readPage }
       )
     ).resolves.toEqual({ status: 'success', ...page });
@@ -41,6 +49,7 @@ describe('readDashboardIssuePage', () => {
       projectKey: 'BV',
       sort: 'oldest',
       afterIssueNumber: 12,
+      filters: { query: 'oauth', status: 'ready', priority: 'high' },
     });
   });
 
@@ -51,7 +60,11 @@ describe('readDashboardIssuePage', () => {
     await readDashboardIssuePage('user-1', { projectKey: 'BV' }, { readPage });
 
     expect(readPage).toHaveBeenCalledWith(
-      expect.objectContaining({ sort: 'newest', afterIssueNumber: null })
+      expect.objectContaining({
+        sort: 'newest',
+        afterIssueNumber: null,
+        filters: { query: null, status: null, priority: null },
+      })
     );
   });
 
@@ -78,6 +91,9 @@ describe('readDashboardIssuePage', () => {
       { projectKey: 'BV', afterIssueNumber: 2_147_483_648 },
       'invalid_cursor',
     ],
+    ['user-1', { projectKey: 'BV', query: 'x'.repeat(101) }, 'query_too_long'],
+    ['user-1', { projectKey: 'BV', status: 'unknown' }, 'invalid_status'],
+    ['user-1', { projectKey: 'BV', priority: 'urgent' }, 'invalid_priority'],
   ] as const)(
     'rejects invalid page input',
     async (authUserId, input, reason) => {
@@ -116,6 +132,27 @@ describe('readDashboardIssuePage', () => {
     ).resolves.toMatchObject({ status: 'success' });
     expect(readPage).toHaveBeenCalledWith(
       expect.objectContaining({ afterIssueNumber: 2_147_483_647 })
+    );
+  });
+
+  it('normalizes blank and all filters to the unfiltered contract', async () => {
+    const readPage = vi.fn<DashboardIssuePageReader>();
+    readPage.mockResolvedValue({
+      ...page,
+      sort: 'newest',
+      filters: { query: null, status: null, priority: null },
+    });
+
+    await readDashboardIssuePage(
+      'user-1',
+      { projectKey: 'BV', query: '  ', status: 'all', priority: 'all' },
+      { readPage }
+    );
+
+    expect(readPage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filters: { query: null, status: null, priority: null },
+      })
     );
   });
 });

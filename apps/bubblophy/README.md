@@ -395,8 +395,12 @@ bun run build
   Browser-DTO. Ein getrenntes server-only Detail lädt Deep Links unabhängig von
   Seite und Cursor einschließlich Beschreibung, Zeitpunkten und defensiv
   normalisiertem Latest Plan; Notes, Runs und Audit bleiben getrennt. Die
-  bestehende UI nutzt bis zur folgenden Integration weiterhin den vollständigen
-  Snapshot.
+  Page-Datengrenze validiert außerdem eine höchstens 100 Zeichen lange Suche in
+  Titel, Issue-Nummer und öffentlichem Key sowie einzelne Status- und
+  Prioritätsfilter. Alle Bedingungen bleiben im Membership-gebundenen
+  Left-Join, damit ein sichtbares Projekt ohne Treffer nicht als unzugänglich
+  erscheint. Die bestehende UI nutzt bis zur folgenden Integration weiterhin
+  den vollständigen Snapshot.
 - Sample-Daten markieren Agent-Tokens und Audit-Aktivität als Beispielvorschau.
   Wenn die Datenbank nicht bereit ist, bleibt der Snapshot leer und zeigt einen
   Setup-Hinweis statt Beispielprojekte als stillen Ersatz. Der Run-Bereich zeigt

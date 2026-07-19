@@ -124,6 +124,12 @@ Status: abgeschlossen.
   bindet Issue und neuesten Plan im selben Membership-Statement, normalisiert
   Plan-Schritte defensiv und revalidiert die Mitgliedschaft vor dem DTO. Notes,
   Runs, Audit und interne Datenbank-IDs bleiben außerhalb dieses Vertrags.
+- Der IssuePage-Read akzeptiert serverseitig validierte Suche über Titel,
+  Issue-Nummer und öffentlichen Key sowie je einen Status- und Prioritätsfilter.
+  Suche und Filter sitzen mit dem Cursor im Issue-Join, sodass sichtbare
+  Projekte ohne Treffer als leere Ergebnisse erhalten bleiben. Ein realer
+  Datenbank-EXPLAIN und daraus abgeleitete Such-/Composite-Indizes bleiben vor
+  dem Deployment ein eigener Härtungsslice.
 - Suche, Filter, Sortierung und Pagination für Projekte, Issues, Runs und
   Audit-Ereignisse ergänzen.
 - Filterzustand in URL und Deep Links stabil halten.
@@ -182,6 +188,7 @@ session-synchronisierte Identitäts-UX gemäß
 Membership- und Rollenbindung aller Dashboard-Datengruppen ist ebenfalls
 abgeschlossen. Die verständliche Rollenrechte-Erklärung ist ebenfalls im UI
 vorhanden. Die begrenzten server-only IssuePage- und direkten IssueDetail-
-Verträge sind ebenfalls vorhanden; als Nächstes folgt ihre Queue-/URL-
-Integration für Suche, Filter und Sortierung. Die MCP-Grundlage bleibt unter
+Verträge einschließlich des serverseitigen IssuePage-Filtervertrags sind
+ebenfalls vorhanden; als Nächstes folgt ihre Queue-/URL-Integration. Die
+MCP-Grundlage bleibt unter
 `docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md` dokumentiert.

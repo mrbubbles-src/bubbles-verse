@@ -20,7 +20,7 @@ import {
   mapBubblophyIssuePlanSteps,
 } from '@/lib/issues/repository';
 
-import { and, asc, desc, eq, gt, lt, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, lt, or, sql } from 'drizzle-orm';
 
 import { db } from '@/drizzle/db';
 import {
@@ -122,9 +122,24 @@ export async function selectDashboardIssuePageForUser(
       : input.sort === 'newest'
         ? lt(bubblophyIssues.issueNumber, input.afterIssueNumber)
         : gt(bubblophyIssues.issueNumber, input.afterIssueNumber);
-  const issueJoinCondition = cursorCondition
-    ? and(eq(bubblophyIssues.projectId, bubblophyProjects.id), cursorCondition)
-    : eq(bubblophyIssues.projectId, bubblophyProjects.id);
+  const queryCondition = input.filters.query
+    ? or(
+        sql`position(lower(${input.filters.query}) in lower(${bubblophyIssues.title})) > 0`,
+        sql`position(${input.filters.query} in ${bubblophyIssues.issueNumber}::text) > 0`,
+        sql`position(lower(${input.filters.query}) in lower(${bubblophyProjects.key} || '-' || lpad(${bubblophyIssues.issueNumber}::text, 2, '0'))) > 0`
+      )
+    : undefined;
+  const issueJoinCondition = and(
+    eq(bubblophyIssues.projectId, bubblophyProjects.id),
+    cursorCondition,
+    input.filters.status
+      ? eq(bubblophyIssues.status, input.filters.status)
+      : undefined,
+    input.filters.priority
+      ? eq(bubblophyIssues.priority, input.filters.priority)
+      : undefined,
+    queryCondition
+  );
   const candidateRows = (await db
     .select({
       projectId: bubblophyProjects.id,
@@ -187,6 +202,7 @@ export async function selectDashboardIssuePageForUser(
       currentUserRole: finalMembership.currentUserRole,
     },
     sort: input.sort,
+    filters: input.filters,
     items,
     nextAfterIssueNumber:
       candidateRows.length > DASHBOARD_ISSUE_PAGE_SIZE && lastItem

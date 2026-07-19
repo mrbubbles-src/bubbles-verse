@@ -9,6 +9,10 @@
 - Added a direct membership-scoped dashboard issue-detail contract for deep
   links outside the current page, including one defensively normalized latest
   plan while excluding internal database IDs, notes, runs, and audit data.
+- Added server-validated issue-page search across title, issue number, and
+  public key plus single status and priority filters, preserving authorized
+  empty projects by keeping every issue condition inside the membership-bound
+  left join.
 - Added the Bubblophy Phase 2 roadmap and the detailed first-slice plan for a
   provider-neutral Remote MCP using personal Supabase OAuth 2.1 access.
 - Hardened relative auth redirects, contributor/viewer mutation boundaries,
