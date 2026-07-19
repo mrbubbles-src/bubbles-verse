@@ -45,6 +45,13 @@ type RoleByProjectId = Record<
   string,
   BubblophyProjectIssueMembershipRow['projectCurrentUserRole']
 >;
+type VisibleProjectMembership = {
+  projectId: string;
+  projectKey: string;
+  role: NonNullable<
+    BubblophyProjectIssueMembershipRow['projectCurrentUserRole']
+  >;
+};
 
 /**
  * Loads the read-only Bubblophy project and issue dashboard for one user.
@@ -82,7 +89,9 @@ export async function loadBubblophyProjectIssueSnapshotFromDatabase(
 export async function selectBubblophyDashboardRowsForUser(
   authUserId: string
 ): Promise<BubblophyDashboardPersistenceRows> {
-  const projectIds = await selectVisibleProjectIdsForUser(authUserId);
+  const candidateMemberships =
+    await selectVisibleProjectMembershipsForUser(authUserId);
+  const projectIds = candidateMemberships.map((row) => row.projectId);
 
   if (projectIds.length === 0) {
     return {
@@ -108,13 +117,122 @@ export async function selectBubblophyDashboardRowsForUser(
     selectBubblophyProjectActivityRowsForProjectIds(projectIds),
   ]);
 
-  return {
+  const rows = {
     projectIssueRows,
     projectMemberRows,
     agentTokenRows,
     agentRunRows,
     activityRows,
   };
+  const currentMemberships =
+    await selectVisibleProjectMembershipsForUser(authUserId);
+
+  return restrictDashboardRowsToCurrentMemberships(
+    rows,
+    candidateMemberships,
+    currentMemberships,
+    authUserId
+  );
+}
+
+/**
+ * Applies the final membership gate immediately before dashboard DTO mapping.
+ *
+ * Project IDs from the first lookup only bound the parallel queries. This
+ * second lookup is authoritative: a membership removed while those queries
+ * ran cannot leave project, issue, member, token, run, or activity rows in the
+ * returned snapshot. Missing project rows also fail closed for key-only DTOs.
+ *
+ * @param rows Data groups loaded through the initial project-ID bound.
+ * @param candidateMemberships Memberships used to bound the initial queries.
+ * @param currentMemberships Project memberships visible at the final gate.
+ * @param authUserId Current verified session user for self e-mail visibility.
+ * @returns Rows restricted to projects still visible to the current user.
+ */
+function restrictDashboardRowsToCurrentMemberships(
+  rows: BubblophyDashboardPersistenceRows,
+  candidateMemberships: VisibleProjectMembership[],
+  currentMemberships: VisibleProjectMembership[],
+  authUserId: string
+): BubblophyDashboardPersistenceRows {
+  const projectIssueRows = restrictProjectIssueRowsToCurrentMemberships(
+    rows.projectIssueRows,
+    currentMemberships
+  );
+  const currentProjectIds = new Set(
+    projectIssueRows.map((row) => row.projectId)
+  );
+  const candidateProjectKeyById = new Map(
+    candidateMemberships.map((row) => [row.projectId, row.projectKey])
+  );
+  const stableProjectKeys = new Set(
+    currentMemberships
+      .filter(
+        (row) =>
+          currentProjectIds.has(row.projectId) &&
+          candidateProjectKeyById.get(row.projectId) === row.projectKey
+      )
+      .map((row) => row.projectKey)
+  );
+  const currentRoleByProjectKey = new Map(
+    currentMemberships.map((row) => [row.projectKey, row.role])
+  );
+
+  return {
+    projectIssueRows,
+    projectMemberRows: rows.projectMemberRows
+      .filter((row) => stableProjectKeys.has(row.projectKey))
+      .map((row) => {
+        const currentRole = currentRoleByProjectKey.get(row.projectKey);
+        const canReadEmail =
+          currentRole === 'owner' ||
+          currentRole === 'maintainer' ||
+          row.authUserId === authUserId;
+
+        return canReadEmail ? row : { ...row, normalizedEmail: null };
+      }),
+    agentTokenRows: rows.agentTokenRows.filter((row) =>
+      stableProjectKeys.has(row.projectKey)
+    ),
+    agentRunRows: rows.agentRunRows.filter((row) =>
+      stableProjectKeys.has(row.projectKey)
+    ),
+    activityRows: rows.activityRows.filter(
+      (row) => row.projectKey && stableProjectKeys.has(row.projectKey)
+    ),
+  };
+}
+
+/**
+ * Restricts project/issue rows to final memberships and refreshes their roles.
+ *
+ * @param rows Candidate project/issue rows from the initial membership bound.
+ * @param currentMemberships Authoritative memberships at the final gate.
+ * @returns Current rows with final project roles.
+ */
+function restrictProjectIssueRowsToCurrentMemberships(
+  rows: BubblophyProjectIssuePersistenceRow[],
+  currentMemberships: VisibleProjectMembership[]
+): BubblophyProjectIssuePersistenceRow[] {
+  const currentMembershipByProjectId = new Map(
+    currentMemberships.map((row) => [row.projectId, row])
+  );
+
+  return rows.flatMap((row) => {
+    const currentMembership = currentMembershipByProjectId.get(row.projectId);
+
+    if (!currentMembership) {
+      return [];
+    }
+
+    return [
+      {
+        ...row,
+        projectKey: currentMembership.projectKey,
+        projectCurrentUserRole: currentMembership.role,
+      },
+    ];
+  });
 }
 
 /**
@@ -129,30 +247,45 @@ export async function selectBubblophyDashboardRowsForUser(
 export async function selectBubblophyProjectIssueRowsForUser(
   authUserId: string
 ): Promise<BubblophyProjectIssuePersistenceRow[]> {
-  const projectIds = await selectVisibleProjectIdsForUser(authUserId);
+  const candidateMemberships =
+    await selectVisibleProjectMembershipsForUser(authUserId);
+  const projectIds = candidateMemberships.map((row) => row.projectId);
 
   if (projectIds.length === 0) {
     return [];
   }
 
-  return selectBubblophyProjectIssueRowsForProjectIds(authUserId, projectIds);
+  const rows = await selectBubblophyProjectIssueRowsForProjectIds(
+    authUserId,
+    projectIds
+  );
+  const currentMemberships =
+    await selectVisibleProjectMembershipsForUser(authUserId);
+
+  return restrictProjectIssueRowsToCurrentMemberships(rows, currentMemberships);
 }
 
 /**
- * Selects project IDs where the user has a project membership.
+ * Selects project identity and role rows for the current user's memberships.
  *
  * @param authUserId Supabase Auth user ID from the authorized human session.
- * @returns Visible project IDs for subsequent read queries.
+ * @returns Visible project IDs, keys, and current roles.
  */
-async function selectVisibleProjectIdsForUser(authUserId: string) {
-  const membershipRows = await db
+async function selectVisibleProjectMembershipsForUser(
+  authUserId: string
+): Promise<VisibleProjectMembership[]> {
+  return db
     .select({
       projectId: bubblophyProjectMembers.projectId,
+      projectKey: bubblophyProjects.key,
+      role: bubblophyProjectMembers.role,
     })
     .from(bubblophyProjectMembers)
+    .innerJoin(
+      bubblophyProjects,
+      eq(bubblophyProjects.id, bubblophyProjectMembers.projectId)
+    )
     .where(eq(bubblophyProjectMembers.authUserId, authUserId));
-
-  return membershipRows.map((row) => row.projectId);
 }
 
 /**

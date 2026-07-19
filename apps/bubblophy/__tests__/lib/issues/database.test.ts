@@ -150,6 +150,8 @@ const tableRows = {
   memberships: [
     {
       projectId: 'project_visible',
+      projectKey: 'BV',
+      role: 'owner',
     },
   ],
   plans: [
@@ -185,6 +187,8 @@ const tableRows = {
 } satisfies Record<string, MockRow[]>;
 
 const calls: QueryCall[] = [];
+let membershipReadResults: (MockRow[] | Error)[] = [];
+let tableRowOverrides: Partial<Record<keyof typeof tableRows, MockRow[]>> = {};
 
 class MockSelectQuery implements PromiseLike<MockRow[]> {
   private readonly call: QueryCall;
@@ -267,58 +271,71 @@ vi.mock('@/drizzle/db', () => ({
 function rowsForCall(call: QueryCall): MockRow[] {
   if (call.tableName === 'bubblophy_project_members') {
     if (call.groupByCalled) {
-      return tableRows.memberCounts;
+      return rowsForTable('memberCounts');
     }
 
     if (call.selectedKeys.includes('role') && call.selectedKeys.length === 2) {
-      return tableRows.memberRoles;
+      return rowsForTable('memberRoles');
     }
 
     if (call.selectedKeys.includes('authUserId')) {
-      return tableRows.projectMembers;
+      return rowsForTable('projectMembers');
     }
 
-    return tableRows.memberships;
+    const result = membershipReadResults.shift() ?? tableRows.memberships;
+
+    if (result instanceof Error) {
+      throw result;
+    }
+
+    return result;
   }
 
   if (call.tableName === 'bubblophy_projects') {
-    return tableRows.projects;
+    return rowsForTable('projects');
   }
 
   if (call.tableName === 'bubblophy_agent_tokens') {
     return call.groupByCalled
-      ? tableRows.agentTokenCounts
-      : tableRows.agentTokens;
+      ? rowsForTable('agentTokenCounts')
+      : rowsForTable('agentTokens');
   }
 
   if (call.tableName === 'bubblophy_issues') {
-    return tableRows.issues;
+    return rowsForTable('issues');
   }
 
   if (call.tableName === 'bubblophy_issue_plans') {
-    return tableRows.plans;
+    return rowsForTable('plans');
   }
 
   if (call.tableName === 'bubblophy_agent_runs') {
-    return tableRows.agentRuns;
+    return rowsForTable('agentRuns');
   }
 
   if (call.tableName === 'bubblophy_project_events') {
-    return tableRows.projectEvents;
+    return rowsForTable('projectEvents');
   }
 
   if (call.tableName === 'bubblophy_issue_events') {
     return call.selectedKeys.includes('payload')
-      ? tableRows.issueNoteEvents
-      : tableRows.issueEvents;
+      ? rowsForTable('issueNoteEvents')
+      : rowsForTable('issueEvents');
   }
 
   return [];
 }
 
+/** Returns a per-test table override or the shared default fixture rows. */
+function rowsForTable(table: keyof typeof tableRows): MockRow[] {
+  return tableRowOverrides[table] ?? tableRows[table];
+}
+
 describe('selectBubblophyDashboardRowsForUser', () => {
   afterEach(() => {
     calls.length = 0;
+    membershipReadResults = [];
+    tableRowOverrides = {};
     dbMock.select.mockClear();
   });
 
@@ -443,4 +460,185 @@ describe('selectBubblophyDashboardRowsForUser', () => {
     expect(selectedKeys).not.toContain('plaintextToken');
     expect(selectedKeys).not.toContain('requestedByAuthUserId');
   });
+
+  it('drops every row group when membership disappears before the final gate', async () => {
+    membershipReadResults = [tableRows.memberships, []];
+    const { selectBubblophyDashboardRowsForUser } =
+      await import('@/lib/issues/database');
+
+    await expect(
+      selectBubblophyDashboardRowsForUser('user_owner')
+    ).resolves.toEqual({
+      projectIssueRows: [],
+      projectMemberRows: [],
+      agentTokenRows: [],
+      agentRunRows: [],
+      activityRows: [],
+    });
+  });
+
+  it('refreshes roles and redacts foreign e-mails after manager demotion', async () => {
+    membershipReadResults = [
+      tableRows.memberships,
+      [{ projectId: 'project_visible', projectKey: 'BV', role: 'member' }],
+    ];
+    const { selectBubblophyDashboardRowsForUser } =
+      await import('@/lib/issues/database');
+    const restricted = await selectBubblophyDashboardRowsForUser('user_owner');
+
+    expect(restricted.projectIssueRows[0]?.projectCurrentUserRole).toBe(
+      'member'
+    );
+    expect(restricted.projectMemberRows).toEqual([
+      expect.objectContaining({
+        authUserId: 'user_owner',
+        normalizedEmail: 'owner@example.test',
+      }),
+      expect.objectContaining({
+        authUserId: 'user_viewer',
+        normalizedEmail: null,
+      }),
+    ]);
+  });
+
+  it('fails closed when the final membership lookup fails', async () => {
+    membershipReadResults = [
+      tableRows.memberships,
+      new Error('membership lookup failed'),
+    ];
+    const { selectBubblophyDashboardRowsForUser } =
+      await import('@/lib/issues/database');
+
+    await expect(
+      selectBubblophyDashboardRowsForUser('user_owner')
+    ).rejects.toThrow('membership lookup failed');
+  });
+
+  it('drops key-only rows when a remaining project reuses a revoked project key', async () => {
+    const candidateMemberships = [
+      { projectId: 'project_a', projectKey: 'OLD', role: 'owner' },
+      { projectId: 'project_b', projectKey: 'NEW', role: 'owner' },
+    ];
+    membershipReadResults = [
+      candidateMemberships,
+      [{ projectId: 'project_b', projectKey: 'OLD', role: 'owner' }],
+    ];
+    tableRowOverrides = createProjectKeyReuseRows();
+    const { selectBubblophyDashboardRowsForUser } =
+      await import('@/lib/issues/database');
+
+    const rows = await selectBubblophyDashboardRowsForUser('user_owner');
+
+    expect(rows.projectIssueRows).toEqual([
+      expect.objectContaining({
+        projectId: 'project_b',
+        projectKey: 'OLD',
+      }),
+    ]);
+    expect(rows.projectMemberRows).toEqual([]);
+    expect(rows.agentTokenRows).toEqual([]);
+    expect(rows.agentRunRows).toEqual([]);
+    expect(rows.activityRows).toEqual([]);
+  });
 });
+
+describe('selectBubblophyProjectIssueRowsForUser', () => {
+  afterEach(() => {
+    calls.length = 0;
+    membershipReadResults = [];
+    tableRowOverrides = {};
+    dbMock.select.mockClear();
+  });
+
+  it('drops project rows when membership disappears before its final gate', async () => {
+    membershipReadResults = [tableRows.memberships, []];
+    const { selectBubblophyProjectIssueRowsForUser } =
+      await import('@/lib/issues/database');
+
+    await expect(
+      selectBubblophyProjectIssueRowsForUser('user_owner')
+    ).resolves.toEqual([]);
+  });
+});
+
+/** Builds two candidate projects for the concurrent key-reuse regression. */
+function createProjectKeyReuseRows(): Partial<
+  Record<keyof typeof tableRows, MockRow[]>
+> {
+  return {
+    projects: [
+      {
+        id: 'project_a',
+        key: 'OLD',
+        name: 'Project A',
+        description: 'Revoked project',
+        isArchived: false,
+      },
+      {
+        id: 'project_b',
+        key: 'NEW',
+        name: 'Project B',
+        description: 'Remaining project',
+        isArchived: false,
+      },
+    ],
+    memberRoles: [
+      { projectId: 'project_a', role: 'owner' },
+      { projectId: 'project_b', role: 'owner' },
+    ],
+    memberCounts: [
+      { projectId: 'project_a', total: 1 },
+      { projectId: 'project_b', total: 1 },
+    ],
+    agentTokenCounts: [
+      { projectId: 'project_a', total: 1 },
+      { projectId: 'project_b', total: 0 },
+    ],
+    issues: [],
+    projectMembers: [
+      {
+        projectKey: 'OLD',
+        authUserId: 'user_a',
+        displayName: 'Project A member',
+        normalizedEmail: 'a@example.test',
+        role: 'member',
+        createdAt: '2026-06-13T10:00:00.000Z',
+      },
+    ],
+    agentTokens: [
+      {
+        id: 'token_a',
+        label: 'Project A token',
+        projectKey: 'OLD',
+        scopes: ['projects:read'],
+        state: 'active',
+        lastUsedAt: null,
+        expiresAt: null,
+      },
+    ],
+    agentRuns: [
+      {
+        id: 'run_a',
+        projectKey: 'OLD',
+        issueNumber: 1,
+        agentTokenLabel: 'Project A token',
+        state: 'requested',
+        updatedAt: '2026-06-13T16:15:00.000Z',
+      },
+    ],
+    projectEvents: [
+      {
+        id: 'event_a',
+        summary: 'Project A event',
+        actorAuthUserId: 'user_a',
+        actorAgentTokenLabel: null,
+        createdAt: '2026-06-13T16:00:00.000Z',
+        projectKey: 'OLD',
+        issueNumber: null,
+      },
+    ],
+    issueEvents: [],
+    issueNoteEvents: [],
+    plans: [],
+  };
+}

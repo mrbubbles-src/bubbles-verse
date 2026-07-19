@@ -375,6 +375,10 @@ bun run build
 - Der Datenbank-Snapshot liest Planinhalte nur über membership-scoped Issues.
   Ungültige oder leere JSONB-Step-Einträge werden nicht gerendert; ohne
   Planversion bleibt die UI im echten Empty-State.
+- Die erste Membership-Abfrage begrenzt nur die Dashboard-Kandidaten. Direkt
+  vor dem DTO-Mapping werden aktuelle Mitgliedschaften und Rollen erneut
+  fail-closed gebunden; Entzug entfernt sämtliche betroffenen Datengruppen und
+  eine Manager-Demotion redigiert fremde E-Mail-Adressen erneut.
 - Sample-Daten markieren Agent-Tokens und Audit-Aktivität als Beispielvorschau.
   Wenn die Datenbank nicht bereit ist, bleibt der Snapshot leer und zeigt einen
   Setup-Hinweis statt Beispielprojekte als stillen Ersatz. Der Run-Bereich zeigt

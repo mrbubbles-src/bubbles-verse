@@ -73,10 +73,6 @@ persönlich authentifizierter Remote-MCP mit Supabase OAuth 2.1.
   Runtime-Umgebungen, Monitoring und Backup-/Restore-Strategie.
 - RLS-Policies und Security-Verträge vor Remote-/Produktionsnutzung nochmal
   gesondert reviewen.
-- Den vorbestehenden zweistufigen Dashboard-Read für Issues, Runs,
-  Token-Summaries und Aktivität gegen parallelen Mitgliedschaftsentzug härten;
-  der neue Profil-Read bindet die Actor-Mitgliedschaft bereits im selben
-  Statement.
 - Optional weitere Agent-Endpoints erst nach separatem Sicherheitsdesign
   ergänzen, z. B. für planbare, eng gescopte Schreiboperationen.
 - Produktpolitur für größere Teams: Aktivitätsfilter, Kommentar-Threads,

@@ -93,6 +93,9 @@
 - Added server-synchronized display profiles with closed direct RLS access,
   membership-scoped names, manager/self-only e-mail visibility, stable
   assignee ID/label separation, and technical Auth IDs only as a fallback.
+- Closed the dashboard membership-read race with a final fail-closed
+  membership and role gate across projects, issues, members, tokens, runs, and
+  activity, including renewed co-member e-mail redaction after role demotion.
 
 All notable changes to this project will be documented in this file.
 

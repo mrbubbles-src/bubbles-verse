@@ -124,10 +124,11 @@ Status: abgeschlossen.
 
 ### 7. Dauerhafte Qualitätsgates
 
-- Den vorbestehenden zweistufigen Dashboard-Read für Projekte, Issues,
-  Token-Summaries, Runs und Aktivität in einem eigenen Security-Slice härten:
-  Die Actor-Mitgliedschaft muss beim jeweiligen Daten-Read erneut im selben
-  Statement oder in einer gleichwertig konsistenten Grenze gebunden sein.
+- Der zweistufige Dashboard-Read ist gehärtet: Die erste Membership-Abfrage
+  begrenzt nur die Kandidaten. Ein zweites, fail-closed Gate bindet unmittelbar
+  vor dem DTO-Mapping alle Projekt-, Issue-, Mitglieder-, Token-, Run- und
+  Aktivitätszeilen erneut an die aktuelle Mitgliedschaft und Rolle. Nach einer
+  Rollen-Demotion werden fremde E-Mail-Adressen erneut redigiert.
 - Kritische UI-Flows in stabilen Viewports automatisiert prüfen.
 - OAuth-/MCP-Verbindungsaufbau mit Test-Identitäten und getrennten
   Projektmitgliedschaften abdecken.
@@ -161,7 +162,9 @@ MCP-Audience bleibt der Zugriff fail-closed. Der reale Codex-/Claude-Staging-
 Smoke bleibt bis zum gemeinsamen Deployment geparkt. Der lokale Rollen- und
 Einladungsbereich besitzt nach der Manager-UX nun auch die
 session-synchronisierte Identitäts-UX gemäß
-`docs/superpowers/plans/2026-07-18-bubblophy-roles-invitations.md`. Als nächster
-Security-Slice folgt die erneute Membership-Bindung aller übrigen
-Dashboard-Datengruppen; die MCP-Grundlage bleibt unter
+`docs/superpowers/plans/2026-07-18-bubblophy-roles-invitations.md`. Die erneute
+Membership- und Rollenbindung aller Dashboard-Datengruppen ist ebenfalls
+abgeschlossen. Als nächster Rollen-Slice folgt die verständliche Erklärung der
+Rechte von Owner, Maintainer, Member und Viewer im UI; die MCP-Grundlage bleibt
+unter
 `docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md` dokumentiert.
