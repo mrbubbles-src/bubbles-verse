@@ -393,8 +393,11 @@ bun run build
   bleiben in derselben Datenbankabfrage; ein finales Membership-Gate liefert
   Rolle und Archivzustand und verhindert interne Projekt-/Issue-IDs im
   Browser-DTO. Ein getrenntes server-only Detail lädt Deep Links unabhängig von
-  Seite und Cursor einschließlich Beschreibung, Zeitpunkten und defensiv
-  normalisiertem Latest Plan; Notes, Runs und Audit bleiben getrennt. Die
+  Seite und Cursor einschließlich Beschreibung, Zeitpunkten, defensiv
+  normalisiertem Latest Plan und den neuesten 50 explizit markierten
+  Issue-Notizen. Allgemeine `commented`-Audit-Events zählen nicht als Notiz;
+  ältere Notizen werden ehrlich als noch nicht geladen markiert. Runs und
+  allgemeines Audit bleiben getrennt. Die
   Page-Datengrenze validiert außerdem eine höchstens 100 Zeichen lange Suche in
   Titel, Issue-Nummer und öffentlichem Key sowie einzelne Status- und
   Prioritätsfilter. Alle Bedingungen bleiben im Membership-gebundenen
@@ -409,9 +412,9 @@ bun run build
   `not_found` am Page-Gate redigiert alle Snapshot-Datengruppen des betroffenen
   Projekts und verwirft konkurrierende Details fail-closed; revalidierte Rollen
   und Archivstände steuern die Issue-Aktionen. Die projektübergreifende
-  Übersicht, Metriken, Run-Auflösung und bestehende Issue-Notes hängen
-  übergangsweise noch am vollständigen Snapshot; dessen Ablösung und ein
-  vollständiger begrenzter Notes-Read bleiben eigene Skalierungsslices.
+  Übersicht, Metriken und Run-Auflösung hängen übergangsweise noch am
+  vollständigen Snapshot. Auch dessen alte Plan-/Notes-Abfragen laufen bis zur
+  Ablösung weiter, obwohl konkrete Details ihre Notizen jetzt begrenzt laden.
 - Sample-Daten markieren Agent-Tokens und Audit-Aktivität als Beispielvorschau.
   Wenn die Datenbank nicht bereit ist, bleibt der Snapshot leer und zeigt einen
   Setup-Hinweis statt Beispielprojekte als stillen Ersatz. Der Run-Bereich zeigt

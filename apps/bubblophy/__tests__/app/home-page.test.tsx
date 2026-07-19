@@ -448,6 +448,8 @@ describe('Bubblophy home page', () => {
         createdAt: '2026-07-19T09:00:00.000Z',
         updatedAt: '2026-07-19T10:00:00.000Z',
         latestPlan: null,
+        notes: [],
+        hasMoreNotes: false,
       },
     } satisfies ReadDashboardIssueDetailResult;
 
@@ -560,6 +562,8 @@ describe('Bubblophy home page', () => {
         createdAt: '2026-07-19T09:00:00.000Z',
         updatedAt: '2026-07-19T10:00:00.000Z',
         latestPlan: null,
+        notes: [],
+        hasMoreNotes: false,
       },
     } satisfies ReadDashboardIssueDetailResult;
 
@@ -634,6 +638,8 @@ describe('Bubblophy home page', () => {
         createdAt: '2026-07-19T09:00:00.000Z',
         updatedAt: '2026-07-19T10:00:00.000Z',
         latestPlan: null,
+        notes: [],
+        hasMoreNotes: false,
       },
     } satisfies ReadDashboardIssueDetailResult;
 

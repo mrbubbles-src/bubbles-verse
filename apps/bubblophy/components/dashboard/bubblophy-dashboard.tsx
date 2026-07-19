@@ -87,6 +87,7 @@ import {
   projectHealthLabels,
 } from '@/lib/dashboard/labels';
 import { getIssueReadinessPercent } from '@/lib/dashboard/metrics';
+import { DASHBOARD_ISSUE_NOTE_LIMIT } from '@/lib/dashboard/types';
 import {
   canContributeToBubblophyProject,
   canManageBubblophyProject,
@@ -562,6 +563,43 @@ function applyIssueStatusMetricOverlays({
 }
 
 /**
+ * Merges unconfirmed local notes over the authoritative bounded server list.
+ *
+ * Server-confirmed IDs keep their server order. Only still-pending notes are
+ * prepended, duplicates are removed, and the visible contract stays at 50.
+ *
+ * @param serverNotes Authoritative newest-first notes from the detail read.
+ * @param pendingNotes Successful writes not yet present in the server read.
+ * @param serverHasMoreNotes Whether the server already truncated older notes.
+ * @returns Bounded notes plus an honest older-history marker.
+ */
+function mergeBoundedIssueNotes(
+  serverNotes: IssueNoteSummary[],
+  pendingNotes: IssueNoteSummary[],
+  serverHasMoreNotes: boolean
+): { notes: IssueNoteSummary[]; hasMoreNotes: boolean } {
+  const serverNoteIds = new Set(serverNotes.map((note) => note.id));
+  const seenNoteIds = new Set<string>();
+  const mergedNotes = [
+    ...pendingNotes.filter((note) => !serverNoteIds.has(note.id)),
+    ...serverNotes,
+  ].filter((note) => {
+    if (seenNoteIds.has(note.id)) {
+      return false;
+    }
+
+    seenNoteIds.add(note.id);
+    return true;
+  });
+
+  return {
+    notes: mergedNotes.slice(0, DASHBOARD_ISSUE_NOTE_LIMIT),
+    hasMoreNotes:
+      serverHasMoreNotes || mergedNotes.length > DASHBOARD_ISSUE_NOTE_LIMIT,
+  };
+}
+
+/**
  * Renders the first Bubblophy command-center screen.
  *
  * Use this component with a `DashboardSnapshot` DTO from either local sample
@@ -611,8 +649,8 @@ export function BubblophyDashboard({
   const [issuePlansById, setIssuePlansById] = useState<
     Record<string, IssuePlanDraft>
   >({});
-  const [issueNotesById, setIssueNotesById] = useState<
-    Record<string, IssueNoteSummary[]>
+  const [pendingIssueNotesById, setPendingIssueNotesById] = useState<
+    Record<string, { notes: IssueNoteSummary[]; hasMoreNotes: boolean }>
   >({});
   const [updatedIssuesById, setUpdatedIssuesById] = useState<
     Record<string, IssueSummary>
@@ -853,13 +891,24 @@ export function BubblophyDashboard({
         const updatedIssue = updatedIssuesById[issue.id];
         const plan =
           issuePlansById[issue.id] ?? getPersistedIssuePlanDraft(issue);
-        const notes = issueNotesById[issue.id] ?? issue.notes;
         const issueWithUpdate = updatedIssue
           ? { ...issue, ...updatedIssue }
           : issue;
-        const issueWithNotes = notes
-          ? { ...issueWithUpdate, notes }
-          : issueWithUpdate;
+        const pendingNoteState = pendingIssueNotesById[issue.id];
+        const issueWithNotes =
+          pendingNoteState || issueWithUpdate.notes
+            ? {
+                ...issueWithUpdate,
+                ...mergeBoundedIssueNotes(
+                  issueWithUpdate.notes ?? [],
+                  pendingNoteState?.notes ?? [],
+                  Boolean(
+                    issueWithUpdate.hasMoreNotes ||
+                    pendingNoteState?.hasMoreNotes
+                  )
+                ),
+              }
+            : issueWithUpdate;
         const issueWithAssignee = {
           ...issueWithNotes,
           assigneeLabel: getIssueAssigneeLabel(
@@ -880,7 +929,7 @@ export function BubblophyDashboard({
     [
       allProjectMembers,
       baseIssues,
-      issueNotesById,
+      pendingIssueNotesById,
       issuePlansById,
       visibleLocalDrafts,
       updatedIssuesById,
@@ -1369,15 +1418,18 @@ export function BubblophyDashboard({
   };
 
   const handleIssueNoteCreated = (issueId: string, note: IssueNoteSummary) => {
-    const currentIssue = allIssues.find((issue) => issue.id === issueId);
+    setPendingIssueNotesById((currentNotes) => {
+      const currentNoteState = currentNotes[issueId];
 
-    setIssueNotesById((currentNotes) => ({
-      ...currentNotes,
-      [issueId]: [
-        note,
-        ...(currentNotes[issueId] ?? currentIssue?.notes ?? []),
-      ],
-    }));
+      return {
+        ...currentNotes,
+        [issueId]: mergeBoundedIssueNotes(
+          [],
+          [note, ...(currentNoteState?.notes ?? [])],
+          currentNoteState?.hasMoreNotes ?? false
+        ),
+      };
+    });
     setRecentMutationFeedback(`Notiz für ${issueId} wurde gespeichert.`);
     refreshDatabaseSnapshot();
   };
@@ -4329,6 +4381,12 @@ function IssueNotesPanel({
           ))}
         </ol>
       )}
+
+      {issue.hasMoreNotes ? (
+        <p className="text-xs text-muted-foreground">
+          Ältere Notizen sind in dieser Ansicht noch nicht geladen.
+        </p>
+      ) : null}
 
       {canPersistIssueNotes && createIssueNoteAction ? (
         <form

@@ -105,6 +105,15 @@ describe('dashboard issue read-model mapping', () => {
           summary: 'Detailplan',
           steps: [{ id: 'step_1', text: 'Direkt öffnen' }],
         },
+        notes: [
+          {
+            id: 'note-server',
+            note: 'Begrenzte Servernotiz',
+            actor: 'Mensch',
+            createdAt: '2026-07-19T10:00:00.000Z',
+          },
+        ],
+        hasMoreNotes: true,
       },
     };
 
@@ -139,7 +148,8 @@ describe('dashboard issue read-model mapping', () => {
         summary: 'Detailplan',
         steps: [{ id: 'step_1', text: 'Direkt öffnen' }],
       },
-      notes: [{ id: 'note-1', note: 'Bestehende Notiz' }],
+      notes: [{ id: 'note-server', note: 'Begrenzte Servernotiz' }],
+      hasMoreNotes: true,
       approvalRequired: false,
     });
   });

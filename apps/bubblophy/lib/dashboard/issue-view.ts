@@ -74,6 +74,8 @@ export function mapDashboardIssueDetailToSummary(
       : 'Nicht zugewiesen',
     planSteps: detail.issue.latestPlan?.steps.length ?? 0,
     latestPlan: detail.issue.latestPlan ?? undefined,
+    notes: detail.issue.notes,
+    hasMoreNotes: detail.issue.hasMoreNotes,
     approvalRequired: detail.issue.requiresHumanApproval,
   };
 }

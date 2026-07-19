@@ -5,7 +5,10 @@ import type {
   BubblophyIssueStatus,
   BubblophyProjectRole,
 } from '@/drizzle/db/schema';
-import type { IssuePlanStepSummary } from '@/lib/dashboard/types';
+import type {
+  IssueNoteSummary,
+  IssuePlanStepSummary,
+} from '@/lib/dashboard/types';
 
 import {
   DASHBOARD_ISSUE_QUERY_MAX_LENGTH,
@@ -72,6 +75,8 @@ export interface DashboardIssueDetail {
       summary: string;
       steps: IssuePlanStepSummary[];
     } | null;
+    notes: IssueNoteSummary[];
+    hasMoreNotes: boolean;
   };
 }
 

@@ -8,7 +8,8 @@
   issue IDs in the browser DTO.
 - Added a direct membership-scoped dashboard issue-detail contract for deep
   links outside the current page, including one defensively normalized latest
-  plan while excluding internal database IDs, notes, runs, and audit data.
+  plan and the newest 50 explicit issue notes. Older note history is reported
+  as truncated; internal database IDs, runs, and general audit data stay out.
 - Added server-validated issue-page search across title, issue number, and
   public key plus single status and priority filters, preserving authorized
   empty projects by keeping every issue condition inside the membership-bound

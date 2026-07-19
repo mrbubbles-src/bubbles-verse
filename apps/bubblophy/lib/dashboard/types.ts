@@ -28,6 +28,8 @@ export type AgentTokenState =
 
 export type ProjectMemberRole = 'owner' | 'maintainer' | 'member' | 'viewer';
 
+export const DASHBOARD_ISSUE_NOTE_LIMIT = 50;
+
 export interface ProjectSummary {
   id: string;
   name: string;
@@ -55,6 +57,7 @@ export interface IssueSummary {
   planSteps: number;
   latestPlan?: IssuePlanSummary;
   notes?: IssueNoteSummary[];
+  hasMoreNotes?: boolean;
   approvalRequired: boolean;
 }
 

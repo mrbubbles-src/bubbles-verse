@@ -155,6 +155,7 @@ function makeDetailCandidate(
   return {
     projectId: 'project_bv',
     projectKey: 'BV',
+    issueId: 'issue_bv_99',
     issueNumber: 99,
     issueTitle: 'Direkter Deep Link',
     issueDescription: 'Liegt außerhalb der ersten Queue-Seite.',
@@ -345,6 +346,22 @@ describe('selectDashboardIssueDetailForUser', () => {
   it('loads an off-page issue directly and normalizes its latest plan', async () => {
     queryRows = [
       [makeDetailCandidate()],
+      [
+        {
+          id: 'event-human',
+          note: 'Menschliche Notiz',
+          actorAuthUserId: 'user-1',
+          actorAgentTokenLabel: null,
+          createdAt: '2026-07-19T12:00:00.000Z',
+        },
+        {
+          id: 'event-agent',
+          note: 'Agentische Notiz',
+          actorAuthUserId: null,
+          actorAgentTokenLabel: 'claude-code',
+          createdAt: '2026-07-19T11:00:00.000Z',
+        },
+      ],
       [makeFinalMembership({ projectIsArchived: false })],
     ];
     const { selectDashboardIssueDetailForUser } =
@@ -379,12 +396,28 @@ describe('selectDashboardIssueDetailForUser', () => {
           summary: 'Deep Link absichern',
           steps: [{ id: 'step_1', text: 'Direkt laden' }],
         },
+        notes: [
+          {
+            id: 'event-human',
+            note: 'Menschliche Notiz',
+            actor: 'Mensch',
+            createdAt: '2026-07-19T12:00:00.000Z',
+          },
+          {
+            id: 'event-agent',
+            note: 'Agentische Notiz',
+            actor: 'Agent-Token claude-code',
+            createdAt: '2026-07-19T11:00:00.000Z',
+          },
+        ],
+        hasMoreNotes: false,
       },
     });
     expect(calls[0]).toMatchObject({
       selectedKeys: [
         'projectId',
         'projectKey',
+        'issueId',
         'issueNumber',
         'issueTitle',
         'issueDescription',
@@ -408,15 +441,35 @@ describe('selectDashboardIssueDetailForUser', () => {
       '"bubblophy_issue_plans"."version" desc'
     );
     expect(calls[0]?.latestPlanSql).toContain('limit 1');
-    expect(JSON.stringify(calls[0]?.selectedKeys)).not.toMatch(
-      /notes|run|event|token|createdBy|issueId/i
-    );
-    expect(calls[1]?.whereParams).toBe('["project_bv","user-1"]');
+    expect(calls[1]).toMatchObject({
+      selectedKeys: [
+        'id',
+        'note',
+        'actorAuthUserId',
+        'actorAgentTokenLabel',
+        'createdAt',
+      ],
+      fromTable: 'bubblophy_issue_events',
+      joinedTables: ['bubblophy_agent_tokens'],
+      limit: 51,
+    });
+    expect(calls[1]?.whereSql).toContain('event_type');
+    expect(calls[1]?.whereSql).toContain('@>');
+    expect(calls[1]?.whereParams).toContain('issue_bv_99');
+    expect(calls[1]?.whereParams).toContain('issue_note');
+    expect(calls[1]?.orderBySql).toContain('desc');
+    expect(calls[2]).toMatchObject({
+      fromTable: 'bubblophy_project_members',
+      joinedTables: ['bubblophy_projects', 'bubblophy_issues'],
+      whereParams: '["project_bv","user-1","issue_bv_99"]',
+      limit: 1,
+    });
   });
 
   it('keeps archived project details readable without a latest plan', async () => {
     queryRows = [
       [makeDetailCandidate({ issueLatestPlan: null })],
+      [],
       [makeFinalMembership()],
     ];
     const { selectDashboardIssueDetailForUser } =
@@ -432,14 +485,76 @@ describe('selectDashboardIssueDetailForUser', () => {
     expect(result?.issue.latestPlan).toBeNull();
   });
 
+  it('returns the newest 50 notes and reports older history', async () => {
+    queryRows = [
+      [makeDetailCandidate()],
+      Array.from({ length: 51 }, (_, index) => ({
+        id: `event-${index + 1}`,
+        note: `Notiz ${index + 1}`,
+        actorAuthUserId: null,
+        actorAgentTokenLabel: null,
+        createdAt: `2026-07-19T${String(23 - (index % 24)).padStart(2, '0')}:00:00.000Z`,
+      })),
+      [makeFinalMembership()],
+    ];
+    const { selectDashboardIssueDetailForUser } =
+      await import('@/lib/dashboard/issues-database-read');
+
+    const result = await selectDashboardIssueDetailForUser({
+      authUserId: 'user-1',
+      projectKey: 'BV',
+      issueNumber: 99,
+    });
+
+    expect(result?.issue.notes).toHaveLength(50);
+    expect(result?.issue.notes[0]?.id).toBe('event-1');
+    expect(result?.issue.notes.at(-1)?.id).toBe('event-50');
+    expect(result?.issue.hasMoreNotes).toBe(true);
+  });
+
+  it('fails closed when the issue disappears or moves after its notes are read', async () => {
+    queryRows = [
+      [makeDetailCandidate()],
+      [
+        {
+          id: 'event-race',
+          note: 'Darf nach dem Race nicht ausgegeben werden.',
+          actorAuthUserId: null,
+          actorAgentTokenLabel: null,
+          createdAt: '2026-07-19T12:00:00.000Z',
+        },
+      ],
+      [],
+    ];
+    const { selectDashboardIssueDetailForUser } =
+      await import('@/lib/dashboard/issues-database-read');
+
+    await expect(
+      selectDashboardIssueDetailForUser({
+        authUserId: 'user-1',
+        projectKey: 'BV',
+        issueNumber: 99,
+      })
+    ).resolves.toBeNull();
+
+    expect(calls[2]).toMatchObject({
+      joinedTables: ['bubblophy_projects', 'bubblophy_issues'],
+      whereParams: '["project_bv","user-1","issue_bv_99"]',
+    });
+  });
+
   it.each([
-    [[], []],
-    [[makeDetailCandidate()], []],
-    [[makeDetailCandidate()], [makeFinalMembership({ projectKey: 'OTHER' })]],
+    [[], [], []],
+    [[makeDetailCandidate()], [], []],
+    [
+      [makeDetailCandidate()],
+      [],
+      [makeFinalMembership({ projectKey: 'OTHER' })],
+    ],
   ])(
     'fails closed for missing, removed, or changed membership',
-    async (candidateRows, finalRows) => {
-      queryRows = [candidateRows, finalRows];
+    async (candidateRows, noteRows, finalRows) => {
+      queryRows = [candidateRows, noteRows, finalRows];
       const { selectDashboardIssueDetailForUser } =
         await import('@/lib/dashboard/issues-database-read');
 

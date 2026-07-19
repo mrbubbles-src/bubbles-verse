@@ -155,6 +155,8 @@ const bvOffPageIssueDetailResult = {
     createdAt: '2026-07-18T10:00:00.000Z',
     updatedAt: '2026-07-19T10:00:00.000Z',
     latestPlan: null,
+    notes: [],
+    hasMoreNotes: false,
   },
 } satisfies ReadDashboardIssueDetailResult;
 
@@ -882,6 +884,188 @@ describe('BubblophyDashboard interactions', () => {
       'Dieses Issue steht nicht in der aktuellen 25er-Seite.'
     );
     expect(navigationMocks.routerReplace).not.toHaveBeenCalled();
+  });
+
+  it('marks bounded issue-note history without hiding current notes', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=BV&issue=BV-99')
+    );
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        issuePageRequest={bvIssuePageRequest}
+        issuePageResult={bvIssuePageResult}
+        issueDetailRequestKey="BV-99"
+        issueDetailResult={{
+          ...bvOffPageIssueDetailResult,
+          issue: {
+            ...bvOffPageIssueDetailResult.issue,
+            notes: [
+              {
+                id: 'note-recent',
+                note: 'Neueste begrenzte Notiz',
+                actor: 'Mensch',
+                createdAt: '2026-07-19T12:00:00.000Z',
+              },
+            ],
+            hasMoreNotes: true,
+          },
+        }}
+      />
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    expect(detailPanel).toHaveTextContent('Neueste begrenzte Notiz');
+    expect(detailPanel).toHaveTextContent(
+      'Ältere Notizen sind in dieser Ansicht noch nicht geladen.'
+    );
+  });
+
+  it('keeps a created note bounded across the confirming detail refresh', async () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=BV&issue=BV-99')
+    );
+    const serverNotes = Array.from({ length: 50 }, (_, index) => ({
+      id: `note-${index + 1}`,
+      note: `Servernotiz ${index + 1}`,
+      actor: 'Mensch' as const,
+      createdAt: `2026-07-19T${String(23 - (index % 24)).padStart(2, '0')}:00:00.000Z`,
+    }));
+    const createdNote = {
+      id: 'note-created',
+      note: 'Frisch gespeicherte Notiz',
+      actor: 'Mensch' as const,
+      createdAt: '2026-07-19T23:30:00.000Z',
+    };
+    const createIssueNoteAction = vi.fn<
+      (
+        input: CreateBubblophyIssueNoteActionInput
+      ) => Promise<CreateBubblophyIssueNoteActionResult>
+    >(async () => ({ status: 'created', note: createdNote }));
+    const initialDetailResult = {
+      ...bvOffPageIssueDetailResult,
+      issue: {
+        ...bvOffPageIssueDetailResult.issue,
+        notes: serverNotes,
+        hasMoreNotes: false,
+      },
+    } satisfies ReadDashboardIssueDetailResult;
+    const { rerender } = render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        issuePageRequest={bvIssuePageRequest}
+        issuePageResult={bvIssuePageResult}
+        issueDetailRequestKey="BV-99"
+        issueDetailResult={initialDetailResult}
+        createIssueNoteAction={createIssueNoteAction}
+      />
+    );
+    const notesRegion = screen.getByLabelText('Notizen für BV-99');
+
+    fireEvent.change(within(notesRegion).getByLabelText('Neue Notiz'), {
+      target: { value: createdNote.note },
+    });
+    fireEvent.click(
+      within(notesRegion).getByRole('button', { name: 'Notiz speichern' })
+    );
+
+    expect(
+      await within(notesRegion).findByText(createdNote.note)
+    ).toBeInTheDocument();
+    expect(within(notesRegion).getAllByRole('listitem')).toHaveLength(50);
+    expect(within(notesRegion).queryByText('Servernotiz 50')).toBeNull();
+
+    rerender(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        issuePageRequest={bvIssuePageRequest}
+        issuePageResult={bvIssuePageResult}
+        issueDetailRequestKey="BV-99"
+        issueDetailResult={{
+          ...initialDetailResult,
+          issue: {
+            ...initialDetailResult.issue,
+            notes: [createdNote, ...serverNotes.slice(0, 49)],
+            hasMoreNotes: true,
+          },
+        }}
+        createIssueNoteAction={createIssueNoteAction}
+      />
+    );
+
+    const refreshedNotesRegion = screen.getByLabelText('Notizen für BV-99');
+
+    expect(
+      within(refreshedNotesRegion).getAllByText(createdNote.note)
+    ).toHaveLength(1);
+    expect(within(refreshedNotesRegion).getAllByRole('listitem')).toHaveLength(
+      50
+    );
+    expect(refreshedNotesRegion).toHaveTextContent(
+      'Ältere Notizen sind in dieser Ansicht noch nicht geladen.'
+    );
+  });
+
+  it('preserves the older-history marker after pending notes overflow', async () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=BV&issue=BV-99')
+    );
+    let createdNoteSequence = 0;
+    const createIssueNoteAction = vi.fn<
+      (
+        input: CreateBubblophyIssueNoteActionInput
+      ) => Promise<CreateBubblophyIssueNoteActionResult>
+    >(async (input) => {
+      createdNoteSequence += 1;
+
+      return {
+        status: 'created',
+        note: {
+          id: `pending-${createdNoteSequence}`,
+          note: input.note,
+          actor: 'Mensch',
+          createdAt: `2026-07-19T12:00:${String(createdNoteSequence).padStart(2, '0')}.000Z`,
+        },
+      };
+    });
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        issuePageRequest={bvIssuePageRequest}
+        issuePageResult={bvIssuePageResult}
+        issueDetailRequestKey="BV-99"
+        issueDetailResult={bvOffPageIssueDetailResult}
+        createIssueNoteAction={createIssueNoteAction}
+      />
+    );
+    const notesRegion = screen.getByLabelText('Notizen für BV-99');
+
+    for (let index = 1; index <= 51; index += 1) {
+      const noteInput = within(notesRegion).getByLabelText('Neue Notiz');
+
+      fireEvent.change(noteInput, {
+        target: { value: `Pending-Notiz ${index}` },
+      });
+      fireEvent.click(
+        within(notesRegion).getByRole('button', { name: 'Notiz speichern' })
+      );
+
+      await waitFor(() => {
+        expect(createIssueNoteAction).toHaveBeenCalledTimes(index);
+        expect(noteInput).toHaveValue('');
+      });
+    }
+
+    expect(within(notesRegion).getAllByRole('listitem')).toHaveLength(50);
+    expect(
+      within(notesRegion).getByText('Pending-Notiz 51')
+    ).toBeInTheDocument();
+    expect(within(notesRegion).queryByText('Pending-Notiz 1')).toBeNull();
+    expect(notesRegion).toHaveTextContent(
+      'Ältere Notizen sind in dieser Ansicht noch nicht geladen.'
+    );
   });
 
   it('submits project search without preserving cursor or detail selection', () => {

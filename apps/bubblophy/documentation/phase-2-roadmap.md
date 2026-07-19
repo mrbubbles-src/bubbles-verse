@@ -122,8 +122,10 @@ Status: abgeschlossen.
 - Der unabhängige IssueDetail-Read lädt ein Issue direkt über seinen stabilen
   Key, also auch außerhalb der ersten Queue-Seite oder späterer Filter. Er
   bindet Issue und neuesten Plan im selben Membership-Statement, normalisiert
-  Plan-Schritte defensiv und revalidiert die Mitgliedschaft vor dem DTO. Notes,
-  Runs, Audit und interne Datenbank-IDs bleiben außerhalb dieses Vertrags.
+  Plan-Schritte defensiv, lädt höchstens die neuesten 50 explizit markierten
+  Issue-Notizen und revalidiert die Mitgliedschaft danach vor dem DTO. Ein
+  `hasMoreNotes`-Signal kennzeichnet ältere, noch nicht geladene Historie;
+  allgemeines Audit, Runs und interne Datenbank-IDs bleiben außerhalb.
 - Der IssuePage-Read akzeptiert serverseitig validierte Suche über Titel,
   Issue-Nummer und öffentlichen Key sowie je einen Status- und Prioritätsfilter.
   Suche und Filter sitzen mit dem Cursor im Issue-Join, sodass sichtbare
@@ -146,9 +148,9 @@ Status: abgeschlossen.
   Issue-Write-Gates autoritativ.
 - Die projektübergreifende Übersicht verwendet übergangsweise weiter den
   vorhandenen Snapshot. Dieser lädt außerdem noch die vollständigen Issues für
-  Metriken, Run-Auflösung und bestehende Notes. Vor dem Entfernen dieses
-  Legacy-Reads muss der begrenzte Detailvertrag Notes vollständig übernehmen;
-  aktuell bewahrt der UI-Mapper vorhandene Snapshot-Notes nur übergangsweise.
+  Metriken und Run-Auflösung sowie redundant alle Plan-/Notes-Daten. Konkrete
+  Issue-Details verwenden jetzt den begrenzten Notes-Vertrag; als Nächstes kann
+  der Legacy-Graph durch SQL-Projektaggregate und bounded All-Reads entfallen.
 - Suche, Filter, Sortierung und Pagination für Projekte, Runs und
   Audit-Ereignisse ergänzen. Die Issue-Queue ist abgeschlossen.
 - Datenbankabfragen und Cache-Tags auf größere Projektmengen prüfen.
@@ -207,8 +209,10 @@ Membership- und Rollenbindung aller Dashboard-Datengruppen ist ebenfalls
 abgeschlossen. Die verständliche Rollenrechte-Erklärung ist ebenfalls im UI
 vorhanden. Die begrenzten server-only IssuePage- und direkten IssueDetail-
 Verträge einschließlich des serverseitigen IssuePage-Filtervertrags und ihre
-konkrete Queue-/URL-Integration sind ebenfalls vorhanden. Als Nächstes folgen
-die Ablösung des unbeschränkten Legacy-Issue-Snapshots sowie begrenzte Reads für
-Runs, Audit und weitere größere Datenmengen. Die
+konkrete Queue-/URL-Integration sowie der auf 50 Einträge begrenzte Notes-Read
+im direkten IssueDetail sind ebenfalls vorhanden. Als Nächstes folgen die
+Run-Result-Größenhärtung, eine projektgebundene RunPage und danach die Ablösung
+des unbeschränkten Legacy-Issue-Snapshots sowie begrenzte Reads für Audit und
+weitere größere Datenmengen. Die
 MCP-Grundlage bleibt unter
 `docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md` dokumentiert.

@@ -13,8 +13,10 @@ import type {
   DashboardIssuePageItem,
   DashboardIssuePageReadInput,
 } from '@/lib/dashboard/issues';
+import type { IssueNoteSummary } from '@/lib/dashboard/types';
 
 import { DASHBOARD_ISSUE_PAGE_SIZE } from '@/lib/dashboard/issues';
+import { DASHBOARD_ISSUE_NOTE_LIMIT } from '@/lib/dashboard/types';
 import {
   formatBubblophyIssueKey,
   mapBubblophyIssuePlanSteps,
@@ -24,6 +26,8 @@ import { and, asc, desc, eq, gt, lt, or, sql } from 'drizzle-orm';
 
 import { db } from '@/drizzle/db';
 import {
+  bubblophyAgentTokens,
+  bubblophyIssueEvents,
   bubblophyIssuePlans,
   bubblophyIssues,
   bubblophyProjectMembers,
@@ -64,6 +68,7 @@ interface LatestPlanDetailRow {
 interface DashboardIssueDetailCandidateRow {
   projectId: string;
   projectKey: string;
+  issueId: string;
   issueNumber: number;
   issueTitle: string;
   issueDescription: string;
@@ -74,6 +79,14 @@ interface DashboardIssueDetailCandidateRow {
   issueCreatedAt: string;
   issueUpdatedAt: string;
   issueLatestPlan: LatestPlanDetailRow | null;
+}
+
+interface DashboardIssueNoteRow {
+  id: string;
+  note: string;
+  actorAuthUserId: string | null;
+  actorAgentTokenLabel: string | null;
+  createdAt: string;
 }
 
 const latestPlanSummary = sql<LatestPlanSummary | null>`(
@@ -227,6 +240,7 @@ export async function selectDashboardIssueDetailForUser(
     .select({
       projectId: bubblophyProjects.id,
       projectKey: bubblophyProjects.key,
+      issueId: bubblophyIssues.id,
       issueNumber: bubblophyIssues.issueNumber,
       issueTitle: bubblophyIssues.title,
       issueDescription: bubblophyIssues.description,
@@ -260,8 +274,38 @@ export async function selectDashboardIssueDetailForUser(
     return null;
   }
 
-  const finalMembership = await selectFinalMembership(
+  const noteRows = (await db
+    .select({
+      id: bubblophyIssueEvents.id,
+      note: bubblophyIssueEvents.summary,
+      actorAuthUserId: bubblophyIssueEvents.actorAuthUserId,
+      actorAgentTokenLabel: bubblophyAgentTokens.label,
+      createdAt: bubblophyIssueEvents.createdAt,
+    })
+    .from(bubblophyIssueEvents)
+    .leftJoin(
+      bubblophyAgentTokens,
+      and(
+        eq(bubblophyAgentTokens.id, bubblophyIssueEvents.actorAgentTokenId),
+        eq(bubblophyAgentTokens.projectId, candidate.projectId)
+      )
+    )
+    .where(
+      and(
+        eq(bubblophyIssueEvents.issueId, candidate.issueId),
+        eq(bubblophyIssueEvents.eventType, 'commented'),
+        sql`${bubblophyIssueEvents.payload} @> ${JSON.stringify({ entity: 'issue_note', action: 'created' })}::jsonb`
+      )
+    )
+    .orderBy(
+      desc(bubblophyIssueEvents.createdAt),
+      desc(bubblophyIssueEvents.id)
+    )
+    .limit(DASHBOARD_ISSUE_NOTE_LIMIT + 1)) as DashboardIssueNoteRow[];
+
+  const finalMembership = await selectFinalIssueMembership(
     candidate.projectId,
+    candidate.issueId,
     input.authUserId
   );
 
@@ -298,7 +342,69 @@ export async function selectDashboardIssueDetailForUser(
             steps: mapBubblophyIssuePlanSteps(candidate.issueLatestPlan.steps),
           }
         : null,
+      notes: noteRows
+        .slice(0, DASHBOARD_ISSUE_NOTE_LIMIT)
+        .map(mapDashboardIssueNoteRow),
+      hasMoreNotes: noteRows.length > DASHBOARD_ISSUE_NOTE_LIMIT,
     },
+  };
+}
+
+/**
+ * Re-reads membership while requiring the same issue-to-project relation.
+ *
+ * @param projectId Internal project ID from the initial candidate read.
+ * @param issueId Internal issue ID from the initial candidate read.
+ * @param authUserId Authenticated user whose membership must still exist.
+ * @returns Current project metadata, or null after access/deletion/move races.
+ */
+async function selectFinalIssueMembership(
+  projectId: string,
+  issueId: string,
+  authUserId: string
+): Promise<DashboardIssueFinalMembershipRow | null> {
+  const [row] = (await db
+    .select({
+      projectId: bubblophyProjects.id,
+      projectKey: bubblophyProjects.key,
+      projectName: bubblophyProjects.name,
+      projectIsArchived: bubblophyProjects.isArchived,
+      currentUserRole: bubblophyProjectMembers.role,
+    })
+    .from(bubblophyProjectMembers)
+    .innerJoin(
+      bubblophyProjects,
+      eq(bubblophyProjects.id, bubblophyProjectMembers.projectId)
+    )
+    .innerJoin(
+      bubblophyIssues,
+      eq(bubblophyIssues.projectId, bubblophyProjects.id)
+    )
+    .where(
+      and(
+        eq(bubblophyProjectMembers.projectId, projectId),
+        eq(bubblophyProjectMembers.authUserId, authUserId),
+        eq(bubblophyIssues.id, issueId)
+      )
+    )
+    .limit(1)) as DashboardIssueFinalMembershipRow[];
+
+  return row ?? null;
+}
+
+/** Maps one bounded issue-note event without exposing raw actor IDs. */
+function mapDashboardIssueNoteRow(
+  row: DashboardIssueNoteRow
+): IssueNoteSummary {
+  return {
+    id: row.id,
+    note: row.note,
+    actor: row.actorAuthUserId
+      ? 'Mensch'
+      : row.actorAgentTokenLabel
+        ? `Agent-Token ${row.actorAgentTokenLabel}`
+        : 'System',
+    createdAt: row.createdAt,
   };
 }
 
