@@ -11,6 +11,8 @@ interface AgentRunUpdateRouteBody {
   result?: JsonValue;
 }
 
+export const MAX_AGENT_RUN_UPDATE_BODY_BYTES = 65_536;
+
 /**
  * Reads the minimal context for an agent-approved run.
  *
@@ -95,9 +97,73 @@ async function readAgentRunUpdateBody(
   request: Request
 ): Promise<AgentRunUpdateRouteBody | null> {
   try {
-    return (await request.json()) as AgentRunUpdateRouteBody;
+    const bodyText = await readBoundedRequestText(request);
+
+    if (bodyText === null) {
+      return null;
+    }
+
+    const body = JSON.parse(bodyText) as AgentRunUpdateRouteBody | null;
+
+    if (!body || Array.isArray(body) || typeof body !== 'object') {
+      return null;
+    }
+
+    return body;
   } catch {
     return null;
+  }
+}
+
+/**
+ * Reads a request stream without retaining more than the accepted byte limit.
+ *
+ * @param request Incoming PATCH request with an optional length declaration.
+ * @returns Strict UTF-8 body text, or null for oversized and unreadable input.
+ */
+async function readBoundedRequestText(
+  request: Request
+): Promise<string | null> {
+  const declaredLength = request.headers.get('content-length');
+
+  if (
+    declaredLength &&
+    /^\d+$/.test(declaredLength) &&
+    Number(declaredLength) > MAX_AGENT_RUN_UPDATE_BODY_BYTES
+  ) {
+    return null;
+  }
+
+  if (!request.body) {
+    return '';
+  }
+
+  const reader = request.body.getReader();
+  const decoder = new TextDecoder('utf-8', { fatal: true });
+  let bodyText = '';
+  let byteLength = 0;
+
+  try {
+    while (true) {
+      const chunk = await reader.read();
+
+      if (chunk.done) {
+        return bodyText + decoder.decode();
+      }
+
+      byteLength += chunk.value.byteLength;
+
+      if (byteLength > MAX_AGENT_RUN_UPDATE_BODY_BYTES) {
+        await reader.cancel();
+        return null;
+      }
+
+      bodyText += decoder.decode(chunk.value, { stream: true });
+    }
+  } catch {
+    return null;
+  } finally {
+    reader.releaseLock();
   }
 }
 

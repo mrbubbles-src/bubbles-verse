@@ -8,9 +8,8 @@ const readBubblophyAgentRunContextMock = vi.fn();
 const updateBubblophyAgentRunFromAgentMock = vi.fn();
 
 vi.mock('@/lib/agent-runs/agent-context', () => ({
-  readBubblophyAgentRunContext: (
-    input: ReadBubblophyAgentRunContextInput
-  ) => readBubblophyAgentRunContextMock(input),
+  readBubblophyAgentRunContext: (input: ReadBubblophyAgentRunContextInput) =>
+    readBubblophyAgentRunContextMock(input),
 }));
 
 vi.mock('@/lib/agent-runs/agent-update', () => ({
@@ -40,7 +39,20 @@ function createPatchRequest({
   });
 }
 
-function createGetRequest({ token = 'test_agent_token' }: { token?: string } = {}) {
+function createRawPatchRequest(body: BodyInit | null) {
+  return new Request('http://bubblophy.test/api/agent-runs/run_bv_12', {
+    method: 'PATCH',
+    headers: {
+      authorization: 'Bearer bubblophy_agent_secret',
+      'content-type': 'application/json',
+    },
+    body,
+  });
+}
+
+function createGetRequest({
+  token = 'test_agent_token',
+}: { token?: string } = {}) {
   return new Request('http://bubblophy.test/api/agent-runs/run_bv_12', {
     method: 'GET',
     headers: token
@@ -355,6 +367,88 @@ describe('PATCH /api/agent-runs/[runId]', () => {
         params: Promise.resolve({ runId: 'run_bv_12' }),
       }
     );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      status: 'invalid',
+      reason: 'invalid_result',
+    });
+    expect(updateBubblophyAgentRunFromAgentMock).not.toHaveBeenCalled();
+  });
+
+  it('accepts exactly 64 KiB and rejects the next streamed byte', async () => {
+    updateBubblophyAgentRunFromAgentMock.mockResolvedValue({
+      status: 'updated',
+      run: { id: 'run_bv_12', state: 'running' },
+    });
+    const { MAX_AGENT_RUN_UPDATE_BODY_BYTES, PATCH } =
+      await import('@/app/api/agent-runs/[runId]/route');
+    const json = JSON.stringify({ state: 'running' });
+    const exactBody = json.padEnd(MAX_AGENT_RUN_UPDATE_BODY_BYTES, ' ');
+
+    const exactResponse = await PATCH(createRawPatchRequest(exactBody), {
+      params: Promise.resolve({ runId: 'run_bv_12' }),
+    });
+    const oversizedResponse = await PATCH(
+      createRawPatchRequest(`${exactBody} `),
+      { params: Promise.resolve({ runId: 'run_bv_12' }) }
+    );
+
+    expect(exactResponse.status).toBe(200);
+    expect(oversizedResponse.status).toBe(400);
+    await expect(oversizedResponse.json()).resolves.toEqual({
+      status: 'invalid',
+      reason: 'invalid_result',
+    });
+    expect(updateBubblophyAgentRunFromAgentMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('counts UTF-8 bytes and rejects non-object JSON roots', async () => {
+    const { PATCH } = await import('@/app/api/agent-runs/[runId]/route');
+    const multibyteBody = JSON.stringify({
+      state: 'running',
+      result: '🙂'.repeat(17_000),
+    });
+
+    expect(multibyteBody.length).toBeLessThan(65_536);
+
+    for (const body of [multibyteBody, 'null', '[]', '12', '"text"', '']) {
+      const response = await PATCH(createRawPatchRequest(body), {
+        params: Promise.resolve({ runId: 'run_bv_12' }),
+      });
+
+      expect(response.status).toBe(400);
+      await expect(response.json()).resolves.toEqual({
+        status: 'invalid',
+        reason: 'invalid_result',
+      });
+    }
+
+    expect(updateBubblophyAgentRunFromAgentMock).not.toHaveBeenCalled();
+  });
+
+  it('turns request stream failures into invalid_result', async () => {
+    const { PATCH } = await import('@/app/api/agent-runs/[runId]/route');
+    const failingBody = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        controller.error(new Error('stream failed'));
+      },
+    });
+    const request = new Request(
+      'http://bubblophy.test/api/agent-runs/run_bv_12',
+      {
+        method: 'PATCH',
+        headers: {
+          authorization: 'Bearer bubblophy_agent_secret',
+          'content-type': 'application/json',
+        },
+        body: failingBody,
+        duplex: 'half',
+      } as RequestInit & { duplex: 'half' }
+    );
+    const response = await PATCH(request, {
+      params: Promise.resolve({ runId: 'run_bv_12' }),
+    });
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({

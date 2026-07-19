@@ -112,6 +112,17 @@ const agentUpdateStates = new Set<BubblophyAgentRunAgentUpdateState>([
   'failed',
 ]);
 const maxAgentRunMessageLength = 1000;
+export const MAX_AGENT_RUN_RESULT_BYTES = 49_152;
+export const MAX_AGENT_RUN_RESULT_DEPTH = 12;
+export const MAX_AGENT_RUN_RESULT_NODES = 1000;
+const invalidJsonSnapshot = Symbol('invalid-json-snapshot');
+
+interface JsonSnapshotState {
+  byteLength: number;
+  nodeCount: number;
+  encoder: TextEncoder;
+  seenContainers: WeakSet<object>;
+}
 
 /**
  * Records a status update submitted by a scoped agent token.
@@ -156,26 +167,182 @@ export function isBubblophyAgentRunAgentUpdateState(
 }
 
 /**
- * Validates that a runtime value is JSON-safe for persistence.
+ * Validates that a runtime value is bounded and JSON-safe for persistence.
  *
  * @param value Route body value to inspect.
- * @returns True for JSON primitives, arrays, and plain objects.
+ * @returns True for a bounded tree of JSON primitives and data-only containers.
  */
 export function isJsonValue(value: JsonValue): value is JsonValue {
+  return createBoundedJsonSnapshot(value).status === 'valid';
+}
+
+/**
+ * Creates the only JSON value that may cross into the persistence store.
+ *
+ * Capturing descriptor values into fresh containers prevents validated input
+ * from changing through proxies or later mutation before serialization.
+ *
+ * @param value Runtime value submitted as an agent result.
+ * @returns A bounded plain snapshot or an invalid marker.
+ */
+function createBoundedJsonSnapshot(
+  value: JsonValue
+): { status: 'valid'; value: JsonValue } | { status: 'invalid' } {
+  const state: JsonSnapshotState = {
+    byteLength: 0,
+    nodeCount: 0,
+    encoder: new TextEncoder(),
+    seenContainers: new WeakSet<object>(),
+  };
+
+  try {
+    const snapshot = snapshotJsonValue(value, 0, state);
+
+    if (snapshot === invalidJsonSnapshot) {
+      return { status: 'invalid' };
+    }
+
+    return { status: 'valid', value: snapshot };
+  } catch {
+    return { status: 'invalid' };
+  }
+}
+
+/**
+ * Validates and copies one JSON node into fresh data-only containers.
+ *
+ * @param value Current runtime node captured from a data descriptor.
+ * @param depth Current depth with the result root at zero.
+ * @param state Shared limits and seen-container registry.
+ * @returns A detached JSON node or the invalid sentinel.
+ */
+function snapshotJsonValue(
+  value: JsonValue,
+  depth: number,
+  state: JsonSnapshotState
+): JsonValue | typeof invalidJsonSnapshot {
+  state.nodeCount += 1;
+
+  if (
+    state.nodeCount > MAX_AGENT_RUN_RESULT_NODES ||
+    depth > MAX_AGENT_RUN_RESULT_DEPTH
+  ) {
+    return invalidJsonSnapshot;
+  }
+
   if (
     value === null ||
     typeof value === 'string' ||
-    typeof value === 'number' ||
     typeof value === 'boolean'
   ) {
-    return Number.isFinite(value as number) || typeof value !== 'number';
+    state.byteLength += getJsonTokenByteLength(value, state.encoder);
+    return state.byteLength <= MAX_AGENT_RUN_RESULT_BYTES
+      ? value
+      : invalidJsonSnapshot;
   }
 
-  if (Array.isArray(value)) {
-    return value.every((item) => isJsonValue(item));
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) {
+      return invalidJsonSnapshot;
+    }
+
+    state.byteLength += getJsonTokenByteLength(value, state.encoder);
+    return state.byteLength <= MAX_AGENT_RUN_RESULT_BYTES
+      ? value
+      : invalidJsonSnapshot;
   }
 
-  return Object.values(value).every((item) => isJsonValue(item));
+  if (typeof value !== 'object' || state.seenContainers.has(value)) {
+    return invalidJsonSnapshot;
+  }
+
+  state.seenContainers.add(value);
+
+  const isArray = Array.isArray(value);
+  const prototype = Object.getPrototypeOf(value);
+
+  if (
+    (isArray && prototype !== Array.prototype) ||
+    (!isArray && prototype !== Object.prototype && prototype !== null)
+  ) {
+    return invalidJsonSnapshot;
+  }
+
+  const keys = Reflect.ownKeys(value);
+  const valueKeys = isArray ? keys.filter((key) => key !== 'length') : keys;
+
+  if (
+    valueKeys.some((key) => typeof key !== 'string') ||
+    (isArray && valueKeys.length !== value.length)
+  ) {
+    return invalidJsonSnapshot;
+  }
+
+  state.byteLength +=
+    2 + Math.max(0, valueKeys.length - 1) + (isArray ? 0 : valueKeys.length);
+
+  if (state.byteLength > MAX_AGENT_RUN_RESULT_BYTES) {
+    return invalidJsonSnapshot;
+  }
+
+  const snapshot: JsonValue[] | JsonObject = isArray
+    ? []
+    : (Object.create(null) as JsonObject);
+
+  for (let index = 0; index < valueKeys.length; index += 1) {
+    const key = isArray ? String(index) : (valueKeys[index] as string);
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+
+    if (
+      !descriptor ||
+      !descriptor.enumerable ||
+      !Object.hasOwn(descriptor, 'value')
+    ) {
+      return invalidJsonSnapshot;
+    }
+
+    if (!isArray) {
+      state.byteLength += getJsonTokenByteLength(key, state.encoder);
+
+      if (state.byteLength > MAX_AGENT_RUN_RESULT_BYTES) {
+        return invalidJsonSnapshot;
+      }
+    }
+
+    const childSnapshot = snapshotJsonValue(
+      descriptor.value as JsonValue,
+      depth + 1,
+      state
+    );
+
+    if (childSnapshot === invalidJsonSnapshot) {
+      return invalidJsonSnapshot;
+    }
+
+    if (Array.isArray(snapshot)) {
+      snapshot.push(childSnapshot);
+    } else {
+      snapshot[key] = childSnapshot;
+    }
+  }
+
+  return snapshot;
+}
+
+/**
+ * Measures one primitive after strict JSON serialization.
+ *
+ * @param value JSON primitive or object-key string to serialize.
+ * @param encoder Shared UTF-8 encoder for the validation pass.
+ * @returns Serialized UTF-8 byte length including required quotes/escapes.
+ */
+function getJsonTokenByteLength(
+  value: string | number | boolean | null,
+  encoder: TextEncoder
+) {
+  const serialized = JSON.stringify(value);
+
+  return encoder.encode(serialized).byteLength;
 }
 
 /**
@@ -238,7 +405,9 @@ function normalizeAgentRunUpdateInput(
     return { status: 'invalid', reason: 'message_too_long' };
   }
 
-  if (!isJsonValue(result)) {
+  const resultSnapshot = createBoundedJsonSnapshot(result);
+
+  if (resultSnapshot.status === 'invalid') {
     return { status: 'invalid', reason: 'invalid_result' };
   }
 
@@ -249,7 +418,7 @@ function normalizeAgentRunUpdateInput(
       tokenHash: hashBubblophyAgentToken(bearerToken),
       state: input.state,
       message,
-      result,
+      result: resultSnapshot.value,
     },
   };
 }

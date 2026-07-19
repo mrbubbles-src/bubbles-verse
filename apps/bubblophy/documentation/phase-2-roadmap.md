@@ -151,6 +151,12 @@ Status: abgeschlossen.
   Metriken und Run-Auflösung sowie redundant alle Plan-/Notes-Daten. Konkrete
   Issue-Details verwenden jetzt den begrenzten Notes-Vertrag; als Nächstes kann
   der Legacy-Graph durch SQL-Projektaggregate und bounded All-Reads entfallen.
+- Agent-Run-Statusupdates begrenzen den gesamten PATCH-Envelope beim Streamen
+  auf 64 KiB tatsächliche UTF-8-Bytes. Die Service-Grenze akzeptiert auch bei
+  direkten Aufrufern höchstens 48 KiB Result-JSON mit 12 Ebenen und 1000
+  Knoten; zyklische, wiederverwendete, sparse, accessor-basierte und
+  nicht-plain Datenstrukturen werden vor dem Store abgelehnt. Ein während der
+  Prüfung erzeugter Plain-Snapshot schließt Proxy- und Mutations-TOCTOU aus.
 - Suche, Filter, Sortierung und Pagination für Projekte, Runs und
   Audit-Ereignisse ergänzen. Die Issue-Queue ist abgeschlossen.
 - Datenbankabfragen und Cache-Tags auf größere Projektmengen prüfen.
@@ -210,9 +216,10 @@ abgeschlossen. Die verständliche Rollenrechte-Erklärung ist ebenfalls im UI
 vorhanden. Die begrenzten server-only IssuePage- und direkten IssueDetail-
 Verträge einschließlich des serverseitigen IssuePage-Filtervertrags und ihre
 konkrete Queue-/URL-Integration sowie der auf 50 Einträge begrenzte Notes-Read
-im direkten IssueDetail sind ebenfalls vorhanden. Als Nächstes folgen die
-Run-Result-Größenhärtung, eine projektgebundene RunPage und danach die Ablösung
-des unbeschränkten Legacy-Issue-Snapshots sowie begrenzte Reads für Audit und
+im direkten IssueDetail sind ebenfalls vorhanden. Die Run-Result-
+Größenhärtung begrenzt nun Route und Service unabhängig voneinander. Als
+Nächstes folgen eine projektgebundene RunPage und danach die Ablösung des
+unbeschränkten Legacy-Issue-Snapshots sowie begrenzte Reads für Audit und
 weitere größere Datenmengen. Die
 MCP-Grundlage bleibt unter
 `docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md` dokumentiert.

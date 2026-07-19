@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Bounded agent-run PATCH envelopes to 64 KiB of streamed UTF-8 and result JSON
+  to 48 KiB, 12 levels, and 1000 nodes, rejecting malformed, cyclic, sparse,
+  accessor-backed, and non-plain values before persistence.
 - Added a server-only, membership-scoped dashboard issue-page contract with
   fixed 25-item issue-number cursors, newest/oldest ordering, same-query latest
   plan counts, a fail-closed final membership gate, and no internal project or

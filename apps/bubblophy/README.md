@@ -92,7 +92,12 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   `Authorization: Bearer <agent-token>` entgegen. Der Endpoint akzeptiert nur
   `running`, `needs_review`, `completed` und `failed`, prüft Token-Hash,
   Scope `runs:update`, Projektbindung, Token-Status/Ablauf und schreibt
-  `last_used_at` plus Audit-Event.
+  `last_used_at` plus Audit-Event. Der JSON-Envelope ist auf 64 KiB UTF-8
+  begrenzt und wird bereits beim Streamen abgebrochen. Result-JSON bleibt
+  zusätzlich auf 48 KiB, 12 Ebenen und 1000 Knoten begrenzt; unvollständige,
+  zyklische oder nicht datenreine Strukturen erreichen die Datenbank nicht.
+  Der Store erhält ausschließlich einen während der Prüfung erzeugten Plain-
+  Snapshot und nie das veränderliche Eingabeobjekt selbst.
 - Der Agent-Token-Bereich zeigt einen lokalen Handoff für diesen bestehenden
   Kontext- und Statusupdate-Pfad. Andere Scope-Werte im Schema sind reserviert,
   bis eigene sichere Agent-API-Endpunkte existieren.
@@ -304,10 +309,12 @@ bun run build
 - Agent-Statusupdates laufen über gehashte Bearer-Tokens mit Scope
   `runs:update`, Projektbindung, aktivem/nicht abgelaufenem Token und enger
   State-Machine. Auch hier muss das Token dem Run zugeordnet sein. Der Endpoint
-  speichert nur Status, Message, Result-JSON, `last_used_at` und Audit-Events;
-  er führt keinen Code aus und wird nicht in den menschlichen
-  Login-Redirect-Flow umgebogen. Zustandsupdates verwenden Compare-and-set und
-  erzeugen nach einem verlorenen konkurrierenden Update kein Audit-Event.
+  speichert nur Status, Message, begrenztes Result-JSON, `last_used_at` und
+  Audit-Events; der Request-Envelope ist auf 64 KiB UTF-8, das Result auf
+  48 KiB, 12 Ebenen und 1000 Knoten begrenzt. Er führt keinen Code aus und wird
+  nicht in den menschlichen Login-Redirect-Flow umgebogen. Zustandsupdates
+  verwenden Compare-and-set und erzeugen nach einem verlorenen konkurrierenden
+  Update kein Audit-Event.
 - Relative Auth-Redirects lehnen Backslash- und Host-Umgehungen ab.
 - Direkte `authenticated`-RLS-Reads auf rohe Agent-Run-Resultate und
   Issue-Event-Payloads sind geschlossen. Diese Daten werden nur über

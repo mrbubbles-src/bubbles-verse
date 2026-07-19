@@ -1,3 +1,4 @@
+import type { JsonObject, JsonValue } from '@/drizzle/db/schema';
 import type {
   BubblophyAgentRunAgentUpdateStore,
   BubblophyAgentRunAgentUpdateStoreInput,
@@ -5,6 +6,9 @@ import type {
 
 import {
   buildAgentRunUpdatePayload,
+  MAX_AGENT_RUN_RESULT_BYTES,
+  MAX_AGENT_RUN_RESULT_DEPTH,
+  MAX_AGENT_RUN_RESULT_NODES,
   updateBubblophyAgentRunFromAgent,
 } from '@/lib/agent-runs/agent-update';
 import {
@@ -119,6 +123,130 @@ describe('updateBubblophyAgentRunFromAgent', () => {
       message: 'Agent hat begonnen.',
       result: { phase: 'checkout-skipped' },
     });
+  });
+
+  it('accepts the exact result byte, depth, and node boundaries', async () => {
+    const updateRunFromAgent = vi.fn<
+      (
+        input: BubblophyAgentRunAgentUpdateStoreInput
+      ) => ReturnType<BubblophyAgentRunAgentUpdateStore['updateRunFromAgent']>
+    >(async () => ({
+      status: 'updated',
+      run: { id: 'run_bv_12', state: 'running' },
+    }));
+    let depthBoundary: JsonValue = 'leaf';
+
+    for (let depth = 0; depth < MAX_AGENT_RUN_RESULT_DEPTH; depth += 1) {
+      depthBoundary = { nested: depthBoundary };
+    }
+
+    const exactByteResult = 'x'.repeat(MAX_AGENT_RUN_RESULT_BYTES - 2);
+    const exactNodeResult = Array.from(
+      { length: MAX_AGENT_RUN_RESULT_NODES - 1 },
+      () => null
+    );
+
+    for (const result of [exactByteResult, depthBoundary, exactNodeResult]) {
+      await expect(
+        updateBubblophyAgentRunFromAgent(
+          {
+            runId: 'run_bv_12',
+            bearerToken: 'bubblophy_agent_secret',
+            state: 'running',
+            result,
+          },
+          { store: { updateRunFromAgent } }
+        )
+      ).resolves.toHaveProperty('status', 'updated');
+    }
+
+    expect(updateRunFromAgent).toHaveBeenCalledTimes(3);
+  });
+
+  it('rejects oversized, too deep, too broad, cyclic, and data-unsafe results', async () => {
+    const store = createStore(async () => {
+      throw new Error('store should not be called');
+    });
+    let tooDeep: JsonValue = 'leaf';
+
+    for (let depth = 0; depth <= MAX_AGENT_RUN_RESULT_DEPTH; depth += 1) {
+      tooDeep = { nested: tooDeep };
+    }
+
+    const cyclic: JsonObject = {};
+    cyclic.self = cyclic;
+    const sparse: JsonValue[] = [];
+    sparse.length = 1;
+    const accessor: JsonObject = {};
+    Object.defineProperty(accessor, 'secret', {
+      enumerable: true,
+      get: () => 'not read',
+    });
+    const invalidResults: JsonValue[] = [
+      '🙂'.repeat(Math.ceil(MAX_AGENT_RUN_RESULT_BYTES / 4)),
+      tooDeep,
+      Array.from({ length: MAX_AGENT_RUN_RESULT_NODES }, () => null),
+      cyclic,
+      sparse,
+      accessor,
+      new Date() as object as JsonValue,
+    ];
+
+    for (const result of invalidResults) {
+      await expect(
+        updateBubblophyAgentRunFromAgent(
+          {
+            runId: 'run_bv_12',
+            bearerToken: 'bubblophy_agent_secret',
+            state: 'running',
+            result,
+          },
+          { store }
+        )
+      ).resolves.toEqual({ status: 'invalid', reason: 'invalid_result' });
+    }
+
+    expect(store.updateRunFromAgent).not.toHaveBeenCalled();
+  });
+
+  it('stores a detached plain snapshot instead of a proxy-backed result', async () => {
+    const proxyResult = new Proxy<JsonObject>(
+      {},
+      {
+        get(target, property, receiver) {
+          if (property === 'toJSON') {
+            return () => 'x'.repeat(MAX_AGENT_RUN_RESULT_BYTES * 2);
+          }
+
+          return Reflect.get(target, property, receiver) as JsonValue;
+        },
+      }
+    );
+    const updateRunFromAgent = vi.fn<
+      (
+        input: BubblophyAgentRunAgentUpdateStoreInput
+      ) => ReturnType<BubblophyAgentRunAgentUpdateStore['updateRunFromAgent']>
+    >(async () => ({
+      status: 'updated',
+      run: { id: 'run_bv_12', state: 'running' },
+    }));
+
+    await expect(
+      updateBubblophyAgentRunFromAgent(
+        {
+          runId: 'run_bv_12',
+          bearerToken: 'bubblophy_agent_secret',
+          state: 'running',
+          result: proxyResult,
+        },
+        { store: { updateRunFromAgent } }
+      )
+    ).resolves.toHaveProperty('status', 'updated');
+
+    const storedResult = updateRunFromAgent.mock.calls[0]?.[0].result;
+
+    expect(storedResult).not.toBe(proxyResult);
+    expect(JSON.stringify(storedResult)).toBe('{}');
   });
 
   it('returns token, scope, project, and transition failures unchanged', async () => {
