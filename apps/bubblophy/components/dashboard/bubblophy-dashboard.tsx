@@ -70,6 +70,7 @@ import {
   canContributeToBubblophyProject,
   canManageBubblophyProject,
 } from '@/lib/projects/permissions';
+import { projectMemberRoleLabels } from '@/lib/projects/role-presentation';
 import { bubblophySidebarData, getBubblophyBreadcrumbs } from '@/lib/sidebar';
 
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
@@ -118,6 +119,7 @@ import {
 import { Textarea } from '@bubbles/ui/shadcn/textarea';
 
 import { ProjectInvitationManager } from '@/components/dashboard/project-invitations/project-invitation-manager';
+import { ProjectRoleGuide } from '@/components/dashboard/project-members/project-role-guide';
 
 interface BubblophyDashboardProps {
   snapshot: DashboardSnapshot;
@@ -220,13 +222,6 @@ const tokenVariant = {
   AgentTokenState,
   React.ComponentProps<typeof Badge>['variant']
 >;
-
-const projectMemberRoleLabels = {
-  owner: 'Owner',
-  maintainer: 'Maintainer',
-  member: 'Member',
-  viewer: 'Viewer',
-} satisfies Record<ProjectMemberRole, string>;
 
 const projectMemberRoleVariant = {
   owner: 'default',
@@ -1026,6 +1021,13 @@ export function BubblophyDashboard({
     memberCount: number;
   }) => {
     const memberId = `${input.projectKey}:${input.memberAuthUserId}`;
+    const removedMember = allProjectMembers.find(
+      (member) => member.id === memberId
+    );
+    const removedMemberLabel =
+      removedMember?.label !== input.memberAuthUserId
+        ? removedMember?.label
+        : undefined;
 
     setRemovedProjectMemberIds((currentIds) =>
       currentIds.includes(memberId) ? currentIds : [...currentIds, memberId]
@@ -1045,7 +1047,9 @@ export function BubblophyDashboard({
     }
 
     setRecentMutationFeedback(
-      `Mitglied ${input.memberAuthUserId} wurde aus ${input.projectKey} entfernt.`
+      removedMemberLabel
+        ? `Mitglied ${removedMemberLabel} wurde aus ${input.projectKey} entfernt.`
+        : `Ein Mitglied wurde aus ${input.projectKey} entfernt.`
     );
   };
 
@@ -2285,6 +2289,13 @@ function ProjectMembersPanel({
         <Badge variant="outline">{members.length} sichtbar</Badge>
       </div>
 
+      {project.currentUserRole ? (
+        <ProjectRoleGuide
+          currentRole={project.currentUserRole}
+          isArchived={project.isArchived}
+        />
+      ) : null}
+
       <ProjectInvitationManager
         key={project.key}
         createInvitationAction={createProjectInvitationAction}
@@ -2620,7 +2631,7 @@ function IssueQueue({
                 <TableHead>Status</TableHead>
                 <TableHead>Priorität</TableHead>
                 <TableHead>Plan</TableHead>
-                <TableHead>Owner</TableHead>
+                <TableHead>Zuständig</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

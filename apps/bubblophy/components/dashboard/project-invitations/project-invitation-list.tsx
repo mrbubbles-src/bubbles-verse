@@ -1,10 +1,11 @@
 'use client';
 
-import type { CreateBubblophyProjectInvitationActionInput } from '@/app/actions';
 import type {
   BubblophyProjectInvitationManagerSummary,
   BubblophyProjectInvitationState,
 } from '@/lib/projects/invitation-snapshot';
+
+import { projectMemberRoleLabels } from '@/lib/projects/role-presentation';
 
 import {
   AlertDialog,
@@ -27,12 +28,6 @@ import {
   TableHeader,
   TableRow,
 } from '@bubbles/ui/shadcn/table';
-
-export const invitationRoleLabels = {
-  maintainer: 'Maintainer',
-  member: 'Member',
-  viewer: 'Viewer',
-} satisfies Record<CreateBubblophyProjectInvitationActionInput['role'], string>;
 
 const invitationStateLabels = {
   pending: 'Offen',
@@ -112,7 +107,9 @@ export function ProjectInvitationList({
                 <TableCell className="max-w-[16rem] break-all">
                   {invitation.email}
                 </TableCell>
-                <TableCell>{invitationRoleLabels[invitation.role]}</TableCell>
+                <TableCell>
+                  {projectMemberRoleLabels[invitation.role]}
+                </TableCell>
                 <TableCell>
                   <Badge variant={invitationStateVariants[invitation.state]}>
                     {invitationStateLabels[invitation.state]}

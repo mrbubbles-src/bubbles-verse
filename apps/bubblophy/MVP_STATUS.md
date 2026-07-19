@@ -68,7 +68,8 @@ persönlich authentifizierter Remote-MCP mit Supabase OAuth 2.1.
   Supabase-Identität sind abgeschlossen. Auch die Manager-UX arbeitet jetzt per
   E-Mail, zeigt Einladungszustände und offenbart neue Links nur einmalig;
   verständliche, session-synchronisierte Identitätsprofile sind ebenfalls
-  umgesetzt. Als Nächstes folgt die klare Rollenrechte-Erklärung im UI.
+  umgesetzt. Die eigene Rolle und die Rechte von Owner, Maintainer, Member und
+  Viewer werden inzwischen ebenfalls verständlich im UI erklärt.
 - Deployment-Härtung vorbereiten: Domain-Konfiguration, Supabase Redirects,
   Runtime-Umgebungen, Monitoring und Backup-/Restore-Strategie.
 - RLS-Policies und Security-Verträge vor Remote-/Produktionsnutzung nochmal

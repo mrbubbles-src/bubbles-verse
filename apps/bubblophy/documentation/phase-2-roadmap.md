@@ -101,11 +101,12 @@ Status: abgeschlossen.
   eigene Person. Profile gewähren niemals Zugriff. Assignee-ID und Label sind
   getrennt, und der Profil-Read revalidiert die Actor-Mitgliedschaft in
   demselben Statement.
-- Als nächster Rollen-Slice folgt die verständliche Erklärung der Rechte von
-  Owner, Maintainer, Member und Viewer im UI.
+- Die Rollen-UX zeigt die aktuelle eigene Rolle, erklärt Owner, Maintainer,
+  Member und Viewer in einer kompakten aufklappbaren Übersicht und weist bei
+  archivierten Projekten auf die operative Schreibsperre sowie die weiterhin
+  mögliche Wiederherstellung durch Owner/Maintainer hin. Rollen- und
+  Einladungsoberflächen verwenden dieselben zentralen Bezeichnungen.
 - Einladungszustände, Ablauf, Annahme und Widerruf auditierbar machen.
-- Rollenansichten und Mutationsrechte für Owner, Maintainer, Member und Viewer
-  verständlich abbilden.
 - Der detaillierte Slice-Plan liegt unter
   `docs/superpowers/plans/2026-07-18-bubblophy-roles-invitations.md`.
 
@@ -167,7 +168,7 @@ Einladungsbereich besitzt nach der Manager-UX nun auch die
 session-synchronisierte Identitäts-UX gemäß
 `docs/superpowers/plans/2026-07-18-bubblophy-roles-invitations.md`. Die erneute
 Membership- und Rollenbindung aller Dashboard-Datengruppen ist ebenfalls
-abgeschlossen. Als nächster Rollen-Slice folgt die verständliche Erklärung der
-Rechte von Owner, Maintainer, Member und Viewer im UI; die MCP-Grundlage bleibt
-unter
+abgeschlossen. Die verständliche Rollenrechte-Erklärung ist ebenfalls im UI
+vorhanden. Als nächster Produktslice folgt der erste begrenzte Vertrag für
+Suche, Filter und Sortierung größerer Datenmengen; die MCP-Grundlage bleibt unter
 `docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md` dokumentiert.

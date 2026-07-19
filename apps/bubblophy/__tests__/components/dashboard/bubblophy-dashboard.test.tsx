@@ -507,6 +507,17 @@ describe('BubblophyDashboard interactions', () => {
     navigationMocks.searchParams.mockReturnValue(new URLSearchParams());
   });
 
+  it('uses the domain term for issue responsibility', () => {
+    render(<BubblophyDashboard snapshot={databaseSnapshot} />);
+
+    expect(
+      screen.getByRole('columnheader', { name: 'Zuständig' })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('columnheader', { name: 'Owner' })
+    ).not.toBeInTheDocument();
+  });
+
   it('keeps viewer issue and run controls read-only', () => {
     render(
       <BubblophyDashboard
@@ -3211,6 +3222,23 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       within(projectsSection).getByText(/Teamzugang per E-Mail-Einladung/)
     ).toBeInTheDocument();
+    expect(
+      within(projectsSection).getByText('Deine Rolle')
+    ).toBeInTheDocument();
+    expect(
+      within(projectsSection).getByText(
+        'Verwaltet Projekt, Team, Einladungen und Tokens und arbeitet an Issues und Runs.'
+      )
+    ).toBeInTheDocument();
+    expect(
+      within(projectsSection)
+        .getByText('Deine Rolle')
+        .compareDocumentPosition(
+          within(projectsSection).getByRole('heading', {
+            name: 'Einladungen',
+          })
+        ) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
 
     fireEvent.change(
       within(projectsSection).getByLabelText('Rolle für Martin'),
@@ -3514,6 +3542,65 @@ describe('BubblophyDashboard interactions', () => {
     await waitFor(() => {
       expect(screen.queryByText('Martin')).not.toBeInTheDocument();
     });
+    expect(
+      screen.getByText('Mitglied Martin wurde aus BV entfernt.')
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/user_martin wurde/)).not.toBeInTheDocument();
+  });
+
+  it('keeps technical fallback labels out of member removal feedback', async () => {
+    const technicalFallbackSnapshot = {
+      ...databaseSnapshotWithManageableMembers,
+      projectMembers: databaseSnapshotWithManageableMembers.projectMembers.map(
+        (member) =>
+          member.authUserId === 'user_martin'
+            ? { ...member, label: member.authUserId }
+            : member
+      ),
+    } satisfies DashboardSnapshot;
+    const removeProjectMemberAction = vi.fn<
+      (
+        input: RemoveBubblophyProjectMemberActionInput
+      ) => Promise<RemoveBubblophyProjectMemberActionResult>
+    >(async () => ({
+      status: 'removed',
+      projectKey: 'BV',
+      memberAuthUserId: 'user_martin',
+      memberCount: 2,
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={technicalFallbackSnapshot}
+        removeProjectMemberAction={removeProjectMemberAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Projekt Bubblesverse (BV) auswählen',
+      })
+    );
+
+    const memberRow = screen.getByText('user_martin').closest('tr');
+
+    if (!(memberRow instanceof HTMLTableRowElement)) {
+      throw new Error('Expected the technical fallback member row.');
+    }
+
+    fireEvent.click(
+      within(memberRow).getByRole('button', { name: 'Entfernen' })
+    );
+    fireEvent.click(
+      within(memberRow).getByRole('button', { name: 'Endgültig entfernen' })
+    );
+
+    expect(
+      await screen.findByText('Ein Mitglied wurde aus BV entfernt.')
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('Mitglied user_martin wurde aus BV entfernt.')
+    ).not.toBeInTheDocument();
   });
 
   it('shows removal action exceptions without removing the member row', async () => {

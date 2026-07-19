@@ -44,7 +44,10 @@ einem bewusst human-gesteuerten Kontrollzentrum.
 - Der Projektbereich zeigt Mitglieder eines ausgewählten Projekts aus
   `bubblophy_project_members` und ergänzt aus `bubblophy_user_profiles` nur
   verständliche Anzeigedaten. Profile gewähren keinen Zugriff; bei fehlendem
-  Profil bleibt die technische Auth-User-ID der sichtbare Fallback.
+  Profil bleibt die technische Auth-User-ID der sichtbare Fallback. Der
+  Mitgliederbereich zeigt die eigene Rolle und erklärt Owner, Maintainer,
+  Member und Viewer kompakt anhand ihrer tatsächlichen Rechte. Erfolgreiche
+  UI-Aktionen verwenden verständliche Mitgliedsnamen statt technischer IDs.
 - Owner und Maintainer können Nicht-Owner-Mitglieder zwischen `maintainer`,
   `member` und `viewer` umstellen oder entfernen. Owner-Rollen, Owner-Removal
   und Self-Removal bleiben im MVP konservativ gesperrt. Projekt und beteiligte

@@ -15,6 +15,8 @@ import type {
   BubblophyProjectInvitationManagerSummary,
 } from '@/lib/projects/invitation-snapshot';
 
+import { projectMemberRoleLabels } from '@/lib/projects/role-presentation';
+
 import { useEffect, useState, useTransition } from 'react';
 
 import { Badge } from '@bubbles/ui/shadcn/badge';
@@ -28,10 +30,7 @@ import {
   SelectValue,
 } from '@bubbles/ui/shadcn/select';
 
-import {
-  invitationRoleLabels,
-  ProjectInvitationList,
-} from '@/components/dashboard/project-invitations/project-invitation-list';
+import { ProjectInvitationList } from '@/components/dashboard/project-invitations/project-invitation-list';
 import {
   getInvitationMutationErrorMessage,
   getInvitationReadErrorMessage,
@@ -368,12 +367,12 @@ export function ProjectInvitationManager({
                 }
               }}>
               <SelectTrigger className="h-9 w-full" aria-label="Rolle">
-                <SelectValue>{invitationRoleLabels[role]}</SelectValue>
+                <SelectValue>{projectMemberRoleLabels[role]}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {invitationRoles.map((invitationRole) => (
                   <SelectItem key={invitationRole} value={invitationRole}>
-                    {invitationRoleLabels[invitationRole]}
+                    {projectMemberRoleLabels[invitationRole]}
                   </SelectItem>
                 ))}
               </SelectContent>

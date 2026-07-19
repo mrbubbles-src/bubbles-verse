@@ -99,6 +99,10 @@
 - Aligned project and agent-token management controls with each project's
   current owner/maintainer role, filtered mixed-role token actions per project,
   and blocked archived-project content edits at the locked server boundary.
+- Added a compact project-role guide showing the current person's effective
+  role, centralized role labels across members and invitations, replaced
+  technical member IDs in removal feedback, and renamed issue ownership to
+  responsibility in the queue.
 
 All notable changes to this project will be documented in this file.
 
