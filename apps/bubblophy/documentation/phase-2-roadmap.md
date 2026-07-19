@@ -130,9 +130,27 @@ Status: abgeschlossen.
   Projekte ohne Treffer als leere Ergebnisse erhalten bleiben. Ein realer
   Datenbank-EXPLAIN und daraus abgeleitete Such-/Composite-Indizes bleiben vor
   dem Deployment ein eigener Härtungsslice.
-- Suche, Filter, Sortierung und Pagination für Projekte, Issues, Runs und
-  Audit-Ereignisse ergänzen.
-- Filterzustand in URL und Deep Links stabil halten.
+- Die konkrete Projekt-Queue nutzt den begrenzten Read jetzt im Dashboard:
+  `q`, `status`, `priority`, `sort` und der Vorwärts-Cursor `after` sind
+  kanonischer URL-State. Filter- und Seitenwechsel setzen das ausgewählte Issue
+  zurück; ein direkter Issue-Key wird unabhängig von Seite und Filtern geladen.
+  Lokale Drafts und bestätigte Mutationen werden per öffentlichem Issue-Key
+  darübergelegt. Archivierte Projekte bleiben lesbar, alle Writes bleiben
+  gesperrt. Page- und Detailfehler fallen nicht still auf Snapshot-Issues
+  zurück. Page-Ergebnisse werden nur bei exakt passendem Projekt-, Filter-,
+  Sortier- und Cursor-Request verwendet; Detail-Ergebnisse nur beim passenden
+  direkten Key. Ein transient nicht verfügbares Detail bewahrt den Deep Link.
+  Meldet das finale Page-Gate fehlenden Zugriff, werden alle Snapshot-Daten des
+  Projekts vor dem Client-DTO redigiert und ein konkurrierend erfolgreiches
+  Detail verworfen. Frisch gelesene Rollen und Archivzustände sind für die
+  Issue-Write-Gates autoritativ.
+- Die projektübergreifende Übersicht verwendet übergangsweise weiter den
+  vorhandenen Snapshot. Dieser lädt außerdem noch die vollständigen Issues für
+  Metriken, Run-Auflösung und bestehende Notes. Vor dem Entfernen dieses
+  Legacy-Reads muss der begrenzte Detailvertrag Notes vollständig übernehmen;
+  aktuell bewahrt der UI-Mapper vorhandene Snapshot-Notes nur übergangsweise.
+- Suche, Filter, Sortierung und Pagination für Projekte, Runs und
+  Audit-Ereignisse ergänzen. Die Issue-Queue ist abgeschlossen.
 - Datenbankabfragen und Cache-Tags auf größere Projektmengen prüfen.
 
 ### 6. Benachrichtigungen und Team-Arbeit
@@ -188,7 +206,9 @@ session-synchronisierte Identitäts-UX gemäß
 Membership- und Rollenbindung aller Dashboard-Datengruppen ist ebenfalls
 abgeschlossen. Die verständliche Rollenrechte-Erklärung ist ebenfalls im UI
 vorhanden. Die begrenzten server-only IssuePage- und direkten IssueDetail-
-Verträge einschließlich des serverseitigen IssuePage-Filtervertrags sind
-ebenfalls vorhanden; als Nächstes folgt ihre Queue-/URL-Integration. Die
+Verträge einschließlich des serverseitigen IssuePage-Filtervertrags und ihre
+konkrete Queue-/URL-Integration sind ebenfalls vorhanden. Als Nächstes folgen
+die Ablösung des unbeschränkten Legacy-Issue-Snapshots sowie begrenzte Reads für
+Runs, Audit und weitere größere Datenmengen. Die
 MCP-Grundlage bleibt unter
 `docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md` dokumentiert.

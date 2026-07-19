@@ -33,6 +33,10 @@ import type {
   UpdateBubblophyProjectMemberRoleActionInput,
   UpdateBubblophyProjectMemberRoleActionResult,
 } from '@/app/actions';
+import type {
+  ReadDashboardIssueDetailResult,
+  ReadDashboardIssuePageResult,
+} from '@/lib/dashboard/issues';
 import type { DashboardSnapshot } from '@/lib/dashboard/types';
 
 import { dashboardSnapshot } from '@/lib/dashboard/sample-data';
@@ -41,6 +45,7 @@ import { bubblophySidebarData } from '@/lib/sidebar';
 import React from 'react';
 
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -102,6 +107,56 @@ const databaseSnapshot = {
     description: 'Read-only Testdaten.',
   },
 } satisfies DashboardSnapshot;
+
+const bvIssuePageResult = {
+  status: 'success',
+  project: {
+    key: 'BV',
+    name: 'Bubblesverse',
+    isArchived: false,
+    currentUserRole: 'owner',
+  },
+  sort: 'newest',
+  filters: { query: null, status: null, priority: null },
+  items: [
+    {
+      key: 'BV-14',
+      issueNumber: 14,
+      title: 'Serverseitige Queue anbinden',
+      status: 'in_progress',
+      priority: 'high',
+      requiresHumanApproval: true,
+      assignedAuthUserId: null,
+      latestPlan: { version: 2, stepCount: 3 },
+    },
+  ],
+  nextAfterIssueNumber: 14,
+} satisfies ReadDashboardIssuePageResult;
+
+const bvIssuePageRequest = {
+  projectKey: 'BV',
+  sort: 'newest',
+  filters: { query: null, status: null, priority: null },
+  afterIssueNumber: null,
+} as const;
+
+const bvOffPageIssueDetailResult = {
+  status: 'success',
+  project: bvIssuePageResult.project,
+  issue: {
+    key: 'BV-99',
+    issueNumber: 99,
+    title: 'Direktes Detail außerhalb der Seite',
+    description: 'Dieses Issue steht nicht in der aktuellen 25er-Seite.',
+    status: 'ready',
+    priority: 'medium',
+    requiresHumanApproval: false,
+    assignedAuthUserId: null,
+    createdAt: '2026-07-18T10:00:00.000Z',
+    updatedAt: '2026-07-19T10:00:00.000Z',
+    latestPlan: null,
+  },
+} satisfies ReadDashboardIssueDetailResult;
 
 const databaseSnapshotWithManageableMembers = {
   ...databaseSnapshot,
@@ -735,9 +790,7 @@ describe('BubblophyDashboard interactions', () => {
     fireEvent.click(novariProjectButton);
 
     expect(screen.getByText('Gefiltert auf Projekt NO.')).toBeInTheDocument();
-    expect(navigationMocks.routerPush).toHaveBeenCalledWith(
-      '/?project=NO&issue=NO-08'
-    );
+    expect(navigationMocks.routerPush).toHaveBeenCalledWith('/?project=NO');
     expect(novariProjectButton).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('NO-08');
     expect(
@@ -787,6 +840,529 @@ describe('BubblophyDashboard interactions', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('renders the bounded server page while keeping an off-page detail open', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=BV&issue=BV-99')
+    );
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        issuePageRequest={bvIssuePageRequest}
+        issuePageResult={bvIssuePageResult}
+        issueDetailRequestKey="BV-99"
+        issueDetailResult={bvOffPageIssueDetailResult}
+      />
+    );
+
+    const issueSection = document.getElementById('issues');
+
+    expect(issueSection).toBeInstanceOf(HTMLElement);
+
+    if (!issueSection) {
+      throw new Error('Expected issue queue section to render.');
+    }
+
+    expect(
+      within(issueSection).getByRole('row', {
+        name: /Issue BV-14: Serverseitige Queue anbinden auswählen/,
+      })
+    ).toBeInTheDocument();
+    expect(
+      within(issueSection).queryByRole('row', {
+        name: /Issue BV-12:/,
+      })
+    ).not.toBeInTheDocument();
+    expect(
+      within(issueSection).getByLabelText('Issue-Details')
+    ).toHaveTextContent('BV-99');
+    expect(
+      within(issueSection).getByLabelText('Issue-Details')
+    ).toHaveTextContent(
+      'Dieses Issue steht nicht in der aktuellen 25er-Seite.'
+    );
+    expect(navigationMocks.routerReplace).not.toHaveBeenCalled();
+  });
+
+  it('submits project search without preserving cursor or detail selection', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=BV&issue=BV-99&after=42&tab=audit')
+    );
+    autoCommitMockNavigation = false;
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        issuePageRequest={{
+          ...bvIssuePageRequest,
+          afterIssueNumber: 42,
+        }}
+        issuePageResult={bvIssuePageResult}
+        issueDetailRequestKey="BV-99"
+        issueDetailResult={bvOffPageIssueDetailResult}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText('Issue-Suche'), {
+      target: { value: ' OAuth ' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Anwenden' }));
+
+    expect(navigationMocks.routerPush).toHaveBeenCalledWith(
+      '/?project=BV&tab=audit&q=OAuth'
+    );
+  });
+
+  it('advances the concrete queue with its opaque forward cursor', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=BV&issue=BV-99&q=Queue&tab=audit')
+    );
+    autoCommitMockNavigation = false;
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        issuePageRequest={{
+          ...bvIssuePageRequest,
+          filters: {
+            ...bvIssuePageRequest.filters,
+            query: 'Queue',
+          },
+        }}
+        issuePageResult={bvIssuePageResult}
+        issueDetailRequestKey="BV-99"
+        issueDetailResult={bvOffPageIssueDetailResult}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Weitere 25' }));
+
+    expect(navigationMocks.routerPush).toHaveBeenCalledWith(
+      '/?project=BV&q=Queue&tab=audit&after=14'
+    );
+  });
+
+  it('does not fall back to snapshot issues when the page read fails', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=BV&issue=BV-12')
+    );
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        issuePageRequest={bvIssuePageRequest}
+        issuePageResult={{ status: 'database_unavailable' }}
+        issueDetailResult={null}
+      />
+    );
+
+    expect(
+      screen.getByText(
+        'Die Issue-Liste ist gerade nicht verfügbar. Andere Dashboard-Bereiche bleiben nutzbar.'
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent(
+      'Kein Issue ausgewählt.'
+    );
+    expect(
+      screen.queryByRole('row', { name: /Issue BV-12:/ })
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps an unavailable off-page deep link without rewriting its URL', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=BV&issue=BV-99')
+    );
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        issuePageRequest={bvIssuePageRequest}
+        issuePageResult={bvIssuePageResult}
+        issueDetailRequestKey="BV-99"
+        issueDetailResult={{ status: 'database_unavailable' }}
+      />
+    );
+
+    expect(
+      screen.getByText(
+        'Die vollständigen Issue-Details sind gerade nicht verfügbar. Die Queue bleibt nutzbar.'
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('row', {
+        name: /Issue BV-14: Serverseitige Queue anbinden auswählen/,
+      })
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent(
+      'Kein Issue ausgewählt.'
+    );
+    expect(navigationMocks.routerReplace).not.toHaveBeenCalled();
+  });
+
+  it('ignores stale same-project page props until the URL request arrives', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=BV&q=Andere')
+    );
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        issuePageRequest={bvIssuePageRequest}
+        issuePageResult={bvIssuePageResult}
+      />
+    );
+
+    expect(
+      screen.getByText('Die Issue-Liste wird für diese URL geladen.')
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('row', {
+        name: /Issue BV-14: Serverseitige Queue anbinden auswählen/,
+      })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('row', { name: /Issue BV-12:/ })
+    ).not.toBeInTheDocument();
+  });
+
+  it('uses revalidated viewer and archive state for issue write gates', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=BV&issue=BV-99')
+    );
+    const archivedViewerPage = {
+      ...bvIssuePageResult,
+      project: {
+        ...bvIssuePageResult.project,
+        isArchived: true,
+        currentUserRole: 'viewer',
+      },
+    } satisfies ReadDashboardIssuePageResult;
+    const archivedViewerDetail = {
+      ...bvOffPageIssueDetailResult,
+      project: archivedViewerPage.project,
+    } satisfies ReadDashboardIssueDetailResult;
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        issuePageRequest={bvIssuePageRequest}
+        issuePageResult={archivedViewerPage}
+        issueDetailRequestKey="BV-99"
+        issueDetailResult={archivedViewerDetail}
+        updateIssueContentAction={async () => ({ status: 'forbidden' })}
+        updateIssueStatusAction={async () => ({ status: 'forbidden' })}
+        createIssuePlanAction={async () => ({ status: 'forbidden' })}
+        requestAgentRunAction={async () => ({ status: 'forbidden' })}
+      />
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    expect(detailPanel).toHaveTextContent('BV-99');
+    expect(
+      within(detailPanel).queryByRole('button', { name: 'Bearbeiten' })
+    ).not.toBeInTheDocument();
+    expect(
+      within(detailPanel).queryByRole('button', { name: 'Status speichern' })
+    ).not.toBeInTheDocument();
+    expect(
+      within(detailPanel).queryByRole('button', { name: 'Run anfragen' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('uses the restrictive result when page and detail access disagree', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=BV&issue=BV-99')
+    );
+    const archivedViewerPage = {
+      ...bvIssuePageResult,
+      project: {
+        ...bvIssuePageResult.project,
+        isArchived: true,
+        currentUserRole: 'viewer',
+      },
+    } satisfies ReadDashboardIssuePageResult;
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        issuePageRequest={bvIssuePageRequest}
+        issuePageResult={archivedViewerPage}
+        issueDetailRequestKey="BV-99"
+        issueDetailResult={bvOffPageIssueDetailResult}
+        updateIssueContentAction={async () => ({ status: 'forbidden' })}
+        updateIssueStatusAction={async () => ({ status: 'forbidden' })}
+        createIssuePlanAction={async () => ({ status: 'forbidden' })}
+        requestAgentRunAction={async () => ({ status: 'forbidden' })}
+      />
+    );
+
+    const detailPanel = screen.getByLabelText('Issue-Details');
+
+    expect(detailPanel).toHaveTextContent('BV-99');
+    expect(
+      within(detailPanel).queryByRole('button', { name: 'Bearbeiten' })
+    ).not.toBeInTheDocument();
+    expect(
+      within(detailPanel).queryByRole('button', { name: 'Status speichern' })
+    ).not.toBeInTheDocument();
+    expect(
+      within(detailPanel).queryByRole('button', { name: 'Run anfragen' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps missing deep-link feedback while selecting a queue fallback', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=BV&issue=BV-99')
+    );
+    autoCommitMockNavigation = false;
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        issuePageRequest={bvIssuePageRequest}
+        issuePageResult={bvIssuePageResult}
+        issueDetailRequestKey="BV-14"
+        issueDetailResult={{
+          status: 'success',
+          project: bvIssuePageResult.project,
+          issue: {
+            ...bvOffPageIssueDetailResult.issue,
+            key: 'BV-14',
+            issueNumber: 14,
+          },
+        }}
+        missingRequestedIssueKey="BV-99"
+      />
+    );
+
+    expect(
+      screen.getByText(
+        'Das direkt verlinkte Issue ist nicht mehr verfügbar. Bubblophy zeigt stattdessen die aktuelle Queue-Auswahl.'
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('BV-14');
+  });
+
+  it('removes a locally persisted issue after authoritative not-found', async () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=BV')
+    );
+    const createIssueAction = vi.fn<
+      (
+        input: CreateBubblophyIssueActionInput
+      ) => Promise<CreateBubblophyIssueActionResult>
+    >(async (input) => ({
+      status: 'created',
+      issue: {
+        id: 'BV-99',
+        title: input.title,
+        projectKey: input.projectKey,
+        status: 'triage',
+        priority: 'mittel',
+        assigneeAuthUserId: null,
+        assigneeLabel: 'Nicht zugewiesen',
+        planSteps: 0,
+        approvalRequired: true,
+        description: 'Veralteter lokaler Vollinhalt.',
+      },
+    }));
+    const fallbackDetail = {
+      status: 'success',
+      project: bvIssuePageResult.project,
+      issue: {
+        ...bvOffPageIssueDetailResult.issue,
+        key: 'BV-14',
+        issueNumber: 14,
+        title: 'Aktuelles Fallback-Detail',
+      },
+    } satisfies ReadDashboardIssueDetailResult;
+    const { rerender } = render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        createIssueAction={createIssueAction}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Neues Issue/i }));
+    fireEvent.change(screen.getByLabelText('Titel'), {
+      target: { value: 'Nicht mehr vorhandenes Issue' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Issue erstellen' }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('BV-99');
+
+    autoCommitMockNavigation = false;
+    rerender(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        issuePageRequest={bvIssuePageRequest}
+        issuePageResult={bvIssuePageResult}
+        issueDetailRequestKey="BV-14"
+        issueDetailResult={fallbackDetail}
+        missingRequestedIssueKey="BV-99"
+        createIssueAction={createIssueAction}
+      />
+    );
+
+    expect(
+      screen.queryByText('Nicht mehr vorhandenes Issue')
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('Veralteter lokaler Vollinhalt.')
+    ).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent(
+      'Aktuelles Fallback-Detail'
+    );
+  });
+
+  it('ignores stale missing-detail props after an issue-only URL change', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=BV&issue=BV-99')
+    );
+    autoCommitMockNavigation = false;
+    const pageWithMissingRow = {
+      ...bvIssuePageResult,
+      items: [
+        {
+          ...bvIssuePageResult.items[0]!,
+          key: 'BV-99',
+          issueNumber: 99,
+          title: 'Andere aktuelle Auswahl',
+        },
+        bvIssuePageResult.items[0]!,
+      ],
+    } satisfies ReadDashboardIssuePageResult;
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        issuePageRequest={bvIssuePageRequest}
+        issuePageResult={pageWithMissingRow}
+        issueDetailRequestKey="BV-14"
+        issueDetailResult={{
+          status: 'success',
+          project: bvIssuePageResult.project,
+          issue: {
+            ...bvOffPageIssueDetailResult.issue,
+            key: 'BV-14',
+            issueNumber: 14,
+          },
+        }}
+        missingRequestedIssueKey="BV-99"
+      />
+    );
+
+    expect(
+      screen.getByText(/Das direkt verlinkte Issue ist nicht mehr verfügbar/)
+    ).toBeInTheDocument();
+
+    act(() => {
+      commitMockNavigation('/?project=BV&issue=BV-14');
+    });
+
+    expect(
+      screen.queryByText(/Das direkt verlinkte Issue ist nicht mehr verfügbar/)
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('row', {
+        name: /Issue BV-99: Andere aktuelle Auswahl auswählen/,
+      })
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('BV-14');
+  });
+
+  it('hides local issue overlays when project access is denied', async () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=BV')
+    );
+    const { rerender } = render(
+      <BubblophyDashboard snapshot={databaseSnapshot} />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Neues Issue/i }));
+    fireEvent.change(screen.getByLabelText('Titel'), {
+      target: { value: 'Vertraulicher lokaler Draft' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Draft anlegen' }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+    expect(
+      screen.getAllByText('Vertraulicher lokaler Draft').length
+    ).toBeGreaterThan(0);
+
+    const redactedSnapshot = {
+      ...databaseSnapshot,
+      projects: databaseSnapshot.projects.filter(
+        (project) => project.key !== 'BV'
+      ),
+      issues: databaseSnapshot.issues.filter(
+        (issue) => issue.projectKey !== 'BV'
+      ),
+      projectMembers: databaseSnapshot.projectMembers.filter(
+        (member) => member.projectKey !== 'BV'
+      ),
+      agentTokens: databaseSnapshot.agentTokens.filter(
+        (token) => token.projectKey !== 'BV'
+      ),
+      agentRuns: databaseSnapshot.agentRuns.filter(
+        (run) => !run.issueId.startsWith('BV-')
+      ),
+      activity: databaseSnapshot.activity.filter(
+        (event) => event.projectKey !== 'BV'
+      ),
+    } satisfies DashboardSnapshot;
+
+    rerender(
+      <BubblophyDashboard snapshot={redactedSnapshot} deniedProjectKey="BV" />
+    );
+
+    expect(
+      screen.queryByText('Vertraulicher lokaler Draft')
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {
+        name: 'Projekt Bubblesverse (BV) auswählen',
+      })
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText('codex-local-lio')).not.toBeInTheDocument();
+    expect(screen.queryByText('run_bv_14')).not.toBeInTheDocument();
+  });
+
+  it('discards a successful detail when the page membership gate is not found', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=BV&issue=BV-99')
+    );
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        issuePageRequest={bvIssuePageRequest}
+        issuePageResult={{ status: 'not_found' }}
+        issueDetailRequestKey="BV-99"
+        issueDetailResult={bvOffPageIssueDetailResult}
+      />
+    );
+
+    expect(screen.getByLabelText('Issue-Details')).not.toHaveTextContent(
+      'BV-99'
+    );
+    expect(
+      screen.queryByText(
+        'Dieses Issue steht nicht in der aktuellen 25er-Seite.'
+      )
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('row', { name: /Issue BV-12:/ })
+    ).not.toBeInTheDocument();
+  });
+
   it('follows browser history changes without restoring stale selection', async () => {
     navigationMocks.searchParams.mockReturnValue(
       new URLSearchParams('project=BV&issue=BV-12')
@@ -805,9 +1381,7 @@ describe('BubblophyDashboard interactions', () => {
 
     expect(screen.getByText('Gefiltert auf Projekt BV.')).toBeInTheDocument();
     expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('BV-12');
-    expect(navigationMocks.routerPush).toHaveBeenCalledWith(
-      '/?project=NO&issue=NO-08'
-    );
+    expect(navigationMocks.routerPush).toHaveBeenCalledWith('/?project=NO');
     expect(navigationMocks.routerReplace).not.toHaveBeenCalled();
 
     commitMockNavigation('/?project=NO&issue=NO-08');
@@ -950,7 +1524,7 @@ describe('BubblophyDashboard interactions', () => {
     expect(allProjectsButton).toHaveAttribute('aria-pressed', 'true');
     expect(
       screen.getByText(
-        'Alle Projekte, priorisiert nach Freigabe, Planstand und Blockern.'
+        'Projektübergreifende Übersicht aus dem aktuellen Dashboard-Stand.'
       )
     ).toBeInTheDocument();
     expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('BV-14');
@@ -2705,6 +3279,26 @@ describe('BubblophyDashboard interactions', () => {
     expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('BV-14');
   });
 
+  it('returns to the first queue page when a local draft is created', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=BV&sort=oldest&after=42')
+    );
+
+    render(<BubblophyDashboard snapshot={dashboardSnapshot} />);
+
+    navigationMocks.routerPush.mockClear();
+    autoCommitMockNavigation = false;
+    fireEvent.click(screen.getByRole('button', { name: /Neues Issue/i }));
+    fireEvent.change(screen.getByLabelText('Titel'), {
+      target: { value: 'Draft von einer Folgeseite' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Draft anlegen' }));
+
+    expect(navigationMocks.routerPush).toHaveBeenCalledWith(
+      '/?project=BV&sort=oldest&issue=BV-DRAFT-01'
+    );
+  });
+
   it('does not show the database project create action for sample snapshots', () => {
     render(<BubblophyDashboard snapshot={dashboardSnapshot} />);
 
@@ -3023,9 +3617,7 @@ describe('BubblophyDashboard interactions', () => {
     });
     expect(selectedProjectButton).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: /Neues Issue/i })).toBeDisabled();
-    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent(
-      'Kein Issue ausgewählt.'
-    );
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('BV-14');
     expect(
       screen.queryByRole('button', { name: 'Agent-Token erstellen' })
     ).not.toBeInTheDocument();

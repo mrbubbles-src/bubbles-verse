@@ -15,6 +15,10 @@ import type {
   updateBubblophyProjectContentAction,
 } from '@/app/actions';
 import type { BubblophyDashboardSnapshotInput } from '@/lib/dashboard/data';
+import type {
+  ReadDashboardIssueDetailResult,
+  ReadDashboardIssuePageResult,
+} from '@/lib/dashboard/issues';
 import type { DashboardSnapshot } from '@/lib/dashboard/types';
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -22,9 +26,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const requireBubblophySessionMock = vi.fn();
 const getBubblophyDashboardSnapshotMock = vi.fn();
 const syncBubblophyUserProfileMock = vi.fn();
+const readDashboardIssuePageMock = vi.fn();
+const readDashboardIssueDetailMock = vi.fn();
 const BubblophyDashboardMock = vi.fn(
   (props: {
     snapshot: DashboardSnapshot;
+    issuePageResult?: ReadDashboardIssuePageResult | null;
+    issueDetailResult?: ReadDashboardIssueDetailResult | null;
     createIssueAction?: typeof createBubblophyIssueAction;
     updateIssueContentAction?: typeof updateBubblophyIssueContentAction;
     createIssuePlanAction?: typeof createBubblophyIssuePlanAction;
@@ -41,6 +49,40 @@ const BubblophyDashboardMock = vi.fn(
     updateAgentTokenLifecycleAction?: typeof updateBubblophyAgentTokenLifecycleAction;
   }) => <div data-testid="dashboard">{props.snapshot.projects[0]?.name}</div>
 );
+
+const homeSession = {
+  authUserId: 'user_owner',
+  email: 'owner@example.test',
+  user: {},
+};
+
+const homeDatabaseSnapshot = {
+  meta: {
+    dataSource: 'database',
+    label: 'Datenbankdaten',
+    description: 'Persistierte Testdaten.',
+  },
+  currentUser: { authUserId: 'user_owner' },
+  projects: [
+    {
+      id: 'project',
+      name: 'Allowed Project',
+      key: 'AP',
+      isArchived: false,
+      health: 'stabil',
+      openIssues: 30,
+      readyIssues: 2,
+      blockedIssues: 0,
+      memberCount: 1,
+      agentTokenCount: 0,
+    },
+  ],
+  issues: [],
+  projectMembers: [],
+  agentTokens: [],
+  agentRuns: [],
+  activity: [],
+} satisfies DashboardSnapshot;
 
 vi.mock('next/server', async (importOriginal) => {
   const actual = await importOriginal<typeof import('next/server')>();
@@ -61,6 +103,15 @@ vi.mock('@/lib/dashboard/data', () => ({
     getBubblophyDashboardSnapshotMock(input),
 }));
 
+vi.mock('@/lib/dashboard/issues', () => ({
+  readDashboardIssuePage: (
+    authUserId: string,
+    input: Record<string, string | number | undefined>
+  ) => readDashboardIssuePageMock(authUserId, input),
+  readDashboardIssueDetail: (authUserId: string, input: { issueKey: string }) =>
+    readDashboardIssueDetailMock(authUserId, input),
+}));
+
 vi.mock('@/lib/profiles/database-write', () => ({
   syncBubblophyUserProfile: (input: {
     user: object;
@@ -71,6 +122,8 @@ vi.mock('@/lib/profiles/database-write', () => ({
 vi.mock('@/components/dashboard/bubblophy-dashboard', () => ({
   BubblophyDashboard: (props: {
     snapshot: DashboardSnapshot;
+    issuePageResult?: ReadDashboardIssuePageResult | null;
+    issueDetailResult?: ReadDashboardIssueDetailResult | null;
     createIssueAction?: typeof createBubblophyIssueAction;
     updateIssueContentAction?: typeof updateBubblophyIssueContentAction;
     createIssuePlanAction?: typeof createBubblophyIssuePlanAction;
@@ -94,6 +147,10 @@ describe('Bubblophy home page', () => {
     getBubblophyDashboardSnapshotMock.mockReset();
     syncBubblophyUserProfileMock.mockReset();
     syncBubblophyUserProfileMock.mockResolvedValue(undefined);
+    readDashboardIssuePageMock.mockReset();
+    readDashboardIssuePageMock.mockResolvedValue({ status: 'not_found' });
+    readDashboardIssueDetailMock.mockReset();
+    readDashboardIssueDetailMock.mockResolvedValue({ status: 'not_found' });
     BubblophyDashboardMock.mockClear();
   });
 
@@ -234,5 +291,370 @@ describe('Bubblophy home page', () => {
 
     expect(getBubblophyDashboardSnapshotMock).toHaveBeenCalledWith({ session });
     expect(element.props.snapshot).toBe(snapshot);
+  });
+
+  it('loads a filtered project page and direct detail from URL state', async () => {
+    const pageResult = {
+      status: 'success',
+      project: {
+        key: 'AP',
+        name: 'Allowed Project',
+        isArchived: false,
+        currentUserRole: 'owner',
+      },
+      sort: 'oldest',
+      filters: { query: 'OAuth', status: 'ready', priority: 'high' },
+      items: [],
+      nextAfterIssueNumber: null,
+    } satisfies ReadDashboardIssuePageResult;
+    const detailResult = {
+      status: 'not_found',
+    } satisfies ReadDashboardIssueDetailResult;
+
+    requireBubblophySessionMock.mockResolvedValue(homeSession);
+    getBubblophyDashboardSnapshotMock.mockResolvedValue(homeDatabaseSnapshot);
+    readDashboardIssuePageMock.mockResolvedValue(pageResult);
+    readDashboardIssueDetailMock.mockResolvedValue(detailResult);
+
+    const { ProtectedBubblophyDashboard } = await import('@/app/page');
+    const element = await ProtectedBubblophyDashboard({
+      searchParams: Promise.resolve({
+        project: ' ap ',
+        issue: 'ap-99',
+        q: ' OAuth ',
+        status: 'ready',
+        priority: 'high',
+        sort: 'oldest',
+        after: '42',
+      }),
+    });
+
+    expect(readDashboardIssuePageMock).toHaveBeenCalledWith('user_owner', {
+      projectKey: 'AP',
+      sort: 'oldest',
+      afterIssueNumber: 42,
+      query: 'OAuth',
+      status: 'ready',
+      priority: 'high',
+    });
+    expect(readDashboardIssueDetailMock).toHaveBeenCalledWith('user_owner', {
+      issueKey: 'AP-99',
+    });
+    expect(element.props.issuePageResult).toBe(pageResult);
+    expect(element.props.issueDetailResult).toBe(detailResult);
+    expect(element.props.issuePageRequest).toEqual({
+      projectKey: 'AP',
+      sort: 'oldest',
+      afterIssueNumber: 42,
+      filters: { query: 'OAuth', status: 'ready', priority: 'high' },
+    });
+  });
+
+  it('keeps the all-project overview on the existing snapshot reader', async () => {
+    const snapshot = {
+      ...homeDatabaseSnapshot,
+      projects: [],
+    } satisfies DashboardSnapshot;
+
+    requireBubblophySessionMock.mockResolvedValue(homeSession);
+    getBubblophyDashboardSnapshotMock.mockResolvedValue(snapshot);
+
+    const { ProtectedBubblophyDashboard } = await import('@/app/page');
+    const element = await ProtectedBubblophyDashboard({
+      searchParams: Promise.resolve({ project: 'all', issue: 'AP-1' }),
+    });
+
+    expect(readDashboardIssuePageMock).not.toHaveBeenCalled();
+    expect(readDashboardIssueDetailMock).not.toHaveBeenCalled();
+    expect(element.props.issuePageResult).toBeNull();
+    expect(element.props.issueDetailResult).toBeNull();
+  });
+
+  it('redacts a project when the final page membership gate loses access', async () => {
+    const snapshot = {
+      ...homeDatabaseSnapshot,
+      issues: [
+        {
+          id: 'AP-5',
+          title: 'Nicht mehr sichtbares Issue',
+          projectKey: 'AP',
+          status: 'bereit',
+          priority: 'mittel',
+          assigneeAuthUserId: null,
+          assigneeLabel: 'Nicht zugewiesen',
+          planSteps: 0,
+          approvalRequired: false,
+        },
+      ],
+      projectMembers: [
+        {
+          id: 'AP:user_owner',
+          projectKey: 'AP',
+          authUserId: 'user_owner',
+          label: 'Owner',
+          role: 'owner',
+          createdAt: '2026-07-19T10:00:00.000Z',
+        },
+      ],
+      agentTokens: [
+        {
+          id: 'token-ap',
+          label: 'AP Reader',
+          projectKey: 'AP',
+          scopes: ['issues:read'],
+          state: 'aktiv',
+          lastUsedAt: 'noch nie',
+          expiresAt: 'läuft nicht ab',
+        },
+      ],
+      agentRuns: [
+        {
+          id: 'run-ap-5',
+          issueId: 'AP-5',
+          agentLabel: 'Runner',
+          state: 'wartet',
+          requestedBy: 'Mensch',
+          lastEvent: 'Angelegt',
+        },
+      ],
+      activity: [
+        {
+          id: 'event-ap',
+          label: 'AP-Ereignis',
+          actor: 'Mensch',
+          occurredAt: '2026-07-19T10:00:00.000Z',
+          projectKey: 'AP',
+          issueId: 'AP-5',
+        },
+      ],
+    } satisfies DashboardSnapshot;
+    const detailResult = {
+      status: 'success',
+      project: {
+        key: 'AP',
+        name: 'Allowed Project',
+        isArchived: false,
+        currentUserRole: 'owner',
+      },
+      issue: {
+        key: 'AP-5',
+        issueNumber: 5,
+        title: 'Race-Detail',
+        description: 'Darf nach Membership-Entzug nicht erscheinen.',
+        status: 'ready',
+        priority: 'medium',
+        requiresHumanApproval: false,
+        assignedAuthUserId: null,
+        createdAt: '2026-07-19T09:00:00.000Z',
+        updatedAt: '2026-07-19T10:00:00.000Z',
+        latestPlan: null,
+      },
+    } satisfies ReadDashboardIssueDetailResult;
+
+    requireBubblophySessionMock.mockResolvedValue(homeSession);
+    getBubblophyDashboardSnapshotMock.mockResolvedValue(snapshot);
+    readDashboardIssuePageMock.mockResolvedValue({ status: 'not_found' });
+    readDashboardIssueDetailMock.mockResolvedValue(detailResult);
+
+    const { ProtectedBubblophyDashboard } = await import('@/app/page');
+    const element = await ProtectedBubblophyDashboard({
+      searchParams: Promise.resolve({ project: 'AP', issue: 'AP-5' }),
+    });
+
+    expect(element.props.snapshot.projects).toEqual([]);
+    expect(element.props.snapshot.issues).toEqual([]);
+    expect(element.props.snapshot.projectMembers).toEqual([]);
+    expect(element.props.snapshot.agentTokens).toEqual([]);
+    expect(element.props.snapshot.agentRuns).toEqual([]);
+    expect(element.props.snapshot.activity).toEqual([]);
+    expect(element.props.issueDetailResult).toBeNull();
+    expect(element.props.issueDetailRequestKey).toBeNull();
+    expect(element.props.deniedProjectKey).toBe('AP');
+    expect(element.key).toBe('access-lost:AP');
+  });
+
+  it('loads the first page item detail when no issue is selected', async () => {
+    const snapshot = {
+      ...homeDatabaseSnapshot,
+      projects: homeDatabaseSnapshot.projects.map((project) => ({
+        ...project,
+        openIssues: 1,
+        readyIssues: 1,
+      })),
+    } satisfies DashboardSnapshot;
+    const pageResult = {
+      status: 'success',
+      project: {
+        key: 'AP',
+        name: 'Allowed Project',
+        isArchived: false,
+        currentUserRole: 'owner',
+      },
+      sort: 'newest',
+      filters: { query: null, status: null, priority: null },
+      items: [
+        {
+          key: 'AP-5',
+          issueNumber: 5,
+          title: 'Erstes Issue',
+          status: 'ready',
+          priority: 'medium',
+          requiresHumanApproval: false,
+          assignedAuthUserId: null,
+          latestPlan: null,
+        },
+      ],
+      nextAfterIssueNumber: null,
+    } satisfies ReadDashboardIssuePageResult;
+    const detailResult = {
+      status: 'not_found',
+    } satisfies ReadDashboardIssueDetailResult;
+
+    requireBubblophySessionMock.mockResolvedValue(homeSession);
+    getBubblophyDashboardSnapshotMock.mockResolvedValue(snapshot);
+    readDashboardIssuePageMock.mockResolvedValue(pageResult);
+    readDashboardIssueDetailMock.mockResolvedValue(detailResult);
+
+    const { ProtectedBubblophyDashboard } = await import('@/app/page');
+    const element = await ProtectedBubblophyDashboard({
+      searchParams: Promise.resolve({ project: 'AP' }),
+    });
+
+    expect(readDashboardIssueDetailMock).toHaveBeenCalledWith('user_owner', {
+      issueKey: 'AP-5',
+    });
+    expect(element.props.issueDetailResult).toBe(detailResult);
+  });
+
+  it('loads a full first-row fallback after a direct issue is not found', async () => {
+    const pageResult = {
+      status: 'success',
+      project: {
+        key: 'AP',
+        name: 'Allowed Project',
+        isArchived: false,
+        currentUserRole: 'owner',
+      },
+      sort: 'newest',
+      filters: { query: null, status: null, priority: null },
+      items: [
+        {
+          key: 'AP-5',
+          issueNumber: 5,
+          title: 'Erstes Issue',
+          status: 'ready',
+          priority: 'medium',
+          requiresHumanApproval: false,
+          assignedAuthUserId: null,
+          latestPlan: null,
+        },
+      ],
+      nextAfterIssueNumber: null,
+    } satisfies ReadDashboardIssuePageResult;
+    const fallbackDetail = {
+      status: 'success',
+      project: pageResult.project,
+      issue: {
+        ...pageResult.items[0]!,
+        description: 'Vollständiges Fallback-Detail.',
+        createdAt: '2026-07-19T09:00:00.000Z',
+        updatedAt: '2026-07-19T10:00:00.000Z',
+        latestPlan: null,
+      },
+    } satisfies ReadDashboardIssueDetailResult;
+
+    requireBubblophySessionMock.mockResolvedValue(homeSession);
+    getBubblophyDashboardSnapshotMock.mockResolvedValue(homeDatabaseSnapshot);
+    readDashboardIssuePageMock.mockResolvedValue(pageResult);
+    readDashboardIssueDetailMock
+      .mockResolvedValueOnce({ status: 'not_found' })
+      .mockResolvedValueOnce(fallbackDetail);
+
+    const { ProtectedBubblophyDashboard } = await import('@/app/page');
+    const element = await ProtectedBubblophyDashboard({
+      searchParams: Promise.resolve({ project: 'AP', issue: 'AP-99' }),
+    });
+
+    expect(readDashboardIssueDetailMock).toHaveBeenNthCalledWith(
+      1,
+      'user_owner',
+      { issueKey: 'AP-99' }
+    );
+    expect(readDashboardIssueDetailMock).toHaveBeenNthCalledWith(
+      2,
+      'user_owner',
+      { issueKey: 'AP-5' }
+    );
+    expect(element.props.issueDetailResult).toBe(fallbackDetail);
+    expect(element.props.issueDetailRequestKey).toBe('AP-5');
+    expect(element.props.missingRequestedIssueKey).toBe('AP-99');
+  });
+
+  it('skips a stale page row after its direct detail is not found', async () => {
+    const pageResult = {
+      status: 'success',
+      project: {
+        key: 'AP',
+        name: 'Allowed Project',
+        isArchived: false,
+        currentUserRole: 'owner',
+      },
+      sort: 'newest',
+      filters: { query: null, status: null, priority: null },
+      items: [
+        {
+          key: 'AP-99',
+          issueNumber: 99,
+          title: 'Gerade gelöschtes Issue',
+          status: 'ready',
+          priority: 'medium',
+          requiresHumanApproval: false,
+          assignedAuthUserId: null,
+          latestPlan: null,
+        },
+        {
+          key: 'AP-5',
+          issueNumber: 5,
+          title: 'Nächstes sichtbares Issue',
+          status: 'ready',
+          priority: 'medium',
+          requiresHumanApproval: false,
+          assignedAuthUserId: null,
+          latestPlan: null,
+        },
+      ],
+      nextAfterIssueNumber: null,
+    } satisfies ReadDashboardIssuePageResult;
+    const fallbackDetail = {
+      status: 'success',
+      project: pageResult.project,
+      issue: {
+        ...pageResult.items[1]!,
+        description: 'Nächstes vollständiges Detail.',
+        createdAt: '2026-07-19T09:00:00.000Z',
+        updatedAt: '2026-07-19T10:00:00.000Z',
+        latestPlan: null,
+      },
+    } satisfies ReadDashboardIssueDetailResult;
+
+    requireBubblophySessionMock.mockResolvedValue(homeSession);
+    getBubblophyDashboardSnapshotMock.mockResolvedValue(homeDatabaseSnapshot);
+    readDashboardIssuePageMock.mockResolvedValue(pageResult);
+    readDashboardIssueDetailMock
+      .mockResolvedValueOnce({ status: 'not_found' })
+      .mockResolvedValueOnce(fallbackDetail);
+
+    const { ProtectedBubblophyDashboard } = await import('@/app/page');
+    const element = await ProtectedBubblophyDashboard({
+      searchParams: Promise.resolve({ project: 'AP', issue: 'AP-99' }),
+    });
+
+    expect(readDashboardIssueDetailMock).toHaveBeenNthCalledWith(
+      2,
+      'user_owner',
+      { issueKey: 'AP-5' }
+    );
+    expect(element.props.issueDetailRequestKey).toBe('AP-5');
+    expect(element.props.missingRequestedIssueKey).toBe('AP-99');
   });
 });

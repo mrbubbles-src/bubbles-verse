@@ -399,8 +399,19 @@ bun run build
   Titel, Issue-Nummer und öffentlichem Key sowie einzelne Status- und
   Prioritätsfilter. Alle Bedingungen bleiben im Membership-gebundenen
   Left-Join, damit ein sichtbares Projekt ohne Treffer nicht als unzugänglich
-  erscheint. Die bestehende UI nutzt bis zur folgenden Integration weiterhin
-  den vollständigen Snapshot.
+  erscheint. Konkrete Projekt-Queues verwenden diesen Vertrag mit
+  URL-gestützter Suche, Status, Priorität, Sortierung und Vorwärts-Cursor. Ein
+  getrennt geladener Deep Link bleibt auch außerhalb der aktuellen Seite offen;
+  Page- und Detailfehler werden getrennt sichtbar. Lokale Overlays werden über
+  den öffentlichen Issue-Key zusammengeführt, und archivierte Projekte bleiben
+  strikt read-only. Exakte Request-Fingerprints verhindern, dass alte
+  Same-Project-Pages bei URL-Navigation wiederverwendet werden. Ein finales
+  `not_found` am Page-Gate redigiert alle Snapshot-Datengruppen des betroffenen
+  Projekts und verwirft konkurrierende Details fail-closed; revalidierte Rollen
+  und Archivstände steuern die Issue-Aktionen. Die projektübergreifende
+  Übersicht, Metriken, Run-Auflösung und bestehende Issue-Notes hängen
+  übergangsweise noch am vollständigen Snapshot; dessen Ablösung und ein
+  vollständiger begrenzter Notes-Read bleiben eigene Skalierungsslices.
 - Sample-Daten markieren Agent-Tokens und Audit-Aktivität als Beispielvorschau.
   Wenn die Datenbank nicht bereit ist, bleibt der Snapshot leer und zeigt einen
   Setup-Hinweis statt Beispielprojekte als stillen Ersatz. Der Run-Bereich zeigt

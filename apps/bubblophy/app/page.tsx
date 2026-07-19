@@ -1,5 +1,13 @@
+import type { DashboardIssuePageRequestState } from '@/lib/dashboard/issue-query';
+import type { DashboardSnapshot } from '@/lib/dashboard/types';
+
 import { requireBubblophySession } from '@/lib/auth/session';
 import { getBubblophyDashboardSnapshot } from '@/lib/dashboard/data';
+import { parseDashboardIssueQuery } from '@/lib/dashboard/issue-query';
+import {
+  readDashboardIssueDetail,
+  readDashboardIssuePage,
+} from '@/lib/dashboard/issues';
 import { syncBubblophyUserProfile } from '@/lib/profiles/database-write';
 
 import { Suspense } from 'react';
@@ -30,6 +38,12 @@ import {
 } from '@/app/actions';
 import { BubblophyDashboard } from '@/components/dashboard/bubblophy-dashboard';
 
+type BubblophyHomeSearchParams = Record<string, string | string[] | undefined>;
+
+interface BubblophyHomeProps {
+  searchParams: Promise<BubblophyHomeSearchParams>;
+}
+
 /**
  * Renders the Bubblophy MVP command center.
  *
@@ -38,10 +52,10 @@ import { BubblophyDashboard } from '@/components/dashboard/bubblophy-dashboard';
  *
  * @returns The first human-controlled issue and agent orchestration dashboard.
  */
-export default function Home() {
+export default function Home({ searchParams }: BubblophyHomeProps) {
   return (
     <Suspense fallback={<BubblophyDashboardGateFallback />}>
-      <ProtectedBubblophyDashboard />
+      <ProtectedBubblophyDashboard searchParams={searchParams} />
     </Suspense>
   );
 }
@@ -73,7 +87,9 @@ function BubblophyDashboardGateFallback() {
  *
  * @returns Authorized issue and agent orchestration dashboard.
  */
-export async function ProtectedBubblophyDashboard() {
+export async function ProtectedBubblophyDashboard({
+  searchParams = Promise.resolve({}),
+}: Partial<BubblophyHomeProps> = {}) {
   await connection();
   const session = await requireBubblophySession({ nextPath: '/' });
 
@@ -83,10 +99,112 @@ export async function ProtectedBubblophyDashboard() {
   }).catch(() => undefined);
 
   const dashboardSnapshot = await getBubblophyDashboardSnapshot({ session });
+  const rawSearchParams = await searchParams;
+  const selectedProjectKey = getFirstSearchParam(rawSearchParams.project)
+    ?.trim()
+    .toUpperCase();
+  const selectedProject = dashboardSnapshot.projects.find(
+    (project) => project.key === selectedProjectKey
+  );
+  const canReadProjectIssues =
+    dashboardSnapshot.meta.dataSource === 'database' &&
+    Boolean(selectedProject);
+  const issueQuery = parseDashboardIssueQuery({
+    query: getFirstSearchParam(rawSearchParams.q),
+    status: getFirstSearchParam(rawSearchParams.status),
+    priority: getFirstSearchParam(rawSearchParams.priority),
+    sort: getFirstSearchParam(rawSearchParams.sort),
+    after: getFirstSearchParam(rawSearchParams.after),
+  });
+  const requestedIssueKey = getFirstSearchParam(rawSearchParams.issue)
+    ?.trim()
+    .toUpperCase();
+  const requestedPersistedIssueKey =
+    selectedProject &&
+    requestedIssueKey &&
+    isPersistedIssueKeyForProject(requestedIssueKey, selectedProject.key)
+      ? requestedIssueKey
+      : null;
+  const issuePageRequest =
+    canReadProjectIssues && selectedProject
+      ? ({
+          projectKey: selectedProject.key,
+          ...issueQuery,
+        } satisfies DashboardIssuePageRequestState)
+      : null;
+  const issuePagePromise =
+    canReadProjectIssues && selectedProject
+      ? readDashboardIssuePage(session.authUserId, {
+          projectKey: selectedProject.key,
+          sort: issueQuery.sort,
+          afterIssueNumber: issueQuery.afterIssueNumber ?? undefined,
+          query: issueQuery.filters.query ?? undefined,
+          status: issueQuery.filters.status ?? 'all',
+          priority: issueQuery.filters.priority ?? 'all',
+        })
+      : Promise.resolve(null);
+  const requestedIssueDetailPromise =
+    canReadProjectIssues && requestedPersistedIssueKey
+      ? readDashboardIssueDetail(session.authUserId, {
+          issueKey: requestedPersistedIssueKey,
+        })
+      : Promise.resolve(null);
+  const [issuePageResult, requestedIssueDetailResult] = await Promise.all([
+    issuePagePromise,
+    requestedIssueDetailPromise,
+  ]);
+  const missingRequestedIssueKey =
+    requestedIssueDetailResult?.status === 'not_found'
+      ? requestedPersistedIssueKey
+      : null;
+  const firstPageIssueKey =
+    issuePageResult?.status === 'success'
+      ? issuePageResult.items.find(
+          (issue) => issue.key !== missingRequestedIssueKey
+        )?.key
+      : undefined;
+  const shouldLoadFirstPageDetail =
+    !requestedIssueDetailResult ||
+    requestedIssueDetailResult.status === 'not_found';
+  const firstPageIssueDetailResult =
+    canReadProjectIssues &&
+    firstPageIssueKey &&
+    shouldLoadFirstPageDetail &&
+    firstPageIssueKey !== requestedPersistedIssueKey
+      ? await readDashboardIssueDetail(session.authUserId, {
+          issueKey: firstPageIssueKey,
+        })
+      : null;
+  const hasLostProjectAccess = issuePageResult?.status === 'not_found';
+  const issueDetailRequestKey = hasLostProjectAccess
+    ? null
+    : firstPageIssueDetailResult
+      ? (firstPageIssueKey ?? null)
+      : requestedPersistedIssueKey;
+  const issueDetailResult = hasLostProjectAccess
+    ? null
+    : (firstPageIssueDetailResult ?? requestedIssueDetailResult);
+  const safeDashboardSnapshot =
+    hasLostProjectAccess && selectedProject
+      ? redactDashboardProject(dashboardSnapshot, selectedProject.key)
+      : dashboardSnapshot;
 
   return (
     <BubblophyDashboard
-      snapshot={dashboardSnapshot}
+      key={
+        hasLostProjectAccess && selectedProject
+          ? `access-lost:${selectedProject.key}`
+          : 'dashboard'
+      }
+      snapshot={safeDashboardSnapshot}
+      deniedProjectKey={
+        hasLostProjectAccess && selectedProject ? selectedProject.key : null
+      }
+      issuePageRequest={issuePageRequest}
+      issuePageResult={issuePageResult}
+      issueDetailRequestKey={issueDetailRequestKey}
+      issueDetailResult={issueDetailResult}
+      missingRequestedIssueKey={missingRequestedIssueKey}
       createIssueAction={createBubblophyIssueAction}
       updateIssueContentAction={updateBubblophyIssueContentAction}
       updateIssueAssigneeAction={updateBubblophyIssueAssigneeAction}
@@ -111,4 +229,46 @@ export async function ProtectedBubblophyDashboard() {
       updateAgentTokenLifecycleAction={updateBubblophyAgentTokenLifecycleAction}
     />
   );
+}
+
+/** Returns the first scalar value from a Next.js search parameter. */
+function getFirstSearchParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+/** Checks whether a public numeric issue key belongs to one project. */
+function isPersistedIssueKeyForProject(issueKey: string, projectKey: string) {
+  const issueNumber = issueKey.slice(projectKey.length + 1);
+
+  return (
+    issueKey.startsWith(`${projectKey}-`) && /^[1-9]\d*$/.test(issueNumber)
+  );
+}
+
+/** Removes every selected-project entity after the final membership gate fails. */
+function redactDashboardProject(
+  snapshot: DashboardSnapshot,
+  projectKey: string
+): DashboardSnapshot {
+  const issueKeyPrefix = `${projectKey}-`;
+
+  return {
+    ...snapshot,
+    projects: snapshot.projects.filter((project) => project.key !== projectKey),
+    issues: snapshot.issues.filter((issue) => issue.projectKey !== projectKey),
+    projectMembers: snapshot.projectMembers.filter(
+      (member) => member.projectKey !== projectKey
+    ),
+    agentTokens: snapshot.agentTokens.filter(
+      (token) => token.projectKey !== projectKey
+    ),
+    agentRuns: snapshot.agentRuns.filter(
+      (run) => !run.issueId.startsWith(issueKeyPrefix)
+    ),
+    activity: snapshot.activity.filter(
+      (event) =>
+        event.projectKey !== projectKey &&
+        !event.issueId?.startsWith(issueKeyPrefix)
+    ),
+  };
 }

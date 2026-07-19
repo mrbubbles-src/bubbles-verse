@@ -7,6 +7,13 @@ import type {
 } from '@/drizzle/db/schema';
 import type { IssuePlanStepSummary } from '@/lib/dashboard/types';
 
+import {
+  DASHBOARD_ISSUE_QUERY_MAX_LENGTH,
+  isDashboardIssuePriority,
+  isDashboardIssueStatus,
+  MAX_POSTGRES_INTEGER,
+} from '@/lib/dashboard/issue-query';
+
 export type DashboardIssueSort = 'newest' | 'oldest';
 
 export interface DashboardIssueFilters {
@@ -140,22 +147,6 @@ export const DASHBOARD_ISSUE_PAGE_SIZE = 25;
 
 const projectKeyPattern = /^[A-Z0-9]{2,8}$/;
 const issueKeyPattern = /^([A-Z0-9]{2,8})-(\d+)$/;
-const maxPostgresInteger = 2_147_483_647;
-const maxIssueQueryLength = 100;
-const issueStatuses = new Set<BubblophyIssueStatus>([
-  'triage',
-  'planned',
-  'ready',
-  'in_progress',
-  'review',
-  'blocked',
-  'done',
-]);
-const issuePriorities = new Set<BubblophyIssuePriority>([
-  'low',
-  'medium',
-  'high',
-]);
 
 /**
  * Reads one bounded issue-number page for a concrete visible project.
@@ -193,15 +184,15 @@ export async function readDashboardIssuePage(
     return { status: 'invalid', reason: 'invalid_sort' };
   }
 
-  if (query && query.length > maxIssueQueryLength) {
+  if (query && query.length > DASHBOARD_ISSUE_QUERY_MAX_LENGTH) {
     return { status: 'invalid', reason: 'query_too_long' };
   }
 
-  if (status !== 'all' && !issueStatuses.has(status)) {
+  if (status !== 'all' && !isDashboardIssueStatus(status)) {
     return { status: 'invalid', reason: 'invalid_status' };
   }
 
-  if (priority !== 'all' && !issuePriorities.has(priority)) {
+  if (priority !== 'all' && !isDashboardIssuePriority(priority)) {
     return { status: 'invalid', reason: 'invalid_priority' };
   }
 
@@ -209,7 +200,7 @@ export async function readDashboardIssuePage(
     afterIssueNumber !== null &&
     (!Number.isSafeInteger(afterIssueNumber) ||
       afterIssueNumber < 1 ||
-      afterIssueNumber > maxPostgresInteger)
+      afterIssueNumber > MAX_POSTGRES_INTEGER)
   ) {
     return { status: 'invalid', reason: 'invalid_cursor' };
   }
@@ -270,7 +261,7 @@ export async function readDashboardIssueDetail(
     !issueKeyMatch ||
     !Number.isSafeInteger(issueNumber) ||
     issueNumber < 1 ||
-    issueNumber > maxPostgresInteger
+    issueNumber > MAX_POSTGRES_INTEGER
   ) {
     return { status: 'invalid', reason: 'invalid_issue_key' };
   }

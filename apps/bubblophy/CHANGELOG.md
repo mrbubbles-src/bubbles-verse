@@ -13,6 +13,14 @@
   public key plus single status and priority filters, preserving authorized
   empty projects by keeping every issue condition inside the membership-bound
   left join.
+- Connected concrete project queues to the bounded server reads with canonical
+  URL-backed search, status, priority, sort, and forward-cursor state; direct
+  details remain independent of the current page, local mutations overlay by
+  public issue key, archived issues stay readable but immutable, and read
+  failures no longer fall back silently to snapshot issues. Exact request
+  fingerprints reject stale same-project results, final roles and archive state
+  drive write gates, transient detail failures preserve deep links, and a final
+  missing-membership page result redacts every affected snapshot group.
 - Added the Bubblophy Phase 2 roadmap and the detailed first-slice plan for a
   provider-neutral Remote MCP using personal Supabase OAuth 2.1 access.
 - Hardened relative auth redirects, contributor/viewer mutation boundaries,
