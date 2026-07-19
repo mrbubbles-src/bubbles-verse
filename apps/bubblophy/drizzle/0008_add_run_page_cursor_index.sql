@@ -1,0 +1,1 @@
+CREATE INDEX "bubblophy_agent_runs_issue_updated_id_idx" ON "bubblophy_agent_runs" USING btree ("issue_id","updated_at","id");

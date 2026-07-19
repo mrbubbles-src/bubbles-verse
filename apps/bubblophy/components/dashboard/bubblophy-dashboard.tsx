@@ -50,6 +50,11 @@ import type {
   ReadDashboardIssuePageResult,
 } from '@/lib/dashboard/issues';
 import type {
+  DashboardRunCursor,
+  DashboardRunPageRequestState,
+} from '@/lib/dashboard/run-query';
+import type { ReadDashboardRunPageResult } from '@/lib/dashboard/runs';
+import type {
   AgentRunState,
   AgentRunSummary,
   AgentTokenState,
@@ -87,6 +92,12 @@ import {
   projectHealthLabels,
 } from '@/lib/dashboard/labels';
 import { getIssueReadinessPercent } from '@/lib/dashboard/metrics';
+import {
+  isDashboardRunPageRequestCurrent,
+  parseDashboardRunCursor,
+  setDashboardRunPageParams,
+} from '@/lib/dashboard/run-query';
+import { mapDashboardRunPageToSummaries } from '@/lib/dashboard/run-view';
 import { DASHBOARD_ISSUE_NOTE_LIMIT } from '@/lib/dashboard/types';
 import {
   canContributeToBubblophyProject,
@@ -152,6 +163,8 @@ interface BubblophyDashboardProps {
   issueDetailRequestKey?: string | null;
   issueDetailResult?: ReadDashboardIssueDetailResult | null;
   missingRequestedIssueKey?: string | null;
+  runPageRequest?: DashboardRunPageRequestState | null;
+  runPageResult?: ReadDashboardRunPageResult | null;
   createIssueAction?: (
     input: CreateBubblophyIssueActionInput
   ) => Promise<CreateBubblophyIssueActionResult>;
@@ -300,6 +313,26 @@ function mergeIssuesById(...sources: IssueSummary[][]) {
   }
 
   return [...issuesById.values()];
+}
+
+/**
+ * Merges run summaries by public run ID while preserving source precedence.
+ *
+ * @param sources Ordered run groups with the authoritative group first.
+ * @returns Deduplicated run summaries in stable source order.
+ */
+function mergeAgentRunsById(...sources: AgentRunSummary[][]) {
+  const runsById = new Map<string, AgentRunSummary>();
+
+  for (const source of sources) {
+    for (const run of source) {
+      if (!runsById.has(run.id)) {
+        runsById.set(run.id, run);
+      }
+    }
+  }
+
+  return [...runsById.values()];
 }
 
 type LocalDraftIssue = SnapshotIssue & {
@@ -616,6 +649,8 @@ export function BubblophyDashboard({
   issueDetailRequestKey = null,
   issueDetailResult = null,
   missingRequestedIssueKey = null,
+  runPageRequest = null,
+  runPageResult = null,
   createIssueAction,
   updateIssueContentAction,
   updateIssueAssigneeAction,
@@ -738,6 +773,29 @@ export function BubblophyDashboard({
       issuePageResult.project.key === urlProjectKey)
       ? issuePageResult
       : null;
+  const runCursor = useMemo(
+    () =>
+      parseDashboardRunCursor(
+        searchParams.get('runAfterAt'),
+        searchParams.get('runAfterId')
+      ),
+    [searchParams]
+  );
+  const hasConcreteRunPageBoundary =
+    snapshot.meta.dataSource === 'database' &&
+    urlProjectKey !== 'all' &&
+    (runPageRequest !== null || runPageResult !== null);
+  const isCurrentRunPageRequest = isDashboardRunPageRequestCurrent(
+    runPageRequest,
+    urlProjectKey,
+    runCursor
+  );
+  const currentRunPageResult =
+    isCurrentRunPageRequest &&
+    (runPageResult?.status !== 'success' ||
+      runPageResult.project.key === urlProjectKey)
+      ? runPageResult
+      : null;
   const rawUrlIssueId = searchParams.get('issue')?.trim().toUpperCase() ?? '';
   const currentMissingRequestedIssueKey =
     missingRequestedIssueKey === rawUrlIssueId
@@ -857,21 +915,43 @@ export function BubblophyDashboard({
       updatedAgentTokensById,
     ]
   );
-  const allAgentRuns = useMemo(
+  const serverPageRuns = useMemo(
     () =>
-      [...persistedAgentRuns, ...snapshot.agentRuns]
-        .filter(
-          (run) =>
-            !deniedProjectKey || !run.issueId.startsWith(`${deniedProjectKey}-`)
-        )
-        .map((run) => updatedAgentRunsById[run.id] ?? run),
-    [
-      deniedProjectKey,
-      persistedAgentRuns,
-      snapshot.agentRuns,
-      updatedAgentRunsById,
-    ]
+      currentRunPageResult?.status === 'success'
+        ? mapDashboardRunPageToSummaries(currentRunPageResult)
+        : [],
+    [currentRunPageResult]
   );
+  const allAgentRuns = useMemo(() => {
+    const snapshotRuns = snapshot.agentRuns.filter(
+      (run) =>
+        (!deniedProjectKey ||
+          !run.issueId.startsWith(`${deniedProjectKey}-`)) &&
+        (!hasConcreteRunPageBoundary ||
+          !run.issueId.startsWith(`${urlProjectKey}-`))
+    );
+    const currentPersistedRuns =
+      hasConcreteRunPageBoundary && runCursor
+        ? persistedAgentRuns.filter(
+            (run) => !run.issueId.startsWith(`${urlProjectKey}-`)
+          )
+        : persistedAgentRuns;
+
+    return mergeAgentRunsById(
+      serverPageRuns,
+      currentPersistedRuns,
+      snapshotRuns
+    ).map((run) => updatedAgentRunsById[run.id] ?? run);
+  }, [
+    deniedProjectKey,
+    hasConcreteRunPageBoundary,
+    persistedAgentRuns,
+    runCursor,
+    serverPageRuns,
+    snapshot.agentRuns,
+    updatedAgentRunsById,
+    urlProjectKey,
+  ]);
   const allProjectMembers = useMemo(
     () =>
       snapshot.projectMembers
@@ -1116,6 +1196,27 @@ export function BubblophyDashboard({
       ),
     [allIssues, projectByKey]
   );
+  const writableRunIssueIds = useMemo(() => {
+    const issueIds = new Set(writableIssueIds);
+
+    for (const run of serverPageRuns) {
+      issueIds.delete(run.issueId);
+    }
+
+    if (
+      currentRunPageResult?.status === 'success' &&
+      !currentRunPageResult.project.isArchived &&
+      canContributeToBubblophyProject(
+        currentRunPageResult.project.currentUserRole
+      )
+    ) {
+      for (const run of serverPageRuns) {
+        issueIds.add(run.issueId);
+      }
+    }
+
+    return issueIds;
+  }, [currentRunPageResult, serverPageRuns, writableIssueIds]);
   const selectedIssueRuns = selectedIssue
     ? allAgentRuns.filter((run) => run.issueId === selectedIssue.id)
     : [];
@@ -1199,6 +1300,8 @@ export function BubblophyDashboard({
 
     if (options.resetIssueCursor) {
       nextParams.delete('after');
+      nextParams.delete('runAfterAt');
+      nextParams.delete('runAfterId');
     }
 
     pushDashboardParams(nextParams);
@@ -1222,9 +1325,12 @@ export function BubblophyDashboard({
 
     const hasSelectionState =
       searchParams.has('project') || searchParams.has('issue');
-    const canonicalQueryParams = writeDashboardIssueQueryParams(
-      new URLSearchParams(searchParams.toString()),
-      issueQuery
+    const canonicalQueryParams = setDashboardRunPageParams(
+      writeDashboardIssueQueryParams(
+        new URLSearchParams(searchParams.toString()),
+        issueQuery
+      ),
+      runCursor
     );
     const targetHref = buildSelectionHref({
       pathname,
@@ -1236,7 +1342,15 @@ export function BubblophyDashboard({
     if (currentHref !== targetHref) {
       router.replace(targetHref);
     }
-  }, [issueQuery, pathname, router, searchParams, urlIssueId, urlProjectKey]);
+  }, [
+    issueQuery,
+    pathname,
+    router,
+    runCursor,
+    searchParams,
+    urlIssueId,
+    urlProjectKey,
+  ]);
 
   const handleProjectSelect = (projectKey: ProjectFilterKey) => {
     const nextParams = new URLSearchParams(searchParams.toString());
@@ -1248,6 +1362,8 @@ export function BubblophyDashboard({
     }
 
     nextParams.delete('after');
+    nextParams.delete('runAfterAt');
+    nextParams.delete('runAfterId');
     nextParams.delete('issue');
     pushDashboardParams(nextParams);
   };
@@ -1270,6 +1386,15 @@ export function BubblophyDashboard({
       setDashboardIssuePageParams(
         new URLSearchParams(searchParams.toString()),
         afterIssueNumber
+      )
+    );
+  };
+
+  const handleRunPageChange = (after: typeof runCursor) => {
+    pushDashboardParams(
+      setDashboardRunPageParams(
+        new URLSearchParams(searchParams.toString()),
+        after
       )
     );
   };
@@ -1728,11 +1853,25 @@ export function BubblophyDashboard({
                 dataSource={snapshot.meta.dataSource}
                 agentRuns={displayedAgentRuns}
                 agentTokens={displayedAgentTokens}
+                selectedProjectKey={selectedProjectKey}
+                runPageStatus={
+                  hasConcreteRunPageBoundary && !currentRunPageResult
+                    ? 'loading'
+                    : (currentRunPageResult?.status ?? null)
+                }
+                runCursor={runCursor}
+                nextAfter={
+                  currentRunPageResult?.status === 'success'
+                    ? currentRunPageResult.nextAfter
+                    : null
+                }
                 issueIds={runIssueIds}
-                writableIssueIds={writableIssueIds}
+                writableIssueIds={writableRunIssueIds}
                 transitionAgentRunAction={transitionAgentRunAction}
                 onAgentRunTransitioned={handleAgentRunTransitioned}
                 onIssueSelect={handleIssueSelect}
+                onFirstPage={() => handleRunPageChange(null)}
+                onNextPage={handleRunPageChange}
               />
               <ActivityFeed
                 activity={displayedActivity}
@@ -5475,15 +5614,25 @@ function RunQueue({
   dataSource,
   agentRuns,
   agentTokens,
+  selectedProjectKey,
+  runPageStatus,
+  runCursor,
+  nextAfter,
   issueIds,
   writableIssueIds,
   transitionAgentRunAction,
   onAgentRunTransitioned,
   onIssueSelect,
+  onFirstPage,
+  onNextPage,
 }: {
   dataSource: DashboardSnapshot['meta']['dataSource'];
   agentRuns: AgentRunSummary[];
   agentTokens: AgentTokenSummary[];
+  selectedProjectKey: ProjectFilterKey;
+  runPageStatus: ReadDashboardRunPageResult['status'] | 'loading' | null;
+  runCursor: DashboardRunCursor | null;
+  nextAfter: DashboardRunCursor | null;
   issueIds: string[];
   writableIssueIds: ReadonlySet<string>;
   transitionAgentRunAction?: (
@@ -5491,6 +5640,8 @@ function RunQueue({
   ) => Promise<TransitionBubblophyAgentRunActionResult>;
   onAgentRunTransitioned: (run: AgentRunSummary) => void;
   onIssueSelect: (issueId: string) => void;
+  onFirstPage: () => void;
+  onNextPage: (after: DashboardRunCursor) => void;
 }) {
   const isDatabaseSource =
     dataSource === 'database' || dataSource === 'empty_database';
@@ -5513,6 +5664,40 @@ function RunQueue({
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3">
+        {selectedProjectKey !== 'all' && runPageStatus === 'success' ? (
+          <div className="flex flex-wrap items-center justify-end gap-2 border-b border-border/60 pb-3">
+            {runCursor ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={onFirstPage}>
+                Zur ersten Run-Seite
+              </Button>
+            ) : null}
+            {nextAfter ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => onNextPage(nextAfter)}>
+                Weitere 20 Runs
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+        {selectedProjectKey !== 'all' &&
+        runPageStatus === 'database_unavailable' ? (
+          <p role="status" className="text-sm text-muted-foreground">
+            Die Run-Liste ist gerade nicht verfügbar. Andere Dashboard-Bereiche
+            bleiben nutzbar.
+          </p>
+        ) : null}
+        {selectedProjectKey !== 'all' && runPageStatus === 'loading' ? (
+          <p role="status" className="text-sm text-muted-foreground">
+            Run-Liste wird geladen.
+          </p>
+        ) : null}
         {!isDatabaseSource ? (
           <div className="rounded-md border border-dashed border-border bg-muted/30 p-3 text-sm text-muted-foreground">
             Sample/Fallback zeigt keine operative Run-Queue. Echte Runs werden
@@ -5520,7 +5705,10 @@ function RunQueue({
             Run-Workflow existiert.
           </div>
         ) : null}
-        {isDatabaseSource && agentRuns.length === 0 ? (
+        {isDatabaseSource &&
+        runPageStatus !== 'database_unavailable' &&
+        runPageStatus !== 'loading' &&
+        agentRuns.length === 0 ? (
           <div className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
             Noch keine Runs. Bubblophy startet keine Agenten automatisch; ein
             Run-Request braucht immer eine explizite menschliche Freigabe.

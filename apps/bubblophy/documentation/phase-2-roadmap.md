@@ -157,6 +157,14 @@ Status: abgeschlossen.
   Knoten; zyklische, wiederverwendete, sparse, accessor-basierte und
   nicht-plain Datenstrukturen werden vor dem Store abgelehnt. Ein während der
   Prüfung erzeugter Plain-Snapshot schließt Proxy- und Mutations-TOCTOU aus.
+- Konkrete Projekt-RunQueues lesen eine eigene newest-first 20er-RunPage mit
+  stabilem `(updated_at, run_id)`-Cursor. Das Run-Statement bindet aktuelle
+  Membership, Projekt, Issue und projektgleiches Token gemeinsam; leere Seiten
+  erhalten ein finales Membership-Gate. Runs anderer Projekte können das
+  ausgewählte Projekt damit nicht mehr aus dem alten globalen 20er-Limit
+  verdrängen. Ein `(issue_id, updated_at, id)`-Index unterstützt den
+  projektgebundenen Join und Cursor. Die projektübergreifende Übersicht bleibt
+  bis zur Ablösung des Legacy-Snapshots bewusst unverändert.
 - Suche, Filter, Sortierung und Pagination für Projekte, Runs und
   Audit-Ereignisse ergänzen. Die Issue-Queue ist abgeschlossen.
 - Datenbankabfragen und Cache-Tags auf größere Projektmengen prüfen.
@@ -217,9 +225,10 @@ vorhanden. Die begrenzten server-only IssuePage- und direkten IssueDetail-
 Verträge einschließlich des serverseitigen IssuePage-Filtervertrags und ihre
 konkrete Queue-/URL-Integration sowie der auf 50 Einträge begrenzte Notes-Read
 im direkten IssueDetail sind ebenfalls vorhanden. Die Run-Result-
-Größenhärtung begrenzt nun Route und Service unabhängig voneinander. Als
-Nächstes folgen eine projektgebundene RunPage und danach die Ablösung des
-unbeschränkten Legacy-Issue-Snapshots sowie begrenzte Reads für Audit und
+Größenhärtung begrenzt nun Route und Service unabhängig voneinander. Die
+projektgebundene 20er-RunPage mit stabilem URL-Cursor ist ebenfalls vorhanden.
+Als Nächstes folgen die Ablösung des unbeschränkten Legacy-Issue-Snapshots sowie
+begrenzte Reads für Audit und
 weitere größere Datenmengen. Die
 MCP-Grundlage bleibt unter
 `docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md` dokumentiert.

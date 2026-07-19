@@ -83,6 +83,11 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   wenn die echte Server-Action verfügbar ist. Die Entscheidung prüft
   Projektmitgliedschaft, schreibt einen Statuswechsel plus Audit-Event und
   startet weiterhin keinen Agenten.
+- Bei ausgewähltem Projekt liest die RunQueue eine membership-gebundene
+  newest-first RunPage mit 20 Einträgen und stabilem
+  `(updated_at, run_id)`-Cursor statt des globalen 20er-Snapshots. Der Cursor
+  liegt als `runAfterAt`/`runAfterId` in der URL; Projektwechsel setzen ihn
+  zurück. Resultate erscheinen nur als secret-gefilterte Kurzfassung.
 - `GET /api/agent-runs/[runId]` liefert lokalen Agenten mit
   `Authorization: Bearer <agent-token>` und Scope `issues:read` einen kleinen
   read-only Kontext für freigegebene oder laufende Runs aus Run, Projekt,
@@ -422,6 +427,11 @@ bun run build
   Übersicht, Metriken und Run-Auflösung hängen übergangsweise noch am
   vollständigen Snapshot. Auch dessen alte Plan-/Notes-Abfragen laufen bis zur
   Ablösung weiter, obwohl konkrete Details ihre Notizen jetzt begrenzt laden.
+- Konkrete Projekt-RunQueues ersetzen den global vorbegrenzten Snapshot-Anteil
+  durch eine unabhängige 20er-RunPage. Jeder Run bleibt im Run-Statement an
+  aktuelle Membership, Projekt, Issue und projektgleiches Agent-Token gebunden;
+  legitime leere Seiten werden durch ein abschließendes Membership-Recheck vom
+  Zugriffsentzug unterschieden.
 - Sample-Daten markieren Agent-Tokens und Audit-Aktivität als Beispielvorschau.
   Wenn die Datenbank nicht bereit ist, bleibt der Snapshot leer und zeigt einen
   Setup-Hinweis statt Beispielprojekte als stillen Ersatz. Der Run-Bereich zeigt

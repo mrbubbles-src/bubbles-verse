@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added a membership-scoped 20-item project run page with a stable
+  `(updated_at, run_id)` URL cursor, same-statement project/issue/token binding,
+  safe result summaries, honest empty-project access rechecks, and concrete
+  project UI isolation from the legacy global run limit.
 - Bounded agent-run PATCH envelopes to 64 KiB of streamed UTF-8 and result JSON
   to 48 KiB, 12 levels, and 1000 nodes, rejecting malformed, cyclic, sparse,
   accessor-backed, and non-plain values before persistence.

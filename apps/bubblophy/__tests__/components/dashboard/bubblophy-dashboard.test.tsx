@@ -6660,6 +6660,222 @@ describe('BubblophyDashboard interactions', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('uses the project-bound run page and writes its stable next cursor', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=BV')
+    );
+    const nextAfter = {
+      updatedAt: '2026-07-19T11:00:00.000Z',
+      id: 'run-page-20',
+    };
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        runPageRequest={{ projectKey: 'BV', after: null }}
+        runPageResult={{
+          status: 'success',
+          project: {
+            key: 'BV',
+            name: 'Bubblesverse',
+            isArchived: false,
+            currentUserRole: 'owner',
+          },
+          items: [
+            {
+              id: 'run-page-1',
+              issueKey: 'BV-12',
+              agentLabel: 'Codex Page',
+              state: 'needs_review',
+              updatedAt: '2026-07-19T12:00:00.000Z',
+              resultSummary: 'Serverseitig paginiert.',
+            },
+          ],
+          nextAfter,
+        }}
+      />
+    );
+    const runsSection = document.getElementById('runs');
+
+    expect(runsSection).toBeInstanceOf(HTMLElement);
+
+    if (!runsSection) {
+      throw new Error('Expected the runs section to render.');
+    }
+
+    expect(within(runsSection).getByText('run-page-1')).toBeInTheDocument();
+    expect(within(runsSection).queryByText('run_bv_14')).toBeNull();
+    expect(
+      within(runsSection).getByText('Serverseitig paginiert.')
+    ).toBeInTheDocument();
+
+    navigationMocks.routerPush.mockClear();
+    autoCommitMockNavigation = false;
+    fireEvent.click(
+      within(runsSection).getByRole('button', { name: 'Weitere 20 Runs' })
+    );
+
+    const pushedHref = navigationMocks.routerPush.mock.calls[0]?.[0];
+
+    expect(pushedHref).toBeTruthy();
+    const pushedUrl = new URL(
+      pushedHref ?? '/',
+      'https://bubblophy.example.test'
+    );
+    expect(pushedUrl.searchParams.get('runAfterAt')).toBe(nextAfter.updatedAt);
+    expect(pushedUrl.searchParams.get('runAfterId')).toBe(nextAfter.id);
+  });
+
+  it('keeps run decisions available for paginated issues outside the issue page', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=BV')
+    );
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithRunUpdateToken}
+        runPageRequest={{ projectKey: 'BV', after: null }}
+        runPageResult={{
+          status: 'success',
+          project: {
+            key: 'BV',
+            name: 'Bubblesverse',
+            isArchived: false,
+            currentUserRole: 'member',
+          },
+          items: [
+            {
+              id: 'run-page-unloaded-issue',
+              issueKey: 'BV-99',
+              agentLabel: 'Codex Page',
+              state: 'requested',
+              updatedAt: '2026-07-19T12:00:00.000Z',
+              resultSummary: null,
+            },
+          ],
+          nextAfter: null,
+        }}
+        transitionAgentRunAction={async () => ({ status: 'forbidden' })}
+      />
+    );
+    const runsSection = document.getElementById('runs');
+
+    expect(runsSection).toBeInstanceOf(HTMLElement);
+
+    if (!runsSection) {
+      throw new Error('Expected the runs section to render.');
+    }
+
+    expect(within(runsSection).getByText('BV-99')).toBeInTheDocument();
+    expect(
+      within(runsSection).getByRole('button', { name: 'Freigeben' })
+    ).toBeInTheDocument();
+    expect(
+      within(runsSection).getByRole('button', { name: 'Abbrechen' })
+    ).toBeInTheDocument();
+  });
+
+  it.each([
+    {
+      accessState: 'viewer role',
+      currentUserRole: 'viewer' as const,
+      isArchived: false,
+    },
+    {
+      accessState: 'archived project',
+      currentUserRole: 'owner' as const,
+      isArchived: true,
+    },
+  ])(
+    'hides stale run decisions for a RunPage with $accessState',
+    ({ currentUserRole, isArchived }) => {
+      navigationMocks.searchParams.mockReturnValue(
+        new URLSearchParams('project=BV')
+      );
+
+      render(
+        <BubblophyDashboard
+          snapshot={databaseSnapshotWithRunUpdateToken}
+          runPageRequest={{ projectKey: 'BV', after: null }}
+          runPageResult={{
+            status: 'success',
+            project: {
+              key: 'BV',
+              name: 'Bubblesverse',
+              isArchived,
+              currentUserRole,
+            },
+            items: [
+              {
+                id: 'run-page-stale-permission',
+                issueKey: 'BV-12',
+                agentLabel: 'Codex Page',
+                state: 'requested',
+                updatedAt: '2026-07-19T12:00:00.000Z',
+                resultSummary: null,
+              },
+            ],
+            nextAfter: null,
+          }}
+          transitionAgentRunAction={async () => ({ status: 'forbidden' })}
+        />
+      );
+      const runsSection = document.getElementById('runs');
+
+      expect(runsSection).toBeInstanceOf(HTMLElement);
+
+      if (!runsSection) {
+        throw new Error('Expected the runs section to render.');
+      }
+
+      expect(
+        within(runsSection).queryByRole('button', { name: 'Freigeben' })
+      ).toBeNull();
+      expect(
+        within(runsSection).queryByRole('button', { name: 'Abbrechen' })
+      ).toBeNull();
+    }
+  );
+
+  it('shows a run loading state while URL and server page differ', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams(
+        'project=BV&runAfterAt=2026-07-19T11%3A00%3A00.000Z&runAfterId=run-page-20'
+      )
+    );
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        runPageRequest={{ projectKey: 'BV', after: null }}
+        runPageResult={{
+          status: 'success',
+          project: {
+            key: 'BV',
+            name: 'Bubblesverse',
+            isArchived: false,
+            currentUserRole: 'owner',
+          },
+          items: [],
+          nextAfter: null,
+        }}
+      />
+    );
+    const runsSection = document.getElementById('runs');
+
+    expect(runsSection).toBeInstanceOf(HTMLElement);
+
+    if (!runsSection) {
+      throw new Error('Expected the runs section to render.');
+    }
+
+    expect(within(runsSection).getByRole('status')).toHaveTextContent(
+      'Run-Liste wird geladen.'
+    );
+    expect(within(runsSection).queryByText(/Noch keine Runs/i)).toBeNull();
+    expect(within(runsSection).queryByText('run_bv_14')).toBeNull();
+  });
+
   it('copies a concrete run PATCH handoff for approved runs with an active update token', () => {
     render(
       <BubblophyDashboard

@@ -405,6 +405,11 @@ export const bubblophyAgentRuns = pgTable(
       table.issueId,
       table.state
     ),
+    issueUpdatedIdIdx: index('bubblophy_agent_runs_issue_updated_id_idx').on(
+      table.issueId,
+      table.updatedAt,
+      table.id
+    ),
     agentTokenIdx: index('bubblophy_agent_runs_agent_token_idx').on(
       table.agentTokenId
     ),

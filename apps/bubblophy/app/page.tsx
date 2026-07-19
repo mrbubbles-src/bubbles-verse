@@ -8,6 +8,8 @@ import {
   readDashboardIssueDetail,
   readDashboardIssuePage,
 } from '@/lib/dashboard/issues';
+import { parseDashboardRunCursor } from '@/lib/dashboard/run-query';
+import { readDashboardRunPage } from '@/lib/dashboard/runs';
 import { syncBubblophyUserProfile } from '@/lib/profiles/database-write';
 
 import { Suspense } from 'react';
@@ -116,6 +118,10 @@ export async function ProtectedBubblophyDashboard({
     sort: getFirstSearchParam(rawSearchParams.sort),
     after: getFirstSearchParam(rawSearchParams.after),
   });
+  const runCursor = parseDashboardRunCursor(
+    getFirstSearchParam(rawSearchParams.runAfterAt),
+    getFirstSearchParam(rawSearchParams.runAfterId)
+  );
   const requestedIssueKey = getFirstSearchParam(rawSearchParams.issue)
     ?.trim()
     .toUpperCase();
@@ -143,16 +149,29 @@ export async function ProtectedBubblophyDashboard({
           priority: issueQuery.filters.priority ?? 'all',
         })
       : Promise.resolve(null);
+  const runPageRequest =
+    canReadProjectIssues && selectedProject
+      ? { projectKey: selectedProject.key, after: runCursor }
+      : null;
+  const runPagePromise =
+    canReadProjectIssues && selectedProject
+      ? readDashboardRunPage(session.authUserId, {
+          projectKey: selectedProject.key,
+          after: runCursor ?? undefined,
+        })
+      : Promise.resolve(null);
   const requestedIssueDetailPromise =
     canReadProjectIssues && requestedPersistedIssueKey
       ? readDashboardIssueDetail(session.authUserId, {
           issueKey: requestedPersistedIssueKey,
         })
       : Promise.resolve(null);
-  const [issuePageResult, requestedIssueDetailResult] = await Promise.all([
-    issuePagePromise,
-    requestedIssueDetailPromise,
-  ]);
+  const [issuePageResult, requestedIssueDetailResult, runPageResult] =
+    await Promise.all([
+      issuePagePromise,
+      requestedIssueDetailPromise,
+      runPagePromise,
+    ]);
   const missingRequestedIssueKey =
     requestedIssueDetailResult?.status === 'not_found'
       ? requestedPersistedIssueKey
@@ -175,7 +194,9 @@ export async function ProtectedBubblophyDashboard({
           issueKey: firstPageIssueKey,
         })
       : null;
-  const hasLostProjectAccess = issuePageResult?.status === 'not_found';
+  const hasLostProjectAccess =
+    issuePageResult?.status === 'not_found' ||
+    runPageResult?.status === 'not_found';
   const issueDetailRequestKey = hasLostProjectAccess
     ? null
     : firstPageIssueDetailResult
@@ -205,6 +226,8 @@ export async function ProtectedBubblophyDashboard({
       issueDetailRequestKey={issueDetailRequestKey}
       issueDetailResult={issueDetailResult}
       missingRequestedIssueKey={missingRequestedIssueKey}
+      runPageRequest={runPageRequest}
+      runPageResult={hasLostProjectAccess ? null : runPageResult}
       createIssueAction={createBubblophyIssueAction}
       updateIssueContentAction={updateBubblophyIssueContentAction}
       updateIssueAssigneeAction={updateBubblophyIssueAssigneeAction}
