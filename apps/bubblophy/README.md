@@ -430,8 +430,12 @@ bun run build
   der Mitgliedschaft, schließt archivierte Projekte aus und prüft Rolle,
   Projekt-Key, Archivstand und die Issue-Projekt-Zuordnung vor dem Browser-DTO
   erneut. Bei gleichzeitig entzogenen Treffern läuft der interne Rohcursor bis
-  zu 25 weiterhin gültigen Issues plus Sentinel weiter. UI-Integration und
-  Entfernung des alten Issue-Graphs folgen separat; die bisherige
+  zu 25 weiterhin gültigen Issues plus Sentinel weiter. Die All-Projekte-UI
+  nutzt diesen Vertrag mit denselben Filtern und eigenen URL-Feldern für den
+  dreiteiligen Cursor. Direkte Issue-Details bleiben unabhängig von der Seite
+  erreichbar; alte oder fehlgeschlagene All-Page-Props fallen nicht auf
+  Snapshot-Issues zurück. Die Entfernung des nun nur noch für andere
+  Datengruppen benötigten Legacy-Issue-Graphs folgt separat; die bisherige
   Run-Auflösung hängt übergangsweise noch am Snapshot.
 - Konkrete Projekt-RunQueues ersetzen den global vorbegrenzten Snapshot-Anteil
   durch eine unabhängige 20er-RunPage. Jeder Run bleibt im Run-Statement an

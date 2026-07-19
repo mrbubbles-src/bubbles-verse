@@ -1,3 +1,4 @@
+import type { DashboardAllIssuePage } from '@/lib/dashboard/all-issues';
 import type { DashboardIssueQueryState } from '@/lib/dashboard/issue-query';
 import type {
   DashboardIssueDetail,
@@ -41,6 +42,28 @@ export function mapDashboardIssuePageToSummaries(
     id: item.key,
     title: item.title,
     projectKey: page.project.key,
+    status: issueStatusMap[item.status],
+    priority: issuePriorityMap[item.priority],
+    assigneeAuthUserId: item.assignedAuthUserId,
+    assigneeLabel: item.assignedAuthUserId ? 'Mensch' : 'Nicht zugewiesen',
+    planSteps: item.latestPlan?.stepCount ?? 0,
+    approvalRequired: item.requiresHumanApproval,
+  }));
+}
+
+/**
+ * Maps a cross-project issue page into the existing presentation model.
+ *
+ * @param page Membership-scoped all-project issue page.
+ * @returns Lightweight summaries carrying each item's own public project key.
+ */
+export function mapDashboardAllIssuePageToSummaries(
+  page: DashboardAllIssuePage
+): IssueSummary[] {
+  return page.items.map((item) => ({
+    id: item.key,
+    title: item.title,
+    projectKey: item.project.key,
     status: issueStatusMap[item.status],
     priority: issuePriorityMap[item.priority],
     assigneeAuthUserId: item.assignedAuthUserId,

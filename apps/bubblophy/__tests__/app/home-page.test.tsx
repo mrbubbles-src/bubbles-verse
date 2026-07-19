@@ -14,6 +14,8 @@ import type {
   updateBubblophyIssueStatusAction,
   updateBubblophyProjectContentAction,
 } from '@/app/actions';
+import type { DashboardAllIssuePageRequestState } from '@/lib/dashboard/all-issue-query';
+import type { ReadDashboardAllIssuePageResult } from '@/lib/dashboard/all-issues';
 import type { BubblophyDashboardSnapshotInput } from '@/lib/dashboard/data';
 import type {
   ReadDashboardIssueDetailResult,
@@ -29,11 +31,14 @@ const requireBubblophySessionMock = vi.fn();
 const getBubblophyDashboardSnapshotMock = vi.fn();
 const syncBubblophyUserProfileMock = vi.fn();
 const readDashboardIssuePageMock = vi.fn();
+const readDashboardAllIssuePageMock = vi.fn();
 const readDashboardIssueDetailMock = vi.fn();
 const readDashboardRunPageMock = vi.fn();
 const BubblophyDashboardMock = vi.fn(
   (props: {
     snapshot: DashboardSnapshot;
+    allIssuePageRequest?: DashboardAllIssuePageRequestState | null;
+    allIssuePageResult?: ReadDashboardAllIssuePageResult | null;
     issuePageResult?: ReadDashboardIssuePageResult | null;
     issueDetailResult?: ReadDashboardIssueDetailResult | null;
     runPageResult?: ReadDashboardRunPageResult | null;
@@ -108,6 +113,13 @@ vi.mock('@/lib/dashboard/data', () => ({
     getBubblophyDashboardSnapshotMock(input),
 }));
 
+vi.mock('@/lib/dashboard/all-issues', () => ({
+  readDashboardAllIssuePage: (
+    authUserId: string,
+    input: Record<string, string | number | object | undefined>
+  ) => readDashboardAllIssuePageMock(authUserId, input),
+}));
+
 vi.mock('@/lib/dashboard/issues', () => ({
   readDashboardIssuePage: (
     authUserId: string,
@@ -137,6 +149,8 @@ vi.mock('@/lib/profiles/database-write', () => ({
 vi.mock('@/components/dashboard/bubblophy-dashboard', () => ({
   BubblophyDashboard: (props: {
     snapshot: DashboardSnapshot;
+    allIssuePageRequest?: DashboardAllIssuePageRequestState | null;
+    allIssuePageResult?: ReadDashboardAllIssuePageResult | null;
     issuePageResult?: ReadDashboardIssuePageResult | null;
     issueDetailResult?: ReadDashboardIssueDetailResult | null;
     runPageResult?: ReadDashboardRunPageResult | null;
@@ -166,6 +180,14 @@ describe('Bubblophy home page', () => {
     syncBubblophyUserProfileMock.mockResolvedValue(undefined);
     readDashboardIssuePageMock.mockReset();
     readDashboardIssuePageMock.mockResolvedValue({ status: 'not_found' });
+    readDashboardAllIssuePageMock.mockReset();
+    readDashboardAllIssuePageMock.mockResolvedValue({
+      status: 'success',
+      sort: 'newest',
+      filters: { query: null, status: null, priority: null },
+      items: [],
+      nextAfter: null,
+    } satisfies ReadDashboardAllIssuePageResult);
     readDashboardIssueDetailMock.mockReset();
     readDashboardIssueDetailMock.mockResolvedValue({ status: 'not_found' });
     readDashboardRunPageMock.mockReset();
@@ -395,7 +417,7 @@ describe('Bubblophy home page', () => {
     });
   });
 
-  it('keeps the all-project overview on the existing snapshot reader', async () => {
+  it('loads the bounded all-project page and direct public detail', async () => {
     const snapshot = {
       ...homeDatabaseSnapshot,
       projects: [],
@@ -403,16 +425,59 @@ describe('Bubblophy home page', () => {
 
     requireBubblophySessionMock.mockResolvedValue(homeSession);
     getBubblophyDashboardSnapshotMock.mockResolvedValue(snapshot);
+    readDashboardAllIssuePageMock.mockResolvedValue({
+      status: 'success',
+      sort: 'oldest',
+      filters: { query: 'OAuth', status: 'ready', priority: 'high' },
+      items: [],
+      nextAfter: null,
+    } satisfies ReadDashboardAllIssuePageResult);
 
     const { ProtectedBubblophyDashboard } = await import('@/app/page');
     const element = await ProtectedBubblophyDashboard({
-      searchParams: Promise.resolve({ project: 'all', issue: 'AP-1' }),
+      searchParams: Promise.resolve({
+        project: 'all',
+        issue: 'AP-1',
+        q: ' OAuth ',
+        status: 'ready',
+        priority: 'high',
+        sort: 'oldest',
+        allAfterAt: '2026-07-19T12:00:00.000Z',
+        allAfterProject: ' ap ',
+        allAfterIssue: '14',
+      }),
     });
 
     expect(readDashboardIssuePageMock).not.toHaveBeenCalled();
-    expect(readDashboardIssueDetailMock).not.toHaveBeenCalled();
+    expect(readDashboardAllIssuePageMock).toHaveBeenCalledWith('user_owner', {
+      sort: 'oldest',
+      after: {
+        updatedAt: '2026-07-19T12:00:00.000Z',
+        projectKey: 'AP',
+        issueNumber: 14,
+      },
+      query: 'OAuth',
+      status: 'ready',
+      priority: 'high',
+    });
+    expect(readDashboardIssueDetailMock).toHaveBeenCalledWith('user_owner', {
+      issueKey: 'AP-1',
+    });
     expect(element.props.issuePageResult).toBeNull();
-    expect(element.props.issueDetailResult).toBeNull();
+    expect(element.props.allIssuePageResult).toMatchObject({
+      status: 'success',
+      items: [],
+    });
+    expect(element.props.allIssuePageRequest).toEqual({
+      sort: 'oldest',
+      after: {
+        updatedAt: '2026-07-19T12:00:00.000Z',
+        projectKey: 'AP',
+        issueNumber: 14,
+      },
+      filters: { query: 'OAuth', status: 'ready', priority: 'high' },
+    });
+    expect(element.props.issueDetailResult).toEqual({ status: 'not_found' });
   });
 
   it('redacts a project when the final page membership gate loses access', async () => {

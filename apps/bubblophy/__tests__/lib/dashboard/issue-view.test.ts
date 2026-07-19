@@ -1,3 +1,4 @@
+import type { DashboardAllIssuePage } from '@/lib/dashboard/all-issues';
 import type {
   DashboardIssueDetail,
   DashboardIssuePage,
@@ -5,6 +6,7 @@ import type {
 
 import {
   combineDashboardProjectAccess,
+  mapDashboardAllIssuePageToSummaries,
   mapDashboardIssueDetailToSummary,
   mapDashboardIssuePageToSummaries,
   matchesDashboardIssueQuery,
@@ -84,6 +86,33 @@ describe('dashboard issue read-model mapping', () => {
         approvalRequired: true,
       },
     ]);
+  });
+
+  it('maps every all-project row with its own project key', () => {
+    const allPage: DashboardAllIssuePage = {
+      sort: 'newest',
+      filters: page.filters,
+      items: [
+        {
+          ...page.items[0]!,
+          project: {
+            key: 'NO',
+            name: 'Novari',
+            currentUserRole: 'viewer',
+          },
+          key: 'NO-14',
+          updatedAt: '2026-07-19T12:00:00.000Z',
+        },
+      ],
+      nextAfter: null,
+    };
+
+    expect(mapDashboardAllIssuePageToSummaries(allPage)[0]).toMatchObject({
+      id: 'NO-14',
+      projectKey: 'NO',
+      status: 'in_arbeit',
+      priority: 'hoch',
+    });
   });
 
   it('maps the independently loaded detail and normalized plan', () => {

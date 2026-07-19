@@ -34,6 +34,7 @@ import {
 
 interface IssueQueueControlsProps {
   query: DashboardIssueQueryState;
+  hasCurrentPage: boolean;
   hasNextPage: boolean;
   onFiltersChange: (input: DashboardIssueQueryPatch) => void;
   onFirstPage: () => void;
@@ -60,10 +61,11 @@ const priorityOptions = [
  * Renders URL-backed search, filter, sort, and keyset page controls.
  *
  * @param props Canonical queue state and navigation callbacks.
- * @returns Compact controls for one concrete project queue.
+ * @returns Compact controls for a concrete or cross-project queue.
  */
 export function IssueQueueControls({
   query,
+  hasCurrentPage,
   hasNextPage,
   onFiltersChange,
   onFirstPage,
@@ -158,7 +160,7 @@ export function IssueQueueControls({
           </SelectContent>
         </Select>
 
-        {query.afterIssueNumber ? (
+        {hasCurrentPage ? (
           <Button type="button" size="sm" variant="ghost" onClick={onFirstPage}>
             Zur ersten Seite
           </Button>

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Connected the all-project dashboard queue to its bounded server page with
+  canonical shared filters, separate three-field URL cursors, exact request
+  fingerprints, cross-project direct details, revalidated role-based write
+  gates, and no fallback to legacy snapshot issues on stale or failed reads.
 - Added a server-only all-project issue page with membership-bound search,
   status and priority filters, 25-item newest/oldest keyset pagination over
   public `(updatedAt, projectKey, issueNumber)` values, same-query latest-plan

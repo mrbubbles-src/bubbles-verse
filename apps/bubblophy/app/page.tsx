@@ -1,7 +1,10 @@
+import type { DashboardAllIssuePageRequestState } from '@/lib/dashboard/all-issue-query';
 import type { DashboardIssuePageRequestState } from '@/lib/dashboard/issue-query';
 import type { DashboardSnapshot } from '@/lib/dashboard/types';
 
 import { requireBubblophySession } from '@/lib/auth/session';
+import { parseDashboardAllIssueQuery } from '@/lib/dashboard/all-issue-query';
+import { readDashboardAllIssuePage } from '@/lib/dashboard/all-issues';
 import { getBubblophyDashboardSnapshot } from '@/lib/dashboard/data';
 import { parseDashboardIssueQuery } from '@/lib/dashboard/issue-query';
 import {
@@ -111,12 +114,23 @@ export async function ProtectedBubblophyDashboard({
   const canReadProjectIssues =
     dashboardSnapshot.meta.dataSource === 'database' &&
     Boolean(selectedProject);
+  const canReadAllIssues =
+    dashboardSnapshot.meta.dataSource === 'database' && !selectedProject;
   const issueQuery = parseDashboardIssueQuery({
     query: getFirstSearchParam(rawSearchParams.q),
     status: getFirstSearchParam(rawSearchParams.status),
     priority: getFirstSearchParam(rawSearchParams.priority),
     sort: getFirstSearchParam(rawSearchParams.sort),
     after: getFirstSearchParam(rawSearchParams.after),
+  });
+  const allIssueQuery = parseDashboardAllIssueQuery({
+    query: getFirstSearchParam(rawSearchParams.q),
+    status: getFirstSearchParam(rawSearchParams.status),
+    priority: getFirstSearchParam(rawSearchParams.priority),
+    sort: getFirstSearchParam(rawSearchParams.sort),
+    afterAt: getFirstSearchParam(rawSearchParams.allAfterAt),
+    afterProject: getFirstSearchParam(rawSearchParams.allAfterProject),
+    afterIssue: getFirstSearchParam(rawSearchParams.allAfterIssue),
   });
   const runCursor = parseDashboardRunCursor(
     getFirstSearchParam(rawSearchParams.runAfterAt),
@@ -126,9 +140,10 @@ export async function ProtectedBubblophyDashboard({
     ?.trim()
     .toUpperCase();
   const requestedPersistedIssueKey =
-    selectedProject &&
     requestedIssueKey &&
-    isPersistedIssueKeyForProject(requestedIssueKey, selectedProject.key)
+    (selectedProject
+      ? isPersistedIssueKeyForProject(requestedIssueKey, selectedProject.key)
+      : isPersistedIssueKey(requestedIssueKey))
       ? requestedIssueKey
       : null;
   const issuePageRequest =
@@ -149,6 +164,18 @@ export async function ProtectedBubblophyDashboard({
           priority: issueQuery.filters.priority ?? 'all',
         })
       : Promise.resolve(null);
+  const allIssuePageRequest = canReadAllIssues
+    ? ({ ...allIssueQuery } satisfies DashboardAllIssuePageRequestState)
+    : null;
+  const allIssuePagePromise = canReadAllIssues
+    ? readDashboardAllIssuePage(session.authUserId, {
+        sort: allIssueQuery.sort,
+        after: allIssueQuery.after ?? undefined,
+        query: allIssueQuery.filters.query ?? undefined,
+        status: allIssueQuery.filters.status ?? 'all',
+        priority: allIssueQuery.filters.priority ?? 'all',
+      })
+    : Promise.resolve(null);
   const runPageRequest =
     canReadProjectIssues && selectedProject
       ? { projectKey: selectedProject.key, after: runCursor }
@@ -161,17 +188,23 @@ export async function ProtectedBubblophyDashboard({
         })
       : Promise.resolve(null);
   const requestedIssueDetailPromise =
-    canReadProjectIssues && requestedPersistedIssueKey
+    dashboardSnapshot.meta.dataSource === 'database' &&
+    requestedPersistedIssueKey
       ? readDashboardIssueDetail(session.authUserId, {
           issueKey: requestedPersistedIssueKey,
         })
       : Promise.resolve(null);
-  const [issuePageResult, requestedIssueDetailResult, runPageResult] =
-    await Promise.all([
-      issuePagePromise,
-      requestedIssueDetailPromise,
-      runPagePromise,
-    ]);
+  const [
+    issuePageResult,
+    allIssuePageResult,
+    requestedIssueDetailResult,
+    runPageResult,
+  ] = await Promise.all([
+    issuePagePromise,
+    allIssuePagePromise,
+    requestedIssueDetailPromise,
+    runPagePromise,
+  ]);
   const missingRequestedIssueKey =
     requestedIssueDetailResult?.status === 'not_found'
       ? requestedPersistedIssueKey
@@ -181,12 +214,16 @@ export async function ProtectedBubblophyDashboard({
       ? issuePageResult.items.find(
           (issue) => issue.key !== missingRequestedIssueKey
         )?.key
-      : undefined;
+      : allIssuePageResult?.status === 'success'
+        ? allIssuePageResult.items.find(
+            (issue) => issue.key !== missingRequestedIssueKey
+          )?.key
+        : undefined;
   const shouldLoadFirstPageDetail =
     !requestedIssueDetailResult ||
     requestedIssueDetailResult.status === 'not_found';
   const firstPageIssueDetailResult =
-    canReadProjectIssues &&
+    dashboardSnapshot.meta.dataSource === 'database' &&
     firstPageIssueKey &&
     shouldLoadFirstPageDetail &&
     firstPageIssueKey !== requestedPersistedIssueKey
@@ -223,6 +260,8 @@ export async function ProtectedBubblophyDashboard({
       }
       issuePageRequest={issuePageRequest}
       issuePageResult={issuePageResult}
+      allIssuePageRequest={allIssuePageRequest}
+      allIssuePageResult={allIssuePageResult}
       issueDetailRequestKey={issueDetailRequestKey}
       issueDetailResult={issueDetailResult}
       missingRequestedIssueKey={missingRequestedIssueKey}
@@ -266,6 +305,11 @@ function isPersistedIssueKeyForProject(issueKey: string, projectKey: string) {
   return (
     issueKey.startsWith(`${projectKey}-`) && /^[1-9]\d*$/.test(issueNumber)
   );
+}
+
+/** Checks whether a public issue key contains a valid project and number. */
+function isPersistedIssueKey(issueKey: string) {
+  return /^[A-Z0-9]{2,8}-[1-9]\d*$/.test(issueKey);
 }
 
 /** Removes every selected-project entity after the final membership gate fails. */

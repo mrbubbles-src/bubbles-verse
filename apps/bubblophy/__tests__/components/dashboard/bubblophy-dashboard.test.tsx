@@ -33,6 +33,7 @@ import type {
   UpdateBubblophyProjectMemberRoleActionInput,
   UpdateBubblophyProjectMemberRoleActionResult,
 } from '@/app/actions';
+import type { ReadDashboardAllIssuePageResult } from '@/lib/dashboard/all-issues';
 import type {
   ReadDashboardIssueDetailResult,
   ReadDashboardIssuePageResult,
@@ -139,6 +140,50 @@ const bvIssuePageRequest = {
   filters: { query: null, status: null, priority: null },
   afterIssueNumber: null,
 } as const;
+
+const allIssuePageRequest = {
+  sort: 'newest',
+  filters: { query: null, status: null, priority: null },
+  after: null,
+} as const;
+
+const allIssuePageResult = {
+  status: 'success',
+  sort: 'newest',
+  filters: allIssuePageRequest.filters,
+  items: [
+    {
+      ...bvIssuePageResult.items[0]!,
+      project: {
+        key: 'BV',
+        name: 'Bubblesverse',
+        currentUserRole: 'owner',
+      },
+      updatedAt: '2026-07-19T12:00:00.000Z',
+    },
+    {
+      project: {
+        key: 'NO',
+        name: 'Novari',
+        currentUserRole: 'member',
+      },
+      key: 'NO-08',
+      issueNumber: 8,
+      title: 'Projektübergreifende Queue prüfen',
+      status: 'ready',
+      priority: 'medium',
+      requiresHumanApproval: false,
+      assignedAuthUserId: null,
+      latestPlan: null,
+      updatedAt: '2026-07-19T11:00:00.000Z',
+    },
+  ],
+  nextAfter: {
+    updatedAt: '2026-07-19T11:00:00.000Z',
+    projectKey: 'NO',
+    issueNumber: 8,
+  },
+} satisfies ReadDashboardAllIssuePageResult;
 
 const bvOffPageIssueDetailResult = {
   status: 'success',
@@ -839,6 +884,255 @@ describe('BubblophyDashboard interactions', () => {
     ).toBeInTheDocument();
     expect(
       screen.queryByText('Plan für BV-12 aktualisiert')
+    ).not.toBeInTheDocument();
+  });
+
+  it('renders the bounded all-project page and keeps a direct detail open', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('issue=NO-08')
+    );
+    const noIssueDetail = {
+      status: 'success',
+      project: {
+        key: 'NO',
+        name: 'Novari',
+        isArchived: false,
+        currentUserRole: 'member',
+      },
+      issue: {
+        key: 'NO-08',
+        issueNumber: 8,
+        title: 'Projektübergreifende Queue prüfen',
+        description: 'Direktes Detail aus einem anderen Projekt.',
+        status: 'ready',
+        priority: 'medium',
+        requiresHumanApproval: false,
+        assignedAuthUserId: null,
+        createdAt: '2026-07-18T10:00:00.000Z',
+        updatedAt: '2026-07-19T11:00:00.000Z',
+        latestPlan: null,
+        notes: [],
+        hasMoreNotes: false,
+      },
+    } satisfies ReadDashboardIssueDetailResult;
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        allIssuePageRequest={allIssuePageRequest}
+        allIssuePageResult={allIssuePageResult}
+        issueDetailRequestKey="NO-08"
+        issueDetailResult={noIssueDetail}
+      />
+    );
+
+    const issueSection = document.getElementById('issues');
+
+    expect(issueSection).toBeInstanceOf(HTMLElement);
+
+    if (!issueSection) {
+      throw new Error('Expected issue queue section to render.');
+    }
+
+    expect(
+      within(issueSection).getByRole('row', {
+        name: /Issue BV-14: Serverseitige Queue anbinden auswählen/,
+      })
+    ).toBeInTheDocument();
+    expect(
+      within(issueSection).getByRole('row', {
+        name: /Issue NO-08: Projektübergreifende Queue prüfen auswählen/,
+      })
+    ).toBeInTheDocument();
+    expect(
+      within(issueSection).queryByRole('row', { name: /Issue BV-12:/ })
+    ).not.toBeInTheDocument();
+    expect(
+      within(issueSection).getByLabelText('Issue-Details')
+    ).toHaveTextContent('Direktes Detail aus einem anderen Projekt.');
+    expect(screen.getByLabelText('Issues durchsuchen')).toBeInTheDocument();
+  });
+
+  it('advances the all-project queue with its public three-part cursor', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('q=Queue&tab=audit')
+    );
+    autoCommitMockNavigation = false;
+    const filteredRequest = {
+      ...allIssuePageRequest,
+      filters: { ...allIssuePageRequest.filters, query: 'Queue' },
+    };
+    const filteredResult = {
+      ...allIssuePageResult,
+      filters: filteredRequest.filters,
+    };
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        allIssuePageRequest={filteredRequest}
+        allIssuePageResult={filteredResult}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Weitere 25' }));
+
+    expect(navigationMocks.routerPush).toHaveBeenCalledWith(
+      '/?q=Queue&tab=audit&allAfterAt=2026-07-19T11%3A00%3A00.000Z&allAfterProject=NO&allAfterIssue=8'
+    );
+  });
+
+  it('resets the all-project cursor and detail when filters change', () => {
+    const cursor = allIssuePageResult.nextAfter;
+
+    if (!cursor) {
+      throw new Error('Expected the all-project fixture cursor.');
+    }
+
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams(
+        'issue=NO-08&q=Alt&allAfterAt=2026-07-19T11%3A00%3A00.000Z&allAfterProject=NO&allAfterIssue=8&tab=audit'
+      )
+    );
+    autoCommitMockNavigation = false;
+    const pagedRequest = {
+      ...allIssuePageRequest,
+      filters: { ...allIssuePageRequest.filters, query: 'Alt' },
+      after: cursor,
+    };
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        allIssuePageRequest={pagedRequest}
+        allIssuePageResult={{
+          ...allIssuePageResult,
+          filters: pagedRequest.filters,
+        }}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText('Issue-Suche'), {
+      target: { value: 'Neu' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Anwenden' }));
+
+    expect(navigationMocks.routerPush).toHaveBeenCalledWith(
+      '/?q=Neu&tab=audit'
+    );
+  });
+
+  it('uses an all-project role recheck for selected issue write gates', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('issue=BV-14')
+    );
+    const viewerResult = {
+      ...allIssuePageResult,
+      items: allIssuePageResult.items.map((item) =>
+        item.project.key === 'BV'
+          ? {
+              ...item,
+              project: { ...item.project, currentUserRole: 'viewer' as const },
+            }
+          : item
+      ),
+    };
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        allIssuePageRequest={allIssuePageRequest}
+        allIssuePageResult={viewerResult}
+        createIssueNoteAction={async () => ({
+          status: 'invalid',
+          reason: 'empty_note',
+        })}
+      />
+    );
+
+    expect(
+      screen.queryByRole('button', { name: 'Notiz speichern' })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Notizen können nur für gespeicherte Issues in aktiven Projekten mit Datenbankzugriff angelegt werden.'
+      )
+    ).toBeInTheDocument();
+  });
+
+  it('fails closed for snapshot project roles absent from the all-project page', () => {
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        allIssuePageRequest={allIssuePageRequest}
+        allIssuePageResult={allIssuePageResult}
+        createIssueAction={async () => ({
+          status: 'invalid',
+          reason: 'empty_title',
+        })}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Neues Issue/i }));
+
+    const projectSelect = screen.getByLabelText('Projekt');
+
+    expect(
+      within(projectSelect).getByRole('option', { name: 'BV · Bubblesverse' })
+    ).toBeInTheDocument();
+    expect(
+      within(projectSelect).getByRole('option', { name: 'NO · Novari' })
+    ).toBeInTheDocument();
+    expect(
+      within(projectSelect).queryByRole('option', { name: 'YK · Yoink' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not fall back to snapshot issues when the all-project read fails', () => {
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        allIssuePageRequest={allIssuePageRequest}
+        allIssuePageResult={{ status: 'database_unavailable' }}
+      />
+    );
+
+    expect(
+      screen.getByText(
+        'Die Issue-Liste ist gerade nicht verfügbar. Andere Dashboard-Bereiche bleiben nutzbar.'
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('row', { name: /Issue BV-12:/ })
+    ).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent(
+      'Kein Issue ausgewählt.'
+    );
+  });
+
+  it('ignores stale all-project page props until the URL request arrives', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('q=Andere')
+    );
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        allIssuePageRequest={allIssuePageRequest}
+        allIssuePageResult={allIssuePageResult}
+      />
+    );
+
+    expect(
+      screen.getByText('Die Issue-Liste wird für diese URL geladen.')
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('row', {
+        name: /Issue BV-14: Serverseitige Queue anbinden auswählen/,
+      })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('row', { name: /Issue BV-12:/ })
     ).not.toBeInTheDocument();
   });
 
@@ -1707,9 +2001,7 @@ describe('BubblophyDashboard interactions', () => {
 
     expect(allProjectsButton).toHaveAttribute('aria-pressed', 'true');
     expect(
-      screen.getByText(
-        'Projektübergreifende Übersicht aus dem aktuellen Dashboard-Stand.'
-      )
+      screen.getByText('Projektübergreifende, zugriffsgeprüfte Übersicht.')
     ).toBeInTheDocument();
     expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('BV-14');
   });
