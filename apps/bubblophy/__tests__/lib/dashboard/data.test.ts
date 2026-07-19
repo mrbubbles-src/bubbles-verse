@@ -38,6 +38,7 @@ function makeRow(
     issuePlanSummary: null,
     issuePlanSteps: null,
     issueNotes: [],
+    issueHasMoreNotes: false,
     ...row,
   };
 }

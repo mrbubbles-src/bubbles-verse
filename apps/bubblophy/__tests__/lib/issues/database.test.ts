@@ -1,7 +1,7 @@
 import type { SQLWrapper } from 'drizzle-orm';
 
 import { getTableName } from 'drizzle-orm';
-import { PgDialect } from 'drizzle-orm/pg-core';
+import { integer, jsonb, PgDialect, pgTable, text } from 'drizzle-orm/pg-core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 type DrizzleTable = Parameters<typeof getTableName>[0];
@@ -24,10 +24,13 @@ interface QueryCall {
   tableName: string | null;
   joinedTableNames: string[];
   selectedKeys: string[];
+  selectionSql: Record<string, string>;
   distinctOnCalled: boolean;
   distinctOnSql: string[];
   orderBySql: string[];
   whereCalled: boolean;
+  whereSql: string | null;
+  whereParams: MockRowValue[];
   groupByCalled: boolean;
   limitValue: number | null;
 }
@@ -96,6 +99,7 @@ const tableRows = {
   issueNoteEvents: [
     {
       id: 'event_issue_note',
+      projectId: 'project_visible',
       issueId: 'issue_visible',
       summary: 'Plan-Review als Issue-Notiz festgehalten.',
       payload: {
@@ -110,6 +114,7 @@ const tableRows = {
     },
     {
       id: 'event_issue_ready',
+      projectId: 'project_visible',
       issueId: 'issue_visible',
       summary: 'Issue BV-07 auf bereit gesetzt.',
       payload: {
@@ -206,15 +211,26 @@ let tableRowOverrides: Partial<Record<keyof typeof tableRows, MockRow[]>> = {};
 class MockSelectQuery implements PromiseLike<MockRow[]> {
   private readonly call: QueryCall;
 
-  constructor(selectedKeys: string[], distinctOnSql: string[] = []) {
+  constructor(
+    selection: Record<string, SQLWrapper>,
+    distinctOnSql: string[] = []
+  ) {
     this.call = {
       tableName: null,
       joinedTableNames: [],
-      selectedKeys,
+      selectedKeys: Object.keys(selection),
+      selectionSql: Object.fromEntries(
+        Object.entries(selection).map(([key, expression]) => [
+          key,
+          compileSql(expression).sql,
+        ])
+      ),
       distinctOnCalled: distinctOnSql.length > 0,
       distinctOnSql,
       orderBySql: [],
       whereCalled: false,
+      whereSql: null,
+      whereParams: [],
       groupByCalled: false,
       limitValue: null,
     };
@@ -236,8 +252,12 @@ class MockSelectQuery implements PromiseLike<MockRow[]> {
     return this;
   }
 
-  where() {
+  where(condition: SQLWrapper) {
+    const query = compileSql(condition);
+
     this.call.whereCalled = true;
+    this.call.whereSql = query.sql;
+    this.call.whereParams = query.params;
     return this;
   }
 
@@ -258,6 +278,20 @@ class MockSelectQuery implements PromiseLike<MockRow[]> {
     return this;
   }
 
+  as(aliasName: string) {
+    return pgTable(aliasName, {
+      id: text('id'),
+      projectId: text('project_id'),
+      issueId: text('issue_id'),
+      summary: text('summary'),
+      payload: jsonb('payload').$type<MockPayload>(),
+      actorAuthUserId: text('actor_auth_user_id'),
+      actorAgentTokenLabel: text('actor_agent_token_label'),
+      createdAt: text('created_at'),
+      noteRank: integer('note_rank'),
+    });
+  }
+
   then<TResult1 = MockRow[], TResult2 = never>(
     onfulfilled?:
       | ((value: MockRow[]) => TResult1 | PromiseLike<TResult1>)
@@ -272,13 +306,13 @@ class MockSelectQuery implements PromiseLike<MockRow[]> {
 }
 
 const dbMock = {
-  select: vi.fn((selection: Record<string, object>) => {
-    return new MockSelectQuery(Object.keys(selection));
+  select: vi.fn((selection: Record<string, SQLWrapper>) => {
+    return new MockSelectQuery(selection);
   }),
   selectDistinctOn: vi.fn(
-    (on: SQLWrapper[], selection: Record<string, object>) =>
+    (on: SQLWrapper[], selection: Record<string, SQLWrapper>) =>
       new MockSelectQuery(
-        Object.keys(selection),
+        selection,
         on.map((expression) => pgDialect.sqlToQuery(expression.getSQL()).sql)
       )
   ),
@@ -287,6 +321,16 @@ const dbMock = {
 vi.mock('@/drizzle/db', () => ({
   db: dbMock,
 }));
+
+/** Compiles one Drizzle expression for query-contract assertions. */
+function compileSql(expression: SQLWrapper) {
+  const query = pgDialect.sqlToQuery(expression.getSQL());
+
+  return {
+    sql: query.sql,
+    params: query.params as MockRowValue[],
+  };
+}
 
 /**
  * Returns deterministic rows for the Drizzle table and aggregate shape.
@@ -363,9 +407,11 @@ function rowsForCall(call: QueryCall): MockRow[] {
   }
 
   if (call.tableName === 'bubblophy_issue_events') {
-    return call.selectedKeys.includes('payload')
-      ? rowsForTable('issueNoteEvents')
-      : rowsForTable('issueEvents');
+    return rowsForTable('issueEvents');
+  }
+
+  if (call.tableName === 'ranked_issue_notes') {
+    return rowsForTable('issueNoteEvents');
   }
 
   return [];
@@ -438,6 +484,7 @@ describe('selectBubblophyDashboardRowsForUser', () => {
             createdAt: '2026-06-13T16:06:00.000Z',
           },
         ],
+        issueHasMoreNotes: false,
       }),
     ]);
     expect(rows.projectMemberRows).toEqual([
@@ -463,7 +510,17 @@ describe('selectBubblophyDashboardRowsForUser', () => {
       (call) => call.tableName === 'bubblophy_project_events'
     );
     const issueEventCall = calls.find(
-      (call) => call.tableName === 'bubblophy_issue_events'
+      (call) =>
+        call.tableName === 'bubblophy_issue_events' &&
+        call.selectedKeys.includes('issueNumber')
+    );
+    const rankedNotesCall = calls.find(
+      (call) =>
+        call.tableName === 'bubblophy_issue_events' &&
+        call.selectedKeys.includes('noteRank')
+    );
+    const boundedNotesCall = calls.find(
+      (call) => call.tableName === 'ranked_issue_notes'
     );
     const issuePlanCall = calls.find(
       (call) => call.tableName === 'bubblophy_issue_plans'
@@ -501,6 +558,38 @@ describe('selectBubblophyDashboardRowsForUser', () => {
         '"bubblophy_issue_plans"."created_at" desc',
       ],
     });
+    expect(rankedNotesCall).toMatchObject({
+      joinedTableNames: ['bubblophy_issues', 'bubblophy_agent_tokens'],
+      selectionSql: {
+        noteRank:
+          'row_number() over (partition by "bubblophy_issue_events"."issue_id" order by "bubblophy_issue_events"."created_at" desc, "bubblophy_issue_events"."id" desc)',
+      },
+      whereCalled: true,
+    });
+    expect(rankedNotesCall?.whereSql).toContain('event_type');
+    expect(rankedNotesCall?.whereSql).toContain('@>');
+    expect(JSON.stringify(rankedNotesCall?.whereParams)).toContain(
+      'issue_note'
+    );
+    expect(boundedNotesCall).toMatchObject({
+      selectedKeys: [
+        'id',
+        'projectId',
+        'issueId',
+        'summary',
+        'payload',
+        'actorAuthUserId',
+        'actorAgentTokenLabel',
+        'createdAt',
+      ],
+      whereCalled: true,
+      whereParams: [51],
+      orderBySql: [
+        '"ranked_issue_notes"."project_id" asc',
+        '"ranked_issue_notes"."issue_id" asc',
+        '"ranked_issue_notes"."note_rank" asc',
+      ],
+    });
     expect(projectMemberCall).toMatchObject({
       joinedTableNames: expect.arrayContaining([
         'bubblophy_projects',
@@ -512,6 +601,134 @@ describe('selectBubblophyDashboardRowsForUser', () => {
     expect(selectedKeys).not.toContain('tokenHash');
     expect(selectedKeys).not.toContain('plaintextToken');
     expect(selectedKeys).not.toContain('requestedByAuthUserId');
+  });
+
+  it('keeps 50 newest notes plus a history sentinel for every issue', async () => {
+    const firstIssue = tableRows.issues[0];
+
+    if (!firstIssue) {
+      throw new Error('Expected the shared issue fixture.');
+    }
+
+    tableRowOverrides.issues = [
+      firstIssue,
+      {
+        ...firstIssue,
+        id: 'issue_second',
+        issueNumber: 8,
+        title: 'Zweites Issue',
+      },
+    ];
+    tableRowOverrides.issueNoteEvents = [
+      ...makeIssueNoteRows('issue_visible', 'BV-07'),
+      ...makeIssueNoteRows('issue_second', 'BV-08'),
+    ];
+    const { selectBubblophyDashboardRowsForUser } =
+      await import('@/lib/issues/database');
+
+    const rows = await selectBubblophyDashboardRowsForUser('user_owner');
+    const firstRow = rows.projectIssueRows.find(
+      (row) => row.issueDatabaseId === 'issue_visible'
+    );
+    const secondRow = rows.projectIssueRows.find(
+      (row) => row.issueDatabaseId === 'issue_second'
+    );
+
+    expect(firstRow?.issueNotes).toHaveLength(50);
+    expect(firstRow?.issueHasMoreNotes).toBe(true);
+    expect(firstRow?.issueNotes[0]?.id).toBe('issue_visible-note-1');
+    expect(firstRow?.issueNotes.at(-1)?.id).toBe('issue_visible-note-50');
+    expect(secondRow?.issueNotes).toHaveLength(50);
+    expect(secondRow?.issueHasMoreNotes).toBe(true);
+    expect(secondRow?.issueNotes[0]?.id).toBe('issue_second-note-1');
+    expect(secondRow?.issueNotes.at(-1)?.id).toBe('issue_second-note-50');
+  });
+
+  it('does not attach moved-issue notes to the old project after access loss', async () => {
+    const firstIssue = tableRows.issues[0];
+
+    if (!firstIssue) {
+      throw new Error('Expected the shared issue fixture.');
+    }
+
+    membershipReadResults = [
+      [
+        { projectId: 'project_a', projectKey: 'PA', role: 'owner' },
+        { projectId: 'project_b', projectKey: 'PB', role: 'owner' },
+      ],
+      [{ projectId: 'project_a', projectKey: 'PA', role: 'owner' }],
+    ];
+    tableRowOverrides = {
+      projects: [
+        {
+          id: 'project_a',
+          key: 'PA',
+          name: 'Project A',
+          description: 'Altes Candidate-Projekt',
+          isArchived: false,
+        },
+        {
+          id: 'project_b',
+          key: 'PB',
+          name: 'Project B',
+          description: 'Temporäres Zielprojekt',
+          isArchived: false,
+        },
+      ],
+      memberRoles: [
+        { projectId: 'project_a', role: 'owner' },
+        { projectId: 'project_b', role: 'owner' },
+      ],
+      memberCounts: [
+        { projectId: 'project_a', total: 1 },
+        { projectId: 'project_b', total: 1 },
+      ],
+      agentTokenCounts: [],
+      issues: [
+        {
+          ...firstIssue,
+          id: 'issue_moved',
+          projectId: 'project_a',
+          issueNumber: 1,
+        },
+      ],
+      issueNoteEvents: [
+        {
+          id: 'note_in_project_b',
+          projectId: 'project_b',
+          issueId: 'issue_moved',
+          summary: 'Darf nicht an Project A hängen.',
+          payload: {
+            source: 'human',
+            entity: 'issue_note',
+            action: 'created',
+            issueId: 'PB-01',
+          },
+          actorAuthUserId: 'user_owner',
+          actorAgentTokenLabel: null,
+          createdAt: '2026-07-19T12:00:00.000Z',
+        },
+      ],
+      projectMembers: [],
+      agentTokens: [],
+      agentRuns: [],
+      projectEvents: [],
+      issueEvents: [],
+      plans: [],
+    };
+    const { selectBubblophyDashboardRowsForUser } =
+      await import('@/lib/issues/database');
+
+    const rows = await selectBubblophyDashboardRowsForUser('user_owner');
+
+    expect(rows.projectIssueRows).toEqual([
+      expect.objectContaining({
+        projectId: 'project_a',
+        issueDatabaseId: 'issue_moved',
+        issueNotes: [],
+        issueHasMoreNotes: false,
+      }),
+    ]);
   });
 
   it('drops every row group when membership disappears before the final gate', async () => {
@@ -601,6 +818,7 @@ describe('selectBubblophyProjectIssueRowsForUser', () => {
     membershipReadResults = [];
     tableRowOverrides = {};
     dbMock.select.mockClear();
+    dbMock.selectDistinctOn.mockClear();
   });
 
   it('drops project rows when membership disappears before its final gate', async () => {
@@ -613,6 +831,25 @@ describe('selectBubblophyProjectIssueRowsForUser', () => {
     ).resolves.toEqual([]);
   });
 });
+
+/** Builds 51 ordered note rows for one issue's bounded-history contract. */
+function makeIssueNoteRows(issueId: string, issueKey: string): MockRow[] {
+  return Array.from({ length: 51 }, (_, index) => ({
+    id: `${issueId}-note-${index + 1}`,
+    projectId: 'project_visible',
+    issueId,
+    summary: `Notiz ${index + 1} für ${issueKey}`,
+    payload: {
+      source: 'human',
+      entity: 'issue_note',
+      action: 'created',
+      issueId: issueKey,
+    },
+    actorAuthUserId: 'user_owner',
+    actorAgentTokenLabel: null,
+    createdAt: `2026-07-${String(19 - Math.floor(index / 24)).padStart(2, '0')}T${String(23 - (index % 24)).padStart(2, '0')}:00:00.000Z`,
+  }));
+}
 
 /** Builds two candidate projects for the concurrent key-reuse regression. */
 function createProjectKeyReuseRows(): Partial<

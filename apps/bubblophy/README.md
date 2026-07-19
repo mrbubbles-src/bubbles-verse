@@ -425,8 +425,7 @@ bun run build
   Projekts und verwirft konkurrierende Details fail-closed; revalidierte Rollen
   und Archivstände steuern die Issue-Aktionen. Die projektübergreifende
   Übersicht, Metriken und Run-Auflösung hängen übergangsweise noch am
-  vollständigen Snapshot. Auch dessen alte Plan-/Notes-Abfragen laufen bis zur
-  Ablösung weiter, obwohl konkrete Details ihre Notizen jetzt begrenzt laden.
+  vollständigen Snapshot.
 - Konkrete Projekt-RunQueues ersetzen den global vorbegrenzten Snapshot-Anteil
   durch eine unabhängige 20er-RunPage. Jeder Run bleibt im Run-Statement an
   aktuelle Membership, Projekt, Issue und projektgleiches Agent-Token gebunden;
@@ -434,7 +433,12 @@ bun run build
   Zugriffsentzug unterschieden.
 - Der verbleibende Legacy-Snapshot liest pro sichtbarem Issue nur noch die
   neueste Planversion per SQL `DISTINCT ON`; ältere Planhistorie gelangt nicht
-  mehr in den Dashboard-Read.
+  mehr in den Dashboard-Read. Notizen werden vor dem SQL-Ranking auf echte
+  `issue_note`-Events gefiltert und je Issue stabil auf 50 Einträge plus einen
+  `hasMoreNotes`-Sentinel begrenzt. Ein aktives Issue kann damit keine Notizen
+  anderer Issues aus dem Snapshot verdrängen. Projekt- und Issue-ID bleiben
+  bis zum Mapper gekoppelt, damit ein gleichzeitiger Issue-Umzug keine Notiz
+  an die alte Projektzeile hängen kann.
 - Sample-Daten markieren Agent-Tokens und Audit-Aktivität als Beispielvorschau.
   Wenn die Datenbank nicht bereit ist, bleibt der Snapshot leer und zeigt einen
   Setup-Hinweis statt Beispielprojekte als stillen Ersatz. Der Run-Bereich zeigt

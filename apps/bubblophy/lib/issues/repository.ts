@@ -46,6 +46,7 @@ export interface BubblophyProjectIssuePersistenceRow {
   issuePlanSummary: string | null;
   issuePlanSteps: JsonValue | null;
   issueNotes: IssueNoteSummary[];
+  issueHasMoreNotes: boolean;
 }
 
 export type BubblophyProjectIssueMembershipRow =
@@ -311,6 +312,7 @@ export function buildBubblophyProjectIssueSnapshot(
       planSteps: getIssuePlanStepCount(row),
       latestPlan: mapBubblophyIssueLatestPlan(row),
       notes: row.issueNotes,
+      hasMoreNotes: row.issueHasMoreNotes,
       approvalRequired: row.issueRequiresHumanApproval ?? true,
     });
   }

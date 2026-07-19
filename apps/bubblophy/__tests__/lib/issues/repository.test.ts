@@ -56,6 +56,7 @@ function makeIssueRow(
     issuePlanSummary: null,
     issuePlanSteps: null,
     issueNotes: [],
+    issueHasMoreNotes: false,
     ...row,
   };
 }
@@ -191,6 +192,7 @@ describe('Bubblophy issue repository mapping', () => {
         planSteps: 5,
         latestPlan: undefined,
         notes: [],
+        hasMoreNotes: false,
         approvalRequired: true,
       },
       {
@@ -205,6 +207,7 @@ describe('Bubblophy issue repository mapping', () => {
         planSteps: 0,
         latestPlan: undefined,
         notes: [],
+        hasMoreNotes: false,
         approvalRequired: true,
       },
       {
@@ -219,6 +222,7 @@ describe('Bubblophy issue repository mapping', () => {
         planSteps: 3,
         latestPlan: undefined,
         notes: [],
+        hasMoreNotes: false,
         approvalRequired: true,
       },
     ]);

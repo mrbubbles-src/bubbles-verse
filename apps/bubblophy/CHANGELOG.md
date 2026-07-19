@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Bounded legacy dashboard notes to the newest 50 explicit `issue_note`
+  events plus one history sentinel per issue, using SQL-side payload filtering
+  and stable per-issue window ranks without cross-issue starvation. Project
+  and issue IDs stay paired through mapping to fail closed during issue moves.
 - Bounded the legacy dashboard's latest-plan lookup to one database-selected
   version per visible issue instead of loading every historical plan version.
 - Added a membership-scoped 20-item project run page with a stable

@@ -13,9 +13,10 @@ import type {
   BubblophyProjectMemberPersistenceRow,
 } from '@/lib/issues/repository';
 
+import { DASHBOARD_ISSUE_NOTE_LIMIT } from '@/lib/dashboard/types';
 import { buildBubblophyProjectIssueSnapshotForUser } from '@/lib/issues/repository';
 
-import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, lte, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 
 import { db } from '@/drizzle/db';
@@ -40,7 +41,16 @@ type LatestPlanByIssueId = Record<
     steps: BubblophyProjectIssueMembershipRow['issuePlanSteps'];
   }
 >;
-type IssueNotesByIssueId = Record<string, IssueNoteSummary[]>;
+type IssueNotesByProjectAndIssueId = Record<
+  string,
+  Record<
+    string,
+    {
+      notes: IssueNoteSummary[];
+      hasMoreNotes: boolean;
+    }
+  >
+>;
 type RoleByProjectId = Record<
   string,
   BubblophyProjectIssueMembershipRow['projectCurrentUserRole']
@@ -394,40 +404,7 @@ async function selectBubblophyProjectIssueRowsForProjectIds(
   const issueNotes =
     visibleIssueIds.length === 0
       ? {}
-      : toIssueNotesByIssueId(
-          await db
-            .select({
-              id: bubblophyIssueEvents.id,
-              issueId: bubblophyIssueEvents.issueId,
-              summary: bubblophyIssueEvents.summary,
-              payload: bubblophyIssueEvents.payload,
-              actorAuthUserId: bubblophyIssueEvents.actorAuthUserId,
-              actorAgentTokenLabel: bubblophyAgentTokens.label,
-              createdAt: bubblophyIssueEvents.createdAt,
-            })
-            .from(bubblophyIssueEvents)
-            .leftJoin(
-              bubblophyAgentTokens,
-              and(
-                eq(
-                  bubblophyAgentTokens.id,
-                  bubblophyIssueEvents.actorAgentTokenId
-                ),
-                inArray(bubblophyAgentTokens.projectId, visibleProjectIds)
-              )
-            )
-            .where(
-              and(
-                inArray(bubblophyIssueEvents.issueId, visibleIssueIds),
-                eq(bubblophyIssueEvents.eventType, 'commented')
-              )
-            )
-            .orderBy(
-              asc(bubblophyIssueEvents.issueId),
-              desc(bubblophyIssueEvents.createdAt),
-              desc(bubblophyIssueEvents.id)
-            )
-        );
+      : await selectBoundedIssueNotes(visibleIssueIds, visibleProjectIds);
 
   const rows = buildMembershipRows({
     authUserId,
@@ -702,7 +679,7 @@ function buildMembershipRows(input: {
   memberCounts: CountByProjectId;
   tokenCounts: CountByProjectId;
   latestPlans: LatestPlanByIssueId;
-  issueNotes: IssueNotesByIssueId;
+  issueNotes: IssueNotesByProjectAndIssueId;
 }): BubblophyProjectIssueMembershipRow[] {
   return input.projects.flatMap((project) => {
     const projectIssues = input.issues.filter(
@@ -719,7 +696,7 @@ function buildMembershipRows(input: {
           tokenCount: input.tokenCounts[project.id] ?? 0,
           issue: null,
           latestPlan: null,
-          issueNotes: [],
+          issueNotes: undefined,
         }),
       ];
     }
@@ -733,7 +710,7 @@ function buildMembershipRows(input: {
         tokenCount: input.tokenCounts[project.id] ?? 0,
         issue,
         latestPlan: input.latestPlans[issue.id] ?? null,
-        issueNotes: input.issueNotes[issue.id] ?? [],
+        issueNotes: input.issueNotes[project.id]?.[issue.id],
       })
     );
   });
@@ -768,7 +745,7 @@ function createProjectIssueMembershipRow(input: {
     requiresHumanApproval: boolean;
   } | null;
   latestPlan: LatestPlanByIssueId[string] | null;
-  issueNotes: IssueNoteSummary[];
+  issueNotes: IssueNotesByProjectAndIssueId[string][string] | undefined;
 }): BubblophyProjectIssueMembershipRow {
   return {
     projectMemberAuthUserId: input.authUserId,
@@ -794,8 +771,78 @@ function createProjectIssueMembershipRow(input: {
     issuePlanVersion: input.latestPlan?.version ?? null,
     issuePlanSummary: input.latestPlan?.summary ?? null,
     issuePlanSteps: input.latestPlan?.steps ?? null,
-    issueNotes: input.issueNotes,
+    issueNotes: input.issueNotes?.notes ?? [],
+    issueHasMoreNotes: input.issueNotes?.hasMoreNotes ?? false,
   };
+}
+
+/**
+ * Selects at most 50 visible notes plus one history sentinel per issue.
+ *
+ * @param issueIds Candidate issue IDs from the membership-bounded snapshot.
+ * @param projectIds Candidate project IDs used to preserve project pairing.
+ * @returns Notes grouped by current project and issue IDs.
+ */
+async function selectBoundedIssueNotes(
+  issueIds: string[],
+  projectIds: string[]
+): Promise<IssueNotesByProjectAndIssueId> {
+  const rankedIssueNotes = db
+    .select({
+      id: bubblophyIssueEvents.id,
+      projectId: bubblophyIssues.projectId,
+      issueId: bubblophyIssueEvents.issueId,
+      summary: bubblophyIssueEvents.summary,
+      payload: bubblophyIssueEvents.payload,
+      actorAuthUserId: bubblophyIssueEvents.actorAuthUserId,
+      actorAgentTokenLabel: bubblophyAgentTokens.label,
+      createdAt: bubblophyIssueEvents.createdAt,
+      noteRank:
+        sql<number>`row_number() over (partition by ${bubblophyIssueEvents.issueId} order by ${bubblophyIssueEvents.createdAt} desc, ${bubblophyIssueEvents.id} desc)`.as(
+          'note_rank'
+        ),
+    })
+    .from(bubblophyIssueEvents)
+    .innerJoin(
+      bubblophyIssues,
+      eq(bubblophyIssues.id, bubblophyIssueEvents.issueId)
+    )
+    .leftJoin(
+      bubblophyAgentTokens,
+      and(
+        eq(bubblophyAgentTokens.id, bubblophyIssueEvents.actorAgentTokenId),
+        eq(bubblophyAgentTokens.projectId, bubblophyIssues.projectId)
+      )
+    )
+    .where(
+      and(
+        inArray(bubblophyIssueEvents.issueId, issueIds),
+        inArray(bubblophyIssues.projectId, projectIds),
+        eq(bubblophyIssueEvents.eventType, 'commented'),
+        sql`${bubblophyIssueEvents.payload} @> ${JSON.stringify({ entity: 'issue_note', action: 'created' })}::jsonb`
+      )
+    )
+    .as('ranked_issue_notes');
+  const rows = await db
+    .select({
+      id: rankedIssueNotes.id,
+      projectId: rankedIssueNotes.projectId,
+      issueId: rankedIssueNotes.issueId,
+      summary: rankedIssueNotes.summary,
+      payload: rankedIssueNotes.payload,
+      actorAuthUserId: rankedIssueNotes.actorAuthUserId,
+      actorAgentTokenLabel: rankedIssueNotes.actorAgentTokenLabel,
+      createdAt: rankedIssueNotes.createdAt,
+    })
+    .from(rankedIssueNotes)
+    .where(lte(rankedIssueNotes.noteRank, DASHBOARD_ISSUE_NOTE_LIMIT + 1))
+    .orderBy(
+      asc(rankedIssueNotes.projectId),
+      asc(rankedIssueNotes.issueId),
+      asc(rankedIssueNotes.noteRank)
+    );
+
+  return toIssueNotesByProjectAndIssueId(rows);
 }
 
 /**
@@ -863,11 +910,12 @@ function toLatestPlanByIssueId(
  * notes, so unrelated audit events with the same event type stay in Activity.
  *
  * @param rows Issue event rows selected for visible issue IDs.
- * @returns Notes grouped by issue database ID.
+ * @returns Notes grouped by current project and issue database IDs.
  */
-function toIssueNotesByIssueId(
+function toIssueNotesByProjectAndIssueId(
   rows: {
     id: string;
+    projectId: string;
     issueId: string;
     summary: string;
     payload: JsonValue;
@@ -876,25 +924,36 @@ function toIssueNotesByIssueId(
     createdAt: string;
   }[]
 ) {
-  return rows.reduce<IssueNotesByIssueId>((notesByIssueId, row) => {
-    if (!isIssueNotePayload(row.payload)) {
-      return notesByIssueId;
-    }
+  return rows.reduce<IssueNotesByProjectAndIssueId>(
+    (notesByProjectAndIssueId, row) => {
+      if (!isIssueNotePayload(row.payload)) {
+        return notesByProjectAndIssueId;
+      }
 
-    const notes = notesByIssueId[row.issueId] ?? [];
+      const notesByIssueId = notesByProjectAndIssueId[row.projectId] ?? {};
+      const noteState = notesByIssueId[row.issueId] ?? {
+        notes: [],
+        hasMoreNotes: false,
+      };
 
-    notesByIssueId[row.issueId] = [
-      ...notes,
-      {
-        id: row.id,
-        note: row.summary,
-        actor: formatIssueNoteActor(row),
-        createdAt: row.createdAt,
-      },
-    ];
+      if (noteState.notes.length < DASHBOARD_ISSUE_NOTE_LIMIT) {
+        noteState.notes.push({
+          id: row.id,
+          note: row.summary,
+          actor: formatIssueNoteActor(row),
+          createdAt: row.createdAt,
+        });
+      } else {
+        noteState.hasMoreNotes = true;
+      }
 
-    return notesByIssueId;
-  }, {});
+      notesByIssueId[row.issueId] = noteState;
+      notesByProjectAndIssueId[row.projectId] = notesByIssueId;
+
+      return notesByProjectAndIssueId;
+    },
+    {}
+  );
 }
 
 /**
