@@ -148,6 +148,34 @@ function makeFinalMembership(
   };
 }
 
+function makeDetailCandidate(
+  overrides: Partial<DatabaseRow> = {}
+): DatabaseRow {
+  return {
+    projectId: 'project_bv',
+    projectKey: 'BV',
+    issueNumber: 99,
+    issueTitle: 'Direkter Deep Link',
+    issueDescription: 'Liegt außerhalb der ersten Queue-Seite.',
+    issueStatus: 'ready',
+    issuePriority: 'high',
+    issueAssignedAuthUserId: 'auth-user-2',
+    issueRequiresHumanApproval: true,
+    issueCreatedAt: '2026-07-18T10:00:00.000Z',
+    issueUpdatedAt: '2026-07-19T10:00:00.000Z',
+    issueLatestPlan: {
+      version: 3,
+      summary: 'Deep Link absichern',
+      steps: [
+        { id: 'step_1', text: ' Direkt laden ' },
+        { id: 'empty', text: ' ' },
+        { invalid: true },
+      ],
+    },
+    ...overrides,
+  };
+}
+
 describe('selectDashboardIssuePageForUser', () => {
   beforeEach(() => {
     calls.length = 0;
@@ -281,6 +309,125 @@ describe('selectDashboardIssuePageForUser', () => {
         await import('@/lib/dashboard/issues-database-read');
 
       await expect(selectDashboardIssuePageForUser(input)).resolves.toBeNull();
+    }
+  );
+});
+
+describe('selectDashboardIssueDetailForUser', () => {
+  beforeEach(() => {
+    calls.length = 0;
+    queryRows = [];
+    dbMock.select.mockClear();
+  });
+
+  it('loads an off-page issue directly and normalizes its latest plan', async () => {
+    queryRows = [
+      [makeDetailCandidate()],
+      [makeFinalMembership({ projectIsArchived: false })],
+    ];
+    const { selectDashboardIssueDetailForUser } =
+      await import('@/lib/dashboard/issues-database-read');
+
+    await expect(
+      selectDashboardIssueDetailForUser({
+        authUserId: 'user-1',
+        projectKey: 'BV',
+        issueNumber: 99,
+      })
+    ).resolves.toEqual({
+      project: {
+        key: 'BV',
+        name: 'Bubblesverse',
+        isArchived: false,
+        currentUserRole: 'viewer',
+      },
+      issue: {
+        key: 'BV-99',
+        issueNumber: 99,
+        title: 'Direkter Deep Link',
+        description: 'Liegt außerhalb der ersten Queue-Seite.',
+        status: 'ready',
+        priority: 'high',
+        requiresHumanApproval: true,
+        assignedAuthUserId: 'auth-user-2',
+        createdAt: '2026-07-18T10:00:00.000Z',
+        updatedAt: '2026-07-19T10:00:00.000Z',
+        latestPlan: {
+          version: 3,
+          summary: 'Deep Link absichern',
+          steps: [{ id: 'step_1', text: 'Direkt laden' }],
+        },
+      },
+    });
+    expect(calls[0]).toMatchObject({
+      selectedKeys: [
+        'projectId',
+        'projectKey',
+        'issueNumber',
+        'issueTitle',
+        'issueDescription',
+        'issueStatus',
+        'issuePriority',
+        'issueAssignedAuthUserId',
+        'issueRequiresHumanApproval',
+        'issueCreatedAt',
+        'issueUpdatedAt',
+        'issueLatestPlan',
+      ],
+      fromTable: 'bubblophy_project_members',
+      joinedTables: ['bubblophy_projects', 'bubblophy_issues'],
+      whereParams: '["user-1","BV",99]',
+      limit: 1,
+    });
+    expect(calls[0]?.latestPlanSql).toContain(
+      '"bubblophy_issue_plans"."issue_id" = "bubblophy_issues"."id"'
+    );
+    expect(calls[0]?.latestPlanSql).toContain(
+      '"bubblophy_issue_plans"."version" desc'
+    );
+    expect(calls[0]?.latestPlanSql).toContain('limit 1');
+    expect(JSON.stringify(calls[0]?.selectedKeys)).not.toMatch(
+      /notes|run|event|token|createdBy|issueId/i
+    );
+    expect(calls[1]?.whereParams).toBe('["project_bv","user-1"]');
+  });
+
+  it('keeps archived project details readable without a latest plan', async () => {
+    queryRows = [
+      [makeDetailCandidate({ issueLatestPlan: null })],
+      [makeFinalMembership()],
+    ];
+    const { selectDashboardIssueDetailForUser } =
+      await import('@/lib/dashboard/issues-database-read');
+
+    const result = await selectDashboardIssueDetailForUser({
+      authUserId: 'user-1',
+      projectKey: 'BV',
+      issueNumber: 99,
+    });
+
+    expect(result?.project.isArchived).toBe(true);
+    expect(result?.issue.latestPlan).toBeNull();
+  });
+
+  it.each([
+    [[], []],
+    [[makeDetailCandidate()], []],
+    [[makeDetailCandidate()], [makeFinalMembership({ projectKey: 'OTHER' })]],
+  ])(
+    'fails closed for missing, removed, or changed membership',
+    async (candidateRows, finalRows) => {
+      queryRows = [candidateRows, finalRows];
+      const { selectDashboardIssueDetailForUser } =
+        await import('@/lib/dashboard/issues-database-read');
+
+      await expect(
+        selectDashboardIssueDetailForUser({
+          authUserId: 'user-1',
+          projectKey: 'BV',
+          issueNumber: 99,
+        })
+      ).resolves.toBeNull();
     }
   );
 });

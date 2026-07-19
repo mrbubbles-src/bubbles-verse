@@ -5,6 +5,7 @@ import type {
   BubblophyIssueStatus,
   BubblophyProjectRole,
 } from '@/drizzle/db/schema';
+import type { IssuePlanStepSummary } from '@/lib/dashboard/types';
 
 export type DashboardIssueSort = 'newest' | 'oldest';
 
@@ -34,6 +35,32 @@ export interface DashboardIssuePage {
   nextAfterIssueNumber: number | null;
 }
 
+export interface DashboardIssueDetail {
+  project: {
+    key: string;
+    name: string;
+    isArchived: boolean;
+    currentUserRole: BubblophyProjectRole;
+  };
+  issue: {
+    key: string;
+    issueNumber: number;
+    title: string;
+    description: string;
+    status: BubblophyIssueStatus;
+    priority: BubblophyIssuePriority;
+    requiresHumanApproval: boolean;
+    assignedAuthUserId: string | null;
+    createdAt: string;
+    updatedAt: string;
+    latestPlan: {
+      version: number;
+      summary: string;
+      steps: IssuePlanStepSummary[];
+    } | null;
+  };
+}
+
 export interface DashboardIssuePageReadInput {
   authUserId: string;
   projectKey: string;
@@ -45,6 +72,16 @@ export type DashboardIssuePageReader = (
   input: DashboardIssuePageReadInput
 ) => Promise<DashboardIssuePage | null>;
 
+export interface DashboardIssueDetailReadInput {
+  authUserId: string;
+  projectKey: string;
+  issueNumber: number;
+}
+
+export type DashboardIssueDetailReader = (
+  input: DashboardIssueDetailReadInput
+) => Promise<DashboardIssueDetail | null>;
+
 export interface ReadDashboardIssuePageInput {
   projectKey: string;
   sort?: DashboardIssueSort;
@@ -53,6 +90,14 @@ export interface ReadDashboardIssuePageInput {
 
 export interface ReadDashboardIssuePageOptions {
   readPage?: DashboardIssuePageReader;
+}
+
+export interface ReadDashboardIssueDetailInput {
+  issueKey: string;
+}
+
+export interface ReadDashboardIssueDetailOptions {
+  readDetail?: DashboardIssueDetailReader;
 }
 
 export type ReadDashboardIssuePageResult =
@@ -68,9 +113,19 @@ export type ReadDashboardIssuePageResult =
   | { status: 'not_found' }
   | { status: 'database_unavailable' };
 
+export type ReadDashboardIssueDetailResult =
+  | ({ status: 'success' } & DashboardIssueDetail)
+  | {
+      status: 'invalid';
+      reason: 'empty_auth_user' | 'invalid_issue_key';
+    }
+  | { status: 'not_found' }
+  | { status: 'database_unavailable' };
+
 export const DASHBOARD_ISSUE_PAGE_SIZE = 25;
 
 const projectKeyPattern = /^[A-Z0-9]{2,8}$/;
+const issueKeyPattern = /^([A-Z0-9]{2,8})-(\d+)$/;
 const maxPostgresInteger = 2_147_483_647;
 
 /**
@@ -135,6 +190,62 @@ export async function readDashboardIssuePage(
   }
 }
 
+/**
+ * Reads one issue detail directly through its stable public key.
+ *
+ * This lookup is independent of the current queue page and later filters, so
+ * deep links remain resolvable even when the issue is outside the first page.
+ * Missing issues, projects, and memberships intentionally share one result.
+ *
+ * @param authUserId Authenticated Supabase user ID from the server session.
+ * @param input Stable issue key such as `BV-14`.
+ * @param options Optional reader override for tests.
+ * @returns A membership-scoped detail or a safe public failure state.
+ */
+export async function readDashboardIssueDetail(
+  authUserId: string,
+  input: ReadDashboardIssueDetailInput,
+  options: ReadDashboardIssueDetailOptions = {}
+): Promise<ReadDashboardIssueDetailResult> {
+  const normalizedAuthUserId = authUserId.trim();
+  const normalizedIssueKey = input.issueKey.trim().toUpperCase();
+  const issueKeyMatch = issueKeyPattern.exec(normalizedIssueKey);
+  const projectKey = issueKeyMatch?.[1] ?? '';
+  const issueNumber = issueKeyMatch ? Number(issueKeyMatch[2]) : Number.NaN;
+
+  if (!normalizedAuthUserId) {
+    return { status: 'invalid', reason: 'empty_auth_user' };
+  }
+
+  if (
+    !issueKeyMatch ||
+    !Number.isSafeInteger(issueNumber) ||
+    issueNumber < 1 ||
+    issueNumber > maxPostgresInteger
+  ) {
+    return { status: 'invalid', reason: 'invalid_issue_key' };
+  }
+
+  const readDetail =
+    options.readDetail ?? (await getDefaultIssueDetailReader());
+
+  if (!readDetail) {
+    return { status: 'database_unavailable' };
+  }
+
+  try {
+    const detail = await readDetail({
+      authUserId: normalizedAuthUserId,
+      projectKey,
+      issueNumber,
+    });
+
+    return detail ? { status: 'success', ...detail } : { status: 'not_found' };
+  } catch {
+    return { status: 'database_unavailable' };
+  }
+}
+
 /** Loads the server-only Drizzle reader when database access is configured. */
 async function getDefaultIssuePageReader(): Promise<DashboardIssuePageReader | null> {
   if (!process.env.DATABASE_URL) {
@@ -145,4 +256,16 @@ async function getDefaultIssuePageReader(): Promise<DashboardIssuePageReader | n
     await import('@/lib/dashboard/issues-database-read');
 
   return selectDashboardIssuePageForUser;
+}
+
+/** Loads the server-only detail reader when database access is configured. */
+async function getDefaultIssueDetailReader(): Promise<DashboardIssueDetailReader | null> {
+  if (!process.env.DATABASE_URL) {
+    return null;
+  }
+
+  const { selectDashboardIssueDetailForUser } =
+    await import('@/lib/dashboard/issues-database-read');
+
+  return selectDashboardIssueDetailForUser;
 }

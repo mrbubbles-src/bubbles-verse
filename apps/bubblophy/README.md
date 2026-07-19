@@ -392,8 +392,11 @@ bun run build
   höchstens 25 leichte Issue-Zeilen plus einen Cursor. Latest-Plan-Zähler
   bleiben in derselben Datenbankabfrage; ein finales Membership-Gate liefert
   Rolle und Archivzustand und verhindert interne Projekt-/Issue-IDs im
-  Browser-DTO. Die bestehende UI nutzt bis zur folgenden Integration weiterhin
-  den vollständigen Snapshot.
+  Browser-DTO. Ein getrenntes server-only Detail lädt Deep Links unabhängig von
+  Seite und Cursor einschließlich Beschreibung, Zeitpunkten und defensiv
+  normalisiertem Latest Plan; Notes, Runs und Audit bleiben getrennt. Die
+  bestehende UI nutzt bis zur folgenden Integration weiterhin den vollständigen
+  Snapshot.
 - Sample-Daten markieren Agent-Tokens und Audit-Aktivität als Beispielvorschau.
   Wenn die Datenbank nicht bereit ist, bleibt der Snapshot leer und zeigt einen
   Setup-Hinweis statt Beispielprojekte als stillen Ersatz. Der Run-Bereich zeigt

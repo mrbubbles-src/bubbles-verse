@@ -1,9 +1,14 @@
 import type {
+  DashboardIssueDetail,
+  DashboardIssueDetailReader,
   DashboardIssuePage,
   DashboardIssuePageReader,
 } from '@/lib/dashboard/issues';
 
-import { readDashboardIssuePage } from '@/lib/dashboard/issues';
+import {
+  readDashboardIssueDetail,
+  readDashboardIssuePage,
+} from '@/lib/dashboard/issues';
 
 import { describe, expect, it, vi } from 'vitest';
 
@@ -112,5 +117,99 @@ describe('readDashboardIssuePage', () => {
     expect(readPage).toHaveBeenCalledWith(
       expect.objectContaining({ afterIssueNumber: 2_147_483_647 })
     );
+  });
+});
+
+const detail: DashboardIssueDetail = {
+  project: {
+    key: 'BV',
+    name: 'Bubblesverse',
+    isArchived: false,
+    currentUserRole: 'member',
+  },
+  issue: {
+    key: 'BV-99',
+    issueNumber: 99,
+    title: 'Direkter Deep Link',
+    description: 'Liegt außerhalb der ersten Queue-Seite.',
+    status: 'ready',
+    priority: 'high',
+    requiresHumanApproval: true,
+    assignedAuthUserId: null,
+    createdAt: '2026-07-18T10:00:00.000Z',
+    updatedAt: '2026-07-19T10:00:00.000Z',
+    latestPlan: null,
+  },
+};
+
+describe('readDashboardIssueDetail', () => {
+  it('normalizes and parses a stable issue key', async () => {
+    const readDetail = vi.fn<DashboardIssueDetailReader>();
+    readDetail.mockResolvedValue(detail);
+
+    await expect(
+      readDashboardIssueDetail(
+        ' user-1 ',
+        { issueKey: ' bv-99 ' },
+        { readDetail }
+      )
+    ).resolves.toEqual({ status: 'success', ...detail });
+    expect(readDetail).toHaveBeenCalledWith({
+      authUserId: 'user-1',
+      projectKey: 'BV',
+      issueNumber: 99,
+    });
+  });
+
+  it('does not distinguish missing, foreign, and unauthorized issues', async () => {
+    const readDetail = vi.fn<DashboardIssueDetailReader>();
+    readDetail.mockResolvedValue(null);
+
+    await expect(
+      readDashboardIssueDetail('user-1', { issueKey: 'BV-99' }, { readDetail })
+    ).resolves.toEqual({ status: 'not_found' });
+  });
+
+  it.each([
+    ['', { issueKey: 'BV-99' }],
+    ['user-1', { issueKey: '' }],
+    ['user-1', { issueKey: 'A-1' }],
+    ['user-1', { issueKey: 'BV-0' }],
+    ['user-1', { issueKey: 'BV-nope' }],
+    ['user-1', { issueKey: 'BV-2147483648' }],
+  ] as const)('rejects invalid detail input', async (authUserId, input) => {
+    const readDetail = vi.fn<DashboardIssueDetailReader>();
+
+    await expect(
+      readDashboardIssueDetail(authUserId, input, { readDetail })
+    ).resolves.toEqual({
+      status: 'invalid',
+      reason: authUserId ? 'invalid_issue_key' : 'empty_auth_user',
+    });
+    expect(readDetail).not.toHaveBeenCalled();
+  });
+
+  it('accepts the largest PostgreSQL issue number', async () => {
+    const readDetail = vi.fn<DashboardIssueDetailReader>();
+    readDetail.mockResolvedValue(detail);
+
+    await readDashboardIssueDetail(
+      'user-1',
+      { issueKey: 'BV-2147483647' },
+      { readDetail }
+    );
+
+    expect(readDetail).toHaveBeenCalledWith(
+      expect.objectContaining({ issueNumber: 2_147_483_647 })
+    );
+  });
+
+  it('returns a safe unavailable state when the reader fails', async () => {
+    const readDetail = vi.fn<DashboardIssueDetailReader>();
+    readDetail.mockRejectedValue(new Error('connection detail'));
+
+    await expect(
+      readDashboardIssueDetail('user-1', { issueKey: 'BV-99' }, { readDetail })
+    ).resolves.toEqual({ status: 'database_unavailable' });
   });
 });

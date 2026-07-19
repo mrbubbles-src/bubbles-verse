@@ -4,15 +4,21 @@ import type {
   BubblophyIssuePriority,
   BubblophyIssueStatus,
   BubblophyProjectRole,
+  JsonValue,
 } from '@/drizzle/db/schema';
 import type {
+  DashboardIssueDetail,
+  DashboardIssueDetailReadInput,
   DashboardIssuePage,
   DashboardIssuePageItem,
   DashboardIssuePageReadInput,
 } from '@/lib/dashboard/issues';
 
 import { DASHBOARD_ISSUE_PAGE_SIZE } from '@/lib/dashboard/issues';
-import { formatBubblophyIssueKey } from '@/lib/issues/repository';
+import {
+  formatBubblophyIssueKey,
+  mapBubblophyIssuePlanSteps,
+} from '@/lib/issues/repository';
 
 import { and, asc, desc, eq, gt, lt, sql } from 'drizzle-orm';
 
@@ -49,6 +55,27 @@ interface DashboardIssueFinalMembershipRow {
   currentUserRole: BubblophyProjectRole;
 }
 
+interface LatestPlanDetailRow {
+  version: number;
+  summary: string;
+  steps: JsonValue;
+}
+
+interface DashboardIssueDetailCandidateRow {
+  projectId: string;
+  projectKey: string;
+  issueNumber: number;
+  issueTitle: string;
+  issueDescription: string;
+  issueStatus: BubblophyIssueStatus;
+  issuePriority: BubblophyIssuePriority;
+  issueAssignedAuthUserId: string | null;
+  issueRequiresHumanApproval: boolean;
+  issueCreatedAt: string;
+  issueUpdatedAt: string;
+  issueLatestPlan: LatestPlanDetailRow | null;
+}
+
 const latestPlanSummary = sql<LatestPlanSummary | null>`(
   select jsonb_build_object(
     'version', ${bubblophyIssuePlans.version},
@@ -57,6 +84,18 @@ const latestPlanSummary = sql<LatestPlanSummary | null>`(
         then jsonb_array_length(${bubblophyIssuePlans.steps})
       else 0
     end
+  )
+  from ${bubblophyIssuePlans}
+  where ${bubblophyIssuePlans.issueId} = ${bubblophyIssues.id}
+  order by ${bubblophyIssuePlans.version} desc, ${bubblophyIssuePlans.createdAt} desc
+  limit 1
+)`;
+
+const latestPlanDetail = sql<LatestPlanDetailRow | null>`(
+  select jsonb_build_object(
+    'version', ${bubblophyIssuePlans.version},
+    'summary', ${bubblophyIssuePlans.summary},
+    'steps', ${bubblophyIssuePlans.steps}
   )
   from ${bubblophyIssuePlans}
   where ${bubblophyIssuePlans.issueId} = ${bubblophyIssues.id}
@@ -153,6 +192,97 @@ export async function selectDashboardIssuePageForUser(
       candidateRows.length > DASHBOARD_ISSUE_PAGE_SIZE && lastItem
         ? lastItem.issueNumber
         : null,
+  };
+}
+
+/**
+ * Selects one direct issue detail and revalidates membership before return.
+ *
+ * The issue and latest plan are read through the actor's membership in one
+ * statement. The final gate closes membership-removal and project-key races.
+ *
+ * @param input Normalized actor, project key, and issue number.
+ * @returns The visible issue detail without internal project or issue IDs.
+ */
+export async function selectDashboardIssueDetailForUser(
+  input: DashboardIssueDetailReadInput
+): Promise<DashboardIssueDetail | null> {
+  const [candidate] = (await db
+    .select({
+      projectId: bubblophyProjects.id,
+      projectKey: bubblophyProjects.key,
+      issueNumber: bubblophyIssues.issueNumber,
+      issueTitle: bubblophyIssues.title,
+      issueDescription: bubblophyIssues.description,
+      issueStatus: bubblophyIssues.status,
+      issuePriority: bubblophyIssues.priority,
+      issueAssignedAuthUserId: bubblophyIssues.assignedAuthUserId,
+      issueRequiresHumanApproval: bubblophyIssues.requiresHumanApproval,
+      issueCreatedAt: bubblophyIssues.createdAt,
+      issueUpdatedAt: bubblophyIssues.updatedAt,
+      issueLatestPlan: latestPlanDetail,
+    })
+    .from(bubblophyProjectMembers)
+    .innerJoin(
+      bubblophyProjects,
+      eq(bubblophyProjects.id, bubblophyProjectMembers.projectId)
+    )
+    .innerJoin(
+      bubblophyIssues,
+      eq(bubblophyIssues.projectId, bubblophyProjects.id)
+    )
+    .where(
+      and(
+        eq(bubblophyProjectMembers.authUserId, input.authUserId),
+        eq(bubblophyProjects.key, input.projectKey),
+        eq(bubblophyIssues.issueNumber, input.issueNumber)
+      )
+    )
+    .limit(1)) as DashboardIssueDetailCandidateRow[];
+
+  if (!candidate) {
+    return null;
+  }
+
+  const finalMembership = await selectFinalMembership(
+    candidate.projectId,
+    input.authUserId
+  );
+
+  if (
+    !finalMembership ||
+    finalMembership.projectKey !== candidate.projectKey ||
+    finalMembership.projectKey !== input.projectKey
+  ) {
+    return null;
+  }
+
+  return {
+    project: {
+      key: finalMembership.projectKey,
+      name: finalMembership.projectName,
+      isArchived: finalMembership.projectIsArchived,
+      currentUserRole: finalMembership.currentUserRole,
+    },
+    issue: {
+      key: formatBubblophyIssueKey(candidate.projectKey, candidate.issueNumber),
+      issueNumber: candidate.issueNumber,
+      title: candidate.issueTitle,
+      description: candidate.issueDescription,
+      status: candidate.issueStatus,
+      priority: candidate.issuePriority,
+      requiresHumanApproval: candidate.issueRequiresHumanApproval,
+      assignedAuthUserId: candidate.issueAssignedAuthUserId,
+      createdAt: candidate.issueCreatedAt,
+      updatedAt: candidate.issueUpdatedAt,
+      latestPlan: candidate.issueLatestPlan
+        ? {
+            version: candidate.issueLatestPlan.version,
+            summary: candidate.issueLatestPlan.summary,
+            steps: mapBubblophyIssuePlanSteps(candidate.issueLatestPlan.steps),
+          }
+        : null,
+    },
   };
 }
 
