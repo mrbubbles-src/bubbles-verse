@@ -112,6 +112,9 @@ Status: abgeschlossen.
 
 ### 5. Arbeiten mit größeren Datenmengen
 
+- Der bestehende Projekt-/Issue-Deep-Link-Vertrag reagiert nach dem Mount auf
+  Browser-Zurück und -Vorwärts, ohne die History-Auswahl mit veraltetem lokalen
+  State zu überschreiben. Das ist das URL-Gate vor zusätzlichen Queue-Filtern.
 - Suche, Filter, Sortierung und Pagination für Projekte, Issues, Runs und
   Audit-Ereignisse ergänzen.
 - Filterzustand in URL und Deep Links stabil halten.

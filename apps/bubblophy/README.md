@@ -60,7 +60,9 @@ einem bewusst human-gesteuerten Kontrollzentrum.
 - Projektkarten und Issue-Zeilen sind auswählbare Controls mit sichtbarem
   Zustand. Issue-Zeilen reagieren auf Klick, Enter und Leertaste;
   Projektfilter können gelöst werden; Sidebar-Links führen auf echte
-  Dashboard-Sections statt auf Platzhalter.
+  Dashboard-Sections statt auf Platzhalter. Die Auswahl folgt den
+  `project`-/`issue`-Query-Parametern auch bei Browser-Zurück und -Vorwärts;
+  ungültige Deep Links werden auf eine sichtbare Auswahl normalisiert.
 - Der Issue-Dialog bietet bei aktiver Datenbankquelle `Issue erstellen`; bei
   Sample- oder Fallback-Daten bleibt er bewusst lokal und markiert Drafts als
   nicht gespeichert.

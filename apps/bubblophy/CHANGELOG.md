@@ -103,6 +103,9 @@
   role, centralized role labels across members and invitations, replaced
   technical member IDs in removal feedback, and renamed issue ownership to
   responsibility in the queue.
+- Synchronized project and issue selection with post-mount URL changes so
+  browser back/forward navigation no longer gets overwritten by stale local
+  dashboard state.
 
 All notable changes to this project will be documented in this file.
 

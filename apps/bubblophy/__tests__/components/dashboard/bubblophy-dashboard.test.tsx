@@ -34,10 +34,11 @@ import type {
   UpdateBubblophyProjectMemberRoleActionResult,
 } from '@/app/actions';
 import type { DashboardSnapshot } from '@/lib/dashboard/types';
-import type React from 'react';
 
 import { dashboardSnapshot } from '@/lib/dashboard/sample-data';
 import { bubblophySidebarData } from '@/lib/sidebar';
+
+import React from 'react';
 
 import {
   fireEvent,
@@ -50,9 +51,33 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BubblophyDashboard } from '@/components/dashboard/bubblophy-dashboard';
 
+const navigationListeners = new Set<() => void>();
+let autoCommitMockNavigation = true;
+
+function commitMockNavigation(href: string) {
+  const url = new URL(href, 'https://bubblophy.example.test');
+
+  navigationMocks.searchParams.mockReturnValue(url.searchParams);
+  navigationListeners.forEach((listener) => listener());
+}
+
+function subscribeToMockNavigation(listener: () => void) {
+  navigationListeners.add(listener);
+
+  return () => navigationListeners.delete(listener);
+}
+
 const navigationMocks = {
-  routerPush: vi.fn(),
-  routerReplace: vi.fn(),
+  routerPush: vi.fn((href: string) => {
+    if (autoCommitMockNavigation) {
+      commitMockNavigation(href);
+    }
+  }),
+  routerReplace: vi.fn((href: string) => {
+    if (autoCommitMockNavigation) {
+      commitMockNavigation(href);
+    }
+  }),
   routerRefresh: vi.fn(),
   searchParams: vi.fn(() => new URLSearchParams()),
 };
@@ -365,7 +390,15 @@ vi.mock('next/navigation', () => ({
     replace: navigationMocks.routerReplace,
     refresh: navigationMocks.routerRefresh,
   }),
-  useSearchParams: () => navigationMocks.searchParams(),
+  useSearchParams: () => {
+    React.useSyncExternalStore(
+      subscribeToMockNavigation,
+      () => navigationMocks.searchParams().toString(),
+      () => navigationMocks.searchParams().toString()
+    );
+
+    return navigationMocks.searchParams();
+  },
 }));
 
 vi.mock('@bubbles/ui/shadcn/badge', () => ({
@@ -493,6 +526,7 @@ function getMetricCaption(label: string) {
 
 describe('BubblophyDashboard interactions', () => {
   beforeEach(() => {
+    autoCommitMockNavigation = true;
     window.HTMLElement.prototype.scrollIntoView = vi.fn();
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
@@ -751,6 +785,64 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       screen.queryByText('Plan für BV-12 aktualisiert')
     ).not.toBeInTheDocument();
+  });
+
+  it('follows browser history changes without restoring stale selection', async () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=BV&issue=BV-12')
+    );
+
+    render(<BubblophyDashboard snapshot={databaseSnapshot} />);
+
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('BV-12');
+
+    autoCommitMockNavigation = false;
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Projekt Novari (NO) auswählen',
+      })
+    );
+
+    expect(screen.getByText('Gefiltert auf Projekt BV.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('BV-12');
+    expect(navigationMocks.routerPush).toHaveBeenCalledWith(
+      '/?project=NO&issue=NO-08'
+    );
+    expect(navigationMocks.routerReplace).not.toHaveBeenCalled();
+
+    commitMockNavigation('/?project=NO&issue=NO-08');
+
+    await waitFor(() => {
+      expect(screen.getByText('Gefiltert auf Projekt NO.')).toBeInTheDocument();
+      expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('NO-08');
+    });
+    expect(navigationMocks.routerReplace).not.toHaveBeenCalled();
+
+    commitMockNavigation('/?project=BV&issue=BV-12');
+
+    await waitFor(() => {
+      expect(screen.getByText('Gefiltert auf Projekt BV.')).toBeInTheDocument();
+      expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('BV-12');
+    });
+    expect(navigationMocks.routerReplace).not.toHaveBeenCalled();
+  });
+
+  it('normalizes an invalid selection reached through browser history', async () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=NO&issue=NO-08')
+    );
+
+    render(<BubblophyDashboard snapshot={databaseSnapshot} />);
+
+    commitMockNavigation('/?project=BV&issue=NO-08');
+
+    await waitFor(() => {
+      expect(screen.getByText('Gefiltert auf Projekt BV.')).toBeInTheDocument();
+      expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('BV-14');
+      expect(navigationMocks.routerReplace).toHaveBeenCalledWith(
+        '/?project=BV&issue=BV-14'
+      );
+    });
   });
 
   it('normalizes invalid deep-link selection to the rendered fallback issue', async () => {
@@ -2594,6 +2686,9 @@ describe('BubblophyDashboard interactions', () => {
       within(detailPanel).queryByRole('button', { name: /Plan entwerfen/i })
     ).not.toBeInTheDocument();
 
+    navigationMocks.routerPush.mockClear();
+    navigationMocks.routerReplace.mockClear();
+    autoCommitMockNavigation = false;
     fireEvent.click(
       within(detailPanel).getByRole('button', { name: 'Draft verwerfen' })
     );
@@ -2601,6 +2696,13 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       screen.queryByRole('button', { name: 'Lokaler Test-Draft' })
     ).not.toBeInTheDocument();
+    expect(navigationMocks.routerPush).toHaveBeenCalledTimes(1);
+    expect(navigationMocks.routerPush).toHaveBeenCalledWith('/?issue=BV-14');
+    expect(navigationMocks.routerReplace).not.toHaveBeenCalled();
+
+    commitMockNavigation('/?issue=BV-14');
+
+    expect(screen.getByLabelText('Issue-Details')).toHaveTextContent('BV-14');
   });
 
   it('does not show the database project create action for sample snapshots', () => {
@@ -2679,7 +2781,7 @@ describe('BubblophyDashboard interactions', () => {
       },
     }));
 
-    render(
+    const { rerender } = render(
       <BubblophyDashboard
         snapshot={databaseSnapshot}
         createProjectAction={createProjectAction}
@@ -2745,6 +2847,24 @@ describe('BubblophyDashboard interactions', () => {
     expect(screen.getByLabelText('Issue-Details')).toHaveTextContent(
       'Kein Issue ausgewählt.'
     );
+
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=ZEN')
+    );
+    rerender(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        createProjectAction={createProjectAction}
+      />
+    );
+
+    await waitFor(() => {
+      expect(createdProject).toHaveAttribute('aria-pressed', 'true');
+      expect(
+        screen.getByText('Gefiltert auf Projekt ZEN.')
+      ).toBeInTheDocument();
+    });
+    expect(navigationMocks.routerReplace).not.toHaveBeenCalled();
   });
 
   it('edits the selected project through server-backed management controls', async () => {

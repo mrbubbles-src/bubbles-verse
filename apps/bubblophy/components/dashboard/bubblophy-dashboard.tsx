@@ -546,19 +546,7 @@ export function BubblophyDashboard({
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialProjectKey = getInitialProjectFilterKey(
-    searchParams.get('project'),
-    snapshot.projects
-  );
-  const [selectedProjectKey, setSelectedProjectKey] =
-    useState<ProjectFilterKey>(initialProjectKey);
-  const [selectedIssueId, setSelectedIssueId] = useState(() =>
-    getInitialIssueSelection({
-      issueId: searchParams.get('issue'),
-      projectKey: initialProjectKey,
-      issues: snapshot.issues,
-    })
-  );
+  const pendingSelectionSourceHrefRef = useRef<string | null>(null);
   const [isDraftDialogOpen, setIsDraftDialogOpen] = useState(false);
   const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
   const [isAgentTokenDialogOpen, setIsAgentTokenDialogOpen] = useState(false);
@@ -641,34 +629,6 @@ export function BubblophyDashboard({
       updatedProjectMembersById,
     ]
   );
-  const displayedAgentTokens = useMemo(() => {
-    if (selectedProjectKey === 'all') {
-      return allAgentTokens;
-    }
-
-    return allAgentTokens.filter(
-      (token) => token.projectKey === selectedProjectKey
-    );
-  }, [allAgentTokens, selectedProjectKey]);
-  const displayedAgentRuns = useMemo(() => {
-    if (selectedProjectKey === 'all') {
-      return allAgentRuns;
-    }
-
-    return allAgentRuns.filter((run) =>
-      run.issueId.startsWith(`${selectedProjectKey}-`)
-    );
-  }, [allAgentRuns, selectedProjectKey]);
-  const displayedActivity = useMemo(() => {
-    if (selectedProjectKey === 'all') {
-      return snapshot.activity;
-    }
-
-    return snapshot.activity.filter(
-      (event) => event.projectKey === selectedProjectKey
-    );
-  }, [selectedProjectKey, snapshot.activity]);
-
   const allIssues = useMemo<DashboardIssue[]>(
     () =>
       [...localDrafts, ...baseIssues].map((issue) => {
@@ -708,6 +668,44 @@ export function BubblophyDashboard({
       updatedIssuesById,
     ]
   );
+  const urlProjectKey = getInitialProjectFilterKey(
+    searchParams.get('project'),
+    baseProjects
+  );
+  const urlIssueId = getInitialIssueSelection({
+    issueId: searchParams.get('issue'),
+    projectKey: urlProjectKey,
+    issues: allIssues,
+  });
+  const selectedProjectKey = urlProjectKey;
+  const selectedIssueId = urlIssueId;
+  const displayedAgentTokens = useMemo(() => {
+    if (selectedProjectKey === 'all') {
+      return allAgentTokens;
+    }
+
+    return allAgentTokens.filter(
+      (token) => token.projectKey === selectedProjectKey
+    );
+  }, [allAgentTokens, selectedProjectKey]);
+  const displayedAgentRuns = useMemo(() => {
+    if (selectedProjectKey === 'all') {
+      return allAgentRuns;
+    }
+
+    return allAgentRuns.filter((run) =>
+      run.issueId.startsWith(`${selectedProjectKey}-`)
+    );
+  }, [allAgentRuns, selectedProjectKey]);
+  const displayedActivity = useMemo(() => {
+    if (selectedProjectKey === 'all') {
+      return snapshot.activity;
+    }
+
+    return snapshot.activity.filter(
+      (event) => event.projectKey === selectedProjectKey
+    );
+  }, [selectedProjectKey, snapshot.activity]);
 
   const allProjects = useMemo(
     () =>
@@ -806,7 +804,6 @@ export function BubblophyDashboard({
       ),
     [allIssues, projectRoleByKey]
   );
-  const selectedIssueIdForUrl = selectedIssue?.id ?? '';
   const selectedIssueRuns = selectedIssue
     ? allAgentRuns.filter((run) => run.issueId === selectedIssue.id)
     : [];
@@ -846,20 +843,35 @@ export function BubblophyDashboard({
     projectKey: ProjectFilterKey,
     issueId: string
   ) => {
-    router.push(
-      buildSelectionHref({
-        pathname,
-        searchParams: new URLSearchParams(searchParams.toString()),
-        projectKey,
-        issueId,
-      })
-    );
+    const currentQuery = searchParams.toString();
+    const sourceHref = currentQuery ? `${pathname}?${currentQuery}` : pathname;
+    const targetHref = buildSelectionHref({
+      pathname,
+      searchParams: new URLSearchParams(currentQuery),
+      projectKey,
+      issueId,
+    });
+
+    pendingSelectionSourceHrefRef.current = sourceHref;
+    router.push(targetHref);
   };
   const refreshDatabaseSnapshot = () => {
     router.refresh();
   };
 
   useEffect(() => {
+    const currentQuery = searchParams.toString();
+    const currentHref = currentQuery ? `${pathname}?${currentQuery}` : pathname;
+    const pendingSourceHref = pendingSelectionSourceHrefRef.current;
+
+    if (pendingSourceHref) {
+      if (currentHref === pendingSourceHref) {
+        return;
+      }
+
+      pendingSelectionSourceHrefRef.current = null;
+    }
+
     const currentProjectKey = searchParams.get('project');
     const currentIssueId = searchParams.get('issue');
 
@@ -867,13 +879,8 @@ export function BubblophyDashboard({
       return;
     }
 
-    if (!selectedIssueIdForUrl) {
-      return;
-    }
-
-    const nextProjectKey =
-      selectedProjectKey === 'all' ? null : selectedProjectKey;
-    const nextIssueId = selectedIssueIdForUrl || null;
+    const nextProjectKey = urlProjectKey === 'all' ? null : urlProjectKey;
+    const nextIssueId = urlIssueId || null;
 
     if (
       currentProjectKey === nextProjectKey &&
@@ -886,17 +893,11 @@ export function BubblophyDashboard({
       buildSelectionHref({
         pathname,
         searchParams: new URLSearchParams(searchParams.toString()),
-        projectKey: selectedProjectKey,
-        issueId: selectedIssueIdForUrl,
+        projectKey: urlProjectKey,
+        issueId: urlIssueId,
       })
     );
-  }, [
-    pathname,
-    router,
-    searchParams,
-    selectedIssueIdForUrl,
-    selectedProjectKey,
-  ]);
+  }, [pathname, router, searchParams, urlIssueId, urlProjectKey]);
 
   const handleProjectSelect = (projectKey: ProjectFilterKey) => {
     const nextIssueId =
@@ -905,13 +906,10 @@ export function BubblophyDashboard({
         : (allIssues.find((issue) => issue.projectKey === projectKey)?.id ??
           '');
 
-    setSelectedProjectKey(projectKey);
-    setSelectedIssueId(nextIssueId);
     updateSelectionUrl(projectKey, nextIssueId);
   };
 
   const handleIssueSelect = (issueId: string) => {
-    setSelectedIssueId(issueId);
     updateSelectionUrl(selectedProjectKey, issueId);
   };
 
@@ -937,16 +935,12 @@ export function BubblophyDashboard({
 
     setDraftSequence((currentSequence) => currentSequence + 1);
     setLocalDrafts((currentDrafts) => [draft, ...currentDrafts]);
-    setSelectedProjectKey(input.projectKey);
-    setSelectedIssueId(draftId);
     updateSelectionUrl(input.projectKey, draftId);
     setIsDraftDialogOpen(false);
   };
 
   const handlePersistedIssueCreated = (issue: IssueSummary) => {
     setPersistedIssues((currentIssues) => [issue, ...currentIssues]);
-    setSelectedProjectKey(issue.projectKey);
-    setSelectedIssueId(issue.id);
     updateSelectionUrl(issue.projectKey, issue.id);
     setRecentMutationFeedback(`Issue ${issue.id} wurde erstellt.`);
     refreshDatabaseSnapshot();
@@ -955,8 +949,6 @@ export function BubblophyDashboard({
 
   const handlePersistedProjectCreated = (project: ProjectSummary) => {
     setPersistedProjects((currentProjects) => [project, ...currentProjects]);
-    setSelectedProjectKey(project.key);
-    setSelectedIssueId('');
     updateSelectionUrl(project.key, '');
     setRecentMutationFeedback(`Projekt ${project.key} wurde erstellt.`);
     refreshDatabaseSnapshot();
@@ -1129,8 +1121,6 @@ export function BubblophyDashboard({
     setLocalDrafts((currentDrafts) =>
       currentDrafts.filter((draft) => draft.id !== issueId)
     );
-    setSelectedProjectKey('all');
-    setSelectedIssueId(snapshot.issues[0]?.id ?? '');
     updateSelectionUrl('all', snapshot.issues[0]?.id ?? '');
   };
 
