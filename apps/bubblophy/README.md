@@ -439,6 +439,10 @@ bun run build
   anderer Issues aus dem Snapshot verdrängen. Projekt- und Issue-ID bleiben
   bis zum Mapper gekoppelt, damit ein gleichzeitiger Issue-Umzug keine Notiz
   an die alte Projektzeile hängen kann.
+- Projektmetriken stammen aus separaten SQL-Aggregaten über alle Candidate-
+  Issues. Offen-, Bereit- und Blockiert-Zähler bleiben damit vollständig, auch
+  wenn der verbliebene Issue-Graph im nächsten Schritt begrenzt wird;
+  archivierte Projekte bleiben operativ bei null.
 - Sample-Daten markieren Agent-Tokens und Audit-Aktivität als Beispielvorschau.
   Wenn die Datenbank nicht bereit ist, bleibt der Snapshot leer und zeigt einen
   Setup-Hinweis statt Beispielprojekte als stillen Ersatz. Der Run-Bereich zeigt

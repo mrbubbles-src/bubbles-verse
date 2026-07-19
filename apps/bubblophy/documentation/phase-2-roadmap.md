@@ -148,9 +148,9 @@ Status: abgeschlossen.
   Issue-Write-Gates autoritativ.
 - Die projektübergreifende Übersicht verwendet übergangsweise weiter den
   vorhandenen Snapshot. Dieser lädt außerdem noch die vollständigen Issues für
-  Metriken und Run-Auflösung. Planhistorie und Notes-Historie sind inzwischen
-  unabhängig begrenzt; als Nächstes kann der Legacy-Graph durch
-  SQL-Projektaggregate und bounded All-Reads entfallen.
+  Run-Auflösung. Projektmetriken kommen inzwischen aus unabhängigen
+  SQL-Aggregaten; Plan- und Notes-Historie sind ebenfalls begrenzt. Als
+  Nächstes kann der Legacy-Issue-Graph durch bounded All-Reads entfallen.
 - Agent-Run-Statusupdates begrenzen den gesamten PATCH-Envelope beim Streamen
   auf 64 KiB tatsächliche UTF-8-Bytes. Die Service-Grenze akzeptiert auch bei
   direkten Aufrufern höchstens 48 KiB Result-JSON mit 12 Ebenen und 1000
@@ -171,6 +171,9 @@ Status: abgeschlossen.
   gefiltert, dann je Issue stabil gerankt und als neueste 50 plus
   `hasMoreNotes`-Sentinel geladen. Das Limit gilt pro Issue statt global;
   Projekt- und Issue-ID bleiben für Concurrent-Move-Sicherheit gekoppelt.
+- Offen-, Bereit- und Blockiert-Metriken werden pro Projekt unabhängig vom
+  hydratisierten Issue-Graph in SQL aggregiert. Dadurch bleiben vollständige
+  Projektzähler erhalten, wenn die All-Project-Issue-Liste begrenzt wird.
 - Suche, Filter, Sortierung und Pagination für Projekte, Runs und
   Audit-Ereignisse ergänzen. Die Issue-Queue ist abgeschlossen.
 - Datenbankabfragen und Cache-Tags auf größere Projektmengen prüfen.

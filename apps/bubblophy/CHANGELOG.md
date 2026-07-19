@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Moved dashboard project metrics to dedicated SQL aggregates for all candidate
+  issues, so open, ready, and blocked counts no longer depend on how many issue
+  detail rows remain hydrated in the legacy snapshot.
 - Bounded legacy dashboard notes to the newest 50 explicit `issue_note`
   events plus one history sentinel per issue, using SQL-side payload filtering
   and stable per-issue window ranks without cross-issue starvation. Project

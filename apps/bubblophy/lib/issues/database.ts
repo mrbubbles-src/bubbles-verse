@@ -33,6 +33,14 @@ import {
 } from '@/drizzle/db/schema';
 
 type CountByProjectId = Record<string, number>;
+type IssueCountsByProjectId = Record<
+  string,
+  {
+    open: number;
+    ready: number;
+    blocked: number;
+  }
+>;
 type LatestPlanByIssueId = Record<
   string,
   {
@@ -309,71 +317,87 @@ async function selectBubblophyProjectIssueRowsForProjectIds(
   authUserId: string,
   projectIds: string[]
 ): Promise<BubblophyProjectIssuePersistenceRow[]> {
-  const [projectRows, currentUserRoles, memberCounts, tokenCounts, issueRows] =
-    await Promise.all([
-      db
-        .select({
-          id: bubblophyProjects.id,
-          key: bubblophyProjects.key,
-          name: bubblophyProjects.name,
-          description: bubblophyProjects.description,
-          isArchived: bubblophyProjects.isArchived,
-        })
-        .from(bubblophyProjects)
-        .where(inArray(bubblophyProjects.id, projectIds))
-        .orderBy(asc(bubblophyProjects.key)),
-      db
-        .select({
-          projectId: bubblophyProjectMembers.projectId,
-          role: bubblophyProjectMembers.role,
-        })
-        .from(bubblophyProjectMembers)
-        .where(
-          and(
-            inArray(bubblophyProjectMembers.projectId, projectIds),
-            eq(bubblophyProjectMembers.authUserId, authUserId)
-          )
-        ),
-      db
-        .select({
-          projectId: bubblophyProjectMembers.projectId,
-          total: sql<number>`count(*)::int`,
-        })
-        .from(bubblophyProjectMembers)
-        .where(inArray(bubblophyProjectMembers.projectId, projectIds))
-        .groupBy(bubblophyProjectMembers.projectId),
-      db
-        .select({
-          projectId: bubblophyAgentTokens.projectId,
-          total: sql<number>`count(*)::int`,
-        })
-        .from(bubblophyAgentTokens)
-        .where(
-          and(
-            inArray(bubblophyAgentTokens.projectId, projectIds),
-            eq(bubblophyAgentTokens.state, 'active')
-          )
+  const [
+    projectRows,
+    currentUserRoles,
+    memberCounts,
+    tokenCounts,
+    issueCounts,
+    issueRows,
+  ] = await Promise.all([
+    db
+      .select({
+        id: bubblophyProjects.id,
+        key: bubblophyProjects.key,
+        name: bubblophyProjects.name,
+        description: bubblophyProjects.description,
+        isArchived: bubblophyProjects.isArchived,
+      })
+      .from(bubblophyProjects)
+      .where(inArray(bubblophyProjects.id, projectIds))
+      .orderBy(asc(bubblophyProjects.key)),
+    db
+      .select({
+        projectId: bubblophyProjectMembers.projectId,
+        role: bubblophyProjectMembers.role,
+      })
+      .from(bubblophyProjectMembers)
+      .where(
+        and(
+          inArray(bubblophyProjectMembers.projectId, projectIds),
+          eq(bubblophyProjectMembers.authUserId, authUserId)
         )
-        .groupBy(bubblophyAgentTokens.projectId),
-      db
-        .select({
-          id: bubblophyIssues.id,
-          projectId: bubblophyIssues.projectId,
-          issueNumber: bubblophyIssues.issueNumber,
-          title: bubblophyIssues.title,
-          description: bubblophyIssues.description,
-          status: bubblophyIssues.status,
-          priority: bubblophyIssues.priority,
-          assignedAuthUserId: bubblophyIssues.assignedAuthUserId,
-          requiresHumanApproval: bubblophyIssues.requiresHumanApproval,
-        })
-        .from(bubblophyIssues)
-        .where(inArray(bubblophyIssues.projectId, projectIds))
-        .orderBy(
-          asc(bubblophyIssues.projectId),
-          asc(bubblophyIssues.issueNumber)
-        ),
-    ]);
+      ),
+    db
+      .select({
+        projectId: bubblophyProjectMembers.projectId,
+        total: sql<number>`count(*)::int`,
+      })
+      .from(bubblophyProjectMembers)
+      .where(inArray(bubblophyProjectMembers.projectId, projectIds))
+      .groupBy(bubblophyProjectMembers.projectId),
+    db
+      .select({
+        projectId: bubblophyAgentTokens.projectId,
+        total: sql<number>`count(*)::int`,
+      })
+      .from(bubblophyAgentTokens)
+      .where(
+        and(
+          inArray(bubblophyAgentTokens.projectId, projectIds),
+          eq(bubblophyAgentTokens.state, 'active')
+        )
+      )
+      .groupBy(bubblophyAgentTokens.projectId),
+    db
+      .select({
+        projectId: bubblophyIssues.projectId,
+        open: sql<number>`count(*) filter (where ${bubblophyIssues.status} <> 'done')::int`,
+        ready: sql<number>`count(*) filter (where ${bubblophyIssues.status} = 'ready')::int`,
+        blocked: sql<number>`count(*) filter (where ${bubblophyIssues.status} = 'blocked')::int`,
+      })
+      .from(bubblophyIssues)
+      .where(inArray(bubblophyIssues.projectId, projectIds))
+      .groupBy(bubblophyIssues.projectId),
+    db
+      .select({
+        id: bubblophyIssues.id,
+        projectId: bubblophyIssues.projectId,
+        issueNumber: bubblophyIssues.issueNumber,
+        title: bubblophyIssues.title,
+        description: bubblophyIssues.description,
+        status: bubblophyIssues.status,
+        priority: bubblophyIssues.priority,
+        assignedAuthUserId: bubblophyIssues.assignedAuthUserId,
+        requiresHumanApproval: bubblophyIssues.requiresHumanApproval,
+      })
+      .from(bubblophyIssues)
+      .where(inArray(bubblophyIssues.projectId, projectIds))
+      .orderBy(
+        asc(bubblophyIssues.projectId),
+        asc(bubblophyIssues.issueNumber)
+      ),
+  ]);
 
   const visibleProjectIds = projectRows
     .filter((project) => !project.isArchived)
@@ -413,6 +437,7 @@ async function selectBubblophyProjectIssueRowsForProjectIds(
     currentUserRoles: toProjectRoleMap(currentUserRoles),
     memberCounts: toProjectCountMap(memberCounts),
     tokenCounts: toProjectCountMap(tokenCounts),
+    issueCounts: toProjectIssueCountMap(issueCounts),
     latestPlans,
     issueNotes,
   });
@@ -678,6 +703,7 @@ function buildMembershipRows(input: {
   currentUserRoles: RoleByProjectId;
   memberCounts: CountByProjectId;
   tokenCounts: CountByProjectId;
+  issueCounts: IssueCountsByProjectId;
   latestPlans: LatestPlanByIssueId;
   issueNotes: IssueNotesByProjectAndIssueId;
 }): BubblophyProjectIssueMembershipRow[] {
@@ -694,6 +720,7 @@ function buildMembershipRows(input: {
           currentUserRole: input.currentUserRoles[project.id],
           memberCount: input.memberCounts[project.id] ?? 0,
           tokenCount: input.tokenCounts[project.id] ?? 0,
+          issueCounts: input.issueCounts[project.id],
           issue: null,
           latestPlan: null,
           issueNotes: undefined,
@@ -708,6 +735,7 @@ function buildMembershipRows(input: {
         currentUserRole: input.currentUserRoles[project.id],
         memberCount: input.memberCounts[project.id] ?? 0,
         tokenCount: input.tokenCounts[project.id] ?? 0,
+        issueCounts: input.issueCounts[project.id],
         issue,
         latestPlan: input.latestPlans[issue.id] ?? null,
         issueNotes: input.issueNotes[project.id]?.[issue.id],
@@ -734,6 +762,7 @@ function createProjectIssueMembershipRow(input: {
   currentUserRole: BubblophyProjectIssueMembershipRow['projectCurrentUserRole'];
   memberCount: number;
   tokenCount: number;
+  issueCounts: IssueCountsByProjectId[string] | undefined;
   issue: {
     id: string;
     issueNumber: number;
@@ -756,6 +785,9 @@ function createProjectIssueMembershipRow(input: {
     projectIsArchived: input.project.isArchived,
     projectMemberCount: input.memberCount,
     activeAgentTokenCount: input.tokenCount,
+    projectOpenIssueCount: input.issueCounts?.open ?? 0,
+    projectReadyIssueCount: input.issueCounts?.ready ?? 0,
+    projectBlockedIssueCount: input.issueCounts?.blocked ?? 0,
     projectCurrentUserRole: input.currentUserRole,
     issueDatabaseId: input.issue?.id ?? null,
     issueNumber: input.issue?.issueNumber ?? null,
@@ -854,6 +886,30 @@ async function selectBoundedIssueNotes(
 function toProjectCountMap(rows: { projectId: string; total: number }[]) {
   return rows.reduce<CountByProjectId>((counts, row) => {
     counts[row.projectId] = row.total;
+    return counts;
+  }, {});
+}
+
+/**
+ * Converts grouped issue aggregates into a project-ID lookup.
+ *
+ * @param rows SQL aggregate rows for candidate projects.
+ * @returns Open, ready, and blocked counts keyed by project ID.
+ */
+function toProjectIssueCountMap(
+  rows: {
+    projectId: string;
+    open: number;
+    ready: number;
+    blocked: number;
+  }[]
+) {
+  return rows.reduce<IssueCountsByProjectId>((counts, row) => {
+    counts[row.projectId] = {
+      open: row.open,
+      ready: row.ready,
+      blocked: row.blocked,
+    };
     return counts;
   }, {});
 }

@@ -27,6 +27,9 @@ const baseProjectRow = {
   projectIsArchived: false,
   projectMemberCount: 3,
   activeAgentTokenCount: 2,
+  projectOpenIssueCount: 2,
+  projectReadyIssueCount: 1,
+  projectBlockedIssueCount: 1,
 } satisfies Pick<
   BubblophyProjectIssuePersistenceRow,
   | 'projectId'
@@ -36,6 +39,9 @@ const baseProjectRow = {
   | 'projectIsArchived'
   | 'projectMemberCount'
   | 'activeAgentTokenCount'
+  | 'projectOpenIssueCount'
+  | 'projectReadyIssueCount'
+  | 'projectBlockedIssueCount'
 >;
 
 function makeIssueRow(
@@ -260,6 +266,26 @@ describe('Bubblophy issue repository mapping', () => {
     ]);
   });
 
+  it('keeps project metrics independent from hydrated issue rows', () => {
+    const snapshot = buildBubblophyProjectIssueSnapshot([
+      makeIssueRow({
+        projectOpenIssueCount: 120,
+        projectReadyIssueCount: 17,
+        projectBlockedIssueCount: 4,
+      }),
+    ]);
+
+    expect(snapshot.projects[0]).toEqual(
+      expect.objectContaining({
+        openIssues: 120,
+        readyIssues: 17,
+        blockedIssues: 4,
+        health: 'blockiert',
+      })
+    );
+    expect(snapshot.issues).toHaveLength(1);
+  });
+
   it('separates stable assignee IDs from redacted fallback labels', () => {
     const snapshot = buildBubblophyProjectIssueSnapshot([
       makeIssueRow({
@@ -294,6 +320,9 @@ describe('Bubblophy issue repository mapping', () => {
         projectKey: 'LP',
         projectMemberCount: -1,
         activeAgentTokenCount: -1,
+        projectOpenIssueCount: -1,
+        projectReadyIssueCount: -1,
+        projectBlockedIssueCount: -1,
         issueDatabaseId: null,
         issueNumber: null,
         issueTitle: null,

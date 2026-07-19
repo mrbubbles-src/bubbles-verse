@@ -76,6 +76,14 @@ const tableRows = {
       requiresHumanApproval: true,
     },
   ],
+  issueCounts: [
+    {
+      projectId: 'project_visible',
+      open: 1,
+      ready: 1,
+      blocked: 0,
+    },
+  ],
   issueEvents: [
     {
       id: 'event_issue_note',
@@ -372,7 +380,9 @@ function rowsForCall(call: QueryCall): MockRow[] {
   }
 
   if (call.tableName === 'bubblophy_issues') {
-    return rowsForTable('issues');
+    return call.groupByCalled
+      ? rowsForTable('issueCounts')
+      : rowsForTable('issues');
   }
 
   if (call.tableName === 'bubblophy_issue_plans') {
@@ -469,6 +479,9 @@ describe('selectBubblophyDashboardRowsForUser', () => {
     expect(rows.projectIssueRows).toEqual([
       expect.objectContaining({
         projectCurrentUserRole: 'owner',
+        projectOpenIssueCount: 1,
+        projectReadyIssueCount: 1,
+        projectBlockedIssueCount: 0,
         issuePlanStepCount: 2,
         issuePlanVersion: 2,
         issuePlanSummary: 'Reload-fähiger Plan.',
@@ -525,6 +538,9 @@ describe('selectBubblophyDashboardRowsForUser', () => {
     const issuePlanCall = calls.find(
       (call) => call.tableName === 'bubblophy_issue_plans'
     );
+    const issueAggregateCall = calls.find(
+      (call) => call.tableName === 'bubblophy_issues' && call.groupByCalled
+    );
     const projectMemberCall = calls.find(
       (call) =>
         call.tableName === 'bubblophy_project_members' &&
@@ -558,6 +574,21 @@ describe('selectBubblophyDashboardRowsForUser', () => {
         '"bubblophy_issue_plans"."created_at" desc',
       ],
     });
+    expect(issueAggregateCall).toMatchObject({
+      selectedKeys: ['projectId', 'open', 'ready', 'blocked'],
+      whereCalled: true,
+      groupByCalled: true,
+      limitValue: null,
+    });
+    expect(issueAggregateCall?.selectionSql.open).toContain(
+      'count(*) filter (where "bubblophy_issues"."status" <> \'done\')::int'
+    );
+    expect(issueAggregateCall?.selectionSql.ready).toContain(
+      'count(*) filter (where "bubblophy_issues"."status" = \'ready\')::int'
+    );
+    expect(issueAggregateCall?.selectionSql.blocked).toContain(
+      'count(*) filter (where "bubblophy_issues"."status" = \'blocked\')::int'
+    );
     expect(rankedNotesCall).toMatchObject({
       joinedTableNames: ['bubblophy_issues', 'bubblophy_agent_tokens'],
       selectionSql: {

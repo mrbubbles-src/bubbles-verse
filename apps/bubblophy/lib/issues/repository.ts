@@ -32,6 +32,9 @@ export interface BubblophyProjectIssuePersistenceRow {
   projectIsArchived: boolean;
   projectMemberCount: number;
   activeAgentTokenCount: number;
+  projectOpenIssueCount: number;
+  projectReadyIssueCount: number;
+  projectBlockedIssueCount: number;
   projectCurrentUserRole?: ProjectMemberRole;
   issueDatabaseId: string | null;
   issueNumber: number | null;
@@ -97,15 +100,6 @@ export interface BubblophyProjectIssueRepositorySnapshot {
   projects: ProjectSummary[];
   issues: IssueSummary[];
 }
-
-const openIssueStatuses = new Set<BubblophyIssueStatus>([
-  'triage',
-  'planned',
-  'ready',
-  'in_progress',
-  'review',
-  'blocked',
-]);
 
 const issueStatusLabels = {
   triage: 'triage',
@@ -295,10 +289,6 @@ export function buildBubblophyProjectIssueSnapshot(
     ) {
       continue;
     }
-
-    project.openIssues += openIssueStatuses.has(row.issueStatus) ? 1 : 0;
-    project.readyIssues += row.issueStatus === 'ready' ? 1 : 0;
-    project.blockedIssues += row.issueStatus === 'blocked' ? 1 : 0;
 
     issues.push({
       id: formatBubblophyIssueKey(row.projectKey, row.issueNumber),
@@ -703,9 +693,15 @@ function createMutableProjectSummary(
     key: row.projectKey,
     description: row.projectDescription,
     isArchived: row.projectIsArchived,
-    openIssues: 0,
-    readyIssues: 0,
-    blockedIssues: 0,
+    openIssues: row.projectIsArchived
+      ? 0
+      : Math.max(0, row.projectOpenIssueCount),
+    readyIssues: row.projectIsArchived
+      ? 0
+      : Math.max(0, row.projectReadyIssueCount),
+    blockedIssues: row.projectIsArchived
+      ? 0
+      : Math.max(0, row.projectBlockedIssueCount),
     memberCount: Math.max(0, row.projectMemberCount),
     agentTokenCount: Math.max(0, row.activeAgentTokenCount),
     currentUserRole: row.projectCurrentUserRole,
