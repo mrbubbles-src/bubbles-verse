@@ -13,7 +13,7 @@ import {
   lockBubblophyProjectForHumanWrite,
   lockBubblophyProjectMembersForHumanWrite,
 } from '@/lib/projects/human-write-locks-database';
-import { canManageBubblophyProject } from '@/lib/projects/manage';
+import { canManageBubblophyProject } from '@/lib/projects/permissions';
 
 import { and, eq, sql } from 'drizzle-orm';
 
@@ -68,6 +68,10 @@ async function updateProjectContentWithEvent(
     }
 
     const currentProject = context.project;
+
+    if (currentProject.isArchived) {
+      return { status: 'archived_project' };
+    }
 
     const changedFields = getChangedBubblophyProjectContentFields({
       current: currentProject,

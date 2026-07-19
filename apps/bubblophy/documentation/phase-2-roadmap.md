@@ -69,7 +69,10 @@ Status: abgeschlossen.
   Rolle, Run-Zustand und Token unter geordneten Locks. Issue-Inhalt, Priorität
   und Zuweisung verwenden ebenfalls Projekt-, Issue- und sortierte
   Membership-Locks. Damit ist das Autorisierungs-Race-Gate vor der
-  Einladungspersistenz abgeschlossen.
+  Einladungspersistenz abgeschlossen. Projekt- und Agent-Token-Controls werden
+  zusätzlich pro Projekt nur für aktuelle Owner/Maintainer angeboten;
+  Inhaltsänderungen an archivierten Projekten lehnt auch die gelockte
+  Servergrenze ab.
 - Die Einladungspersistenz ist mit normalisierter E-Mail, Nicht-Owner-Rolle,
   gehashtem Token, Ablauf- und konfliktfreien Terminalzuständen angelegt.
   Direkte RLS-Reads bleiben vollständig geschlossen. Create, Reinvite und

@@ -4,6 +4,8 @@ import type { ProjectSummary } from '@/lib/dashboard/types';
 
 import { deriveBubblophyProjectHealth } from '@/lib/issues/repository';
 
+export { canManageBubblophyProject } from '@/lib/projects/permissions';
+
 export interface UpdateBubblophyProjectContentInput {
   authUserId: string;
   projectKey: string;
@@ -61,6 +63,9 @@ export interface BubblophyProjectManagementStore {
     | {
         status: 'forbidden';
       }
+    | {
+        status: 'archived_project';
+      }
   >;
   transitionProjectArchiveWithEvent(
     input: BubblophyProjectArchiveStoreInput
@@ -102,6 +107,9 @@ export type UpdateBubblophyProjectContentResult =
     }
   | {
       status: 'forbidden';
+    }
+  | {
+      status: 'archived_project';
     }
   | {
       status: 'database_unavailable';
@@ -232,16 +240,6 @@ export function mapManagedProjectToSummary(
     memberCount: project.memberCount,
     agentTokenCount: project.agentTokenCount,
   };
-}
-
-/**
- * Checks whether a project role may mutate project settings.
- *
- * @param role Project membership role from persistence.
- * @returns True for owner/maintainer roles.
- */
-export function canManageBubblophyProject(role: string) {
-  return role === 'owner' || role === 'maintainer';
 }
 
 function normalizeProjectContentInput(

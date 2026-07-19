@@ -114,6 +114,28 @@ describe('project management services', () => {
     });
   });
 
+  it('preserves archived project denials from the store', async () => {
+    const store: BubblophyProjectManagementStore = {
+      updateProjectContentWithEvent: vi.fn(async () => ({
+        status: 'archived_project' as const,
+      })),
+      transitionProjectArchiveWithEvent: vi.fn(async () => ({
+        status: 'unchanged' as const,
+      })),
+    };
+
+    await expect(
+      updateBubblophyProjectContent(
+        {
+          authUserId: 'user_owner',
+          projectKey: 'BV',
+          name: 'Bubblesverse lokal',
+        },
+        { store }
+      )
+    ).resolves.toEqual({ status: 'archived_project' });
+  });
+
   it('normalizes archive decisions and preserves store denials', async () => {
     const store: BubblophyProjectManagementStore = {
       updateProjectContentWithEvent: vi.fn(async () => ({

@@ -39,7 +39,8 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   Arbeitsfläche für neue Issues, Run-Anfragen oder Agent-Token-Aktionen.
   Projektänderungen sperren Projekt und aktuelle Manager-Mitgliedschaft vor der
   Autorisierungsentscheidung, sodass paralleler Rollenentzug zuerst wirksam
-  wird.
+  wird. Inhaltsänderungen an archivierten Projekten werden auch an dieser
+  gelockten Servergrenze abgelehnt.
 - Der Projektbereich zeigt Mitglieder eines ausgewählten Projekts aus
   `bubblophy_project_members` und ergänzt aus `bubblophy_user_profiles` nur
   verständliche Anzeigedaten. Profile gewähren keinen Zugriff; bei fehlendem
@@ -103,6 +104,9 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   ein projektweites Audit-Event ohne Plaintext oder Hash. Erstellung, Pause,
   Fortsetzung und Widerruf prüfen Projekt und Manager-Mitgliedschaft unter
   stabilen Locks; Lifecycle-Zustände werden erst unter dem Token-Lock bewertet.
+  Die UI bietet Erstellung und Lifecycle-Aktionen ebenfalls ausschließlich für
+  aktive Projekte mit aktueller Owner-/Maintainer-Rolle an; bei gemischten
+  Rollen wird pro Projekt gefiltert.
 - Der Auth- und Sicherheitsplan liegt in
   `documentation/auth-security-plan.md`.
 - Der Nach-MVP-Umfang, beginnend mit einem providerneutralen Remote-MCP über

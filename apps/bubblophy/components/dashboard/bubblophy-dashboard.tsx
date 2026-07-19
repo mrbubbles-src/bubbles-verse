@@ -66,7 +66,10 @@ import {
   projectHealthLabels,
 } from '@/lib/dashboard/labels';
 import { getIssueReadinessPercent } from '@/lib/dashboard/metrics';
-import { canContributeToBubblophyProject } from '@/lib/projects/permissions';
+import {
+  canContributeToBubblophyProject,
+  canManageBubblophyProject,
+} from '@/lib/projects/permissions';
 import { bubblophySidebarData, getBubblophyBreadcrumbs } from '@/lib/sidebar';
 
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
@@ -738,6 +741,26 @@ export function BubblophyDashboard({
       ),
     [activeProjects]
   );
+  const activeManagerProjects = useMemo(
+    () =>
+      activeProjects.filter((project) =>
+        canManageBubblophyProject(project.currentUserRole)
+      ),
+    [activeProjects]
+  );
+  const manageableProjectKeys = useMemo(
+    () => new Set(activeManagerProjects.map((project) => project.key)),
+    [activeManagerProjects]
+  );
+  const agentTokenCreationProjects = useMemo(
+    () =>
+      selectedProjectKey === 'all'
+        ? activeManagerProjects
+        : activeManagerProjects.filter(
+            (project) => project.key === selectedProjectKey
+          ),
+    [activeManagerProjects, selectedProjectKey]
+  );
   const issueCreationProjects = canUseDatabase
     ? activeContributorProjects
     : activeProjects;
@@ -755,6 +778,9 @@ export function BubblophyDashboard({
       : (allProjects.find((project) => project.key === selectedProjectKey) ??
         null);
   const isSelectedProjectArchived = selectedProject?.isArchived ?? false;
+  const canManageSelectedProject = canManageBubblophyProject(
+    selectedProject?.currentUserRole
+  );
   const selectedProjectMembers = selectedProject
     ? allProjectMembers.filter(
         (member) => member.projectKey === selectedProject.key
@@ -1200,6 +1226,7 @@ export function BubblophyDashboard({
                 }
                 canManageProjects={
                   canUseDatabase &&
+                  canManageSelectedProject &&
                   Boolean(updateProjectContentAction) &&
                   Boolean(transitionProjectArchiveAction)
                 }
@@ -1299,15 +1326,13 @@ export function BubblophyDashboard({
                 projects={allProjects}
                 canCreateAgentToken={
                   canUseDatabase &&
-                  activeProjects.length > 0 &&
-                  !isSelectedProjectArchived &&
+                  agentTokenCreationProjects.length > 0 &&
                   Boolean(createAgentTokenAction)
                 }
                 canUpdateAgentTokens={
-                  canUseDatabase &&
-                  !isSelectedProjectArchived &&
-                  Boolean(updateAgentTokenLifecycleAction)
+                  canUseDatabase && Boolean(updateAgentTokenLifecycleAction)
                 }
+                manageableProjectKeys={manageableProjectKeys}
                 updateAgentTokenLifecycleAction={
                   updateAgentTokenLifecycleAction
                 }
@@ -1362,7 +1387,7 @@ export function BubblophyDashboard({
       ) : null}
       {isAgentTokenDialogOpen ? (
         <NewAgentTokenDialog
-          projects={activeProjects}
+          projects={agentTokenCreationProjects}
           open={isAgentTokenDialogOpen}
           createAgentTokenAction={createAgentTokenAction}
           onAgentTokenCreated={handleAgentTokenCreated}
@@ -4266,6 +4291,7 @@ function AgentAccess({
   projects,
   canCreateAgentToken,
   canUpdateAgentTokens,
+  manageableProjectKeys,
   updateAgentTokenLifecycleAction,
   onCreateAgentToken,
   onAgentTokenLifecycleUpdated,
@@ -4275,6 +4301,7 @@ function AgentAccess({
   projects: ProjectSummary[];
   canCreateAgentToken: boolean;
   canUpdateAgentTokens: boolean;
+  manageableProjectKeys: ReadonlySet<string>;
   updateAgentTokenLifecycleAction?: (
     input: UpdateBubblophyAgentTokenLifecycleActionInput
   ) => Promise<UpdateBubblophyAgentTokenLifecycleActionResult>;
@@ -4342,7 +4369,9 @@ function AgentAccess({
                 </Badge>
               ))}
             </div>
-            {canUpdateAgentTokens && updateAgentTokenLifecycleAction ? (
+            {canUpdateAgentTokens &&
+            manageableProjectKeys.has(token.projectKey) &&
+            updateAgentTokenLifecycleAction ? (
               <AgentTokenLifecycleControls
                 key={`${token.id}-${token.state}`}
                 token={token}
@@ -6053,6 +6082,10 @@ function getProjectManagementActionErrorMessage(
 
   if (result.status === 'forbidden') {
     return 'Nur Owner und Maintainer können Projekte verwalten.';
+  }
+
+  if (result.status === 'archived_project') {
+    return 'Archivierte Projekte müssen vor Inhaltsänderungen wiederhergestellt werden.';
   }
 
   if (result.status === 'database_unavailable') {

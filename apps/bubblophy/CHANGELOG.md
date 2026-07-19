@@ -96,6 +96,9 @@
 - Closed the dashboard membership-read race with a final fail-closed
   membership and role gate across projects, issues, members, tokens, runs, and
   activity, including renewed co-member e-mail redaction after role demotion.
+- Aligned project and agent-token management controls with each project's
+  current owner/maintainer role, filtered mixed-role token actions per project,
+  and blocked archived-project content edits at the locked server boundary.
 
 All notable changes to this project will be documented in this file.
 

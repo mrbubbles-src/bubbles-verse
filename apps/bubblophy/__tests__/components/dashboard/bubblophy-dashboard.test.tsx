@@ -548,6 +548,130 @@ describe('BubblophyDashboard interactions', () => {
     ).not.toBeInTheDocument();
   });
 
+  it.each(['member', 'viewer'] as const)(
+    'hides project and token management from %s roles',
+    (role) => {
+      const restrictedSnapshot = {
+        ...databaseSnapshot,
+        projects: databaseSnapshot.projects.map((project) => ({
+          ...project,
+          currentUserRole: role,
+        })),
+      } satisfies DashboardSnapshot;
+
+      render(
+        <BubblophyDashboard
+          snapshot={restrictedSnapshot}
+          updateProjectContentAction={async () => ({ status: 'forbidden' })}
+          transitionProjectArchiveAction={async () => ({
+            status: 'forbidden',
+          })}
+          createAgentTokenAction={async () => ({ status: 'forbidden' })}
+          updateAgentTokenLifecycleAction={async () => ({
+            status: 'forbidden',
+          })}
+        />
+      );
+
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: 'Projekt Bubblesverse (BV) auswählen',
+        })
+      );
+
+      const projectsSection = document.getElementById('projects');
+      const agentSection = document.getElementById('agents');
+
+      expect(projectsSection).toBeInstanceOf(HTMLElement);
+      expect(agentSection).toBeInstanceOf(HTMLElement);
+
+      if (!projectsSection || !agentSection) {
+        throw new Error('Expected project and token sections to render.');
+      }
+
+      expect(
+        within(projectsSection).queryByLabelText('Name')
+      ).not.toBeInTheDocument();
+      expect(
+        within(projectsSection).queryByRole('button', {
+          name: 'Projekt archivieren',
+        })
+      ).not.toBeInTheDocument();
+      expect(
+        within(agentSection).queryByRole('button', {
+          name: 'Agent-Token erstellen',
+        })
+      ).not.toBeInTheDocument();
+      expect(
+        within(agentSection).queryByRole('button', { name: 'Pausieren' })
+      ).not.toBeInTheDocument();
+      expect(
+        within(agentSection).queryByRole('button', { name: 'Fortsetzen' })
+      ).not.toBeInTheDocument();
+      expect(
+        within(agentSection).queryByRole('button', { name: 'Widerrufen' })
+      ).not.toBeInTheDocument();
+    }
+  );
+
+  it('scopes token creation and lifecycle controls to managed projects', () => {
+    const mixedRoleSnapshot = {
+      ...databaseSnapshot,
+      projects: databaseSnapshot.projects.map((project) => ({
+        ...project,
+        currentUserRole:
+          project.key === 'NO'
+            ? ('maintainer' as const)
+            : project.key === 'BV'
+              ? ('viewer' as const)
+              : ('member' as const),
+      })),
+    } satisfies DashboardSnapshot;
+
+    render(
+      <BubblophyDashboard
+        snapshot={mixedRoleSnapshot}
+        createAgentTokenAction={async () => ({ status: 'forbidden' })}
+        updateAgentTokenLifecycleAction={async () => ({
+          status: 'forbidden',
+        })}
+      />
+    );
+
+    const agentSection = document.getElementById('agents');
+
+    expect(agentSection).toBeInstanceOf(HTMLElement);
+
+    if (!agentSection) {
+      throw new Error('Expected the agent token section to render.');
+    }
+
+    fireEvent.click(
+      within(agentSection).getByRole('button', {
+        name: 'Agent-Token erstellen',
+      })
+    );
+
+    const dialog = screen.getByRole('dialog');
+    const projectSelect = within(dialog).getByLabelText('Projekt');
+
+    expect(within(projectSelect).getAllByRole('option')).toHaveLength(1);
+    expect(within(projectSelect).getByRole('option')).toHaveTextContent(
+      'NO · Novari'
+    );
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Schließen' }));
+
+    expect(
+      within(agentSection).getAllByRole('button', { name: 'Pausieren' })
+    ).toHaveLength(1);
+    expect(
+      within(agentSection).queryByRole('button', { name: 'Fortsetzen' })
+    ).not.toBeInTheDocument();
+    expect(
+      within(agentSection).getAllByRole('button', { name: 'Widerrufen' })
+    ).toHaveLength(1);
+  });
+
   it('filters the issue queue when a project is selected', () => {
     render(<BubblophyDashboard snapshot={dashboardSnapshot} />);
 
