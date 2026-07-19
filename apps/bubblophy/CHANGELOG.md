@@ -86,6 +86,10 @@
   secret in a short-lived HttpOnly cookie, OAuth resumes only the exact
   token-free acceptance path, and matching verified identities atomically gain
   membership with race-safe, email- and token-free audit events.
+- Replaced the normal technical Auth-ID member handoff with a manager-only
+  email invitation UI, including redacted lifecycle states, archived-project
+  guards, conflict refreshes, confirmation before revoke, and dismissible
+  one-time links returned as entry paths instead of separate plaintext tokens.
 
 All notable changes to this project will be documented in this file.
 

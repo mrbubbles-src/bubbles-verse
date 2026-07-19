@@ -6,14 +6,17 @@ import { Suspense } from 'react';
 import { connection } from 'next/server';
 
 import {
-  addBubblophyProjectMemberAction,
   createBubblophyAgentTokenAction,
   createBubblophyIssueAction,
   createBubblophyIssueNoteAction,
   createBubblophyIssuePlanAction,
   createBubblophyProjectAction,
+  createBubblophyProjectInvitationAction,
+  readBubblophyProjectInvitationManagerSnapshotAction,
+  reinviteBubblophyProjectInvitationAction,
   removeBubblophyProjectMemberAction,
   requestBubblophyAgentRunAction,
+  revokeBubblophyProjectInvitationAction,
   transitionBubblophyAgentRunAction,
   transitionBubblophyProjectArchiveAction,
   updateBubblophyAgentTokenLifecycleAction,
@@ -90,7 +93,12 @@ export async function ProtectedBubblophyDashboard() {
       createProjectAction={createBubblophyProjectAction}
       updateProjectContentAction={updateBubblophyProjectContentAction}
       transitionProjectArchiveAction={transitionBubblophyProjectArchiveAction}
-      addProjectMemberAction={addBubblophyProjectMemberAction}
+      readProjectInvitationsAction={
+        readBubblophyProjectInvitationManagerSnapshotAction
+      }
+      createProjectInvitationAction={createBubblophyProjectInvitationAction}
+      reinviteProjectInvitationAction={reinviteBubblophyProjectInvitationAction}
+      revokeProjectInvitationAction={revokeBubblophyProjectInvitationAction}
       updateProjectMemberRoleAction={updateBubblophyProjectMemberRoleAction}
       removeProjectMemberAction={removeBubblophyProjectMemberAction}
       createAgentTokenAction={createBubblophyAgentTokenAction}

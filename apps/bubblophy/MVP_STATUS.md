@@ -65,7 +65,9 @@ persönlich authentifizierter Remote-MCP mit Supabase OAuth 2.1.
   Profile oder E-Mail statt technischer Auth-User-IDs verwaltet werden können.
   Die serverseitigen Create-/Reinvite-/Revoke-Verträge und der redigierte
   Manager-Snapshot sowie die sichere, atomare Annahme über die verifizierte
-  Supabase-Identität sind abgeschlossen; Manager- und Identitäts-UX folgen.
+  Supabase-Identität sind abgeschlossen. Auch die Manager-UX arbeitet jetzt per
+  E-Mail, zeigt Einladungszustände und offenbart neue Links nur einmalig;
+  verständliche Identitätsprofile folgen als eigener Slice.
 - Deployment-Härtung vorbereiten: Domain-Konfiguration, Supabase Redirects,
   Runtime-Umgebungen, Monitoring und Backup-/Restore-Strategie.
 - RLS-Policies und Security-Verträge vor Remote-/Produktionsnutzung nochmal

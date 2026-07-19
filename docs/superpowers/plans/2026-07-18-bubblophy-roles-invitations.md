@@ -81,8 +81,8 @@ Einladungspersistenz.
 
 ## Task 5: Team-UX und verständliche Identität
 
-- [ ] Technische Auth-ID-Eingabe durch E-Mail-Einladung ersetzen.
-- [ ] Offene, abgelaufene und widerrufene Einladungen für Manager verständlich
+- [x] Technische Auth-ID-Eingabe durch E-Mail-Einladung ersetzen.
+- [x] Offene, abgelaufene und widerrufene Einladungen für Manager verständlich
       anzeigen; Link nur unmittelbar nach Erzeugung kopierbar machen.
 - [ ] Ein minimales eigenes Profil aus verifizierter Session-Identität pflegen,
       damit Mitgliedslisten Name/E-Mail mit technischer ID nur als Fallback zeigen.

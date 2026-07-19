@@ -323,10 +323,18 @@ bun run build
   bereits bei Supabase angemeldeten Nutzer vor der ersten Mitgliedschaft durch
   das normale Bubblophy-Zugangsgate führen. Die Annahme bindet Token und
   verifizierte Session-E-Mail unter Projekt-, Membership- und Einladungs-Locks,
-  erstellt Mitgliedschaft und Audit atomar. Das Token erscheint weder in
-  Client-JavaScript, Markup noch Action-Ergebnis; die E-Mail ist nur für den
-  authentifizierten Nutzer sichtbar. Audit-Payloads enthalten weder E-Mail,
-  Token noch Hash.
+  erstellt Mitgliedschaft und Audit atomar. Bei der Annahme erscheint das Token
+  weder in Client-JavaScript, Markup noch Action-Ergebnis; die E-Mail ist nur
+  für den authentifizierten Nutzer sichtbar. Audit-Payloads enthalten weder
+  E-Mail, Token noch Hash.
+- Der normale Team-Workflow verwendet keine technische Auth-User-ID mehr:
+  Owner und Maintainer erstellen Einladungen per E-Mail und Nicht-Owner-Rolle.
+  Der Browser erhält nach Create oder Reinvite einmalig nur den vollständigen
+  Einstiegspfad, hält den daraus gebauten Link ausschließlich im lokalen
+  React-Zustand und kann ihn explizit ausblenden. Der Manager-Snapshot zeigt
+  offene, abgelaufene, angenommene und widerrufene Zustände ohne Tokenmaterial;
+  abgelaufene Einladungen können nur erneuert, offene zusätzlich nach Dialog
+  widerrufen und archivierte Projekte ausschließlich gelesen werden.
 - Persistierte Plan-Erfassung läuft serverseitig über Issue-Projektmitgliedschaft,
   schreibt eine neue Planversion plus `plan_updated`-Event und startet keine
   Agent-Runs.

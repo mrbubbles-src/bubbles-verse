@@ -1,6 +1,4 @@
 import type {
-  AddBubblophyProjectMemberActionInput,
-  AddBubblophyProjectMemberActionResult,
   CreateBubblophyAgentTokenActionInput,
   CreateBubblophyAgentTokenActionResult,
   CreateBubblophyIssueActionInput,
@@ -11,6 +9,7 @@ import type {
   CreateBubblophyIssuePlanActionResult,
   CreateBubblophyProjectActionInput,
   CreateBubblophyProjectActionResult,
+  ReadBubblophyProjectInvitationManagerSnapshotActionResult,
   RemoveBubblophyProjectMemberActionInput,
   RemoveBubblophyProjectMemberActionResult,
   RequestBubblophyAgentRunActionInput,
@@ -3071,7 +3070,7 @@ describe('BubblophyDashboard interactions', () => {
       within(projectsSection).getByText('Owner geschützt')
     ).toBeInTheDocument();
     expect(
-      within(projectsSection).getByText(/bekannte Auth-User-ID/)
+      within(projectsSection).getByText(/Teamzugang per E-Mail-Einladung/)
     ).toBeInTheDocument();
 
     fireEvent.change(
@@ -3099,28 +3098,25 @@ describe('BubblophyDashboard interactions', () => {
     });
   });
 
-  it('adds a project member from the members panel', async () => {
-    const addProjectMemberAction = vi.fn<
-      (
-        input: AddBubblophyProjectMemberActionInput
-      ) => Promise<AddBubblophyProjectMemberActionResult>
+  it('loads the email invitation manager without exposing technical member handoff', async () => {
+    const readProjectInvitationsAction = vi.fn<
+      (input: {
+        projectKey: string;
+      }) => Promise<ReadBubblophyProjectInvitationManagerSnapshotActionResult>
     >(async () => ({
-      status: 'added',
-      member: {
-        id: 'BV:00000000-0000-0000-0000-000000000123',
+      status: 'found',
+      snapshot: {
         projectKey: 'BV',
-        authUserId: '00000000-0000-0000-0000-000000000123',
-        label: '00000000-0000-0000-0000-000000000123',
-        role: 'viewer',
-        createdAt: '2026-06-14T10:00:00.000Z',
+        managerRole: 'owner',
+        isArchived: false,
+        invitations: [],
       },
-      memberCount: 4,
     }));
 
     render(
       <BubblophyDashboard
         snapshot={databaseSnapshotWithManageableMembers}
-        addProjectMemberAction={addProjectMemberAction}
+        readProjectInvitationsAction={readProjectInvitationsAction}
       />
     );
 
@@ -3138,171 +3134,27 @@ describe('BubblophyDashboard interactions', () => {
       })
     );
 
+    await waitFor(() => {
+      expect(readProjectInvitationsAction).toHaveBeenCalledWith({
+        projectKey: 'BV',
+      });
+    });
     expect(
-      within(projectsSection).getByText(
-        /keine Einladung und kein Profil-Lookup/
+      within(projectsSection).getByText(/Teamzugang per E-Mail-Einladung/)
+    ).toBeInTheDocument();
+    expect(
+      within(projectsSection).queryByLabelText('Auth-User-ID')
+    ).not.toBeInTheDocument();
+    expect(
+      within(projectsSection).queryByLabelText(
+        'Eigene Auth-ID für Mitglieder-Handoff'
+      )
+    ).not.toBeInTheDocument();
+    expect(
+      await within(projectsSection).findByText(
+        'Für dieses Projekt gibt es noch keine Einladungen.'
       )
     ).toBeInTheDocument();
-
-    fireEvent.change(within(projectsSection).getByLabelText('Auth-User-ID'), {
-      target: { value: '00000000-0000-0000-0000-000000000123' },
-    });
-    fireEvent.change(within(projectsSection).getByLabelText('Rolle'), {
-      target: { value: 'viewer' },
-    });
-    fireEvent.click(
-      within(projectsSection).getByRole('button', {
-        name: 'Mitglied hinzufügen',
-      })
-    );
-
-    await waitFor(() => {
-      expect(addProjectMemberAction).toHaveBeenCalledWith({
-        projectKey: 'BV',
-        memberAuthUserId: '00000000-0000-0000-0000-000000000123',
-        role: 'viewer',
-      });
-    });
-    expect(addProjectMemberAction.mock.calls[0]?.[0]).not.toHaveProperty(
-      'authUserId'
-    );
-    await waitFor(() => {
-      expect(
-        within(projectsSection).getByText(
-          '00000000-0000-0000-0000-000000000123'
-        )
-      ).toBeInTheDocument();
-    });
-    expect(within(projectsSection).getByRole('status')).toHaveTextContent(
-      'Mitglied wurde direkt hinzugefügt.'
-    );
-    expect(within(projectsSection).getByText('4 sichtbar')).toBeInTheDocument();
-  });
-
-  it('copies own auth user id for member handoff', async () => {
-    render(
-      <BubblophyDashboard snapshot={databaseSnapshotWithManageableMembers} />
-    );
-
-    const projectsSection = document.getElementById('projects');
-
-    expect(projectsSection).toBeInstanceOf(HTMLElement);
-
-    if (!projectsSection) {
-      throw new Error('Expected the projects section to render.');
-    }
-
-    fireEvent.click(
-      within(projectsSection).getByRole('button', {
-        name: 'Projekt Bubblesverse (BV) auswählen',
-      })
-    );
-
-    const handoff = within(projectsSection).getByLabelText(
-      'Eigene Auth-ID für Mitglieder-Handoff'
-    );
-
-    expect(within(handoff).getByText('user_mrbubbles')).toBeInTheDocument();
-    expect(
-      within(handoff).getByText(/Owner oder Maintainer/)
-    ).toBeInTheDocument();
-
-    fireEvent.click(
-      within(handoff).getByRole('button', {
-        name: 'Eigene Auth-ID kopieren',
-      })
-    );
-
-    await waitFor(() => {
-      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-        'user_mrbubbles'
-      );
-    });
-    expect(await within(handoff).findByRole('status')).toHaveTextContent(
-      'Eigene Auth-ID wurde kopiert.'
-    );
-  });
-
-  it('does not expose profile lookup or invitation language for own auth id copy', () => {
-    render(
-      <BubblophyDashboard snapshot={databaseSnapshotWithManageableMembers} />
-    );
-
-    const projectsSection = document.getElementById('projects');
-
-    expect(projectsSection).toBeInstanceOf(HTMLElement);
-
-    if (!projectsSection) {
-      throw new Error('Expected the projects section to render.');
-    }
-
-    fireEvent.click(
-      within(projectsSection).getByRole('button', {
-        name: 'Projekt Bubblesverse (BV) auswählen',
-      })
-    );
-
-    const handoff = within(projectsSection).getByLabelText(
-      'Eigene Auth-ID für Mitglieder-Handoff'
-    );
-
-    expect(
-      within(handoff).queryByText(/Profil-Lookup|E-Mail|Einladung/i)
-    ).not.toBeInTheDocument();
-    expect(
-      within(handoff).queryByText(/automatische Freigabe/i)
-    ).toBeInTheDocument();
-  });
-
-  it('shows duplicate add-member feedback without fake invite behavior', async () => {
-    const addProjectMemberAction = vi.fn<
-      (
-        input: AddBubblophyProjectMemberActionInput
-      ) => Promise<AddBubblophyProjectMemberActionResult>
-    >(async () => ({ status: 'unchanged' }));
-
-    render(
-      <BubblophyDashboard
-        snapshot={databaseSnapshotWithManageableMembers}
-        addProjectMemberAction={addProjectMemberAction}
-      />
-    );
-
-    const projectsSection = document.getElementById('projects');
-
-    expect(projectsSection).toBeInstanceOf(HTMLElement);
-
-    if (!projectsSection) {
-      throw new Error('Expected the projects section to render.');
-    }
-
-    fireEvent.click(
-      within(projectsSection).getByRole('button', {
-        name: 'Projekt Bubblesverse (BV) auswählen',
-      })
-    );
-    fireEvent.change(within(projectsSection).getByLabelText('Auth-User-ID'), {
-      target: { value: 'user_martin' },
-    });
-    fireEvent.click(
-      within(projectsSection).getByRole('button', {
-        name: 'Mitglied hinzufügen',
-      })
-    );
-
-    await waitFor(() => {
-      expect(addProjectMemberAction).toHaveBeenCalledWith({
-        projectKey: 'BV',
-        memberAuthUserId: 'user_martin',
-        role: 'member',
-      });
-    });
-    expect(
-      await within(projectsSection).findByRole('status')
-    ).toHaveTextContent('Dieses Mitglied ist bereits im Projekt.');
-    expect(
-      within(projectsSection).queryByText(/Einladung wurde/)
-    ).not.toBeInTheDocument();
   });
 
   it('shows role action exceptions without changing the member row', async () => {

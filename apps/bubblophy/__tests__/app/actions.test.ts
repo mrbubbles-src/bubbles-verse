@@ -1058,6 +1058,8 @@ describe('project member actions', () => {
 });
 
 describe('project invitation actions', () => {
+  const plaintextToken = `bubblophy_invite_${'a'.repeat(43)}`;
+
   beforeEach(() => {
     requireBubblophySessionMock.mockReset();
     createBubblophyProjectInvitationMock.mockReset();
@@ -1081,7 +1083,7 @@ describe('project invitation actions', () => {
         role: 'member',
         expiresAt: '2026-07-25T10:00:00.000Z',
         updatedAt: '2026-07-18T10:00:00.000Z',
-        plaintextToken: 'bubblophy_invite_secret',
+        plaintextToken,
       },
     });
 
@@ -1102,10 +1104,57 @@ describe('project invitation actions', () => {
       email: 'martin@example.test',
       role: 'member',
     });
-    expect(result).toMatchObject({
+    expect(result).toEqual({
       status: 'created',
-      invitation: { plaintextToken: 'bubblophy_invite_secret' },
+      invitation: {
+        id: 'invitation_1',
+        projectKey: 'BV',
+        email: 'martin@example.test',
+        role: 'member',
+        expiresAt: '2026-07-25T10:00:00.000Z',
+        updatedAt: '2026-07-18T10:00:00.000Z',
+        entryPath: `/invite/${plaintextToken}`,
+      },
     });
+
+    if (result.status !== 'created') {
+      throw new Error('Expected invitation creation to succeed.');
+    }
+
+    expect(result.invitation).not.toHaveProperty('plaintextToken');
+  });
+
+  it('returns a one-time entry path after reinvite without a separate token', async () => {
+    requireBubblophySessionMock.mockResolvedValue({
+      authUserId: 'user_server',
+      email: 'owner@example.test',
+      user: {},
+    });
+    reinviteBubblophyProjectInvitationMock.mockResolvedValue({
+      status: 'reinvited',
+      invitation: {
+        id: 'invitation_1',
+        projectKey: 'BV',
+        email: 'martin@example.test',
+        role: 'viewer',
+        expiresAt: '2026-07-25T10:00:00.000Z',
+        updatedAt: '2026-07-18T10:00:00.000Z',
+        plaintextToken,
+      },
+    });
+
+    const { reinviteBubblophyProjectInvitationAction } =
+      await import('@/app/actions');
+    const result = await reinviteBubblophyProjectInvitationAction({
+      invitationId: 'invitation_1',
+      expectedUpdatedAt: '2026-07-18T09:00:00.000Z',
+    });
+
+    expect(result).toMatchObject({
+      status: 'reinvited',
+      invitation: { entryPath: `/invite/${plaintextToken}` },
+    });
+    expect(result).not.toHaveProperty('invitation.plaintextToken');
   });
 
   it('uses the server session for reinvite and revoke decisions', async () => {

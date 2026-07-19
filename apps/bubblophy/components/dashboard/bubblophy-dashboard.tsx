@@ -1,8 +1,6 @@
 'use client';
 
 import type {
-  AddBubblophyProjectMemberActionInput,
-  AddBubblophyProjectMemberActionResult,
   CreateBubblophyAgentTokenActionInput,
   CreateBubblophyAgentTokenActionResult,
   CreateBubblophyIssueActionInput,
@@ -13,10 +11,17 @@ import type {
   CreateBubblophyIssuePlanActionResult,
   CreateBubblophyProjectActionInput,
   CreateBubblophyProjectActionResult,
+  CreateBubblophyProjectInvitationActionInput,
+  CreateBubblophyProjectInvitationActionResult,
+  ReadBubblophyProjectInvitationManagerSnapshotActionResult,
+  ReinviteBubblophyProjectInvitationActionInput,
+  ReinviteBubblophyProjectInvitationActionResult,
   RemoveBubblophyProjectMemberActionInput,
   RemoveBubblophyProjectMemberActionResult,
   RequestBubblophyAgentRunActionInput,
   RequestBubblophyAgentRunActionResult,
+  RevokeBubblophyProjectInvitationActionInput,
+  RevokeBubblophyProjectInvitationActionResult,
   TransitionBubblophyAgentRunActionInput,
   TransitionBubblophyAgentRunActionResult,
   TransitionBubblophyProjectArchiveActionInput,
@@ -109,6 +114,8 @@ import {
 } from '@bubbles/ui/shadcn/table';
 import { Textarea } from '@bubbles/ui/shadcn/textarea';
 
+import { ProjectInvitationManager } from '@/components/dashboard/project-invitations/project-invitation-manager';
+
 interface BubblophyDashboardProps {
   snapshot: DashboardSnapshot;
   createIssueAction?: (
@@ -147,9 +154,18 @@ interface BubblophyDashboardProps {
   transitionProjectArchiveAction?: (
     input: TransitionBubblophyProjectArchiveActionInput
   ) => Promise<TransitionBubblophyProjectArchiveActionResult>;
-  addProjectMemberAction?: (
-    input: AddBubblophyProjectMemberActionInput
-  ) => Promise<AddBubblophyProjectMemberActionResult>;
+  readProjectInvitationsAction?: (input: {
+    projectKey: string;
+  }) => Promise<ReadBubblophyProjectInvitationManagerSnapshotActionResult>;
+  createProjectInvitationAction?: (
+    input: CreateBubblophyProjectInvitationActionInput
+  ) => Promise<CreateBubblophyProjectInvitationActionResult>;
+  reinviteProjectInvitationAction?: (
+    input: ReinviteBubblophyProjectInvitationActionInput
+  ) => Promise<ReinviteBubblophyProjectInvitationActionResult>;
+  revokeProjectInvitationAction?: (
+    input: RevokeBubblophyProjectInvitationActionInput
+  ) => Promise<RevokeBubblophyProjectInvitationActionResult>;
   updateProjectMemberRoleAction?: (
     input: UpdateBubblophyProjectMemberRoleActionInput
   ) => Promise<UpdateBubblophyProjectMemberRoleActionResult>;
@@ -520,7 +536,10 @@ export function BubblophyDashboard({
   createProjectAction,
   updateProjectContentAction,
   transitionProjectArchiveAction,
-  addProjectMemberAction,
+  readProjectInvitationsAction,
+  createProjectInvitationAction,
+  reinviteProjectInvitationAction,
+  revokeProjectInvitationAction,
   updateProjectMemberRoleAction,
   removeProjectMemberAction,
   createAgentTokenAction,
@@ -565,9 +584,6 @@ export function BubblophyDashboard({
   const [updatedProjectMembersById, setUpdatedProjectMembersById] = useState<
     Record<string, ProjectMemberSummary>
   >({});
-  const [persistedProjectMembers, setPersistedProjectMembers] = useState<
-    ProjectMemberSummary[]
-  >([]);
   const [removedProjectMemberIds, setRemovedProjectMemberIds] = useState<
     string[]
   >([]);
@@ -618,11 +634,10 @@ export function BubblophyDashboard({
   );
   const allProjectMembers = useMemo(
     () =>
-      [...persistedProjectMembers, ...snapshot.projectMembers]
+      snapshot.projectMembers
         .filter((member) => !removedProjectMemberIds.includes(member.id))
         .map((member) => updatedProjectMembersById[member.id] ?? member),
     [
-      persistedProjectMembers,
       removedProjectMemberIds,
       snapshot.projectMembers,
       updatedProjectMembersById,
@@ -929,38 +944,6 @@ export function BubblophyDashboard({
     refreshDatabaseSnapshot();
   };
 
-  const handleProjectMemberAdded = (
-    member: ProjectMemberSummary,
-    memberCount: number
-  ) => {
-    setPersistedProjectMembers((currentMembers) =>
-      currentMembers.some((candidate) => candidate.id === member.id)
-        ? currentMembers
-        : [member, ...currentMembers]
-    );
-    setUpdatedProjectMembersById((currentMembers) => ({
-      ...currentMembers,
-      [member.id]: member,
-    }));
-    setRemovedProjectMemberIds((currentIds) =>
-      currentIds.filter((memberId) => memberId !== member.id)
-    );
-
-    const project = allProjects.find(
-      (currentProject) => currentProject.key === member.projectKey
-    );
-
-    if (project) {
-      handleProjectUpdated({ ...project, memberCount });
-    } else {
-      refreshDatabaseSnapshot();
-    }
-
-    setRecentMutationFeedback(
-      `Mitglied ${member.authUserId} wurde zu ${member.projectKey} hinzugefügt.`
-    );
-  };
-
   const handleProjectMemberRoleUpdated = (
     member: ProjectMemberSummary,
     memberCount: number
@@ -1196,15 +1179,18 @@ export function BubblophyDashboard({
                 }
                 readiness={readiness}
                 selectedProjectKey={selectedProjectKey}
-                currentUser={snapshot.currentUser}
                 updateProjectContentAction={updateProjectContentAction}
                 transitionProjectArchiveAction={transitionProjectArchiveAction}
-                addProjectMemberAction={addProjectMemberAction}
+                readProjectInvitationsAction={readProjectInvitationsAction}
+                createProjectInvitationAction={createProjectInvitationAction}
+                reinviteProjectInvitationAction={
+                  reinviteProjectInvitationAction
+                }
+                revokeProjectInvitationAction={revokeProjectInvitationAction}
                 updateProjectMemberRoleAction={updateProjectMemberRoleAction}
                 removeProjectMemberAction={removeProjectMemberAction}
                 onCreateProject={() => setIsProjectDialogOpen(true)}
                 onProjectUpdated={handleProjectUpdated}
-                onProjectMemberAdded={handleProjectMemberAdded}
                 onProjectMemberRoleUpdated={handleProjectMemberRoleUpdated}
                 onProjectMemberRemoved={handleProjectMemberRemoved}
                 onProjectSelect={handleProjectSelect}
@@ -1492,15 +1478,16 @@ function ProjectOverview({
   canManageProjects,
   readiness,
   selectedProjectKey,
-  currentUser,
   updateProjectContentAction,
   transitionProjectArchiveAction,
-  addProjectMemberAction,
+  readProjectInvitationsAction,
+  createProjectInvitationAction,
+  reinviteProjectInvitationAction,
+  revokeProjectInvitationAction,
   updateProjectMemberRoleAction,
   removeProjectMemberAction,
   onCreateProject,
   onProjectUpdated,
-  onProjectMemberAdded,
   onProjectMemberRoleUpdated,
   onProjectMemberRemoved,
   onProjectSelect,
@@ -1512,16 +1499,24 @@ function ProjectOverview({
   canManageProjects: boolean;
   readiness: number;
   selectedProjectKey: ProjectFilterKey;
-  currentUser: DashboardSnapshot['currentUser'];
   updateProjectContentAction?: (
     input: UpdateBubblophyProjectContentActionInput
   ) => Promise<UpdateBubblophyProjectContentActionResult>;
   transitionProjectArchiveAction?: (
     input: TransitionBubblophyProjectArchiveActionInput
   ) => Promise<TransitionBubblophyProjectArchiveActionResult>;
-  addProjectMemberAction?: (
-    input: AddBubblophyProjectMemberActionInput
-  ) => Promise<AddBubblophyProjectMemberActionResult>;
+  readProjectInvitationsAction?: (input: {
+    projectKey: string;
+  }) => Promise<ReadBubblophyProjectInvitationManagerSnapshotActionResult>;
+  createProjectInvitationAction?: (
+    input: CreateBubblophyProjectInvitationActionInput
+  ) => Promise<CreateBubblophyProjectInvitationActionResult>;
+  reinviteProjectInvitationAction?: (
+    input: ReinviteBubblophyProjectInvitationActionInput
+  ) => Promise<ReinviteBubblophyProjectInvitationActionResult>;
+  revokeProjectInvitationAction?: (
+    input: RevokeBubblophyProjectInvitationActionInput
+  ) => Promise<RevokeBubblophyProjectInvitationActionResult>;
   updateProjectMemberRoleAction?: (
     input: UpdateBubblophyProjectMemberRoleActionInput
   ) => Promise<UpdateBubblophyProjectMemberRoleActionResult>;
@@ -1530,10 +1525,6 @@ function ProjectOverview({
   ) => Promise<RemoveBubblophyProjectMemberActionResult>;
   onCreateProject: () => void;
   onProjectUpdated: (project: ProjectSummary) => void;
-  onProjectMemberAdded: (
-    member: ProjectMemberSummary,
-    memberCount: number
-  ) => void;
   onProjectMemberRoleUpdated: (
     member: ProjectMemberSummary,
     memberCount: number
@@ -1694,11 +1685,12 @@ function ProjectOverview({
           <ProjectMembersPanel
             project={selectedProject}
             members={projectMembers}
-            currentUser={currentUser}
-            addProjectMemberAction={addProjectMemberAction}
+            readProjectInvitationsAction={readProjectInvitationsAction}
+            createProjectInvitationAction={createProjectInvitationAction}
+            reinviteProjectInvitationAction={reinviteProjectInvitationAction}
+            revokeProjectInvitationAction={revokeProjectInvitationAction}
             updateProjectMemberRoleAction={updateProjectMemberRoleAction}
             removeProjectMemberAction={removeProjectMemberAction}
-            onProjectMemberAdded={onProjectMemberAdded}
             onProjectMemberRoleUpdated={onProjectMemberRoleUpdated}
             onProjectMemberRemoved={onProjectMemberRemoved}
           />
@@ -2092,30 +2084,35 @@ function ProjectManagementPanel({
 function ProjectMembersPanel({
   project,
   members,
-  currentUser,
-  addProjectMemberAction,
+  readProjectInvitationsAction,
+  createProjectInvitationAction,
+  reinviteProjectInvitationAction,
+  revokeProjectInvitationAction,
   updateProjectMemberRoleAction,
   removeProjectMemberAction,
-  onProjectMemberAdded,
   onProjectMemberRoleUpdated,
   onProjectMemberRemoved,
 }: {
   project: ProjectSummary;
   members: ProjectMemberSummary[];
-  currentUser: DashboardSnapshot['currentUser'];
-  addProjectMemberAction?: (
-    input: AddBubblophyProjectMemberActionInput
-  ) => Promise<AddBubblophyProjectMemberActionResult>;
+  readProjectInvitationsAction?: (input: {
+    projectKey: string;
+  }) => Promise<ReadBubblophyProjectInvitationManagerSnapshotActionResult>;
+  createProjectInvitationAction?: (
+    input: CreateBubblophyProjectInvitationActionInput
+  ) => Promise<CreateBubblophyProjectInvitationActionResult>;
+  reinviteProjectInvitationAction?: (
+    input: ReinviteBubblophyProjectInvitationActionInput
+  ) => Promise<ReinviteBubblophyProjectInvitationActionResult>;
+  revokeProjectInvitationAction?: (
+    input: RevokeBubblophyProjectInvitationActionInput
+  ) => Promise<RevokeBubblophyProjectInvitationActionResult>;
   updateProjectMemberRoleAction?: (
     input: UpdateBubblophyProjectMemberRoleActionInput
   ) => Promise<UpdateBubblophyProjectMemberRoleActionResult>;
   removeProjectMemberAction?: (
     input: RemoveBubblophyProjectMemberActionInput
   ) => Promise<RemoveBubblophyProjectMemberActionResult>;
-  onProjectMemberAdded: (
-    member: ProjectMemberSummary,
-    memberCount: number
-  ) => void;
   onProjectMemberRoleUpdated: (
     member: ProjectMemberSummary,
     memberCount: number
@@ -2127,13 +2124,6 @@ function ProjectMembersPanel({
   }) => void;
 }) {
   const [actionError, setActionError] = useState<string | null>(null);
-  const [actionMessage, setActionMessage] = useState<string | null>(null);
-  const [copyOwnAuthIdStatus, setCopyOwnAuthIdStatus] = useState<
-    'idle' | 'copied' | 'failed'
-  >('idle');
-  const [addMemberAuthUserId, setAddMemberAuthUserId] = useState('');
-  const [addMemberRole, setAddMemberRole] =
-    useState<AddBubblophyProjectMemberActionInput['role']>('member');
   const [confirmRemoveMemberId, setConfirmRemoveMemberId] = useState<
     string | null
   >(null);
@@ -2142,62 +2132,7 @@ function ProjectMembersPanel({
     !project.isArchived &&
     (project.currentUserRole === 'owner' ||
       project.currentUserRole === 'maintainer') &&
-    Boolean(
-      addProjectMemberAction ||
-      updateProjectMemberRoleAction ||
-      removeProjectMemberAction
-    );
-
-  const handleAddMember = () => {
-    if (!canManageMembers || !addProjectMemberAction || isPending) {
-      return;
-    }
-
-    setActionError(null);
-    setActionMessage(null);
-    startTransition(async () => {
-      let result: AddBubblophyProjectMemberActionResult;
-
-      try {
-        result = await addProjectMemberAction({
-          projectKey: project.key,
-          memberAuthUserId: addMemberAuthUserId,
-          role: addMemberRole,
-        });
-      } catch {
-        setActionError(
-          'Das Mitglied konnte gerade nicht hinzugefügt werden. Versuche es erneut.'
-        );
-        return;
-      }
-
-      if (result.status === 'added') {
-        onProjectMemberAdded(result.member, result.memberCount);
-        setAddMemberAuthUserId('');
-        setActionMessage('Mitglied wurde direkt hinzugefügt.');
-        return;
-      }
-
-      if (result.status === 'unchanged') {
-        setActionMessage('Dieses Mitglied ist bereits im Projekt.');
-        return;
-      }
-
-      setActionError(getProjectMemberAddActionErrorMessage(result));
-    });
-  };
-
-  const handleCopyOwnAuthUserId = () => {
-    if (!navigator.clipboard) {
-      setCopyOwnAuthIdStatus('failed');
-      return;
-    }
-
-    void navigator.clipboard
-      .writeText(currentUser.authUserId)
-      .then(() => setCopyOwnAuthIdStatus('copied'))
-      .catch(() => setCopyOwnAuthIdStatus('failed'));
-  };
+    Boolean(updateProjectMemberRoleAction || removeProjectMemberAction);
 
   const handleRoleChange = (
     member: ProjectMemberSummary,
@@ -2293,99 +2228,20 @@ function ProjectMembersPanel({
           <p className="text-xs text-muted-foreground">
             {project.isArchived
               ? 'Archivierte Projekte zeigen Mitglieder nur lesend an.'
-              : 'Direktes Hinzufügen nutzt eine bekannte Auth-User-ID. Einladungen und Profil-Lookup kommen später.'}
+              : 'Owner und Maintainer verwalten den Teamzugang per E-Mail-Einladung.'}
           </p>
         </div>
         <Badge variant="outline">{members.length} sichtbar</Badge>
       </div>
 
-      {canManageMembers && addProjectMemberAction ? (
-        <div className="grid gap-3 rounded-md border border-dashed border-border p-3">
-          <div className="grid gap-1">
-            <h4 className="text-sm font-medium">Mitglied hinzufügen</h4>
-            <p className="text-xs text-muted-foreground">
-              Nutzt eine bekannte Supabase/Auth-User-ID. Es wird keine Einladung
-              und kein Profil-Lookup ausgelöst.
-            </p>
-          </div>
-          <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_12rem_auto]">
-            <label className="grid gap-1 text-xs font-medium">
-              Auth-User-ID
-              <Input
-                value={addMemberAuthUserId}
-                disabled={isPending}
-                placeholder="00000000-0000-0000-0000-000000000000"
-                onChange={(event) =>
-                  setAddMemberAuthUserId(event.currentTarget.value)
-                }
-              />
-            </label>
-            <label className="grid gap-1 text-xs font-medium">
-              Rolle
-              <select
-                className="h-9 rounded-md border border-input bg-background px-2 text-sm"
-                value={addMemberRole}
-                disabled={isPending}
-                onChange={(event) =>
-                  setAddMemberRole(
-                    event.currentTarget
-                      .value as AddBubblophyProjectMemberActionInput['role']
-                  )
-                }>
-                {mutableProjectMemberRoles.map((role) => (
-                  <option key={role} value={role}>
-                    {projectMemberRoleLabels[role]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <Button
-              type="button"
-              size="sm"
-              className="self-end"
-              disabled={isPending || addMemberAuthUserId.trim().length === 0}
-              onClick={handleAddMember}>
-              Mitglied hinzufügen
-            </Button>
-          </div>
-        </div>
-      ) : null}
-
-      <div
-        aria-label="Eigene Auth-ID für Mitglieder-Handoff"
-        className="grid gap-2 rounded-md border border-dashed border-border p-3">
-        <div className="grid gap-1">
-          <h4 className="text-sm font-medium">Eigene Auth-ID weitergeben</h4>
-          <p className="text-xs text-muted-foreground">
-            Gib diese ID an einen Owner oder Maintainer weiter, damit du direkt
-            zu einem Projekt hinzugefügt werden kannst. Das löst keine Suche und
-            keine automatische Freigabe aus.
-          </p>
-        </div>
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <code className="min-w-0 rounded bg-background px-2 py-1 font-mono text-xs break-all">
-            {currentUser.authUserId}
-          </code>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={handleCopyOwnAuthUserId}>
-            Eigene Auth-ID kopieren
-          </Button>
-        </div>
-        {copyOwnAuthIdStatus === 'copied' ? (
-          <p role="status" className="text-xs text-muted-foreground">
-            Eigene Auth-ID wurde kopiert.
-          </p>
-        ) : null}
-        {copyOwnAuthIdStatus === 'failed' ? (
-          <p role="status" className="text-xs text-muted-foreground">
-            Konnte nicht automatisch kopieren. Markiere die ID und kopiere sie
-            manuell.
-          </p>
-        ) : null}
-      </div>
+      <ProjectInvitationManager
+        key={project.key}
+        createInvitationAction={createProjectInvitationAction}
+        project={project}
+        readInvitationsAction={readProjectInvitationsAction}
+        reinviteInvitationAction={reinviteProjectInvitationAction}
+        revokeInvitationAction={revokeProjectInvitationAction}
+      />
 
       {members.length === 0 ? (
         <p className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
@@ -2397,7 +2253,7 @@ function ProjectMembersPanel({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>User-ID</TableHead>
+                <TableHead>Mitglied</TableHead>
                 <TableHead>Rolle</TableHead>
                 <TableHead>Seit</TableHead>
                 <TableHead className="text-right">Aktionen</TableHead>
@@ -2500,12 +2356,6 @@ function ProjectMembersPanel({
           {actionError}
         </p>
       ) : null}
-      {actionMessage ? (
-        <p role="status" className="text-sm text-muted-foreground">
-          {actionMessage}
-        </p>
-      ) : null}
-
       {!project.isArchived && !canManageMembers ? (
         <p className="text-xs text-muted-foreground">
           Rollenänderungen und Entfernen sind nur für Owner und Maintainer mit
@@ -6189,45 +6039,6 @@ function getProjectArchiveActionErrorMessage(
   }
 
   return 'Die Archiventscheidung ist nicht gültig.';
-}
-
-/**
- * Converts project member add outcomes into quiet inline feedback.
- *
- * @param result Result returned by the persisted member add action.
- * @returns Human-readable error message for the members panel.
- */
-function getProjectMemberAddActionErrorMessage(
-  result: Exclude<
-    AddBubblophyProjectMemberActionResult,
-    { status: 'added' } | { status: 'unchanged' }
-  >
-) {
-  if (result.status === 'not_found') {
-    return 'Projekt wurde nicht gefunden.';
-  }
-
-  if (result.status === 'forbidden') {
-    return 'Nur Owner und Maintainer können Mitglieder hinzufügen.';
-  }
-
-  if (result.status === 'archived_project') {
-    return 'Archivierte Projekte erlauben keine Mitgliederänderungen.';
-  }
-
-  if (result.status === 'database_unavailable') {
-    return 'Die Datenbank ist gerade nicht verfügbar. Das Mitglied wurde nicht hinzugefügt.';
-  }
-
-  if (result.reason === 'empty_project') {
-    return 'Wähle ein Projekt aus.';
-  }
-
-  if (result.reason === 'empty_member') {
-    return 'Gib eine Auth-User-ID ein.';
-  }
-
-  return 'Diese Rolle ist nicht gültig.';
 }
 
 /**

@@ -3,6 +3,10 @@ import type {
   createBubblophyIssueAction,
   createBubblophyIssuePlanAction,
   createBubblophyProjectAction,
+  createBubblophyProjectInvitationAction,
+  readBubblophyProjectInvitationManagerSnapshotAction,
+  reinviteBubblophyProjectInvitationAction,
+  revokeBubblophyProjectInvitationAction,
   transitionBubblophyProjectArchiveAction,
   updateBubblophyAgentTokenLifecycleAction,
   updateBubblophyIssueContentAction,
@@ -28,6 +32,10 @@ const BubblophyDashboardMock = vi.fn(
     createProjectAction?: typeof createBubblophyProjectAction;
     updateProjectContentAction?: typeof updateBubblophyProjectContentAction;
     transitionProjectArchiveAction?: typeof transitionBubblophyProjectArchiveAction;
+    readProjectInvitationsAction?: typeof readBubblophyProjectInvitationManagerSnapshotAction;
+    createProjectInvitationAction?: typeof createBubblophyProjectInvitationAction;
+    reinviteProjectInvitationAction?: typeof reinviteBubblophyProjectInvitationAction;
+    revokeProjectInvitationAction?: typeof revokeBubblophyProjectInvitationAction;
     createAgentTokenAction?: typeof createBubblophyAgentTokenAction;
     updateAgentTokenLifecycleAction?: typeof updateBubblophyAgentTokenLifecycleAction;
   }) => <div data-testid="dashboard">{props.snapshot.projects[0]?.name}</div>
@@ -63,6 +71,10 @@ vi.mock('@/components/dashboard/bubblophy-dashboard', () => ({
     createProjectAction?: typeof createBubblophyProjectAction;
     updateProjectContentAction?: typeof updateBubblophyProjectContentAction;
     transitionProjectArchiveAction?: typeof transitionBubblophyProjectArchiveAction;
+    readProjectInvitationsAction?: typeof readBubblophyProjectInvitationManagerSnapshotAction;
+    createProjectInvitationAction?: typeof createBubblophyProjectInvitationAction;
+    reinviteProjectInvitationAction?: typeof reinviteBubblophyProjectInvitationAction;
+    revokeProjectInvitationAction?: typeof revokeBubblophyProjectInvitationAction;
     createAgentTokenAction?: typeof createBubblophyAgentTokenAction;
     updateAgentTokenLifecycleAction?: typeof updateBubblophyAgentTokenLifecycleAction;
   }) => BubblophyDashboardMock(props),
@@ -142,6 +154,18 @@ describe('Bubblophy home page', () => {
       expect.any(Function)
     );
     expect(element.props.transitionProjectArchiveAction).toEqual(
+      expect.any(Function)
+    );
+    expect(element.props.readProjectInvitationsAction).toEqual(
+      expect.any(Function)
+    );
+    expect(element.props.createProjectInvitationAction).toEqual(
+      expect.any(Function)
+    );
+    expect(element.props.reinviteProjectInvitationAction).toEqual(
+      expect.any(Function)
+    );
+    expect(element.props.revokeProjectInvitationAction).toEqual(
       expect.any(Function)
     );
     expect(element.props.createAgentTokenAction).toEqual(expect.any(Function));

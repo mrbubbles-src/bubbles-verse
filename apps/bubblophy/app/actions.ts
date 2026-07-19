@@ -93,6 +93,7 @@ import { createBubblophyProject } from '@/lib/projects/create';
 import {
   BUBBLOPHY_PROJECT_INVITATION_COOKIE,
   BUBBLOPHY_PROJECT_INVITATION_COOKIE_PATH,
+  buildBubblophyProjectInvitationEntryPath,
 } from '@/lib/projects/invitation-links';
 import { readBubblophyProjectInvitationManagerSnapshot } from '@/lib/projects/invitation-snapshot';
 import {
@@ -219,16 +220,41 @@ export type CreateBubblophyProjectInvitationActionInput = Omit<
   'authUserId'
 >;
 
+type CreatedBubblophyProjectInvitation = Extract<
+  CreateBubblophyProjectInvitationResult,
+  { status: 'created' }
+>['invitation'];
+
 export type CreateBubblophyProjectInvitationActionResult =
-  CreateBubblophyProjectInvitationResult;
+  | Exclude<CreateBubblophyProjectInvitationResult, { status: 'created' }>
+  | {
+      status: 'created';
+      invitation: Omit<CreatedBubblophyProjectInvitation, 'plaintextToken'> & {
+        entryPath: string;
+      };
+    };
 
 export type ReinviteBubblophyProjectInvitationActionInput = Omit<
   ReinviteBubblophyProjectInvitationInput,
   'authUserId'
 >;
 
+type ReinvitedBubblophyProjectInvitation = Extract<
+  ReinviteBubblophyProjectInvitationResult,
+  { status: 'reinvited' }
+>['invitation'];
+
 export type ReinviteBubblophyProjectInvitationActionResult =
-  ReinviteBubblophyProjectInvitationResult;
+  | Exclude<ReinviteBubblophyProjectInvitationResult, { status: 'reinvited' }>
+  | {
+      status: 'reinvited';
+      invitation: Omit<
+        ReinvitedBubblophyProjectInvitation,
+        'plaintextToken'
+      > & {
+        entryPath: string;
+      };
+    };
 
 export type RevokeBubblophyProjectInvitationActionInput = Omit<
   RevokeBubblophyProjectInvitationInput,
@@ -562,34 +588,60 @@ export async function removeBubblophyProjectMemberAction(
  * Creates a pending project invitation for the current manager session.
  *
  * @param input Project key, email address, and invited non-owner role.
- * @returns Created invitation with a one-time token or a safe status.
+ * @returns Created invitation with a one-time entry path or a safe status.
  */
 export async function createBubblophyProjectInvitationAction(
   input: CreateBubblophyProjectInvitationActionInput
 ): Promise<CreateBubblophyProjectInvitationActionResult> {
   const session = await requireBubblophySession({ nextPath: '/' });
-
-  return createBubblophyProjectInvitation({
+  const result = await createBubblophyProjectInvitation({
     ...input,
     authUserId: session.authUserId,
   });
+
+  if (result.status !== 'created') {
+    return result;
+  }
+
+  const { plaintextToken, ...invitation } = result.invitation;
+
+  return {
+    status: 'created',
+    invitation: {
+      ...invitation,
+      entryPath: buildBubblophyProjectInvitationEntryPath(plaintextToken),
+    },
+  };
 }
 
 /**
  * Rotates an open invitation token and expiry for the current manager session.
  *
  * @param input Invitation ID and expected update time.
- * @returns Updated invitation with a new one-time token or a safe status.
+ * @returns Updated invitation with a new one-time entry path or a safe status.
  */
 export async function reinviteBubblophyProjectInvitationAction(
   input: ReinviteBubblophyProjectInvitationActionInput
 ): Promise<ReinviteBubblophyProjectInvitationActionResult> {
   const session = await requireBubblophySession({ nextPath: '/' });
-
-  return reinviteBubblophyProjectInvitation({
+  const result = await reinviteBubblophyProjectInvitation({
     ...input,
     authUserId: session.authUserId,
   });
+
+  if (result.status !== 'reinvited') {
+    return result;
+  }
+
+  const { plaintextToken, ...invitation } = result.invitation;
+
+  return {
+    status: 'reinvited',
+    invitation: {
+      ...invitation,
+      entryPath: buildBubblophyProjectInvitationEntryPath(plaintextToken),
+    },
+  };
 }
 
 /**

@@ -84,9 +84,15 @@ Status: abgeschlossen.
   Supabase-Identität vor ihrer ersten Projektmitgliedschaft passieren. Die
   Annahme gleicht Session-E-Mail und Token unter geordneten Locks ab und
   schreibt Mitgliedschaft plus redigiertes Audit atomar. Terminale,
-  konkurrierende und falsche Identitäten bleiben fail-closed. Als Nächstes
-  folgt die Manager- und Identitäts-UX aus Task 5.
-- Mitglieder über Profil oder E-Mail statt technischer Auth-User-ID einladen.
+  konkurrierende und falsche Identitäten bleiben fail-closed.
+- Die Manager-UX ist abgeschlossen: Der normale Team-Workflow ersetzt die
+  technische Auth-ID-Eingabe durch E-Mail-Einladungen, zeigt den vollständigen
+  Link nur unmittelbar nach Create oder Reinvite lokal an und bildet offene,
+  abgelaufene, angenommene und widerrufene Zustände mit statusgerechten Aktionen
+  ab. Archivierte Projekte und Nicht-Manager bleiben schreibgeschützt; die
+  direkte Mitglieds-Action bleibt nur als kompatibler Backend-Vertrag bestehen.
+- Als nächster Rollen-Slice folgt die verständliche Identitätsanzeige über ein
+  minimales, aus der verifizierten Session gepflegtes Profil.
 - Einladungszustände, Ablauf, Annahme und Widerruf auditierbar machen.
 - Rollenansichten und Mutationsrechte für Owner, Maintainer, Member und Viewer
   verständlich abbilden.
@@ -142,7 +148,8 @@ vorhanden. Konfliktsichere Statusänderungen laufen über
 gültige Signatur, Issuer, Ablauf, Subject, OAuth-Client-ID und exakte
 MCP-Audience bleibt der Zugriff fail-closed. Der reale Codex-/Claude-Staging-
 Smoke bleibt bis zum gemeinsamen Deployment geparkt. Der lokale Rollen- und
-Einladungsbereich wird mit Manager- und Identitäts-UX fortgesetzt nach
+Einladungsbereich wird nach der abgeschlossenen Manager-UX mit der
+Identitäts-UX gemäß
 `docs/superpowers/plans/2026-07-18-bubblophy-roles-invitations.md`; die
 MCP-Grundlage bleibt unter
 `docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md` dokumentiert.
