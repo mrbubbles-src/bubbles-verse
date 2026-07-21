@@ -8,7 +8,6 @@ import type {
   JsonValue,
 } from '@/drizzle/db/schema';
 import type {
-  ActivityEvent,
   AgentRunState,
   AgentRunSummary,
   AgentTokenState,
@@ -63,16 +62,6 @@ export interface BubblophyProjectMemberPersistenceRow {
   normalizedEmail?: string | null;
   role: ProjectMemberRole;
   createdAt: string;
-}
-
-export interface BubblophyActivityPersistenceRow {
-  id: string;
-  summary: string;
-  actorAuthUserId: string | null;
-  actorAgentTokenLabel: string | null;
-  createdAt: string;
-  projectKey: string | null;
-  issueNumber: number | null;
 }
 
 const issueStatusLabels = {
@@ -526,46 +515,6 @@ function hasSafeStructuredResultHint(value: JsonValue): boolean {
       return nestedValue !== null;
     }
   );
-}
-
-/**
- * Converts project-event rows into the dashboard activity feed.
- *
- * @param rows Project activity rows already constrained to visible projects.
- * @returns Activity events ordered by the caller's row order.
- */
-export function buildBubblophyActivityEvents(
-  rows: BubblophyActivityPersistenceRow[]
-): ActivityEvent[] {
-  return rows.map((row) => ({
-    id: row.id,
-    label: row.summary,
-    actor: formatActivityActor(row),
-    occurredAt: row.createdAt,
-    projectKey: row.projectKey ?? undefined,
-    issueId:
-      row.projectKey && row.issueNumber
-        ? formatBubblophyIssueKey(row.projectKey, row.issueNumber)
-        : undefined,
-  }));
-}
-
-/**
- * Formats a quiet activity actor label for the dashboard.
- *
- * @param row Activity row with optional human or agent actor.
- * @returns Human-readable actor label.
- */
-function formatActivityActor(row: BubblophyActivityPersistenceRow) {
-  if (row.actorAuthUserId) {
-    return 'Mensch';
-  }
-
-  if (row.actorAgentTokenLabel) {
-    return `Agent-Token ${row.actorAgentTokenLabel}`;
-  }
-
-  return 'System';
 }
 
 /**

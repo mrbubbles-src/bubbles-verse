@@ -440,6 +440,14 @@ bun run build
   ihren aktuell ausgewählten öffentlichen Key als lokales Overlay sichtbar.
   Globale Run-Karten öffnen ihren öffentlichen Issue-Key direkt und sind damit
   nicht von der aktuell geladenen Queue-Seite abhängig.
+- Der Audit-Bereich liest im Datenbankmodus eine unabhängige newest-first
+  `ActivityPage` mit höchstens 20 Einträgen. Projekt- und Issue-Ereignisse
+  werden über den öffentlichen Cursor `(occurredAt, source, eventId)` stabil
+  zusammengeführt; `Alle`, `Issue-Ereignisse` und `Projekt-Ereignisse` sind als
+  URL-gestützter Filter verfügbar. Jeder Kandidat wird vor dem Browser-DTO
+  erneut an Mitgliedschaft, Projekt und gegebenenfalls Issue gebunden. Leere
+  sichtbare Projekte bleiben von Zugriffsentzug unterscheidbar, alte oder
+  fehlgeschlagene Page-Props fallen nicht auf Snapshot-Aktivität zurück.
 - Konkrete Projekt-RunQueues ersetzen den global vorbegrenzten Snapshot-Anteil
   durch eine unabhängige 20er-RunPage. Jeder Run bleibt im Run-Statement an
   aktuelle Membership, Projekt, Issue und projektgleiches Agent-Token gebunden;

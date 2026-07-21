@@ -2,7 +2,6 @@ import 'server-only';
 
 import type { BubblophyDashboardPersistenceRows } from '@/lib/dashboard/data';
 import type {
-  BubblophyActivityPersistenceRow,
   BubblophyAgentRunPersistenceRow,
   BubblophyAgentTokenPersistenceRow,
   BubblophyProjectMemberPersistenceRow,
@@ -16,9 +15,7 @@ import { db } from '@/drizzle/db';
 import {
   bubblophyAgentRuns,
   bubblophyAgentTokens,
-  bubblophyIssueEvents,
   bubblophyIssues,
-  bubblophyProjectEvents,
   bubblophyProjectMembers,
   bubblophyProjects,
   bubblophyUserProfiles,
@@ -65,30 +62,22 @@ export async function selectBubblophyDashboardRowsForUser(
       projectMemberRows: [],
       agentTokenRows: [],
       agentRunRows: [],
-      activityRows: [],
     };
   }
 
-  const [
-    projectRows,
-    projectMemberRows,
-    agentTokenRows,
-    agentRunRows,
-    activityRows,
-  ] = await Promise.all([
-    selectBubblophyProjectRowsForProjectIds(authUserId, projectIds),
-    selectBubblophyProjectMemberRowsForUser(authUserId, projectIds),
-    selectBubblophyAgentTokenRowsForProjectIds(projectIds),
-    selectBubblophyAgentRunRowsForProjectIds(projectIds),
-    selectBubblophyProjectActivityRowsForProjectIds(projectIds),
-  ]);
+  const [projectRows, projectMemberRows, agentTokenRows, agentRunRows] =
+    await Promise.all([
+      selectBubblophyProjectRowsForProjectIds(authUserId, projectIds),
+      selectBubblophyProjectMemberRowsForUser(authUserId, projectIds),
+      selectBubblophyAgentTokenRowsForProjectIds(projectIds),
+      selectBubblophyAgentRunRowsForProjectIds(projectIds),
+    ]);
 
   const rows = {
     projectRows,
     projectMemberRows,
     agentTokenRows,
     agentRunRows,
-    activityRows,
   };
   const currentMemberships =
     await selectVisibleProjectMembershipsForUser(authUserId);
@@ -160,9 +149,6 @@ function restrictDashboardRowsToCurrentMemberships(
     ),
     agentRunRows: rows.agentRunRows.filter((row) =>
       stableProjectKeys.has(row.projectKey)
-    ),
-    activityRows: rows.activityRows.filter(
-      (row) => row.projectKey && stableProjectKeys.has(row.projectKey)
     ),
   };
 }
@@ -449,105 +435,6 @@ async function selectBubblophyAgentRunRowsForProjectIds(
     )
     .where(inArray(bubblophyIssues.projectId, projectIds))
     .orderBy(desc(bubblophyAgentRuns.updatedAt), desc(bubblophyAgentRuns.id))
-    .limit(20);
-}
-
-/**
- * Selects recent project-level activity rows for visible projects.
- *
- * @param projectIds Project IDs already constrained by membership.
- * @returns Activity rows, newest first.
- */
-async function selectBubblophyProjectActivityRowsForProjectIds(
-  projectIds: string[]
-): Promise<BubblophyActivityPersistenceRow[]> {
-  const [projectEvents, issueEvents] = await Promise.all([
-    selectBubblophyProjectEventActivityRowsForProjectIds(projectIds),
-    selectBubblophyIssueEventActivityRowsForProjectIds(projectIds),
-  ]);
-
-  return [...projectEvents, ...issueEvents]
-    .sort(
-      (left, right) =>
-        right.createdAt.localeCompare(left.createdAt) ||
-        right.id.localeCompare(left.id)
-    )
-    .slice(0, 20);
-}
-
-/**
- * Selects project-level audit rows for visible projects.
- *
- * @param projectIds Project IDs already constrained by membership.
- * @returns Project event activity rows.
- */
-async function selectBubblophyProjectEventActivityRowsForProjectIds(
-  projectIds: string[]
-): Promise<BubblophyActivityPersistenceRow[]> {
-  return db
-    .select({
-      id: bubblophyProjectEvents.id,
-      summary: bubblophyProjectEvents.summary,
-      actorAuthUserId: bubblophyProjectEvents.actorAuthUserId,
-      actorAgentTokenLabel: bubblophyAgentTokens.label,
-      createdAt: bubblophyProjectEvents.createdAt,
-      projectKey: bubblophyProjects.key,
-      issueNumber: sql<number | null>`null`,
-    })
-    .from(bubblophyProjectEvents)
-    .innerJoin(
-      bubblophyProjects,
-      eq(bubblophyProjects.id, bubblophyProjectEvents.projectId)
-    )
-    .leftJoin(
-      bubblophyAgentTokens,
-      and(
-        eq(bubblophyAgentTokens.id, bubblophyProjectEvents.actorAgentTokenId),
-        eq(bubblophyAgentTokens.projectId, bubblophyProjectEvents.projectId)
-      )
-    )
-    .where(inArray(bubblophyProjectEvents.projectId, projectIds))
-    .orderBy(desc(bubblophyProjectEvents.createdAt))
-    .limit(20);
-}
-
-/**
- * Selects issue-level audit rows for visible projects.
- *
- * @param projectIds Project IDs already constrained by membership.
- * @returns Issue event activity rows.
- */
-async function selectBubblophyIssueEventActivityRowsForProjectIds(
-  projectIds: string[]
-): Promise<BubblophyActivityPersistenceRow[]> {
-  return db
-    .select({
-      id: bubblophyIssueEvents.id,
-      summary: bubblophyIssueEvents.summary,
-      actorAuthUserId: bubblophyIssueEvents.actorAuthUserId,
-      actorAgentTokenLabel: bubblophyAgentTokens.label,
-      createdAt: bubblophyIssueEvents.createdAt,
-      projectKey: bubblophyProjects.key,
-      issueNumber: bubblophyIssues.issueNumber,
-    })
-    .from(bubblophyIssueEvents)
-    .innerJoin(
-      bubblophyIssues,
-      eq(bubblophyIssues.id, bubblophyIssueEvents.issueId)
-    )
-    .innerJoin(
-      bubblophyProjects,
-      eq(bubblophyProjects.id, bubblophyIssues.projectId)
-    )
-    .leftJoin(
-      bubblophyAgentTokens,
-      and(
-        eq(bubblophyAgentTokens.id, bubblophyIssueEvents.actorAgentTokenId),
-        eq(bubblophyAgentTokens.projectId, bubblophyIssues.projectId)
-      )
-    )
-    .where(inArray(bubblophyIssues.projectId, projectIds))
-    .orderBy(desc(bubblophyIssueEvents.createdAt))
     .limit(20);
 }
 

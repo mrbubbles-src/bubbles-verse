@@ -74,26 +74,6 @@ function makeDatabaseRows(
         result: null,
       },
     ],
-    activityRows: [
-      {
-        id: 'event_token_created',
-        summary: 'Agent-Token "Codex lokal" für BV erstellt.',
-        actorAuthUserId: 'user_owner',
-        actorAgentTokenLabel: null,
-        createdAt: '2026-06-13T16:00:00.000Z',
-        projectKey: 'BV',
-        issueNumber: null,
-      },
-      {
-        id: 'event_issue_ready',
-        summary: 'Issue BV-07 auf bereit gesetzt.',
-        actorAuthUserId: null,
-        actorAgentTokenLabel: 'Codex lokal',
-        createdAt: '2026-06-13T16:05:00.000Z',
-        projectKey: 'BV',
-        issueNumber: 7,
-      },
-    ],
     ...rows,
   };
 }
@@ -148,23 +128,7 @@ describe('getBubblophyDashboardSnapshot', () => {
           expiresAt: 'läuft nicht automatisch ab',
         },
       ],
-      activity: [
-        {
-          id: 'event_token_created',
-          label: 'Agent-Token "Codex lokal" für BV erstellt.',
-          actor: 'Mensch',
-          occurredAt: '2026-06-13T16:00:00.000Z',
-          projectKey: 'BV',
-        },
-        {
-          id: 'event_issue_ready',
-          label: 'Issue BV-07 auf bereit gesetzt.',
-          actor: 'Agent-Token Codex lokal',
-          occurredAt: '2026-06-13T16:05:00.000Z',
-          projectKey: 'BV',
-          issueId: 'BV-07',
-        },
-      ],
+      activity: [],
       agentRuns: [
         {
           id: 'run_codex',
@@ -224,7 +188,6 @@ describe('getBubblophyDashboardSnapshot', () => {
             projectMemberRows: [],
             agentTokenRows: [],
             agentRunRows: [],
-            activityRows: [],
           }),
       })
     ).resolves.toMatchObject({

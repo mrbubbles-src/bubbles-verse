@@ -45,6 +45,7 @@ import type {
   IssueSummary,
 } from '@/lib/dashboard/types';
 
+import { parseDashboardActivityQuery } from '@/lib/dashboard/activity-query';
 import { parseDashboardAllIssueQuery } from '@/lib/dashboard/all-issue-query';
 import { parseDashboardIssueQuery } from '@/lib/dashboard/issue-query';
 import {
@@ -720,10 +721,62 @@ function BubblophyDashboard(props: TestDashboardProps) {
     !detailIssue
       ? {}
       : buildIssueDetailTestProps(props.snapshot, detailIssue);
+  const hasExplicitActivityPage =
+    Object.hasOwn(props, 'activityPageRequest') ||
+    Object.hasOwn(props, 'activityPageResult');
+  const activityProps =
+    props.snapshot.meta.dataSource === 'database' && !hasExplicitActivityPage
+      ? buildActivityPageTestProps(params, props.snapshot, selectedProject)
+      : {};
 
   return (
-    <ProductionBubblophyDashboard {...pageProps} {...detailProps} {...props} />
+    <ProductionBubblophyDashboard
+      {...pageProps}
+      {...detailProps}
+      {...activityProps}
+      {...props}
+    />
   );
+}
+
+/** Builds a server activity-page fixture from legacy presentation fixtures. */
+function buildActivityPageTestProps(
+  params: URLSearchParams,
+  snapshot: DashboardSnapshot,
+  selectedProject: DashboardSnapshot['projects'][number] | undefined
+): Pick<TestDashboardProps, 'activityPageRequest' | 'activityPageResult'> {
+  const query = parseDashboardActivityQuery({
+    kind: params.get('activityKind'),
+    afterAt: params.get('activityAfterAt'),
+    afterSource: params.get('activityAfterSource'),
+    afterId: params.get('activityAfterId'),
+  });
+  const projectKey = selectedProject?.key ?? null;
+  const items = snapshot.activity
+    .filter((event) => !projectKey || event.projectKey === projectKey)
+    .map((event) => ({
+      id: `${event.issueId ? 'issue' : 'project'}:${event.id}`,
+      source: event.issueId ? ('issue' as const) : ('project' as const),
+      label: event.label,
+      actor: event.actor,
+      occurredAt: event.occurredAt,
+      projectKey: event.projectKey ?? 'BV',
+      issueKey: event.issueId ?? null,
+    }))
+    .filter((event) => query.kind === 'all' || event.source === query.kind);
+
+  return {
+    activityPageRequest: { projectKey, ...query },
+    activityPageResult: {
+      status: 'success',
+      filters: {
+        projectKey,
+        kind: query.kind === 'all' ? null : query.kind,
+      },
+      items,
+      nextAfter: null,
+    },
+  };
 }
 
 /** Builds one canonical concrete-project page fixture from presentation issues. */
@@ -1124,6 +1177,26 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       screen.queryByText('Plan für BV-12 aktualisiert')
     ).not.toBeInTheDocument();
+  });
+
+  it('keeps the activity kind but clears its cursor on project changes', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams(
+        'activityKind=issue&activityAfterAt=2026-07-19T10%3A00%3A00.000Z&activityAfterSource=issue&activityAfterId=event-20'
+      )
+    );
+
+    render(<BubblophyDashboard snapshot={databaseSnapshot} />);
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Projekt Novari (NO) auswählen',
+      })
+    );
+
+    expect(navigationMocks.routerPush).toHaveBeenCalledWith(
+      '/?activityKind=issue&project=NO'
+    );
   });
 
   it('renders the bounded all-project page and keeps a direct detail open', () => {
@@ -3798,6 +3871,60 @@ describe('BubblophyDashboard interactions', () => {
     expect(
       within(notesRegion).queryByText('Plan für BV-12 aktualisiert')
     ).not.toBeInTheDocument();
+  });
+
+  it('does not fall back to snapshot activity when the server page fails', () => {
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithIssueNoteActivity}
+        activityPageRequest={{ projectKey: null, kind: 'all', after: null }}
+        activityPageResult={{ status: 'database_unavailable' }}
+      />
+    );
+
+    const activitySection = document.getElementById('activity');
+
+    expect(activitySection).toBeInstanceOf(HTMLElement);
+
+    if (!activitySection) {
+      throw new Error('Expected the activity section to render.');
+    }
+
+    expect(within(activitySection).getByRole('alert')).toHaveTextContent(
+      'Audit-Aktivität konnte nicht geladen werden'
+    );
+    expect(
+      within(activitySection).queryByText(
+        'Plan-Review als Issue-Notiz festgehalten.'
+      )
+    ).not.toBeInTheDocument();
+  });
+
+  it('writes the complete activity cursor when paging forward', () => {
+    const nextAfter = {
+      occurredAt: '2026-07-19T10:00:00.000Z',
+      source: 'project' as const,
+      eventId: 'event-20',
+    };
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        activityPageRequest={{ projectKey: null, kind: 'all', after: null }}
+        activityPageResult={{
+          status: 'success',
+          filters: { projectKey: null, kind: null },
+          items: [],
+          nextAfter,
+        }}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Weiter' }));
+
+    expect(navigationMocks.routerPush).toHaveBeenCalledWith(
+      '/?activityAfterAt=2026-07-19T10%3A00%3A00.000Z&activityAfterSource=project&activityAfterId=event-20'
+    );
   });
 
   it('appends a human issue note without starting an agent run', async () => {

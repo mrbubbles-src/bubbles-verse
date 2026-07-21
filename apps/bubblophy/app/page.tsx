@@ -1,8 +1,11 @@
+import type { DashboardActivityPageRequestState } from '@/lib/dashboard/activity-query';
 import type { DashboardAllIssuePageRequestState } from '@/lib/dashboard/all-issue-query';
 import type { DashboardIssuePageRequestState } from '@/lib/dashboard/issue-query';
 import type { DashboardSnapshot } from '@/lib/dashboard/types';
 
 import { requireBubblophySession } from '@/lib/auth/session';
+import { readDashboardActivityPage } from '@/lib/dashboard/activity';
+import { parseDashboardActivityQuery } from '@/lib/dashboard/activity-query';
 import { parseDashboardAllIssueQuery } from '@/lib/dashboard/all-issue-query';
 import { readDashboardAllIssuePage } from '@/lib/dashboard/all-issues';
 import { getBubblophyDashboardSnapshot } from '@/lib/dashboard/data';
@@ -132,6 +135,12 @@ export async function ProtectedBubblophyDashboard({
     afterProject: getFirstSearchParam(rawSearchParams.allAfterProject),
     afterIssue: getFirstSearchParam(rawSearchParams.allAfterIssue),
   });
+  const activityQuery = parseDashboardActivityQuery({
+    kind: getFirstSearchParam(rawSearchParams.activityKind),
+    afterAt: getFirstSearchParam(rawSearchParams.activityAfterAt),
+    afterSource: getFirstSearchParam(rawSearchParams.activityAfterSource),
+    afterId: getFirstSearchParam(rawSearchParams.activityAfterId),
+  });
   const runCursor = parseDashboardRunCursor(
     getFirstSearchParam(rawSearchParams.runAfterAt),
     getFirstSearchParam(rawSearchParams.runAfterId)
@@ -187,6 +196,20 @@ export async function ProtectedBubblophyDashboard({
           after: runCursor ?? undefined,
         })
       : Promise.resolve(null);
+  const activityPageRequest =
+    dashboardSnapshot.meta.dataSource === 'database'
+      ? ({
+          projectKey: selectedProject?.key ?? null,
+          ...activityQuery,
+        } satisfies DashboardActivityPageRequestState)
+      : null;
+  const activityPagePromise = activityPageRequest
+    ? readDashboardActivityPage(session.authUserId, {
+        projectKey: activityPageRequest.projectKey ?? undefined,
+        kind: activityPageRequest.kind,
+        after: activityPageRequest.after ?? undefined,
+      })
+    : Promise.resolve(null);
   const requestedIssueDetailPromise =
     dashboardSnapshot.meta.dataSource === 'database' &&
     requestedPersistedIssueKey
@@ -199,11 +222,13 @@ export async function ProtectedBubblophyDashboard({
     allIssuePageResult,
     requestedIssueDetailResult,
     runPageResult,
+    activityPageResult,
   ] = await Promise.all([
     issuePagePromise,
     allIssuePagePromise,
     requestedIssueDetailPromise,
     runPagePromise,
+    activityPagePromise,
   ]);
   const missingRequestedIssueKey =
     requestedIssueDetailResult?.status === 'not_found'
@@ -233,7 +258,8 @@ export async function ProtectedBubblophyDashboard({
       : null;
   const hasLostProjectAccess =
     issuePageResult?.status === 'not_found' ||
-    runPageResult?.status === 'not_found';
+    runPageResult?.status === 'not_found' ||
+    activityPageResult?.status === 'not_found';
   const issueDetailRequestKey = hasLostProjectAccess
     ? null
     : firstPageIssueDetailResult
@@ -267,6 +293,8 @@ export async function ProtectedBubblophyDashboard({
       missingRequestedIssueKey={missingRequestedIssueKey}
       runPageRequest={runPageRequest}
       runPageResult={hasLostProjectAccess ? null : runPageResult}
+      activityPageRequest={activityPageRequest}
+      activityPageResult={hasLostProjectAccess ? null : activityPageResult}
       createIssueAction={createBubblophyIssueAction}
       updateIssueContentAction={updateBubblophyIssueContentAction}
       updateIssueAssigneeAction={updateBubblophyIssueAssigneeAction}

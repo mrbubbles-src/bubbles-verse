@@ -22,7 +22,7 @@ angewendet.
 ## Vorbereitete Migration
 
 Die Struktur, RLS-Härtung, OAuth-Audit-Attribution und Einladungsbasis liegen
-aktuell in sieben lokalen Migrationen:
+aktuell in zehn lokalen Migrationen:
 
 ```text
 apps/bubblophy/drizzle/0000_premium_psynapse.sql
@@ -32,6 +32,9 @@ apps/bubblophy/drizzle/0003_close_sensitive_direct_reads.sql
 apps/bubblophy/drizzle/0004_close_oauth_direct_reads.sql
 apps/bubblophy/drizzle/0005_add_oauth_audit_attribution.sql
 apps/bubblophy/drizzle/0006_add_project_invitations.sql
+apps/bubblophy/drizzle/0007_add_bubblophy_user_profiles.sql
+apps/bubblophy/drizzle/0008_add_run_page_cursor_index.sql
+apps/bubblophy/drizzle/0009_normal_monster_badoon.sql
 ```
 
 `0000_premium_psynapse.sql` erzeugt:
@@ -65,8 +68,9 @@ Schreibpfad genutzt. Neue Token-Audit-Ereignisse gehören in
 
 Prüfung der vorbereiteten Migrationen:
 
-- Keine `DROP`-, `DELETE`-, `TRUNCATE`- oder destruktiven
-  `ALTER TABLE ... DROP`-Statements.
+- Keine `DROP TABLE`-, `DELETE`-, `TRUNCATE`- oder destruktiven
+  `ALTER TABLE ... DROP`-Statements. `0009` ersetzt ausschließlich zwei
+  bestehende Cursor-Indizes durch ihre um `id` erweiterten Varianten.
 - Keine Service-Role-Annahmen.
 
 `0002_bubblophy_rls_baseline.sql` ergänzt:
@@ -154,6 +158,12 @@ Zielmitgliedschaften, aktuelle Actor-Mitgliedschaft und Profile in einem
 Statement. Namen sind projektweit sichtbar, E-Mail-Adressen nur für
 Owner/Maintainer und die eigene Person. Die Profilzeile besitzt absichtlich
 keinen Membership-Fremdschlüssel und gewährt allein keinen Projektzugriff.
+
+`0008_add_run_page_cursor_index.sql` ergänzt den stabilen RunPage-Index
+`(issue_id, updated_at, id)`. `0009_normal_monster_badoon.sql` erweitert die
+bestehenden Issue- und Projekt-Event-Indizes jeweils um `id`, damit die
+ActivityPage ihren Gleichstand im newest-first Cursor deterministisch auflösen
+kann.
 
 Die Zielumgebung braucht zusätzlich einen Supabase-Custom-Access-Token-Hook,
 der JWTs mit `client_id` die exakte Audience `<NEXT_PUBLIC_APP_URL>/mcp` gibt.

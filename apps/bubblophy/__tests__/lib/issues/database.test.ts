@@ -309,41 +309,12 @@ describe('selectBubblophyDashboardRowsForUser', () => {
     dbMock.select.mockClear();
   });
 
-  it('loads project and issue activity through membership-scoped queries', async () => {
+  it('loads dashboard aggregates without the separately paged activity feed', async () => {
     const { selectBubblophyDashboardRowsForUser } =
       await import('@/lib/issues/database');
 
     const rows = await selectBubblophyDashboardRowsForUser('user_owner');
 
-    expect(rows.activityRows).toEqual([
-      {
-        id: 'event_issue_note',
-        summary: 'Plan-Review als Issue-Notiz festgehalten.',
-        actorAuthUserId: 'user_owner',
-        actorAgentTokenLabel: null,
-        createdAt: '2026-06-13T16:06:00.000Z',
-        projectKey: 'BV',
-        issueNumber: 7,
-      },
-      {
-        id: 'event_issue_ready',
-        summary: 'Issue BV-07 auf bereit gesetzt.',
-        actorAuthUserId: null,
-        actorAgentTokenLabel: 'Codex lokal',
-        createdAt: '2026-06-13T16:05:00.000Z',
-        projectKey: 'BV',
-        issueNumber: 7,
-      },
-      {
-        id: 'event_project_token_created',
-        summary: 'Agent-Token "Codex lokal" für BV erstellt.',
-        actorAuthUserId: 'user_owner',
-        actorAgentTokenLabel: null,
-        createdAt: '2026-06-13T16:00:00.000Z',
-        projectKey: 'BV',
-        issueNumber: null,
-      },
-    ]);
     expect(rows.projectRows).toEqual([
       expect.objectContaining({
         currentUserRole: 'owner',
@@ -392,15 +363,8 @@ describe('selectBubblophyDashboardRowsForUser', () => {
     );
     const selectedKeys = calls.flatMap((call) => call.selectedKeys);
 
-    expect(projectEventCall).toMatchObject({
-      whereCalled: true,
-      limitValue: 20,
-    });
-    expect(issueEventCall).toMatchObject({
-      joinedTableNames: expect.arrayContaining(['bubblophy_issues']),
-      whereCalled: true,
-      limitValue: 20,
-    });
+    expect(projectEventCall).toBeUndefined();
+    expect(issueEventCall).toBeUndefined();
     expect(issuePlanCall).toBeUndefined();
     expect(issueAggregateCall).toMatchObject({
       selectedKeys: ['projectId', 'open', 'ready', 'blocked'],
@@ -512,7 +476,6 @@ describe('selectBubblophyDashboardRowsForUser', () => {
       projectMemberRows: [],
       agentTokenRows: [],
       agentRunRows: [],
-      activityRows: [],
     });
   });
 
@@ -575,7 +538,6 @@ describe('selectBubblophyDashboardRowsForUser', () => {
     expect(rows.projectMemberRows).toEqual([]);
     expect(rows.agentTokenRows).toEqual([]);
     expect(rows.agentRunRows).toEqual([]);
-    expect(rows.activityRows).toEqual([]);
   });
 });
 

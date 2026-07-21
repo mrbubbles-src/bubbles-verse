@@ -444,7 +444,8 @@ export const bubblophyIssueEvents = pgTable(
   (table) => ({
     issueCreatedIdx: index('bubblophy_issue_events_issue_created_idx').on(
       table.issueId,
-      table.createdAt
+      table.createdAt,
+      table.id
     ),
     actorAuthUserIdx: index('bubblophy_issue_events_actor_auth_user_idx').on(
       table.actorAuthUserId
@@ -489,7 +490,8 @@ export const bubblophyProjectEvents = pgTable(
   (table) => ({
     projectCreatedIdx: index('bubblophy_project_events_project_created_idx').on(
       table.projectId,
-      table.createdAt
+      table.createdAt,
+      table.id
     ),
     actorAuthUserIdx: index('bubblophy_project_events_actor_auth_user_idx').on(
       table.actorAuthUserId

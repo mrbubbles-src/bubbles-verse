@@ -55,8 +55,10 @@ persönlich authentifizierter Remote-MCP mit Supabase OAuth 2.1.
 - Visuelle Regressionen dauerhaft automatisieren, z. B. über einen späteren
   Browser-Check oder Screenshot-Flow, sobald dafür ein stabiler Projektpfad
   feststeht.
-- Suche, Filter und Sortierung für viele Projekte, Issues, Runs und Audit-
-  Events ausbauen.
+- Suche, Filter und Sortierung für viele Projekte und Runs ausbauen. Der erste
+  Audit-Ausbau besitzt bereits einen Ereignisart-Filter und eine stabile
+  20er-Pagination; Suche, Akteure, Eventtypen und Audit-Diffs bleiben spätere
+  getrennte Slices.
 - Benachrichtigungen für Review-Zustände, fehlgeschlagene Runs und offene
   Freigaben ergänzen.
 - Agent-Handoff weiter verfeinern, inklusive besserer Copy-/Command-UX und

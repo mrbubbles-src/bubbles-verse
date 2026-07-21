@@ -64,6 +64,13 @@
       "when": 1784439047705,
       "tag": "0008_add_run_page_cursor_index",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1784654204109,
+      "tag": "0009_normal_monster_badoon",
+      "breakpoints": true
     }
   ]
 }

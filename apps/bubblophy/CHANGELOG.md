@@ -2,9 +2,16 @@
 
 ## Unreleased
 
+- Replaced the dashboard's global top-20 audit snapshot with an independent,
+  membership-scoped 20-item `ActivityPage`. Project and issue events are merged
+  newest-first through a stable `(occurredAt, source, eventId)` cursor, support
+  a minimal event-kind filter, recheck every resource binding before the public
+  DTO, and distinguish an empty project from revoked access. Database mode no
+  longer falls back to snapshot activity, and both event sources now include
+  their ID tie-breaker in the cursor index.
 - Removed the unbounded legacy issue graph from `DashboardSnapshot`. Dashboard
   reads now load only project metadata with complete SQL aggregates plus bounded
-  run and audit groups plus membership-scoped member and token groups; issue
+  run groups plus membership-scoped member and token groups; issue
   queues and details come exclusively from the paginated page/detail contracts.
   Global run cards deep-link by public issue key, including issues outside the
   current page.

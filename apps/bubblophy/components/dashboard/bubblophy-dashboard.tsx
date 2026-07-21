@@ -41,6 +41,13 @@ import type {
   UpdateBubblophyProjectMemberRoleActionInput,
   UpdateBubblophyProjectMemberRoleActionResult,
 } from '@/app/actions';
+import type {
+  DashboardActivityCursor,
+  DashboardActivityKind,
+  DashboardActivityPageItem,
+  ReadDashboardActivityPageResult,
+} from '@/lib/dashboard/activity';
+import type { DashboardActivityPageRequestState } from '@/lib/dashboard/activity-query';
 import type { DashboardAllIssuePageRequestState } from '@/lib/dashboard/all-issue-query';
 import type {
   DashboardAllIssueCursor,
@@ -77,6 +84,14 @@ import type {
 } from '@/lib/dashboard/types';
 import type { KeyboardEvent } from 'react';
 
+import {
+  clearDashboardActivityCursor,
+  isDashboardActivityPageRequestCurrent,
+  parseDashboardActivityQuery,
+  setDashboardActivityKindParams,
+  setDashboardActivityPageParams,
+  writeDashboardActivityQueryParams,
+} from '@/lib/dashboard/activity-query';
 import {
   isDashboardAllIssuePageRequestCurrent,
   parseDashboardAllIssueQuery,
@@ -156,6 +171,14 @@ import {
 } from '@bubbles/ui/shadcn/dialog';
 import { Input } from '@bubbles/ui/shadcn/input';
 import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@bubbles/ui/shadcn/select';
+import {
   Table,
   TableBody,
   TableCell,
@@ -181,6 +204,8 @@ interface BubblophyDashboardProps {
   missingRequestedIssueKey?: string | null;
   runPageRequest?: DashboardRunPageRequestState | null;
   runPageResult?: ReadDashboardRunPageResult | null;
+  activityPageRequest?: DashboardActivityPageRequestState | null;
+  activityPageResult?: ReadDashboardActivityPageResult | null;
   createIssueAction?: (
     input: CreateBubblophyIssueActionInput
   ) => Promise<CreateBubblophyIssueActionResult>;
@@ -670,6 +695,8 @@ export function BubblophyDashboard({
   missingRequestedIssueKey = null,
   runPageRequest = null,
   runPageResult = null,
+  activityPageRequest = null,
+  activityPageResult = null,
   createIssueAction,
   updateIssueContentAction,
   updateIssueAssigneeAction,
@@ -790,6 +817,16 @@ export function BubblophyDashboard({
       }),
     [searchParams]
   );
+  const activityQuery = useMemo(
+    () =>
+      parseDashboardActivityQuery({
+        kind: searchParams.get('activityKind'),
+        afterAt: searchParams.get('activityAfterAt'),
+        afterSource: searchParams.get('activityAfterSource'),
+        afterId: searchParams.get('activityAfterId'),
+      }),
+    [searchParams]
+  );
   const hasAllIssuePageBoundary =
     snapshot.meta.dataSource === 'database' &&
     urlProjectKey === 'all' &&
@@ -841,6 +878,17 @@ export function BubblophyDashboard({
       runPageResult.project.key === urlProjectKey)
       ? runPageResult
       : null;
+  const activityProjectKey = urlProjectKey === 'all' ? null : urlProjectKey;
+  const hasActivityPageBoundary =
+    snapshot.meta.dataSource === 'database' &&
+    (activityPageRequest !== null || activityPageResult !== null);
+  const currentActivityPageResult = isDashboardActivityPageRequestCurrent(
+    activityPageRequest,
+    activityProjectKey,
+    activityQuery
+  )
+    ? activityPageResult
+    : null;
   const rawUrlIssueId = searchParams.get('issue')?.trim().toUpperCase() ?? '';
   const currentMissingRequestedIssueKey =
     missingRequestedIssueKey === rawUrlIssueId
@@ -1120,6 +1168,12 @@ export function BubblophyDashboard({
     );
   }, [allAgentRuns, selectedProjectKey]);
   const displayedActivity = useMemo(() => {
+    if (snapshot.meta.dataSource === 'database') {
+      return currentActivityPageResult?.status === 'success'
+        ? currentActivityPageResult.items
+        : [];
+    }
+
     const visibleActivity = snapshot.activity.filter(
       (event) =>
         event.projectKey !== deniedProjectKey &&
@@ -1134,7 +1188,13 @@ export function BubblophyDashboard({
     return visibleActivity.filter(
       (event) => event.projectKey === selectedProjectKey
     );
-  }, [deniedProjectKey, selectedProjectKey, snapshot.activity]);
+  }, [
+    currentActivityPageResult,
+    deniedProjectKey,
+    selectedProjectKey,
+    snapshot.activity,
+    snapshot.meta.dataSource,
+  ]);
 
   const latestSelectedProjectAccess = combineDashboardProjectAccess(
     currentIssuePageResult?.status === 'success'
@@ -1471,9 +1531,12 @@ export function BubblophyDashboard({
       canonicalIssueParams.delete('allAfterIssue');
     }
 
-    const canonicalQueryParams = setDashboardRunPageParams(
-      canonicalIssueParams,
-      urlProjectKey === 'all' ? null : runCursor
+    const canonicalQueryParams = writeDashboardActivityQueryParams(
+      setDashboardRunPageParams(
+        canonicalIssueParams,
+        urlProjectKey === 'all' ? null : runCursor
+      ),
+      activityQuery
     );
     const targetHref = buildSelectionHref({
       pathname,
@@ -1487,6 +1550,7 @@ export function BubblophyDashboard({
     }
   }, [
     allIssueQuery,
+    activityQuery,
     issueQuery,
     pathname,
     router,
@@ -1511,6 +1575,7 @@ export function BubblophyDashboard({
     nextParams.delete('allAfterIssue');
     nextParams.delete('runAfterAt');
     nextParams.delete('runAfterId');
+    clearDashboardActivityCursor(nextParams);
     nextParams.delete('issue');
     pushDashboardParams(nextParams);
   };
@@ -1554,6 +1619,24 @@ export function BubblophyDashboard({
   const handleRunPageChange = (after: typeof runCursor) => {
     pushDashboardParams(
       setDashboardRunPageParams(
+        new URLSearchParams(searchParams.toString()),
+        after
+      )
+    );
+  };
+
+  const handleActivityKindChange = (kind: DashboardActivityKind) => {
+    pushDashboardParams(
+      setDashboardActivityKindParams(
+        new URLSearchParams(searchParams.toString()),
+        kind
+      )
+    );
+  };
+
+  const handleActivityPageChange = (after: DashboardActivityCursor | null) => {
+    pushDashboardParams(
+      setDashboardActivityPageParams(
         new URLSearchParams(searchParams.toString()),
         after
       )
@@ -2064,6 +2147,21 @@ export function BubblophyDashboard({
               <ActivityFeed
                 activity={displayedActivity}
                 dataSource={snapshot.meta.dataSource}
+                kind={activityQuery.kind}
+                cursor={activityQuery.after}
+                nextAfter={
+                  currentActivityPageResult?.status === 'success'
+                    ? currentActivityPageResult.nextAfter
+                    : null
+                }
+                status={
+                  hasActivityPageBoundary && !currentActivityPageResult
+                    ? 'loading'
+                    : (currentActivityPageResult?.status ?? null)
+                }
+                onKindChange={handleActivityKindChange}
+                onFirstPage={() => handleActivityPageChange(null)}
+                onNextPage={handleActivityPageChange}
               />
             </aside>
           </div>
@@ -6169,12 +6267,32 @@ function RunDecisionControls({
 function ActivityFeed({
   activity,
   dataSource,
+  kind,
+  cursor,
+  nextAfter,
+  status,
+  onKindChange,
+  onFirstPage,
+  onNextPage,
 }: {
-  activity: DashboardSnapshot['activity'];
+  activity: Array<
+    DashboardSnapshot['activity'][number] | DashboardActivityPageItem
+  >;
   dataSource: DashboardSnapshot['meta']['dataSource'];
+  kind: DashboardActivityKind;
+  cursor: DashboardActivityCursor | null;
+  nextAfter: DashboardActivityCursor | null;
+  status: ReadDashboardActivityPageResult['status'] | 'loading' | null;
+  onKindChange: (kind: DashboardActivityKind) => void;
+  onFirstPage: () => void;
+  onNextPage: (after: DashboardActivityCursor) => void;
 }) {
   const isDatabaseSource =
     dataSource === 'database' || dataSource === 'empty_database';
+  const hasLoadError =
+    status === 'database_unavailable' ||
+    status === 'invalid' ||
+    status === 'not_found';
 
   return (
     <Card id="activity" className="scroll-mt-24">
@@ -6188,26 +6306,66 @@ function ActivityFeed({
           />
           Aktivität
         </CardTitle>
+        <CardDescription>
+          Neueste Projekt- und Issue-Ereignisse aus dem Audit-Verlauf.
+        </CardDescription>
+        {isDatabaseSource ? (
+          <CardAction>
+            <Select
+              value={kind}
+              onValueChange={(value) => {
+                if (isDashboardActivityKind(value)) {
+                  onKindChange(value);
+                }
+              }}>
+              <SelectTrigger aria-label="Ereignisart filtern" size="sm">
+                <SelectValue>{activityKindLabels[kind]}</SelectValue>
+              </SelectTrigger>
+              <SelectContent align="end">
+                <SelectGroup>
+                  <SelectItem value="all">Alle Ereignisse</SelectItem>
+                  <SelectItem value="issue">Issue-Ereignisse</SelectItem>
+                  <SelectItem value="project">Projekt-Ereignisse</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </CardAction>
+        ) : null}
       </CardHeader>
-      <CardContent className="grid gap-3">
+      <CardContent className="flex flex-col gap-3">
         {!isDatabaseSource && activity.length > 0 ? (
           <p className="rounded-md border border-dashed border-border bg-muted/30 p-3 text-sm text-muted-foreground">
             Beispielhafte Audit-Vorschau aus Sample/Fallback-Daten. Echte
             Projekt-Events werden nur im Datenbankmodus geladen.
           </p>
         ) : null}
-        {activity.length === 0 ? (
+        {status === 'loading' ? (
           <p className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
-            Noch keine Audit-Aktivität für diese Datenquelle.
+            Audit-Aktivität wird geladen.
+          </p>
+        ) : null}
+        {hasLoadError ? (
+          <p
+            role="alert"
+            className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
+            Audit-Aktivität konnte nicht geladen werden. Lade die Seite erneut.
+          </p>
+        ) : null}
+        {status !== 'loading' && !hasLoadError && activity.length === 0 ? (
+          <p className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
+            Für diesen Ausschnitt gibt es noch keine Audit-Aktivität.
           </p>
         ) : null}
         <ol className="grid gap-3">
           {activity.map((event) => (
             <li
               key={event.id}
-              className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-3 text-sm">
-              <time className="font-mono text-xs text-muted-foreground">
-                {event.occurredAt}
+              className="grid grid-cols-[5.25rem_minmax(0,1fr)] gap-3 text-sm">
+              <time
+                dateTime={event.occurredAt}
+                title={event.occurredAt}
+                className="font-mono text-xs text-muted-foreground tabular-nums">
+                {formatDashboardActivityTime(event.occurredAt)}
               </time>
               <div className="border-l border-border pl-3">
                 <p>{event.label}</p>
@@ -6218,9 +6376,53 @@ function ActivityFeed({
             </li>
           ))}
         </ol>
+        {isDatabaseSource && !hasLoadError ? (
+          <div className="flex items-center justify-between gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={!cursor || status === 'loading'}
+              onClick={onFirstPage}>
+              Erste Seite
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={!nextAfter || status === 'loading'}
+              onClick={() => {
+                if (nextAfter) {
+                  onNextPage(nextAfter);
+                }
+              }}>
+              Weiter
+            </Button>
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );
+}
+
+const activityKindLabels = {
+  all: 'Alle Ereignisse',
+  issue: 'Issue-Ereignisse',
+  project: 'Projekt-Ereignisse',
+} satisfies Record<DashboardActivityKind, string>;
+
+/** Formats ISO audit timestamps compactly without locale-dependent hydration. */
+function formatDashboardActivityTime(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(value);
+
+  return match ? `${match[3]}.${match[2]}. ${match[4]}:${match[5]}` : value;
+}
+
+/** Checks the three selectable audit filter values from the UI primitive. */
+function isDashboardActivityKind(
+  value: string | null
+): value is DashboardActivityKind {
+  return value === 'all' || value === 'issue' || value === 'project';
 }
 
 /**

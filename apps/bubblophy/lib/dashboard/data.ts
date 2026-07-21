@@ -6,7 +6,6 @@ import type {
   DashboardUnavailableReason,
 } from '@/lib/dashboard/types';
 import type {
-  BubblophyActivityPersistenceRow,
   BubblophyAgentRunPersistenceRow,
   BubblophyAgentTokenPersistenceRow,
   BubblophyProjectMemberPersistenceRow,
@@ -14,7 +13,6 @@ import type {
 } from '@/lib/issues/repository';
 
 import {
-  buildBubblophyActivityEvents,
   buildBubblophyAgentRunSummaries,
   buildBubblophyAgentTokenSummaries,
   buildBubblophyProjectMemberSummaries,
@@ -26,7 +24,6 @@ export interface BubblophyDashboardPersistenceRows {
   projectMemberRows: BubblophyProjectMemberPersistenceRow[];
   agentTokenRows: BubblophyAgentTokenPersistenceRow[];
   agentRunRows: BubblophyAgentRunPersistenceRow[];
-  activityRows: BubblophyActivityPersistenceRow[];
 }
 
 export type BubblophyDashboardRowSelector = (
@@ -84,8 +81,7 @@ export async function loadBubblophyDashboardSnapshot({
     projects.length === 0 &&
     rows.projectMemberRows.length === 0 &&
     rows.agentTokenRows.length === 0 &&
-    rows.agentRunRows.length === 0 &&
-    rows.activityRows.length === 0;
+    rows.agentRunRows.length === 0;
 
   return {
     meta: {
@@ -104,7 +100,7 @@ export async function loadBubblophyDashboardSnapshot({
     ),
     agentTokens: buildBubblophyAgentTokenSummaries(rows.agentTokenRows),
     agentRuns: buildBubblophyAgentRunSummaries(rows.agentRunRows),
-    activity: buildBubblophyActivityEvents(rows.activityRows),
+    activity: [],
   };
 }
 

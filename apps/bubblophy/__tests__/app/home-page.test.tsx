@@ -14,6 +14,8 @@ import type {
   updateBubblophyIssueStatusAction,
   updateBubblophyProjectContentAction,
 } from '@/app/actions';
+import type { ReadDashboardActivityPageResult } from '@/lib/dashboard/activity';
+import type { DashboardActivityPageRequestState } from '@/lib/dashboard/activity-query';
 import type { DashboardAllIssuePageRequestState } from '@/lib/dashboard/all-issue-query';
 import type { ReadDashboardAllIssuePageResult } from '@/lib/dashboard/all-issues';
 import type { BubblophyDashboardSnapshotInput } from '@/lib/dashboard/data';
@@ -34,6 +36,7 @@ const readDashboardIssuePageMock = vi.fn();
 const readDashboardAllIssuePageMock = vi.fn();
 const readDashboardIssueDetailMock = vi.fn();
 const readDashboardRunPageMock = vi.fn();
+const readDashboardActivityPageMock = vi.fn();
 const BubblophyDashboardMock = vi.fn(
   (props: {
     snapshot: DashboardSnapshot;
@@ -43,6 +46,8 @@ const BubblophyDashboardMock = vi.fn(
     issueDetailResult?: ReadDashboardIssueDetailResult | null;
     runPageResult?: ReadDashboardRunPageResult | null;
     runPageRequest?: DashboardRunPageRequestState | null;
+    activityPageRequest?: DashboardActivityPageRequestState | null;
+    activityPageResult?: ReadDashboardActivityPageResult | null;
     createIssueAction?: typeof createBubblophyIssueAction;
     updateIssueContentAction?: typeof updateBubblophyIssueContentAction;
     createIssuePlanAction?: typeof createBubblophyIssuePlanAction;
@@ -138,6 +143,17 @@ vi.mock('@/lib/dashboard/runs', () => ({
   ) => readDashboardRunPageMock(authUserId, input),
 }));
 
+vi.mock('@/lib/dashboard/activity', () => ({
+  readDashboardActivityPage: (
+    authUserId: string,
+    input: {
+      projectKey?: string;
+      kind?: string;
+      after?: { occurredAt: string; source: string; eventId: string };
+    }
+  ) => readDashboardActivityPageMock(authUserId, input),
+}));
+
 vi.mock('@/lib/profiles/database-write', () => ({
   syncBubblophyUserProfile: (input: {
     user: object;
@@ -154,6 +170,8 @@ vi.mock('@/components/dashboard/bubblophy-dashboard', () => ({
     issueDetailResult?: ReadDashboardIssueDetailResult | null;
     runPageResult?: ReadDashboardRunPageResult | null;
     runPageRequest?: DashboardRunPageRequestState | null;
+    activityPageRequest?: DashboardActivityPageRequestState | null;
+    activityPageResult?: ReadDashboardActivityPageResult | null;
     createIssueAction?: typeof createBubblophyIssueAction;
     updateIssueContentAction?: typeof updateBubblophyIssueContentAction;
     createIssuePlanAction?: typeof createBubblophyIssuePlanAction;
@@ -201,6 +219,13 @@ describe('Bubblophy home page', () => {
       items: [],
       nextAfter: null,
     });
+    readDashboardActivityPageMock.mockReset();
+    readDashboardActivityPageMock.mockResolvedValue({
+      status: 'success',
+      filters: { projectKey: null, kind: null },
+      items: [],
+      nextAfter: null,
+    } satisfies ReadDashboardActivityPageResult);
     BubblophyDashboardMock.mockClear();
   });
 
@@ -376,6 +401,10 @@ describe('Bubblophy home page', () => {
         after: '42',
         runAfterAt: '2026-07-19T12:00:00.000Z',
         runAfterId: 'run-20',
+        activityKind: 'issue',
+        activityAfterAt: '2026-07-19T11:00:00.000Z',
+        activityAfterSource: 'issue',
+        activityAfterId: 'event-20',
       }),
     });
 
@@ -397,6 +426,15 @@ describe('Bubblophy home page', () => {
         id: 'run-20',
       },
     });
+    expect(readDashboardActivityPageMock).toHaveBeenCalledWith('user_owner', {
+      projectKey: 'AP',
+      kind: 'issue',
+      after: {
+        occurredAt: '2026-07-19T11:00:00.000Z',
+        source: 'issue',
+        eventId: 'event-20',
+      },
+    });
     expect(element.props.issuePageResult).toBe(pageResult);
     expect(element.props.issueDetailResult).toBe(detailResult);
     expect(element.props.issuePageRequest).toEqual({
@@ -410,6 +448,15 @@ describe('Bubblophy home page', () => {
       after: {
         updatedAt: '2026-07-19T12:00:00.000Z',
         id: 'run-20',
+      },
+    });
+    expect(element.props.activityPageRequest).toEqual({
+      projectKey: 'AP',
+      kind: 'issue',
+      after: {
+        occurredAt: '2026-07-19T11:00:00.000Z',
+        source: 'issue',
+        eventId: 'event-20',
       },
     });
   });

@@ -1,5 +1,4 @@
 import {
-  buildBubblophyActivityEvents,
   buildBubblophyAgentRunSummaries,
   buildBubblophyAgentTokenSummaries,
   buildBubblophyProjectMemberSummaries,
@@ -327,76 +326,6 @@ describe('Bubblophy issue repository mapping', () => {
         details: 'x'.repeat(130),
       })
     ).toBeUndefined();
-  });
-
-  it('maps project events into activity without exposing raw auth user IDs', () => {
-    expect(
-      buildBubblophyActivityEvents([
-        {
-          id: 'event_human',
-          summary: 'Agent-Token erstellt.',
-          actorAuthUserId: 'user_123',
-          actorAgentTokenLabel: null,
-          createdAt: '2026-06-13T10:00:00.000Z',
-          projectKey: 'BV',
-          issueNumber: null,
-        },
-        {
-          id: 'event_agent',
-          summary: 'Run angefragt.',
-          actorAuthUserId: null,
-          actorAgentTokenLabel: 'Codex lokal',
-          createdAt: '2026-06-13T11:00:00.000Z',
-          projectKey: 'BV',
-          issueNumber: 7,
-        },
-      ])
-    ).toEqual([
-      {
-        id: 'event_human',
-        label: 'Agent-Token erstellt.',
-        actor: 'Mensch',
-        occurredAt: '2026-06-13T10:00:00.000Z',
-        projectKey: 'BV',
-      },
-      {
-        id: 'event_agent',
-        label: 'Run angefragt.',
-        actor: 'Agent-Token Codex lokal',
-        occurredAt: '2026-06-13T11:00:00.000Z',
-        projectKey: 'BV',
-        issueId: 'BV-07',
-      },
-    ]);
-  });
-
-  it('maps member-added project events into safe activity', () => {
-    const activity = buildBubblophyActivityEvents([
-      {
-        id: 'event_member_added',
-        summary: 'Projekt BV: Mitglied added.',
-        actorAuthUserId: 'user_owner',
-        actorAgentTokenLabel: null,
-        createdAt: '2026-06-14T10:00:00.000Z',
-        projectKey: 'BV',
-        issueNumber: null,
-      },
-    ]);
-
-    expect(activity).toEqual([
-      {
-        id: 'event_member_added',
-        label: 'Projekt BV: Mitglied added.',
-        actor: 'Mensch',
-        occurredAt: '2026-06-14T10:00:00.000Z',
-        projectKey: 'BV',
-      },
-    ]);
-    expect(JSON.stringify(activity)).not.toContain('user_owner');
-    expect(JSON.stringify(activity)).not.toContain('@');
-    expect(JSON.stringify(activity)).not.toContain('profile');
-    expect(JSON.stringify(activity)).not.toContain('tokenHash');
-    expect(JSON.stringify(activity)).not.toContain('plaintextToken');
   });
 
   it('derives stable, attentive, and blocked project health', () => {

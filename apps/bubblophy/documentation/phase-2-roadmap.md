@@ -183,8 +183,13 @@ Status: abgeschlossen.
   werden weiterhin vollständig pro Projekt aggregiert; leere und archivierte
   Projekte bleiben sichtbar. Das finale Membership-Gate bindet Projektzeilen
   und alle abhängigen Key-Gruppen erneut an aktuelle IDs, Keys und Rollen.
-- Suche, Filter, Sortierung und Pagination für Projekte, Runs und
-  Audit-Ereignisse ergänzen. Die Issue-Queue ist abgeschlossen.
+- Der erste Audit-Ausbau ist abgeschlossen: Eine membership-scoped
+  newest-first 20er-ActivityPage führt Projekt- und Issue-Ereignisse über den
+  stabilen öffentlichen `(occurredAt, source, eventId)`-Cursor zusammen. Ein
+  minimaler Ereignisart-Filter, vollständige URL-Isolation, erneute
+  Resource-Bindung und ehrliche Leer-/Fehlerzustände sind im Dashboard
+  integriert. Suche, Akteure, einzelne Eventtypen und Audit-Diffs bleiben
+  getrennte spätere Slices.
 - Projektmitglieder und Agent-Tokens sind membership-scoped, aber noch nicht
   paginiert. Begrenzte Reads und UI-Pagination bleiben ein eigener Slice.
 - Datenbankabfragen und Cache-Tags auf größere Projektmengen prüfen.
@@ -202,8 +207,9 @@ Status: abgeschlossen.
 
 - Der zweistufige Dashboard-Read ist gehärtet: Die erste Membership-Abfrage
   begrenzt nur die Kandidaten. Ein zweites, fail-closed Gate bindet unmittelbar
-  vor dem DTO-Mapping alle Projekt-, Issue-, Mitglieder-, Token-, Run- und
-  Aktivitätszeilen erneut an die aktuelle Mitgliedschaft und Rolle. Nach einer
+  vor dem DTO-Mapping alle Projekt-, Issue-, Mitglieder-, Token- und Run-Zeilen
+  erneut an die aktuelle Mitgliedschaft und Rolle. Die getrennte ActivityPage
+  revalidiert ihre Projekt-/Issue-Bindungen ebenso. Nach einer
   Rollen-Demotion werden fremde E-Mail-Adressen erneut redigiert.
 - Kritische UI-Flows in stabilen Viewports automatisiert prüfen.
 - OAuth-/MCP-Verbindungsaufbau mit Test-Identitäten und getrennten
@@ -253,7 +259,8 @@ Der begrenzte server-only AllProjectIssuePage-Read und seine konkrete
 All-Projekte-URL-/Dashboard-Integration sind ebenfalls vorhanden. Der
 unbeschränkte Legacy-Issue-Graph wurde aus dem Dashboard-Snapshot entfernt;
 Issue-Listen und Details stammen nur noch aus den begrenzten Page-/Detail-
-Verträgen. Als Nächstes folgen begrenzte Reads für Audit und weitere größere
-Datenmengen. Die
+Verträgen. Die begrenzte ActivityPage und ihre URL-/Dashboard-Integration sind
+ebenfalls abgeschlossen. Als nächste größere Datenmengen bleiben insbesondere
+Projektmitglieder und Agent-Tokens für eigene begrenzte Reads. Die
 MCP-Grundlage bleibt unter
 `docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md` dokumentiert.
