@@ -57,5 +57,5 @@ Cross-check new vars with root [`turbo.json`](../../turbo.json) `env` lists if b
 
 ## Documentation
 
-- **[documentation/overview.md](documentation/overview.md)** — Drizzle workflow, content stack, auth/media notes, troubleshooting.
+- **[docs/development/overview.md](docs/development/overview.md)** — Drizzle workflow, content stack, auth/media notes, troubleshooting.
 - **[CHANGELOG.md](CHANGELOG.md)** — app-scoped history.

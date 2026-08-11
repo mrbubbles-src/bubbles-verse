@@ -30,7 +30,7 @@ Match the **named export shape** from each config file under this package (`next
 
 ## Docs
 
-- [documentation/consuming.md](documentation/consuming.md)
+- [docs/development/consuming.md](docs/development/consuming.md)
 - [CHANGELOG.md](CHANGELOG.md)
 
 This package has no `lint` script; it is exercised when consumers run ESLint.

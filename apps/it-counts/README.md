@@ -76,10 +76,10 @@ No required server secrets. `NEXT_PUBLIC_SITE_URL` is optional and only affects 
 
 ## Documentation
 
-- [documentation/README.md](documentation/README.md)
-- [documentation/structure.md](documentation/structure.md)
-- [documentation/routes.md](documentation/routes.md)
-- [documentation/state-and-storage.md](documentation/state-and-storage.md)
-- [documentation/testing.md](documentation/testing.md)
-- [documentation/pwa.md](documentation/pwa.md)
-- [documentation/level-design.md](documentation/level-design.md)
+- [docs/README.md](docs/README.md)
+- [docs/architecture/structure.md](docs/architecture/structure.md)
+- [docs/architecture/routes.md](docs/architecture/routes.md)
+- [docs/architecture/state-and-storage.md](docs/architecture/state-and-storage.md)
+- [docs/development/testing.md](docs/development/testing.md)
+- [docs/operations/pwa.md](docs/operations/pwa.md)
+- [docs/design/level-design.md](docs/design/level-design.md)

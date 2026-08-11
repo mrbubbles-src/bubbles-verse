@@ -74,15 +74,20 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Prefer small, focused files over large ones.
 - Document anything that improves human onboarding or understanding.
 - Root:
-  - documents the monorepo as a whole (architecture, setup, tooling).
-  - only global changes.
+  - `docs/` documents only monorepo-wide architecture, setup, tooling, and cross-cutting contracts.
+  - `docs/README.md` is the navigation entrypoint.
+  - explicitly approved repository planning artifacts may live under `docs/superpowers/`.
   - `README.md` (overview, setup, structure)
-  - optional `documentation/`
   - `CHANGELOG.md` (only cross-cutting changes)
 - Apps/Packages:
   - document their own logic, usage, and changes.
   - scoped changes only.
   - own `README.md`
   - own `CHANGELOG.md`
-  - own `documentation/` (e.g. `apps/*/documentation/`, `packages/*/documentation/`)
+  - own `docs/` (e.g. `apps/*/docs/`, `packages/*/docs/`)
+- Inside a `docs/` folder, use stable topic folders such as `contracts/`,
+  `architecture/`, `design/`, `development/`, `operations/`, or `archive/` only when
+  current content needs them. Do not create empty taxonomy folders.
+- New or renamed documentation folders must be named `docs/`, never
+  `documentation/`.
 - Do not mix scopes.

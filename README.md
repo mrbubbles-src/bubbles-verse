@@ -98,16 +98,15 @@ Dependency rule: apps may depend on packages; packages must not import app code.
 
 ## Documentation map
 
-| Scope                             | Start here                                             |
-| --------------------------------- | ------------------------------------------------------ |
-| Monorepo overview and setup       | [`documentation/README.md`](documentation/README.md)   |
-| Markdown package remediation plan | [`documentation/markdown-packages-remediation-plan-2026-04-13.md`](documentation/markdown-packages-remediation-plan-2026-04-13.md) |
-| Markdown package working manifest | [`markdown-packages-manifest-2026-04-16.md`](markdown-packages-manifest-2026-04-16.md) - verbindliches Zielbild, Feature-Status, offene Arbeit |
-| Generated repo knowledge snapshot | [`docs/index.md`](docs/index.md)                       |
-| Coding and documentation rules    | [`AGENTS.md`](AGENTS.md)                               |
-| Story implementation artifacts    | `_bmad-output/implementation-artifacts/*.md`           |
-| Cross-cutting changes only        | [`CHANGELOG.md`](CHANGELOG.md)                         |
-| `it-counts` app docs              | [`apps/it-counts/README.md`](apps/it-counts/README.md) |
+| Scope                             | Start here                                                                                                                           |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Monorepo overview and setup       | [`docs/README.md`](docs/README.md)                                                                                                   |
+| Markdown package remediation plan | [`docs/contracts/markdown-packages-remediation-plan-2026-04-13.md`](docs/contracts/markdown-packages-remediation-plan-2026-04-13.md) |
+| Generated repo knowledge snapshot | [`docs/archive/repository-scan-2026-04/index.md`](docs/archive/repository-scan-2026-04/index.md)                                     |
+| Coding and documentation rules    | [`AGENTS.md`](AGENTS.md)                                                                                                             |
+| Story implementation artifacts    | `_bmad-output/implementation-artifacts/*.md`                                                                                         |
+| Cross-cutting changes only        | [`CHANGELOG.md`](CHANGELOG.md)                                                                                                       |
+| `it-counts` app docs              | [`apps/it-counts/README.md`](apps/it-counts/README.md)                                                                               |
 
 ## Workspace notes
 
@@ -123,4 +122,4 @@ Dependency rule: apps may depend on packages; packages must not import app code.
 - A workspace import cannot be resolved: rerun `bun install` from the repo root, not from one app.
 - A dev server hostname does not resolve: check the workspace `dev` script in its `package.json`; some apps bind to fixed `*.mrbubbles.test` hosts and ports.
 
-See [`documentation/troubleshooting.md`](documentation/troubleshooting.md) for more detail.
+See [`docs/development/troubleshooting.md`](docs/development/troubleshooting.md) for more detail.

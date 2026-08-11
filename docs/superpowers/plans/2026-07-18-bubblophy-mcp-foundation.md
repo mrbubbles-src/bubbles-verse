@@ -243,10 +243,10 @@ Expected: PASS.
 
 - Modify: `apps/bubblophy/README.md`
 - Modify: `apps/bubblophy/CHANGELOG.md`
-- Modify: `apps/bubblophy/documentation/auth-security-plan.md`
-- Modify: `apps/bubblophy/documentation/database-setup.md`
-- Modify: `apps/bubblophy/documentation/phase-2-roadmap.md`
-- Create: `apps/bubblophy/documentation/mcp-operations.md`
+- Modify: `apps/bubblophy/docs/auth-security-plan.md`
+- Modify: `apps/bubblophy/docs/database-setup.md`
+- Modify: `apps/bubblophy/docs/phase-2-roadmap.md`
+- Create: `apps/bubblophy/docs/mcp-operations.md`
 - Modify: `apps/bubblophy/.env.example`
 
 **Interfaces:**

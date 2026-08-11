@@ -1,0 +1,91 @@
+# Architecture
+
+## Workspace graph
+
+The root [`package.json`](../../package.json) defines two workspace groups:
+
+- `apps/*`
+- `packages/*`
+
+Current workspace count: **15**
+
+```text
+bubbles-verse
+├── apps/
+│   ├── bubblophy
+│   ├── dashboard
+│   ├── it-counts
+│   ├── portfolio
+│   ├── teacherbuddy
+│   └── the-coding-vault
+└── packages/
+    ├── @bubbles/database-access
+    ├── @bubbles/markdown-editor
+    ├── @bubbles/markdown-renderer
+    ├── @bubbles/supabase-access
+    ├── @bubbles/ui
+    ├── @bubbles/theme
+    ├── @bubbles/footer
+    ├── @bubbles/eslint-config
+    └── @bubbles/typescript-config
+```
+
+## Dependency direction
+
+| Direction             | Allowed? |
+| --------------------- | -------- |
+| App -> shared package | Yes      |
+| Shared package -> app | No       |
+| App -> app            | Avoid    |
+
+The repo treats packages as the reusable surface and apps as deployment units.
+
+## Shared packages
+
+### `@bubbles/ui`
+
+Shared design-system surface: shadcn-style components, globals, hooks, utilities, fonts.
+
+### `@bubbles/theme`
+
+Shared theme concerns: provider, toggle, and view-transition helpers used by multiple apps.
+
+### `@bubbles/footer`
+
+Shared footer rendering so apps can supply their own link sets without duplicating layout code.
+
+### `@bubbles/eslint-config`
+
+Flat ESLint presets for app and package consumption.
+
+### `@bubbles/typescript-config`
+
+Shared TypeScript baselines for apps and internal packages.
+
+### Data and content packages
+
+- `@bubbles/database-access` provides app-neutral server database transport helpers.
+- `@bubbles/supabase-access` provides app-neutral Supabase cookie and proxy helpers.
+- `@bubbles/markdown-editor` provides the shared Markdown authoring surface.
+- `@bubbles/markdown-renderer` provides the shared Markdown rendering surface.
+
+## App persistence model
+
+| App                | Primary state                            | Persistence                                |
+| ------------------ | ---------------------------------------- | ------------------------------------------ |
+| `bubblophy`        | DB-backed project and run-control state  | PostgreSQL + Supabase Auth                 |
+| `dashboard`        | DB-backed editorial and access state     | PostgreSQL + Supabase Auth                 |
+| `it-counts`        | Zustand stores                           | `localStorage` + custom PWA service worker |
+| `portfolio`        | Server-rendered content + server actions | env-backed integrations                    |
+| `teacherbuddy`     | reducer + React context                  | `localStorage`                             |
+| `the-coding-vault` | DB-backed server state                   | PostgreSQL + JWT cookies                   |
+
+## Build graph
+
+- [`turbo.json`](../../turbo.json) uses `dependsOn: ["^build"]` so dependencies build before consumers.
+- Shared packages are consumed through `workspace:*` links.
+- Build outputs are captured primarily from `.next/**` for app workspaces.
+
+## Next.js note
+
+The apps in this repo target **Next.js 16.x** with the App Router. Repo instructions in [`AGENTS.md`](../../AGENTS.md) take precedence over stale assumptions.

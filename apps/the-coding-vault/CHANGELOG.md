@@ -13,4 +13,4 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Documentation
 
-- README and `documentation/overview.md` expanded (Drizzle workflow, env, content/auth troubleshooting, renderer-package migration notes).
+- README and `docs/overview.md` expanded (Drizzle workflow, env, content/auth troubleshooting, renderer-package migration notes).

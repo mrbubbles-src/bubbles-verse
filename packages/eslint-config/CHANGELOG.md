@@ -10,7 +10,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- Expanded README, `documentation/consuming.md`, and this changelog.
+- Expanded README, `docs/consuming.md`, and this changelog.
 
 ### Changed
 

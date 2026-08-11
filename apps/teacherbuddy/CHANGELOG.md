@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
-- Doc index overhaul under `documentation/README.md`; added `metadata-and-seo.md` (OG, sitemap, `page-meta.ts`).
+- Doc index overhaul under `docs/README.md`; added `metadata-and-seo.md` (OG, sitemap, `page-meta.ts`).
 - README: monorepo paths, Turbo filter, standalone clone URL fix (prior release notes).
 
 ## [1.1.5] - 2026-02-09
@@ -158,7 +158,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Test configuration files (`vitest.config.ts`, `vitest.setup.ts`)
 - Test utilities with AppStoreProvider wrapper (`__tests__/test-utils.tsx`)
 - npm scripts: `test`, `test:ui`, `test:coverage`, `test:run`
-- Testing documentation (`documentation/project-docs/testing.md`)
+- Testing documentation (`docs/testing.md`)
 
 ### Changed
 

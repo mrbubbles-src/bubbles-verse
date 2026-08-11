@@ -47,5 +47,5 @@ The root repo pins a single **`typescript`** devDependency version. Bump TypeScr
 
 ## Documentation
 
-- [documentation/profiles.md](documentation/profiles.md)
+- [docs/development/profiles.md](docs/development/profiles.md)
 - [CHANGELOG.md](CHANGELOG.md)

@@ -24,7 +24,7 @@ cd apps/teacherbuddy
 bun install
 ```
 
-> Use **Bun** as the package manager: `bun install`, `bun add`, `bun run` (see [AGENTS.md](AGENTS.md)).
+> Use **Bun** as the package manager: `bun install`, `bun add`, `bun run` (see [AGENTS.md](../../AGENTS.md)).
 
 ---
 
@@ -99,7 +99,7 @@ teacherbuddy/
 │   ├── type-guards.ts     # Runtime validation
 │   └── utils.ts           # Helpers (e.g. cn)
 ├── __tests__/              # Test utilities (e.g. renderWithProvider)
-├── documentation/          # Guides (components, state, testing, SEO, …)
+├── docs/                   # Guides (components, state, testing, SEO, …)
 ├── vitest.config.ts
 └── vitest.setup.ts
 ```
@@ -114,7 +114,7 @@ teacherbuddy/
 - **Shared footer**: Root layout now renders `@bubbles/footer` with TeacherBuddy-specific legal links and source attribution.
 - **Type guards**: `lib/type-guards.ts` validates persisted data from `localStorage`.
 
-**Developer documentation:** [documentation/README.md](documentation/README.md) (index of all guides).
+**Developer documentation:** [docs/README.md](docs/README.md) (index of all guides).
 
 ---
 
@@ -153,7 +153,7 @@ Tests live in `__tests__/` next to source:
 
 Use `renderWithProvider` from `__tests__/test-utils.tsx` for components that need `AppStoreProvider`.
 
-Full testing guide: [documentation/testing.md](documentation/testing.md).
+Full testing guide: [docs/development/testing.md](docs/development/testing.md).
 
 ---
 
@@ -172,9 +172,9 @@ Run these before submitting changes.
 
 ## Contribution Guidelines
 
-1. **Follow conventions** – See [documentation/conventions.md](documentation/conventions.md) (Bun, TypeScript, naming, where to put code).
+1. **Follow conventions** – See [docs/development/conventions.md](docs/development/conventions.md) (Bun, TypeScript, naming, where to put code).
 2. **Keep changes focused** – Match existing patterns.
-3. **Update documentation** – Adjust `documentation/*.md` when behavior or structure changes.
+3. **Update documentation** – Adjust `docs/*.md` when behavior or structure changes.
 4. **Update CHANGELOG.md** – Record notable changes.
 5. **Run quality checks** – `lint`, `typecheck`, and `test:run` must pass.
 6. **Add tests** – Especially for new logic in `lib/`, `hooks/`, and `context/`.

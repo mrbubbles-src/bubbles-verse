@@ -85,16 +85,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- Package README, `documentation/`, and this changelog.
+- Package README, `docs/`, and this changelog.
 - Shared `@bubbles/ui/fonts` export for Montserrat, Poppins, and Fira Code via `next/font/google`.
-- Added `documentation/sidebar-v1-spec.md` to capture the agreed v1 shared sidebar layout contract before implementation.
-- Added `documentation/sidebar-header-direction.md` to capture the intended split between global header defaults, injected app-specific header content, and future `className` override hooks.
+- Added `docs/sidebar-v1-spec.md` to capture the agreed v1 shared sidebar layout contract before implementation.
+- Added `docs/sidebar-header-direction.md` to capture the intended split between global header defaults, injected app-specific header content, and future `className` override hooks.
 - Shared `BubblesSidebarLayout`, `BubblesBreadcrumbs`, and typed sidebar helpers for reusable inset app shells.
 - `@bubbles/ui` Vitest setup covering the shared sidebar layout behavior.
 
 ### Changed
 
-- Richer README and `documentation/overview.md` (layering, conventions, anti-patterns).
+- Richer README and `docs/overview.md` (layering, conventions, anti-patterns).
 - `globals.css` typography defaults now read shared heading, body, and code font variables.
 - `SelectContent` defaults back to popper-style content-fit positioning; opt
   into trigger alignment with `alignItemWithTrigger={true}`.

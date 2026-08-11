@@ -262,7 +262,7 @@ unsigned fehlklassifiziert werden konnte, während der signierte REST-Upload
 stabil funktioniert.
 
 Die vollständigen technischen Findings dazu stehen in
-[documentation/image-upload-findings.md](./documentation/image-upload-findings.md).
+[docs/operations/image-upload-findings.md](./docs/operations/image-upload-findings.md).
 
 ### App-lokale Route
 

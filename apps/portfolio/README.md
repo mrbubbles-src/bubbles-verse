@@ -28,7 +28,7 @@ Copy `.env.example` → `.env`. Typical groups:
 - **Turnstile** — site key (public) + secret (server).
 - **Site URL** — canonical/OG (`NEXT_PUBLIC_SITE_URL` or related; align with deployment).
 
-See [`documentation/overview.md`](documentation/overview.md) for how routing and actions use these.
+See [`docs/development/overview.md`](docs/development/overview.md) for how routing and actions use these.
 
 ## Scripts
 
@@ -59,7 +59,7 @@ i18n-config.ts           # defaultLocale + locales list
 
 ## Documentation
 
-- **[documentation/overview.md](documentation/overview.md)** — i18n pipeline, Resend/Turnstile, SEO.
+- **[docs/development/overview.md](docs/development/overview.md)** — i18n pipeline, Resend/Turnstile, SEO.
 - **[CHANGELOG.md](CHANGELOG.md)** — app-scoped release notes.
 
 ## License

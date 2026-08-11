@@ -12,6 +12,11 @@ a clean base.
 - Tailwind CSS 4
 - Shared workspace packages from `@bubbles/*`
 
+## Documentation
+
+Start with the [Dashboard documentation index](docs/README.md) for the current
+design direction, implementation notes, and reference assets.
+
 ## Current scope
 
 - `/login` starts the owner-only GitHub OAuth flow through Supabase.
@@ -27,7 +32,7 @@ a clean base.
   text, metadata, and preview widths so the desktop UI actually feels larger
   in day-to-day use instead of shrinking back through page-level overrides.
 - The next visual direction is documented in
-  `documentation/calm-creative-dashboard-visual-spec.md`: a calm creative admin
+  `docs/design/calm-creative-dashboard-visual-spec.md`: a calm creative admin
   redesign with checked-in visual references that keeps global `@bubbles/ui`
   colors and fonts as the source of truth while allowing dashboard-specific
   layout recipes.
@@ -38,7 +43,7 @@ a clean base.
   linked `Alle ansehen` affordances, and token-colored recent-content status
   badges.
 - Future app selection for the home quick-start actions is tracked in
-  `documentation/dashboard-todo.md`.
+  `docs/development/dashboard-todo.md`.
 - Protected routes exist for `/profile`, `/account`, `/vault`, `/vault/categories`, `/vault/entries`, and `/vault/entries/new`.
 - `/profile` now gives every legit dashboard user a dedicated author-profile screen for display data, slug, avatar, bio, and the first fixed social links.
 - `/account` now lets Owners manage the private dashboard allowlist, including `dashboard_access` and `user_role`.

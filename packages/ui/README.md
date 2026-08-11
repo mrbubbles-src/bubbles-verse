@@ -95,11 +95,11 @@ fight tiny desktop typography case by case.
 inline status and category labels stay readable without overpowering adjacent
 text.
 
-More detail: [documentation/overview.md](documentation/overview.md) · [CHANGELOG.md](CHANGELOG.md)
+More detail: [docs/architecture/overview.md](docs/architecture/overview.md) · [CHANGELOG.md](CHANGELOG.md)
 
-Shared sidebar layout docs: [documentation/sidebar-v1-spec.md](documentation/sidebar-v1-spec.md)
+Shared sidebar layout docs: [docs/contracts/sidebar-v1-spec.md](docs/contracts/sidebar-v1-spec.md)
 
-Header API direction note: [documentation/sidebar-header-direction.md](documentation/sidebar-header-direction.md)
+Header API direction note: [docs/contracts/sidebar-header-direction.md](docs/contracts/sidebar-header-direction.md)
 
 Shared shell entrypoints:
 

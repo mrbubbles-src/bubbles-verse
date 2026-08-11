@@ -123,12 +123,12 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   aktive Projekte mit aktueller Owner-/Maintainer-Rolle an; bei gemischten
   Rollen wird pro Projekt gefiltert.
 - Der Auth- und Sicherheitsplan liegt in
-  `documentation/auth-security-plan.md`.
+  `docs/contracts/auth-security-plan.md`.
 - Der Nach-MVP-Umfang, beginnend mit einem providerneutralen Remote-MCP über
-  Supabase OAuth 2.1, liegt in `documentation/phase-2-roadmap.md`.
+  Supabase OAuth 2.1, liegt in `docs/development/phase-2-roadmap.md`.
 - Das plattformübergreifende Setup für Supabase, Codex und Claude Code samt
   Audience-Hook, Staging-Gate und Fehlerdiagnose liegt in
-  `documentation/mcp-operations.md`.
+  `docs/operations/mcp-operations.md`.
 - `/mcp` stellt den stateless Streamable-HTTP-Transport für den kommenden
   persönlichen OAuth-Zugriff bereit. Die Route validiert Supabase-OAuth-JWTs
   lokal über öffentliche asymmetrische JWKS und verweist bei fehlender oder

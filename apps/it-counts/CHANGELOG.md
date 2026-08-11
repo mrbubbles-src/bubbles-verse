@@ -77,7 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `lib/levels.ts` with data-driven Level 1-3 definitions plus eligibility, OverXP, and pace helpers.
 - Added `lib/messages.ts` with the four MVP motivational message contexts and randomized lookup.
 - Added `__tests__/lib/levels.test.ts` and `__tests__/lib/messages.test.ts` to lock in level rules and message coverage.
-- Added `documentation/level-design.md` so the level table stays readable outside the implementation.
+- Added `docs/level-design.md` so the level table stays readable outside the implementation.
 - Added `hooks/use-activity-store.ts` Zustand store with entries, write-through persistence, and date/week selectors.
 - Added `hooks/use-level-store.ts` Zustand store with derived `isEligible`, `triggerLevelUp`, and write-through persistence.
 - Added `hooks/use-ui-store.ts` Zustand store for ephemeral session UI state.
