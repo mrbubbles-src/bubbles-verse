@@ -23,6 +23,8 @@ import type {
   ReadDashboardIssueDetailResult,
   ReadDashboardIssuePageResult,
 } from '@/lib/dashboard/issues';
+import type { DashboardMemberPageRequestState } from '@/lib/dashboard/member-query';
+import type { ReadDashboardMemberPageResult } from '@/lib/dashboard/members';
 import type { DashboardRunPageRequestState } from '@/lib/dashboard/run-query';
 import type { ReadDashboardRunPageResult } from '@/lib/dashboard/runs';
 import type { DashboardSnapshot } from '@/lib/dashboard/types';
@@ -36,6 +38,7 @@ const readDashboardIssuePageMock = vi.fn();
 const readDashboardAllIssuePageMock = vi.fn();
 const readDashboardIssueDetailMock = vi.fn();
 const readDashboardRunPageMock = vi.fn();
+const readDashboardMemberPageMock = vi.fn();
 const readDashboardActivityPageMock = vi.fn();
 const BubblophyDashboardMock = vi.fn(
   (props: {
@@ -46,6 +49,8 @@ const BubblophyDashboardMock = vi.fn(
     issueDetailResult?: ReadDashboardIssueDetailResult | null;
     runPageResult?: ReadDashboardRunPageResult | null;
     runPageRequest?: DashboardRunPageRequestState | null;
+    memberPageRequest?: DashboardMemberPageRequestState | null;
+    memberPageResult?: ReadDashboardMemberPageResult | null;
     activityPageRequest?: DashboardActivityPageRequestState | null;
     activityPageResult?: ReadDashboardActivityPageResult | null;
     createIssueAction?: typeof createBubblophyIssueAction;
@@ -143,6 +148,16 @@ vi.mock('@/lib/dashboard/runs', () => ({
   ) => readDashboardRunPageMock(authUserId, input),
 }));
 
+vi.mock('@/lib/dashboard/members', () => ({
+  readDashboardMemberPage: (
+    authUserId: string,
+    input: {
+      projectKey: string;
+      after?: { createdAt: string; authUserId: string };
+    }
+  ) => readDashboardMemberPageMock(authUserId, input),
+}));
+
 vi.mock('@/lib/dashboard/activity', () => ({
   readDashboardActivityPage: (
     authUserId: string,
@@ -170,6 +185,8 @@ vi.mock('@/components/dashboard/bubblophy-dashboard', () => ({
     issueDetailResult?: ReadDashboardIssueDetailResult | null;
     runPageResult?: ReadDashboardRunPageResult | null;
     runPageRequest?: DashboardRunPageRequestState | null;
+    memberPageRequest?: DashboardMemberPageRequestState | null;
+    memberPageResult?: ReadDashboardMemberPageResult | null;
     activityPageRequest?: DashboardActivityPageRequestState | null;
     activityPageResult?: ReadDashboardActivityPageResult | null;
     createIssueAction?: typeof createBubblophyIssueAction;
@@ -219,6 +236,18 @@ describe('Bubblophy home page', () => {
       items: [],
       nextAfter: null,
     });
+    readDashboardMemberPageMock.mockReset();
+    readDashboardMemberPageMock.mockResolvedValue({
+      status: 'success',
+      project: {
+        key: 'AP',
+        name: 'Allowed Project',
+        isArchived: false,
+        currentUserRole: 'owner',
+      },
+      items: [],
+      nextAfter: null,
+    } satisfies ReadDashboardMemberPageResult);
     readDashboardActivityPageMock.mockReset();
     readDashboardActivityPageMock.mockResolvedValue({
       status: 'success',
@@ -401,6 +430,8 @@ describe('Bubblophy home page', () => {
         after: '42',
         runAfterAt: '2026-07-19T12:00:00.000Z',
         runAfterId: 'run-20',
+        memberAfterAt: '2026-07-01T09:00:00.000Z',
+        memberAfterAuthUserId: 'user-20',
         activityKind: 'issue',
         activityAfterAt: '2026-07-19T11:00:00.000Z',
         activityAfterSource: 'issue',
@@ -426,6 +457,13 @@ describe('Bubblophy home page', () => {
         id: 'run-20',
       },
     });
+    expect(readDashboardMemberPageMock).toHaveBeenCalledWith('user_owner', {
+      projectKey: 'AP',
+      after: {
+        createdAt: '2026-07-01T09:00:00.000Z',
+        authUserId: 'user-20',
+      },
+    });
     expect(readDashboardActivityPageMock).toHaveBeenCalledWith('user_owner', {
       projectKey: 'AP',
       kind: 'issue',
@@ -448,6 +486,13 @@ describe('Bubblophy home page', () => {
       after: {
         updatedAt: '2026-07-19T12:00:00.000Z',
         id: 'run-20',
+      },
+    });
+    expect(element.props.memberPageRequest).toEqual({
+      projectKey: 'AP',
+      after: {
+        createdAt: '2026-07-01T09:00:00.000Z',
+        authUserId: 'user-20',
       },
     });
     expect(element.props.activityPageRequest).toEqual({
@@ -493,6 +538,7 @@ describe('Bubblophy home page', () => {
     });
 
     expect(readDashboardIssuePageMock).not.toHaveBeenCalled();
+    expect(readDashboardMemberPageMock).not.toHaveBeenCalled();
     expect(readDashboardAllIssuePageMock).toHaveBeenCalledWith('user_owner', {
       sort: 'oldest',
       after: {

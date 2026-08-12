@@ -190,8 +190,11 @@ Status: abgeschlossen.
   Resource-Bindung und ehrliche Leer-/Fehlerzustände sind im Dashboard
   integriert. Suche, Akteure, einzelne Eventtypen und Audit-Diffs bleiben
   getrennte spätere Slices.
-- Projektmitglieder und Agent-Tokens sind membership-scoped, aber noch nicht
-  paginiert. Begrenzte Reads und UI-Pagination bleiben ein eigener Slice.
+- Das Mitgliederpanel nutzt eine membership-scoped 20er-MemberPage mit
+  stabilem `(createdAt, authUserId)`-Cursor, finalem Rollen-Recheck und
+  URL-Pagination. Der alte Root-Snapshot bleibt vorerst ausschließlich für
+  Assignee-Labels und -Auswahl bestehen; dessen begrenzte Consumer-Migration
+  ist der nächste Mitglieder-Slice. Agent-Tokens sind weiterhin unpaginiert.
 - Datenbankabfragen und Cache-Tags auf größere Projektmengen prüfen.
 
 ### 6. Benachrichtigungen und Team-Arbeit
@@ -260,7 +263,8 @@ All-Projekte-URL-/Dashboard-Integration sind ebenfalls vorhanden. Der
 unbeschränkte Legacy-Issue-Graph wurde aus dem Dashboard-Snapshot entfernt;
 Issue-Listen und Details stammen nur noch aus den begrenzten Page-/Detail-
 Verträgen. Die begrenzte ActivityPage und ihre URL-/Dashboard-Integration sind
-ebenfalls abgeschlossen. Als nächste größere Datenmengen bleiben insbesondere
-Projektmitglieder und Agent-Tokens für eigene begrenzte Reads. Die
+ebenfalls abgeschlossen. Das Mitgliederpanel besitzt inzwischen einen eigenen
+begrenzten Page-Vertrag. Als nächste größere Datenmengen bleiben dessen
+Assignee-Consumer-Migration und die Agent-Tokens. Die
 MCP-Grundlage bleibt unter
 `docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md` dokumentiert.

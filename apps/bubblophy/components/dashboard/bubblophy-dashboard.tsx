@@ -63,6 +63,11 @@ import type {
   ReadDashboardIssuePageResult,
 } from '@/lib/dashboard/issues';
 import type {
+  DashboardMemberCursor,
+  DashboardMemberPageRequestState,
+} from '@/lib/dashboard/member-query';
+import type { ReadDashboardMemberPageResult } from '@/lib/dashboard/members';
+import type {
   DashboardRunCursor,
   DashboardRunPageRequestState,
 } from '@/lib/dashboard/run-query';
@@ -120,6 +125,11 @@ import {
   issueStatusLabels,
   projectHealthLabels,
 } from '@/lib/dashboard/labels';
+import {
+  isDashboardMemberPageRequestCurrent,
+  parseDashboardMemberCursor,
+  setDashboardMemberPageParams,
+} from '@/lib/dashboard/member-query';
 import { getIssueReadinessPercent } from '@/lib/dashboard/metrics';
 import {
   isDashboardRunPageRequestCurrent,
@@ -204,6 +214,8 @@ interface BubblophyDashboardProps {
   missingRequestedIssueKey?: string | null;
   runPageRequest?: DashboardRunPageRequestState | null;
   runPageResult?: ReadDashboardRunPageResult | null;
+  memberPageRequest?: DashboardMemberPageRequestState | null;
+  memberPageResult?: ReadDashboardMemberPageResult | null;
   activityPageRequest?: DashboardActivityPageRequestState | null;
   activityPageResult?: ReadDashboardActivityPageResult | null;
   createIssueAction?: (
@@ -341,6 +353,8 @@ type IssuePageStatus =
   | ReadDashboardIssuePageResult['status']
   | ReadDashboardAllIssuePageResult['status']
   | 'loading';
+
+type MemberPageStatus = ReadDashboardMemberPageResult['status'] | 'loading';
 
 type DashboardIssue = IssueSummary | LocalDraftIssue;
 
@@ -695,6 +709,8 @@ export function BubblophyDashboard({
   missingRequestedIssueKey = null,
   runPageRequest = null,
   runPageResult = null,
+  memberPageRequest = null,
+  memberPageResult = null,
   activityPageRequest = null,
   activityPageResult = null,
   createIssueAction,
@@ -877,6 +893,29 @@ export function BubblophyDashboard({
     (runPageResult?.status !== 'success' ||
       runPageResult.project.key === urlProjectKey)
       ? runPageResult
+      : null;
+  const memberCursor = useMemo(
+    () =>
+      parseDashboardMemberCursor(
+        searchParams.get('memberAfterAt'),
+        searchParams.get('memberAfterAuthUserId')
+      ),
+    [searchParams]
+  );
+  const hasConcreteMemberPageBoundary =
+    snapshot.meta.dataSource === 'database' &&
+    urlProjectKey !== 'all' &&
+    (memberPageRequest !== null || memberPageResult !== null);
+  const isCurrentMemberPageRequest = isDashboardMemberPageRequestCurrent(
+    memberPageRequest,
+    urlProjectKey,
+    memberCursor
+  );
+  const currentMemberPageResult =
+    isCurrentMemberPageRequest &&
+    (memberPageResult?.status !== 'success' ||
+      memberPageResult.project.key === urlProjectKey)
+      ? memberPageResult
       : null;
   const activityProjectKey = urlProjectKey === 'all' ? null : urlProjectKey;
   const hasActivityPageBoundary =
@@ -1082,7 +1121,10 @@ export function BubblophyDashboard({
       snapshot.projectMembers
         .filter((member) => member.projectKey !== deniedProjectKey)
         .filter((member) => !removedProjectMemberIds.includes(member.id))
-        .map((member) => updatedProjectMembersById[member.id] ?? member),
+        .map((member) => ({
+          ...member,
+          role: updatedProjectMembersById[member.id]?.role ?? member.role,
+        })),
     [
       deniedProjectKey,
       removedProjectMemberIds,
@@ -1200,7 +1242,10 @@ export function BubblophyDashboard({
     currentIssuePageResult?.status === 'success'
       ? currentIssuePageResult.project
       : null,
-    currentSuccessfulIssueDetail?.project ?? null
+    currentSuccessfulIssueDetail?.project ?? null,
+    currentMemberPageResult?.status === 'success'
+      ? currentMemberPageResult.project
+      : null
   );
   const allPageProjectAccessByKey = useMemo(() => {
     const accessByKey = new Map<string, DashboardProjectAccess>();
@@ -1366,9 +1411,18 @@ export function BubblophyDashboard({
     selectedProject?.currentUserRole
   );
   const selectedProjectMembers = selectedProject
-    ? allProjectMembers.filter(
-        (member) => member.projectKey === selectedProject.key
-      )
+    ? hasConcreteMemberPageBoundary
+      ? currentMemberPageResult?.status === 'success'
+        ? currentMemberPageResult.items
+            .filter((member) => !removedProjectMemberIds.includes(member.id))
+            .map((member) => ({
+              ...member,
+              role: updatedProjectMembersById[member.id]?.role ?? member.role,
+            }))
+        : []
+      : allProjectMembers.filter(
+          (member) => member.projectKey === selectedProject.key
+        )
     : [];
 
   const selectedIssue =
@@ -1532,9 +1586,12 @@ export function BubblophyDashboard({
     }
 
     const canonicalQueryParams = writeDashboardActivityQueryParams(
-      setDashboardRunPageParams(
-        canonicalIssueParams,
-        urlProjectKey === 'all' ? null : runCursor
+      setDashboardMemberPageParams(
+        setDashboardRunPageParams(
+          canonicalIssueParams,
+          urlProjectKey === 'all' ? null : runCursor
+        ),
+        urlProjectKey === 'all' ? null : memberCursor
       ),
       activityQuery
     );
@@ -1552,6 +1609,7 @@ export function BubblophyDashboard({
     allIssueQuery,
     activityQuery,
     issueQuery,
+    memberCursor,
     pathname,
     router,
     runCursor,
@@ -1575,6 +1633,8 @@ export function BubblophyDashboard({
     nextParams.delete('allAfterIssue');
     nextParams.delete('runAfterAt');
     nextParams.delete('runAfterId');
+    nextParams.delete('memberAfterAt');
+    nextParams.delete('memberAfterAuthUserId');
     clearDashboardActivityCursor(nextParams);
     nextParams.delete('issue');
     pushDashboardParams(nextParams);
@@ -1619,6 +1679,15 @@ export function BubblophyDashboard({
   const handleRunPageChange = (after: typeof runCursor) => {
     pushDashboardParams(
       setDashboardRunPageParams(
+        new URLSearchParams(searchParams.toString()),
+        after
+      )
+    );
+  };
+
+  const handleMemberPageChange = (after: DashboardMemberCursor | null) => {
+    pushDashboardParams(
+      setDashboardMemberPageParams(
         new URLSearchParams(searchParams.toString()),
         after
       )
@@ -1708,9 +1777,9 @@ export function BubblophyDashboard({
     member: ProjectMemberSummary,
     memberCount: number
   ) => {
-    const currentMember = allProjectMembers.find(
-      (candidate) => candidate.id === member.id
-    );
+    const currentMember =
+      selectedProjectMembers.find((candidate) => candidate.id === member.id) ??
+      allProjectMembers.find((candidate) => candidate.id === member.id);
     const displayedMember = currentMember
       ? {
           ...member,
@@ -1745,9 +1814,9 @@ export function BubblophyDashboard({
     memberCount: number;
   }) => {
     const memberId = `${input.projectKey}:${input.memberAuthUserId}`;
-    const removedMember = allProjectMembers.find(
-      (member) => member.id === memberId
-    );
+    const removedMember =
+      selectedProjectMembers.find((member) => member.id === memberId) ??
+      allProjectMembers.find((member) => member.id === memberId);
     const removedMemberLabel =
       removedMember?.label !== input.memberAuthUserId
         ? removedMember?.label
@@ -1950,6 +2019,17 @@ export function BubblophyDashboard({
                 meta={snapshot.meta}
                 projects={allProjects}
                 projectMembers={selectedProjectMembers}
+                memberPageStatus={
+                  hasConcreteMemberPageBoundary && !currentMemberPageResult
+                    ? 'loading'
+                    : (currentMemberPageResult?.status ?? null)
+                }
+                memberCursor={memberCursor}
+                nextMemberAfter={
+                  currentMemberPageResult?.status === 'success'
+                    ? currentMemberPageResult.nextAfter
+                    : null
+                }
                 canCreateProject={
                   canUseDatabase && Boolean(createProjectAction)
                 }
@@ -1975,6 +2055,8 @@ export function BubblophyDashboard({
                 onProjectUpdated={handleProjectUpdated}
                 onProjectMemberRoleUpdated={handleProjectMemberRoleUpdated}
                 onProjectMemberRemoved={handleProjectMemberRemoved}
+                onFirstMemberPage={() => handleMemberPageChange(null)}
+                onNextMemberPage={handleMemberPageChange}
                 onProjectSelect={handleProjectSelect}
               />
               <IssueQueue
@@ -2331,6 +2413,9 @@ function ProjectOverview({
   meta,
   projects,
   projectMembers,
+  memberPageStatus,
+  memberCursor,
+  nextMemberAfter,
   canCreateProject,
   canManageProjects,
   readiness,
@@ -2347,11 +2432,16 @@ function ProjectOverview({
   onProjectUpdated,
   onProjectMemberRoleUpdated,
   onProjectMemberRemoved,
+  onFirstMemberPage,
+  onNextMemberPage,
   onProjectSelect,
 }: {
   meta: DashboardSnapshot['meta'];
   projects: ProjectSummary[];
   projectMembers: ProjectMemberSummary[];
+  memberPageStatus: MemberPageStatus | null;
+  memberCursor: DashboardMemberCursor | null;
+  nextMemberAfter: DashboardMemberCursor | null;
   canCreateProject: boolean;
   canManageProjects: boolean;
   readiness: number;
@@ -2391,6 +2481,8 @@ function ProjectOverview({
     memberAuthUserId: string;
     memberCount: number;
   }) => void;
+  onFirstMemberPage: () => void;
+  onNextMemberPage: (after: DashboardMemberCursor) => void;
   onProjectSelect: (projectKey: ProjectFilterKey) => void;
 }) {
   const isDatabaseUnavailable = meta.dataSource === 'database_unavailable';
@@ -2542,6 +2634,9 @@ function ProjectOverview({
           <ProjectMembersPanel
             project={selectedProject}
             members={projectMembers}
+            status={memberPageStatus}
+            cursor={memberCursor}
+            nextAfter={nextMemberAfter}
             readProjectInvitationsAction={readProjectInvitationsAction}
             createProjectInvitationAction={createProjectInvitationAction}
             reinviteProjectInvitationAction={reinviteProjectInvitationAction}
@@ -2550,6 +2645,8 @@ function ProjectOverview({
             removeProjectMemberAction={removeProjectMemberAction}
             onProjectMemberRoleUpdated={onProjectMemberRoleUpdated}
             onProjectMemberRemoved={onProjectMemberRemoved}
+            onFirstPage={onFirstMemberPage}
+            onNextPage={onNextMemberPage}
           />
         ) : null}
       </CardContent>
@@ -2941,6 +3038,9 @@ function ProjectManagementPanel({
 function ProjectMembersPanel({
   project,
   members,
+  status,
+  cursor,
+  nextAfter,
   readProjectInvitationsAction,
   createProjectInvitationAction,
   reinviteProjectInvitationAction,
@@ -2949,9 +3049,14 @@ function ProjectMembersPanel({
   removeProjectMemberAction,
   onProjectMemberRoleUpdated,
   onProjectMemberRemoved,
+  onFirstPage,
+  onNextPage,
 }: {
   project: ProjectSummary;
   members: ProjectMemberSummary[];
+  status: MemberPageStatus | null;
+  cursor: DashboardMemberCursor | null;
+  nextAfter: DashboardMemberCursor | null;
   readProjectInvitationsAction?: (input: {
     projectKey: string;
   }) => Promise<ReadBubblophyProjectInvitationManagerSnapshotActionResult>;
@@ -2979,6 +3084,8 @@ function ProjectMembersPanel({
     memberAuthUserId: string;
     memberCount: number;
   }) => void;
+  onFirstPage: () => void;
+  onNextPage: (after: DashboardMemberCursor) => void;
 }) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [confirmRemoveMemberId, setConfirmRemoveMemberId] = useState<
@@ -3088,7 +3195,9 @@ function ProjectMembersPanel({
               : 'Owner und Maintainer verwalten den Teamzugang per E-Mail-Einladung.'}
           </p>
         </div>
-        <Badge variant="outline">{members.length} sichtbar</Badge>
+        <Badge variant="outline">
+          {members.length} von {project.memberCount} sichtbar
+        </Badge>
       </div>
 
       {project.currentUserRole ? (
@@ -3107,12 +3216,52 @@ function ProjectMembersPanel({
         revokeInvitationAction={revokeProjectInvitationAction}
       />
 
-      {members.length === 0 ? (
+      {status === 'loading' ? (
+        <p role="status" className="text-sm text-muted-foreground">
+          Mitgliederliste wird geladen.
+        </p>
+      ) : null}
+      {status === 'database_unavailable' ? (
+        <p role="status" className="text-sm text-muted-foreground">
+          Die Mitgliederliste ist gerade nicht verfügbar. Einladungen und andere
+          Dashboard-Bereiche bleiben nutzbar.
+        </p>
+      ) : null}
+      {status === 'invalid' ? (
+        <p role="status" className="text-sm text-muted-foreground">
+          Der Mitglieder-Cursor ist ungültig. Kehre zur ersten Seite zurück.
+        </p>
+      ) : null}
+
+      {status === 'success' ? (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {cursor ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={onFirstPage}>
+              Zur ersten Mitgliederseite
+            </Button>
+          ) : null}
+          {nextAfter ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => onNextPage(nextAfter)}>
+              Weitere 20 Mitglieder
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {(status === null || status === 'success') && members.length === 0 ? (
         <p className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
           Für dieses Projekt sind im aktuellen Snapshot keine Mitglieder
           sichtbar.
         </p>
-      ) : (
+      ) : status === null || status === 'success' ? (
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -3219,7 +3368,7 @@ function ProjectMembersPanel({
             </TableBody>
           </Table>
         </div>
-      )}
+      ) : null}
 
       {actionError ? (
         <p role="alert" className="text-sm text-destructive">

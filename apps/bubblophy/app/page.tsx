@@ -1,6 +1,7 @@
 import type { DashboardActivityPageRequestState } from '@/lib/dashboard/activity-query';
 import type { DashboardAllIssuePageRequestState } from '@/lib/dashboard/all-issue-query';
 import type { DashboardIssuePageRequestState } from '@/lib/dashboard/issue-query';
+import type { DashboardMemberPageRequestState } from '@/lib/dashboard/member-query';
 import type { DashboardSnapshot } from '@/lib/dashboard/types';
 
 import { requireBubblophySession } from '@/lib/auth/session';
@@ -14,6 +15,8 @@ import {
   readDashboardIssueDetail,
   readDashboardIssuePage,
 } from '@/lib/dashboard/issues';
+import { parseDashboardMemberCursor } from '@/lib/dashboard/member-query';
+import { readDashboardMemberPage } from '@/lib/dashboard/members';
 import { parseDashboardRunCursor } from '@/lib/dashboard/run-query';
 import { readDashboardRunPage } from '@/lib/dashboard/runs';
 import { syncBubblophyUserProfile } from '@/lib/profiles/database-write';
@@ -145,6 +148,10 @@ export async function ProtectedBubblophyDashboard({
     getFirstSearchParam(rawSearchParams.runAfterAt),
     getFirstSearchParam(rawSearchParams.runAfterId)
   );
+  const memberCursor = parseDashboardMemberCursor(
+    getFirstSearchParam(rawSearchParams.memberAfterAt),
+    getFirstSearchParam(rawSearchParams.memberAfterAuthUserId)
+  );
   const requestedIssueKey = getFirstSearchParam(rawSearchParams.issue)
     ?.trim()
     .toUpperCase();
@@ -196,6 +203,20 @@ export async function ProtectedBubblophyDashboard({
           after: runCursor ?? undefined,
         })
       : Promise.resolve(null);
+  const memberPageRequest =
+    canReadProjectIssues && selectedProject
+      ? ({
+          projectKey: selectedProject.key,
+          after: memberCursor,
+        } satisfies DashboardMemberPageRequestState)
+      : null;
+  const memberPagePromise =
+    canReadProjectIssues && selectedProject
+      ? readDashboardMemberPage(session.authUserId, {
+          projectKey: selectedProject.key,
+          after: memberCursor ?? undefined,
+        })
+      : Promise.resolve(null);
   const activityPageRequest =
     dashboardSnapshot.meta.dataSource === 'database'
       ? ({
@@ -222,12 +243,14 @@ export async function ProtectedBubblophyDashboard({
     allIssuePageResult,
     requestedIssueDetailResult,
     runPageResult,
+    memberPageResult,
     activityPageResult,
   ] = await Promise.all([
     issuePagePromise,
     allIssuePagePromise,
     requestedIssueDetailPromise,
     runPagePromise,
+    memberPagePromise,
     activityPagePromise,
   ]);
   const missingRequestedIssueKey =
@@ -259,6 +282,7 @@ export async function ProtectedBubblophyDashboard({
   const hasLostProjectAccess =
     issuePageResult?.status === 'not_found' ||
     runPageResult?.status === 'not_found' ||
+    memberPageResult?.status === 'not_found' ||
     activityPageResult?.status === 'not_found';
   const issueDetailRequestKey = hasLostProjectAccess
     ? null
@@ -293,6 +317,8 @@ export async function ProtectedBubblophyDashboard({
       missingRequestedIssueKey={missingRequestedIssueKey}
       runPageRequest={runPageRequest}
       runPageResult={hasLostProjectAccess ? null : runPageResult}
+      memberPageRequest={memberPageRequest}
+      memberPageResult={hasLostProjectAccess ? null : memberPageResult}
       activityPageRequest={activityPageRequest}
       activityPageResult={hasLostProjectAccess ? null : activityPageResult}
       createIssueAction={createBubblophyIssueAction}

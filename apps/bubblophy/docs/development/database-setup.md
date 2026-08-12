@@ -22,7 +22,7 @@ angewendet.
 ## Vorbereitete Migration
 
 Die Struktur, RLS-Härtung, OAuth-Audit-Attribution und Einladungsbasis liegen
-aktuell in zehn lokalen Migrationen:
+aktuell in elf lokalen Migrationen:
 
 ```text
 apps/bubblophy/drizzle/0000_premium_psynapse.sql
@@ -35,6 +35,7 @@ apps/bubblophy/drizzle/0006_add_project_invitations.sql
 apps/bubblophy/drizzle/0007_add_bubblophy_user_profiles.sql
 apps/bubblophy/drizzle/0008_add_run_page_cursor_index.sql
 apps/bubblophy/drizzle/0009_normal_monster_badoon.sql
+apps/bubblophy/drizzle/0010_giant_cannonball.sql
 ```
 
 `0000_premium_psynapse.sql` erzeugt:
@@ -163,7 +164,8 @@ keinen Membership-Fremdschlüssel und gewährt allein keinen Projektzugriff.
 `(issue_id, updated_at, id)`. `0009_normal_monster_badoon.sql` erweitert die
 bestehenden Issue- und Projekt-Event-Indizes jeweils um `id`, damit die
 ActivityPage ihren Gleichstand im newest-first Cursor deterministisch auflösen
-kann.
+kann. `0010_giant_cannonball.sql` ergänzt den stabilen MemberPage-Index
+`(project_id, created_at, auth_user_id)`.
 
 Die Zielumgebung braucht zusätzlich einen Supabase-Custom-Access-Token-Hook,
 der JWTs mit `client_id` die exakte Audience `<NEXT_PUBLIC_APP_URL>/mcp` gibt.

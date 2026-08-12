@@ -38,6 +38,7 @@ import type {
   ReadDashboardIssueDetailResult,
   ReadDashboardIssuePageResult,
 } from '@/lib/dashboard/issues';
+import type { ReadDashboardMemberPageResult } from '@/lib/dashboard/members';
 import type {
   DashboardSnapshot,
   IssuePriority,
@@ -1182,7 +1183,7 @@ describe('BubblophyDashboard interactions', () => {
   it('keeps the activity kind but clears its cursor on project changes', () => {
     navigationMocks.searchParams.mockReturnValue(
       new URLSearchParams(
-        'activityKind=issue&activityAfterAt=2026-07-19T10%3A00%3A00.000Z&activityAfterSource=issue&activityAfterId=event-20'
+        'activityKind=issue&activityAfterAt=2026-07-19T10%3A00%3A00.000Z&activityAfterSource=issue&activityAfterId=event-20&memberAfterAt=2026-07-01T09%3A00%3A00.000Z&memberAfterAuthUserId=user-20'
       )
     );
 
@@ -4817,6 +4818,204 @@ describe('BubblophyDashboard interactions', () => {
     expect(within(projectsSection).getByText('Martin')).toBeInTheDocument();
     expect(
       within(projectsSection).getByText('martin@example.test')
+    ).toBeInTheDocument();
+  });
+
+  it('renders the bounded member page and writes its stable next cursor', () => {
+    const nextAfter = {
+      createdAt: '2026-06-13T10:00:00.000Z',
+      authUserId: 'user_owner',
+    };
+    const memberPageResult = {
+      status: 'success',
+      project: {
+        key: 'BV',
+        name: 'Bubblesverse',
+        isArchived: false,
+        currentUserRole: 'owner',
+      },
+      items: [databaseSnapshotWithManageableMembers.projectMembers[0]!],
+      nextAfter,
+    } satisfies ReadDashboardMemberPageResult;
+
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=BV')
+    );
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithManageableMembers}
+        memberPageRequest={{ projectKey: 'BV', after: null }}
+        memberPageResult={memberPageResult}
+      />
+    );
+
+    const projectsSection = document.getElementById('projects');
+
+    expect(projectsSection).toBeInstanceOf(HTMLElement);
+
+    if (!projectsSection) {
+      throw new Error('Expected the projects section to render.');
+    }
+
+    expect(within(projectsSection).getByText('Mara Owner')).toBeInTheDocument();
+    expect(within(projectsSection).queryByText('Martin')).toBeNull();
+    expect(
+      within(projectsSection).getByText('1 von 3 sichtbar')
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      within(projectsSection).getByRole('button', {
+        name: 'Weitere 20 Mitglieder',
+      })
+    );
+
+    const pushedHref = navigationMocks.routerPush.mock.lastCall?.[0];
+
+    expect(pushedHref).toBeTruthy();
+
+    if (!pushedHref) {
+      throw new Error('Expected member pagination to push a URL.');
+    }
+
+    const pushedUrl = new URL(pushedHref, 'https://bubblophy.example.test');
+
+    expect(pushedUrl.searchParams.get('project')).toBe('BV');
+    expect(pushedUrl.searchParams.get('memberAfterAt')).toBe(
+      nextAfter.createdAt
+    );
+    expect(pushedUrl.searchParams.get('memberAfterAuthUserId')).toBe(
+      nextAfter.authUserId
+    );
+  });
+
+  it('keeps redacted page identity authoritative after a local role overlay', async () => {
+    const martin = databaseSnapshotWithManageableMembers.projectMembers[1]!;
+    const updateProjectMemberRoleAction = vi.fn<
+      (
+        input: UpdateBubblophyProjectMemberRoleActionInput
+      ) => Promise<UpdateBubblophyProjectMemberRoleActionResult>
+    >(async () => ({
+      status: 'updated',
+      member: { ...martin, role: 'viewer' },
+      memberCount: 3,
+    }));
+    const ownerPage = {
+      status: 'success',
+      project: {
+        key: 'BV',
+        name: 'Bubblesverse',
+        isArchived: false,
+        currentUserRole: 'owner',
+      },
+      items: [martin],
+      nextAfter: null,
+    } satisfies ReadDashboardMemberPageResult;
+    const viewerPage = {
+      ...ownerPage,
+      project: { ...ownerPage.project, currentUserRole: 'viewer' },
+      items: [{ ...martin, email: null }],
+    } satisfies ReadDashboardMemberPageResult;
+
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=BV')
+    );
+    const { rerender } = render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithManageableMembers}
+        memberPageRequest={{ projectKey: 'BV', after: null }}
+        memberPageResult={ownerPage}
+        updateProjectMemberRoleAction={updateProjectMemberRoleAction}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText('Rolle für Martin'), {
+      target: { value: 'viewer' },
+    });
+    await waitFor(() =>
+      expect(updateProjectMemberRoleAction).toHaveBeenCalled()
+    );
+
+    rerender(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithManageableMembers}
+        memberPageRequest={{ projectKey: 'BV', after: null }}
+        memberPageResult={viewerPage}
+        updateProjectMemberRoleAction={updateProjectMemberRoleAction}
+      />
+    );
+
+    expect(screen.getByText('Martin')).toBeInTheDocument();
+    expect(screen.queryByText('martin@example.test')).toBeNull();
+    expect(screen.getAllByText('Viewer').length).toBeGreaterThan(0);
+  });
+
+  it('uses the current member page identity for update and removal feedback', async () => {
+    const pageMember = {
+      id: 'BV:user_page_only',
+      projectKey: 'BV',
+      authUserId: 'user_page_only',
+      label: 'Neue Person',
+      email: 'neu@example.test',
+      role: 'member',
+      createdAt: '2026-07-01T09:00:00.000Z',
+    } as const;
+    const memberPage = {
+      status: 'success',
+      project: {
+        key: 'BV',
+        name: 'Bubblesverse',
+        isArchived: false,
+        currentUserRole: 'owner',
+      },
+      items: [pageMember],
+      nextAfter: null,
+    } satisfies ReadDashboardMemberPageResult;
+    const updateProjectMemberRoleAction = vi.fn<
+      (
+        input: UpdateBubblophyProjectMemberRoleActionInput
+      ) => Promise<UpdateBubblophyProjectMemberRoleActionResult>
+    >(async () => ({
+      status: 'updated',
+      member: { ...pageMember, label: pageMember.authUserId, role: 'viewer' },
+      memberCount: 4,
+    }));
+    const removeProjectMemberAction = vi.fn<
+      (
+        input: RemoveBubblophyProjectMemberActionInput
+      ) => Promise<RemoveBubblophyProjectMemberActionResult>
+    >(async () => ({
+      status: 'removed',
+      projectKey: 'BV',
+      memberAuthUserId: pageMember.authUserId,
+      memberCount: 3,
+    }));
+
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('project=BV')
+    );
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshotWithManageableMembers}
+        memberPageRequest={{ projectKey: 'BV', after: null }}
+        memberPageResult={memberPage}
+        updateProjectMemberRoleAction={updateProjectMemberRoleAction}
+        removeProjectMemberAction={removeProjectMemberAction}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText('Rolle für Neue Person'), {
+      target: { value: 'viewer' },
+    });
+    expect(
+      await screen.findByText('Mitglied Neue Person wurde in BV aktualisiert.')
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Entfernen' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Endgültig entfernen' })
+    );
+    expect(
+      await screen.findByText('Mitglied Neue Person wurde aus BV entfernt.')
     ).toBeInTheDocument();
   });
 

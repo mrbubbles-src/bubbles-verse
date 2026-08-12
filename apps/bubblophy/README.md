@@ -48,6 +48,10 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   Mitgliederbereich zeigt die eigene Rolle und erklärt Owner, Maintainer,
   Member und Viewer kompakt anhand ihrer tatsächlichen Rechte. Erfolgreiche
   UI-Aktionen verwenden verständliche Mitgliedsnamen statt technischer IDs.
+  In der Datenbankansicht lädt das Panel 20 Mitglieder pro Seite über den
+  stabilen URL-Cursor `(createdAt, authUserId)`. Der Read bindet Projekt und
+  aktuelle Membership erneut, prüft die finale Rolle und redigiert fremde
+  E-Mail-Adressen nach einer parallelen Demotion erneut.
 - Owner und Maintainer können Nicht-Owner-Mitglieder zwischen `maintainer`,
   `member` und `viewer` umstellen oder entfernen. Owner-Rollen, Owner-Removal
   und Self-Removal bleiben im MVP konservativ gesperrt. Projekt und beteiligte

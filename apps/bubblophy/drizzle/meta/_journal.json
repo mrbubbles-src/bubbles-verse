@@ -71,6 +71,13 @@
       "when": 1784654204109,
       "tag": "0009_normal_monster_badoon",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1786520854795,
+      "tag": "0010_giant_cannonball",
+      "breakpoints": true
     }
   ]
 }

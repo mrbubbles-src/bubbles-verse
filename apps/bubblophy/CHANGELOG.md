@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added a membership-scoped 20-item project member page with stable
+  `(createdAt, authUserId)` URL pagination, final project and role rechecks,
+  manager/self-only e-mail visibility, a matching database index, and bounded
+  member-panel loading and failure states. The legacy member snapshot remains
+  temporarily available only to the issue assignee consumer until its own
+  bounded lookup replaces it.
 - Replaced the dashboard's global top-20 audit snapshot with an independent,
   membership-scoped 20-item `ActivityPage`. Project and issue events are merged
   newest-first through a stable `(occurredAt, source, eventId)` cursor, support
