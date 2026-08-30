@@ -3,6 +3,7 @@ import type { DashboardAgentTokenPageRequestState } from '@/lib/dashboard/agent-
 import type { DashboardAllIssuePageRequestState } from '@/lib/dashboard/all-issue-query';
 import type { DashboardIssuePageRequestState } from '@/lib/dashboard/issue-query';
 import type { DashboardMemberPageRequestState } from '@/lib/dashboard/member-query';
+import type { DashboardNotificationPageRequestState } from '@/lib/dashboard/notification-query';
 import type { DashboardSnapshot } from '@/lib/dashboard/types';
 
 import { requireBubblophySession } from '@/lib/auth/session';
@@ -23,6 +24,8 @@ import {
 } from '@/lib/dashboard/issues';
 import { parseDashboardMemberCursor } from '@/lib/dashboard/member-query';
 import { readDashboardMemberPage } from '@/lib/dashboard/members';
+import { parseDashboardNotificationCursor } from '@/lib/dashboard/notification-query';
+import { readDashboardNotificationPage } from '@/lib/dashboard/notifications';
 import { parseDashboardRunCursor } from '@/lib/dashboard/run-query';
 import { readDashboardRunPage } from '@/lib/dashboard/runs';
 import { syncBubblophyUserProfile } from '@/lib/profiles/database-write';
@@ -168,6 +171,10 @@ export async function ProtectedBubblophyDashboard({
   const agentTokenQuery = normalizeDashboardAgentTokenQuery(
     getFirstSearchParam(rawSearchParams.tokenQ)
   );
+  const notificationCursor = parseDashboardNotificationCursor(
+    getFirstSearchParam(rawSearchParams.notificationAfterAt),
+    getFirstSearchParam(rawSearchParams.notificationAfterId)
+  );
   const requestedIssueKey = getFirstSearchParam(rawSearchParams.issue)
     ?.trim()
     .toUpperCase();
@@ -262,6 +269,19 @@ export async function ProtectedBubblophyDashboard({
         after: activityPageRequest.after ?? undefined,
       })
     : Promise.resolve(null);
+  const notificationPageRequest =
+    dashboardSnapshot.meta.dataSource === 'database'
+      ? ({
+          projectKey: selectedProject?.key ?? null,
+          after: notificationCursor,
+        } satisfies DashboardNotificationPageRequestState)
+      : null;
+  const notificationPagePromise = notificationPageRequest
+    ? readDashboardNotificationPage(session.authUserId, {
+        projectKey: notificationPageRequest.projectKey ?? undefined,
+        after: notificationCursor ?? undefined,
+      })
+    : Promise.resolve(null);
   const requestedIssueDetailPromise =
     dashboardSnapshot.meta.dataSource === 'database' &&
     requestedPersistedIssueKey
@@ -277,6 +297,7 @@ export async function ProtectedBubblophyDashboard({
     memberPageResult,
     agentTokenPageResult,
     activityPageResult,
+    notificationPageResult,
   ] = await Promise.all([
     issuePagePromise,
     allIssuePagePromise,
@@ -285,6 +306,7 @@ export async function ProtectedBubblophyDashboard({
     memberPagePromise,
     agentTokenPagePromise,
     activityPagePromise,
+    notificationPagePromise,
   ]);
   const missingRequestedIssueKey =
     requestedIssueDetailResult?.status === 'not_found'
@@ -317,6 +339,7 @@ export async function ProtectedBubblophyDashboard({
     runPageResult?.status === 'not_found' ||
     memberPageResult?.status === 'not_found' ||
     (selectedProject && agentTokenPageResult?.status === 'not_found') ||
+    (selectedProject && notificationPageResult?.status === 'not_found') ||
     activityPageResult?.status === 'not_found';
   const issueDetailRequestKey = hasLostProjectAccess
     ? null
@@ -357,6 +380,10 @@ export async function ProtectedBubblophyDashboard({
       agentTokenPageResult={hasLostProjectAccess ? null : agentTokenPageResult}
       activityPageRequest={activityPageRequest}
       activityPageResult={hasLostProjectAccess ? null : activityPageResult}
+      notificationPageRequest={notificationPageRequest}
+      notificationPageResult={
+        hasLostProjectAccess ? null : notificationPageResult
+      }
       createIssueAction={createBubblophyIssueAction}
       updateIssueContentAction={updateBubblophyIssueContentAction}
       updateIssueAssigneeAction={updateBubblophyIssueAssigneeAction}

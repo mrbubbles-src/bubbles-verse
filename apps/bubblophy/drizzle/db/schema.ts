@@ -453,6 +453,11 @@ export const bubblophyAgentRuns = pgTable(
       table.updatedAt,
       table.id
     ),
+    notificationUpdatedIdIdx: index(
+      'bubblophy_agent_runs_notification_updated_id_idx'
+    )
+      .on(table.updatedAt, table.id)
+      .where(sql`${table.state} in ('requested', 'needs_review', 'failed')`),
     agentTokenIdx: index('bubblophy_agent_runs_agent_token_idx').on(
       table.agentTokenId
     ),

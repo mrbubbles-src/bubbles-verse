@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Added the first live notification slice as an independent, membership-scoped
+  20-item page for requested, reviewable, and failed agent runs. The page uses
+  a stable `(updatedAt, runId)` URL cursor, excludes archived projects without
+  treating them as access loss, rechecks project, issue, run, and assigned-token
+  bindings, and exposes direct contributor approve/cancel controls for open run
+  requests. It intentionally has no persisted read/unread state; issue-status
+  review notifications remain a separate follow-up.
 - Added a URL-backed literal token-label prefix search to the bounded agent-
   token management page. Searches require 2–80 characters, escape PostgreSQL
   wildcard characters, retain 20-item keyset pagination for one or all visible

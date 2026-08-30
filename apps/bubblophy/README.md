@@ -493,6 +493,19 @@ bun run build
   Zugriffsentzug unterschieden. Die Handoff-Anzeige verwendet nur die
   redigierte Aktualisierungsfähigkeit des exakt zugeordneten Tokens und hängt
   nicht mehr von der vollständigen Token-Verwaltungsliste ab.
+- Der Benachrichtigungsbereich liest unabhängig davon eine live berechnete,
+  membership-scoped 20er-NotificationPage für aktive Projekte. Sie zeigt nur
+  aktuelle Run-Zustände `requested`, `needs_review` und `failed`, verwendet den
+  stabilen URL-Cursor `(updatedAt, runId)` und fällt nie auf die globale
+  Snapshot-Runliste zurück. Jeder Kandidat wird erneut an Mitgliedschaft,
+  Projekt, Issue, Run-Zustand und projektgleiches Token gebunden; Token-Status,
+  Ablauf und Scopes filtern offene Freigaben bewusst nicht aus. Contributor
+  können `requested` direkt freigeben oder abbrechen, wobei die bestehende
+  Server Action jede Berechtigung und Token-Ausführbarkeit erneut prüft.
+  Archivierte konkrete Projekte bleiben erreichbar und liefern eine leere
+  Seite statt eines falschen Zugriffsentzugs. Dies ist eine aktuelle
+  Aufmerksamkeitsschlange ohne gelesen/ungelesen oder Zustellung. Der
+  Issue-Status `review` folgt als eigener Benachrichtigungs-Slice.
 - Der Dashboard-Read lädt keine ungruppierten Issue-, Plan- oder Notizzeilen.
   Projektmetriken stammen aus separaten SQL-Aggregaten über alle Candidate-
   Issues. Offen-, Bereit- und Blockiert-Zähler bleiben vollständig;

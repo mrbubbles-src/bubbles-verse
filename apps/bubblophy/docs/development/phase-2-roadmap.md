@@ -213,8 +213,16 @@ Status: abgeschlossen.
 
 ### 6. Benachrichtigungen und Team-Arbeit
 
-- Benachrichtigungen für Review-Zustände, fehlgeschlagene Runs und offene
-  Freigaben ergänzen.
+- Der erste Run-Benachrichtigungs-Slice ist abgeschlossen: Eine unabhängige,
+  membership-scoped 20er-NotificationPage zeigt aktuelle offene Freigaben,
+  `needs_review`-Runs und fehlgeschlagene Runs über den stabilen
+  `(updatedAt, runId)`-URL-Cursor. Archivierte Projekte werden ohne falschen
+  Zugriffsentzug ausgeblendet, finale Resource-Bindungen werden erneut geprüft
+  und Contributor können `requested` direkt freigeben oder abbrechen. Die
+  Projektion ist bewusst live und besitzt noch kein gelesen/ungelesen oder
+  Zustellmodell.
+- Benachrichtigungen für den eigenständigen Issue-Status `review` als
+  Folgeslice ergänzen; er ist nicht mit Run-`needs_review` gleichzusetzen.
 - Kommentar-Threads, bessere Audit-Diffs, Aktivitätsfilter und rollenbasierte
   Ansichten als getrennte Slices umsetzen.
 - Agent-Handoffs um klare Client-Anleitungen, Laufzeithinweise und
@@ -287,3 +295,6 @@ ist als 20er-Seite für ein oder alle Projekte integriert und aus dem Root-
 Snapshot entfernt. Die begrenzte, wörtlich behandelte und weiterhin paginierbare
 Label-Präfixsuche ist ebenfalls integriert. Die MCP-Grundlage bleibt unter
 `docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md` dokumentiert.
+Der erste live berechnete Run-Benachrichtigungs-Slice für Freigaben,
+`needs_review` und fehlgeschlagene Runs ist ebenfalls integriert; Issue-Review
+bleibt bewusst separat.

@@ -1,0 +1,1 @@
+CREATE INDEX "bubblophy_agent_runs_notification_updated_id_idx" ON "bubblophy_agent_runs" USING btree ("updated_at","id") WHERE "bubblophy_agent_runs"."state" in ('requested', 'needs_review', 'failed');

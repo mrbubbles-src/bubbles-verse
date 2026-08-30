@@ -167,6 +167,15 @@ ActivityPage ihren Gleichstand im newest-first Cursor deterministisch auflösen
 kann. `0010_giant_cannonball.sql` ergänzt den stabilen MemberPage-Index
 `(project_id, created_at, auth_user_id)`.
 
+`0011_useful_eternity.sql` bis `0014_plain_smiling_tiger.sql` ergänzen die
+Präfix- und Cursor-Indizes für Assignee-, Run-Target- und Agent-Token-Seiten.
+`0015_material_ma_gnuci.sql` ergänzt den partiellen
+`(updated_at, id)`-Index ausschließlich für `requested`, `needs_review` und
+`failed`; er unterstützt den state-gefilterten newest-first Zugriff der live
+NotificationPage. Ein repräsentatives Produktions-`EXPLAIN` bleibt ein
+Deployment-Gate; lokal ist kein `DATABASE_URL` für einen realen Planvergleich
+gesetzt.
+
 Die Zielumgebung braucht zusätzlich einen Supabase-Custom-Access-Token-Hook,
 der JWTs mit `client_id` die exakte Audience `<NEXT_PUBLIC_APP_URL>/mcp` gibt.
 Der Hook ist absichtlich umgebungsspezifische Auth-Infrastruktur und nicht Teil

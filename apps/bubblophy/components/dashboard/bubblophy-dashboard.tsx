@@ -80,6 +80,11 @@ import type {
 } from '@/lib/dashboard/member-query';
 import type { ReadDashboardMemberPageResult } from '@/lib/dashboard/members';
 import type {
+  DashboardNotificationCursor,
+  DashboardNotificationPageRequestState,
+} from '@/lib/dashboard/notification-query';
+import type { ReadDashboardNotificationPageResult } from '@/lib/dashboard/notifications';
+import type {
   DashboardRunCursor,
   DashboardRunPageRequestState,
 } from '@/lib/dashboard/run-query';
@@ -154,6 +159,14 @@ import {
 } from '@/lib/dashboard/member-query';
 import { getIssueReadinessPercent } from '@/lib/dashboard/metrics';
 import {
+  buildDashboardNotificationPageKey,
+  clearDashboardNotificationCursor,
+  isDashboardNotificationPageRequestCurrent,
+  parseDashboardNotificationCursor,
+  setDashboardNotificationPageParams,
+  writeDashboardNotificationQueryParams,
+} from '@/lib/dashboard/notification-query';
+import {
   isDashboardRunPageRequestCurrent,
   parseDashboardRunCursor,
   setDashboardRunPageParams,
@@ -222,8 +235,10 @@ import { Textarea } from '@bubbles/ui/shadcn/textarea';
 
 import { IssueAssigneeOptionPicker } from '@/components/dashboard/issue-assignee/issue-assignee-option-picker';
 import { IssueQueueControls } from '@/components/dashboard/issue-queue/issue-queue-controls';
+import { NotificationFeed } from '@/components/dashboard/notifications/notification-feed';
 import { ProjectInvitationManager } from '@/components/dashboard/project-invitations/project-invitation-manager';
 import { ProjectRoleGuide } from '@/components/dashboard/project-members/project-role-guide';
+import { RunDecisionControls } from '@/components/dashboard/run-decision-controls';
 import { RunTargetOptionPicker } from '@/components/dashboard/run-target/run-target-option-picker';
 
 interface BubblophyDashboardProps {
@@ -242,6 +257,8 @@ interface BubblophyDashboardProps {
   memberPageResult?: ReadDashboardMemberPageResult | null;
   agentTokenPageRequest?: DashboardAgentTokenPageRequestState | null;
   agentTokenPageResult?: ReadDashboardAgentTokenPageResult | null;
+  notificationPageRequest?: DashboardNotificationPageRequestState | null;
+  notificationPageResult?: ReadDashboardNotificationPageResult | null;
   activityPageRequest?: DashboardActivityPageRequestState | null;
   activityPageResult?: ReadDashboardActivityPageResult | null;
   createIssueAction?: (
@@ -748,6 +765,8 @@ export function BubblophyDashboard({
   memberPageResult = null,
   agentTokenPageRequest = null,
   agentTokenPageResult = null,
+  notificationPageRequest = null,
+  notificationPageResult = null,
   activityPageRequest = null,
   activityPageResult = null,
   createIssueAction,
@@ -818,6 +837,10 @@ export function BubblophyDashboard({
   const [updatedAgentRunsById, setUpdatedAgentRunsById] = useState<
     Record<string, AgentRunSummary>
   >({});
+  const [resolvedNotificationRuns, setResolvedNotificationRuns] = useState<{
+    pageKey: string | null;
+    runIds: string[];
+  }>({ pageKey: null, runIds: [] });
   const [recentMutationFeedback, setRecentMutationFeedback] = useState<
     string | null
   >(null);
@@ -991,6 +1014,32 @@ export function BubblophyDashboard({
     agentTokenProjectKey,
     agentTokenQuery,
     agentTokenCursor
+  );
+  const notificationCursor = useMemo(
+    () =>
+      parseDashboardNotificationCursor(
+        searchParams.get('notificationAfterAt'),
+        searchParams.get('notificationAfterId')
+      ),
+    [searchParams]
+  );
+  const notificationProjectKey = urlProjectKey === 'all' ? null : urlProjectKey;
+  const hasNotificationPageBoundary =
+    snapshot.meta.dataSource === 'database' &&
+    (notificationPageRequest !== null || notificationPageResult !== null);
+  const currentNotificationPageResult =
+    isDashboardNotificationPageRequestCurrent(
+      notificationPageRequest,
+      notificationProjectKey,
+      notificationCursor
+    ) &&
+    (notificationPageResult?.status !== 'success' ||
+      (notificationPageResult.project?.key ?? null) === notificationProjectKey)
+      ? notificationPageResult
+      : null;
+  const notificationPageKey = buildDashboardNotificationPageKey(
+    notificationProjectKey,
+    notificationCursor
   );
   const activityProjectKey = urlProjectKey === 'all' ? null : urlProjectKey;
   const hasActivityPageBoundary =
@@ -1342,6 +1391,24 @@ export function BubblophyDashboard({
       run.issueId.startsWith(`${selectedProjectKey}-`)
     );
   }, [allAgentRuns, selectedProjectKey]);
+  const displayedNotifications = useMemo(() => {
+    if (currentNotificationPageResult?.status !== 'success') {
+      return [];
+    }
+
+    const resolvedRunIds =
+      resolvedNotificationRuns.pageKey === notificationPageKey
+        ? new Set(resolvedNotificationRuns.runIds)
+        : new Set<string>();
+
+    return currentNotificationPageResult.items.filter(
+      (notification) => !resolvedRunIds.has(notification.runId)
+    );
+  }, [
+    currentNotificationPageResult,
+    notificationPageKey,
+    resolvedNotificationRuns,
+  ]);
   const displayedActivity = useMemo(() => {
     if (snapshot.meta.dataSource === 'database') {
       return currentActivityPageResult?.status === 'success'
@@ -1725,16 +1792,19 @@ export function BubblophyDashboard({
     }
 
     const canonicalQueryParams = writeDashboardActivityQueryParams(
-      writeDashboardAgentTokenQueryParams(
-        setDashboardMemberPageParams(
-          setDashboardRunPageParams(
-            canonicalIssueParams,
-            urlProjectKey === 'all' ? null : runCursor
+      writeDashboardNotificationQueryParams(
+        writeDashboardAgentTokenQueryParams(
+          setDashboardMemberPageParams(
+            setDashboardRunPageParams(
+              canonicalIssueParams,
+              urlProjectKey === 'all' ? null : runCursor
+            ),
+            urlProjectKey === 'all' ? null : memberCursor
           ),
-          urlProjectKey === 'all' ? null : memberCursor
+          agentTokenQuery,
+          agentTokenCursor
         ),
-        agentTokenQuery,
-        agentTokenCursor
+        notificationCursor
       ),
       activityQuery
     );
@@ -1755,6 +1825,7 @@ export function BubblophyDashboard({
     agentTokenQuery,
     issueQuery,
     memberCursor,
+    notificationCursor,
     pathname,
     router,
     runCursor,
@@ -1781,11 +1852,13 @@ export function BubblophyDashboard({
     nextParams.delete('memberAfterAt');
     nextParams.delete('memberAfterAuthUserId');
     clearDashboardAgentTokenCursor(nextParams);
+    clearDashboardNotificationCursor(nextParams);
     clearDashboardActivityCursor(nextParams);
     nextParams.delete('issue');
     setCreatedAgentToken(null);
     setCreatedAgentTokenPageKey(null);
     setAgentTokenPageUpdates({ pageKey: null, tokensById: {} });
+    setResolvedNotificationRuns({ pageKey: null, runIds: [] });
     pushDashboardParams(nextParams);
   };
 
@@ -1828,6 +1901,18 @@ export function BubblophyDashboard({
   const handleRunPageChange = (after: typeof runCursor) => {
     pushDashboardParams(
       setDashboardRunPageParams(
+        new URLSearchParams(searchParams.toString()),
+        after
+      )
+    );
+  };
+
+  const handleNotificationPageChange = (
+    after: DashboardNotificationCursor | null
+  ) => {
+    setResolvedNotificationRuns({ pageKey: null, runIds: [] });
+    pushDashboardParams(
+      setDashboardNotificationPageParams(
         new URLSearchParams(searchParams.toString()),
         after
       )
@@ -2105,6 +2190,15 @@ export function BubblophyDashboard({
       ...currentRuns,
       [run.id]: run,
     }));
+    setResolvedNotificationRuns((currentRuns) => ({
+      pageKey: notificationPageKey,
+      runIds: [
+        ...(currentRuns.pageKey === notificationPageKey
+          ? currentRuns.runIds.filter((runId) => runId !== run.id)
+          : []),
+        run.id,
+      ],
+    }));
     setRecentMutationFeedback(`Run ${run.id} wurde aktualisiert.`);
     refreshDatabaseSnapshot();
   };
@@ -2373,6 +2467,26 @@ export function BubblophyDashboard({
             </div>
 
             <aside className="grid content-start gap-5">
+              <NotificationFeed
+                dataSource={snapshot.meta.dataSource}
+                notifications={displayedNotifications}
+                status={
+                  hasNotificationPageBoundary && !currentNotificationPageResult
+                    ? 'loading'
+                    : (currentNotificationPageResult?.status ?? null)
+                }
+                cursor={notificationCursor}
+                nextAfter={
+                  currentNotificationPageResult?.status === 'success'
+                    ? currentNotificationPageResult.nextAfter
+                    : null
+                }
+                transitionAgentRunAction={transitionAgentRunAction}
+                onAgentRunTransitioned={handleAgentRunTransitioned}
+                onIssueSelect={handleIssueSelect}
+                onFirstPage={() => handleNotificationPageChange(null)}
+                onNextPage={handleNotificationPageChange}
+              />
               <AgentAccess
                 key={`agent-tokens:${agentTokenQuery ?? ''}`}
                 dataSource={snapshot.meta.dataSource}
@@ -6571,7 +6685,7 @@ function RunQueue({
                   canTransitionRun &&
                   transitionAgentRunAction ? (
                     <RunDecisionControls
-                      run={run}
+                      runId={run.id}
                       transitionAgentRunAction={transitionAgentRunAction}
                       onAgentRunTransitioned={onAgentRunTransitioned}
                     />
@@ -6669,83 +6783,6 @@ function AgentRunResultNoteAction({
 
 function buildAgentRunResultNoteText(run: AgentRunSummary) {
   return `Agent-Ergebnis aus Run ${run.id}:\n\n${run.resultSummary ?? ''}`;
-}
-
-/**
- * Renders real human approve/cancel actions for a requested run.
- *
- * @param props Run row, server action, and success callback.
- * @returns Inline decision buttons with server-backed feedback.
- */
-function RunDecisionControls({
-  run,
-  transitionAgentRunAction,
-  onAgentRunTransitioned,
-}: {
-  run: AgentRunSummary;
-  transitionAgentRunAction: (
-    input: TransitionBubblophyAgentRunActionInput
-  ) => Promise<TransitionBubblophyAgentRunActionResult>;
-  onAgentRunTransitioned: (run: AgentRunSummary) => void;
-}) {
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
-
-  const handleDecision = (
-    decision: TransitionBubblophyAgentRunActionInput['decision']
-  ) => {
-    if (isPending) {
-      return;
-    }
-
-    setActionError(null);
-    startTransition(async () => {
-      try {
-        const result = await transitionAgentRunAction({
-          runId: run.id,
-          decision,
-        });
-
-        if (result.status === 'updated') {
-          onAgentRunTransitioned(result.run);
-          return;
-        }
-
-        setActionError(getAgentRunTransitionActionErrorMessage(result));
-      } catch {
-        setActionError(
-          'Die Run-Entscheidung konnte gerade nicht gespeichert werden. Versuche es erneut.'
-        );
-      }
-    });
-  };
-
-  return (
-    <div className="grid gap-2">
-      <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          size="sm"
-          disabled={isPending}
-          onClick={() => handleDecision('approve')}>
-          {isPending ? 'Prüft...' : 'Freigeben'}
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={isPending}
-          onClick={() => handleDecision('cancel')}>
-          Abbrechen
-        </Button>
-      </div>
-      {actionError ? (
-        <p role="alert" className="text-xs text-destructive">
-          {actionError}
-        </p>
-      ) : null}
-    </div>
-  );
 }
 
 /**
@@ -7423,45 +7460,6 @@ function getAgentRunRequestActionErrorMessage(
   }
 
   return 'Der Auftrag ist zu lang. Maximal 500 Zeichen sind erlaubt.';
-}
-
-/**
- * Converts human run transition outcomes into quiet inline feedback.
- *
- * @param result Result returned by the transition action.
- * @returns Human-readable error message for the run queue.
- */
-function getAgentRunTransitionActionErrorMessage(
-  result: Exclude<
-    TransitionBubblophyAgentRunActionResult,
-    { status: 'updated' }
-  >
-) {
-  if (result.status === 'not_found') {
-    return 'Dieser Run wurde nicht gefunden.';
-  }
-
-  if (result.status === 'forbidden') {
-    return 'Du bist kein Mitglied dieses Projekts. Der Run wurde nicht geändert.';
-  }
-
-  if (result.status === 'invalid_transition') {
-    return 'Nur angefragte Runs können freigegeben oder abgebrochen werden.';
-  }
-
-  if (result.status === 'token_unavailable') {
-    return 'Das zugeordnete Agent-Token ist nicht ausführbar. Der Run wurde nicht freigegeben.';
-  }
-
-  if (result.status === 'database_unavailable') {
-    return 'Die Datenbank ist gerade nicht verfügbar. Der Run wurde nicht geändert.';
-  }
-
-  if (result.reason === 'empty_run') {
-    return 'Wähle einen Run aus.';
-  }
-
-  return 'Diese Run-Entscheidung ist nicht gültig.';
 }
 
 /**

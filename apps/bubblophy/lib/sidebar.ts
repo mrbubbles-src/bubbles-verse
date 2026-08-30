@@ -4,6 +4,7 @@ import type {
 } from '@bubbles/ui/lib/bubbles-sidebar';
 
 import {
+  Alert01Icon,
   CheckListIcon,
   DashboardSquare01Icon,
   FlashIcon,
@@ -59,6 +60,12 @@ export const bubblophySidebarData: BubblesSidebarData = {
       id: 'control',
       title: 'Kontrolle',
       items: [
+        {
+          id: 'notifications',
+          title: 'Benachrichtigungen',
+          href: '/#notifications',
+          icon: Alert01Icon,
+        },
         {
           id: 'agents',
           title: 'Agent-Tokens',

@@ -12,6 +12,7 @@ describe('bubblophy sidebar', () => {
       '/',
       '/#projects',
       '/#issues',
+      '/#notifications',
       '/#agents',
       '/#runs',
       '/#activity',

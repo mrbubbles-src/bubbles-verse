@@ -1,6 +1,7 @@
 import type { SVGProps } from 'react';
 
 export const Add01Icon = 'Add01Icon';
+export const Alert01Icon = 'Alert01Icon';
 export const AlertCircleIcon = 'AlertCircleIcon';
 export const CheckListIcon = 'CheckListIcon';
 export const DashboardSquare01Icon = 'DashboardSquare01Icon';

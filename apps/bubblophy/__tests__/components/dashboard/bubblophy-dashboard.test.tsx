@@ -1336,7 +1336,7 @@ describe('BubblophyDashboard interactions', () => {
   it('keeps the activity kind but clears its cursor on project changes', () => {
     navigationMocks.searchParams.mockReturnValue(
       new URLSearchParams(
-        'activityKind=issue&activityAfterAt=2026-07-19T10%3A00%3A00.000Z&activityAfterSource=issue&activityAfterId=event-20&memberAfterAt=2026-07-01T09%3A00%3A00.000Z&memberAfterAuthUserId=user-20'
+        'activityKind=issue&activityAfterAt=2026-07-19T10%3A00%3A00.000Z&activityAfterSource=issue&activityAfterId=event-20&memberAfterAt=2026-07-01T09%3A00%3A00.000Z&memberAfterAuthUserId=user-20&notificationAfterAt=2026-07-19T09%3A00%3A00.000Z&notificationAfterId=run-20'
       )
     );
 
@@ -4178,6 +4178,162 @@ describe('BubblophyDashboard interactions', () => {
     expect(navigationMocks.routerPush).toHaveBeenCalledWith(
       '/?activityAfterAt=2026-07-19T10%3A00%3A00.000Z&activityAfterSource=project&activityAfterId=event-20'
     );
+  });
+
+  it('uses the bounded notification page and writes its complete cursor', () => {
+    const nextAfter = {
+      updatedAt: '2026-07-19T09:00:00.000Z',
+      runId: 'run-notification-20',
+    };
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        notificationPageRequest={{ projectKey: null, after: null }}
+        notificationPageResult={{
+          status: 'success',
+          project: null,
+          items: [
+            {
+              runId: 'run-review-1',
+              issueKey: 'BV-12',
+              projectKey: 'BV',
+              projectName: 'Bubblesverse',
+              agentLabel: 'Codex lokal',
+              state: 'needs_review',
+              updatedAt: '2026-07-19T10:00:00.000Z',
+              canManage: true,
+            },
+          ],
+          nextAfter,
+        }}
+      />
+    );
+    const notificationSection = document.getElementById('notifications');
+
+    expect(notificationSection).toBeInstanceOf(HTMLElement);
+
+    if (!notificationSection) {
+      throw new Error('Expected the notification section to render.');
+    }
+
+    expect(within(notificationSection).getByText('Review nötig')).toBeVisible();
+    navigationMocks.routerPush.mockClear();
+    fireEvent.click(
+      within(notificationSection).getByRole('button', { name: 'Weiter' })
+    );
+    expect(navigationMocks.routerPush).toHaveBeenCalledWith(
+      '/?notificationAfterAt=2026-07-19T09%3A00%3A00.000Z&notificationAfterId=run-notification-20'
+    );
+  });
+
+  it('removes a successfully decided requested notification locally', async () => {
+    const transitionAgentRunAction = vi.fn<
+      (
+        input: TransitionBubblophyAgentRunActionInput
+      ) => Promise<TransitionBubblophyAgentRunActionResult>
+    >(async () => ({
+      status: 'updated',
+      run: {
+        id: 'run-notification-requested',
+        issueId: 'BV-12',
+        agentLabel: 'Codex lokal',
+        state: 'läuft',
+        requestedBy: 'Mensch',
+        lastEvent: 'Run freigegeben',
+      },
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        notificationPageRequest={{ projectKey: null, after: null }}
+        notificationPageResult={{
+          status: 'success',
+          project: null,
+          items: [
+            {
+              runId: 'run-notification-requested',
+              issueKey: 'BV-12',
+              projectKey: 'BV',
+              projectName: 'Bubblesverse',
+              agentLabel: 'Codex lokal',
+              state: 'requested',
+              updatedAt: '2026-07-19T10:00:00.000Z',
+              canManage: true,
+            },
+          ],
+          nextAfter: null,
+        }}
+        transitionAgentRunAction={transitionAgentRunAction}
+      />
+    );
+    const notificationSection = document.getElementById('notifications');
+
+    expect(notificationSection).toBeInstanceOf(HTMLElement);
+
+    if (!notificationSection) {
+      throw new Error('Expected the notification section to render.');
+    }
+
+    fireEvent.click(
+      within(notificationSection).getByRole('button', { name: 'Freigeben' })
+    );
+
+    await waitFor(() => {
+      expect(transitionAgentRunAction).toHaveBeenCalledWith({
+        runId: 'run-notification-requested',
+        decision: 'approve',
+      });
+      expect(
+        within(notificationSection).queryByText('run-notification-requested')
+      ).toBeNull();
+      expect(within(notificationSection).queryByText('BV-12')).toBeNull();
+    });
+  });
+
+  it('shows notification loading instead of a stale cursor response', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams(
+        'notificationAfterAt=2026-07-19T09%3A00%3A00.000Z&notificationAfterId=run-20'
+      )
+    );
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        notificationPageRequest={{ projectKey: null, after: null }}
+        notificationPageResult={{
+          status: 'success',
+          project: null,
+          items: [
+            {
+              runId: 'stale-run',
+              issueKey: 'BV-12',
+              projectKey: 'BV',
+              projectName: 'Bubblesverse',
+              agentLabel: 'Codex lokal',
+              state: 'failed',
+              updatedAt: '2026-07-19T10:00:00.000Z',
+              canManage: true,
+            },
+          ],
+          nextAfter: null,
+        }}
+      />
+    );
+    const notificationSection = document.getElementById('notifications');
+
+    expect(notificationSection).toBeInstanceOf(HTMLElement);
+
+    if (!notificationSection) {
+      throw new Error('Expected the notification section to render.');
+    }
+
+    expect(within(notificationSection).getByRole('status')).toHaveTextContent(
+      'Benachrichtigungen werden geladen.'
+    );
+    expect(within(notificationSection).queryByText('stale-run')).toBeNull();
   });
 
   it('appends a human issue note without starting an agent run', async () => {
@@ -9370,6 +9526,9 @@ describe('BubblophyDashboard interactions', () => {
       within(navigation).getByRole('link', { name: 'Issues' })
     ).toHaveAttribute('href', '/#issues');
     expect(
+      within(navigation).getByRole('link', { name: 'Benachrichtigungen' })
+    ).toHaveAttribute('href', '/#notifications');
+    expect(
       within(navigation).getByRole('link', { name: 'Agent-Tokens' })
     ).toHaveAttribute('href', '/#agents');
     expect(
@@ -9389,6 +9548,7 @@ describe('BubblophyDashboard interactions', () => {
       'overview',
       'projects',
       'issues',
+      'notifications',
       'agents',
       'runs',
       'activity',
