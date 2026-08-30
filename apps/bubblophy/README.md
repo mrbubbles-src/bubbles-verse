@@ -151,6 +151,11 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   abzuschneiden. Der Dashboard-Root enthält keine Token-Verwaltungszeilen mehr.
   Lokale Create- und Lifecycle-Overlays gelten ausschließlich für die aktuelle
   Seite und werden beim Projekt- oder Seitenwechsel verworfen.
+- `tokenQ` begrenzt dieselbe 20er-Verwaltungsseite auf ein literales,
+  case-insensitives Label-Präfix mit 2–80 Zeichen. `%`, `_` und `\` werden nicht
+  als SQL-Wildcards interpretiert. Suchergebnisse bleiben über denselben
+  stabilen Cursor vollständig paginierbar; Suche, Projekt und Cursor gehören
+  gemeinsam zum Request- und Overlay-Fingerprint.
 - Der Auth- und Sicherheitsplan liegt in
   `docs/contracts/auth-security-plan.md`.
 - Der Nach-MVP-Umfang, beginnend mit einem providerneutralen Remote-MCP über

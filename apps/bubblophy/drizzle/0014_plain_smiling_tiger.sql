@@ -1,0 +1,1 @@
+CREATE INDEX "bubblophy_agent_tokens_project_label_prefix_idx" ON "bubblophy_agent_tokens" USING btree ("project_id",lower("label") text_pattern_ops,"id");

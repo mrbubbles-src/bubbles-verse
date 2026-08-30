@@ -111,9 +111,13 @@ import {
 } from '@/lib/dashboard/activity-query';
 import {
   clearDashboardAgentTokenCursor,
+  DASHBOARD_AGENT_TOKEN_QUERY_MAX_LENGTH,
   isDashboardAgentTokenPageRequestCurrent,
+  normalizeDashboardAgentTokenQuery,
   parseDashboardAgentTokenCursor,
   setDashboardAgentTokenPageParams,
+  setDashboardAgentTokenSearchParams,
+  writeDashboardAgentTokenQueryParams,
 } from '@/lib/dashboard/agent-token-query';
 import {
   isDashboardAllIssuePageRequestCurrent,
@@ -801,6 +805,9 @@ export function BubblophyDashboard({
   >([]);
   const [createdAgentToken, setCreatedAgentToken] =
     useState<AgentTokenSummary | null>(null);
+  const [createdAgentTokenPageKey, setCreatedAgentTokenPageKey] = useState<
+    string | null
+  >(null);
   const [agentTokenPageUpdates, setAgentTokenPageUpdates] = useState<{
     pageKey: string | null;
     tokensById: Record<string, AgentTokenSummary>;
@@ -961,6 +968,9 @@ export function BubblophyDashboard({
       ),
     [searchParams]
   );
+  const agentTokenQuery = normalizeDashboardAgentTokenQuery(
+    searchParams.get('tokenQ')
+  );
   const agentTokenProjectKey = urlProjectKey === 'all' ? null : urlProjectKey;
   const hasAgentTokenPageBoundary =
     snapshot.meta.dataSource === 'database' &&
@@ -969,14 +979,17 @@ export function BubblophyDashboard({
     isDashboardAgentTokenPageRequestCurrent(
       agentTokenPageRequest,
       agentTokenProjectKey,
+      agentTokenQuery,
       agentTokenCursor
     ) &&
     (agentTokenPageResult?.status !== 'success' ||
-      (agentTokenPageResult.project?.key ?? null) === agentTokenProjectKey)
+      ((agentTokenPageResult.project?.key ?? null) === agentTokenProjectKey &&
+        agentTokenPageResult.query === agentTokenQuery))
       ? agentTokenPageResult
       : null;
   const agentTokenPageKey = buildAgentTokenPageKey(
     agentTokenProjectKey,
+    agentTokenQuery,
     agentTokenCursor
   );
   const activityProjectKey = urlProjectKey === 'all' ? null : urlProjectKey;
@@ -1152,7 +1165,10 @@ export function BubblophyDashboard({
 
     if (
       !createdAgentToken ||
+      createdAgentTokenPageKey !== agentTokenPageKey ||
+      currentAgentTokenPageResult?.status === 'invalid' ||
       agentTokenCursor ||
+      !matchesAgentTokenLabelPrefix(createdAgentToken.label, agentTokenQuery) ||
       createdAgentToken.projectKey === deniedProjectKey ||
       (agentTokenProjectKey &&
         createdAgentToken.projectKey !== agentTokenProjectKey)
@@ -1188,8 +1204,10 @@ export function BubblophyDashboard({
     agentTokenPageKey,
     agentTokenPageUpdates,
     agentTokenProjectKey,
+    agentTokenQuery,
     baseProjects,
     createdAgentToken,
+    createdAgentTokenPageKey,
     currentAgentTokenPageResult,
     deniedProjectKey,
     updatedProjectsByKey,
@@ -1707,7 +1725,7 @@ export function BubblophyDashboard({
     }
 
     const canonicalQueryParams = writeDashboardActivityQueryParams(
-      setDashboardAgentTokenPageParams(
+      writeDashboardAgentTokenQueryParams(
         setDashboardMemberPageParams(
           setDashboardRunPageParams(
             canonicalIssueParams,
@@ -1715,6 +1733,7 @@ export function BubblophyDashboard({
           ),
           urlProjectKey === 'all' ? null : memberCursor
         ),
+        agentTokenQuery,
         agentTokenCursor
       ),
       activityQuery
@@ -1733,6 +1752,7 @@ export function BubblophyDashboard({
     allIssueQuery,
     activityQuery,
     agentTokenCursor,
+    agentTokenQuery,
     issueQuery,
     memberCursor,
     pathname,
@@ -1764,6 +1784,7 @@ export function BubblophyDashboard({
     clearDashboardActivityCursor(nextParams);
     nextParams.delete('issue');
     setCreatedAgentToken(null);
+    setCreatedAgentTokenPageKey(null);
     setAgentTokenPageUpdates({ pageKey: null, tokensById: {} });
     pushDashboardParams(nextParams);
   };
@@ -1826,11 +1847,24 @@ export function BubblophyDashboard({
     after: DashboardAgentTokenCursor | null
   ) => {
     setCreatedAgentToken(null);
+    setCreatedAgentTokenPageKey(null);
     setAgentTokenPageUpdates({ pageKey: null, tokensById: {} });
     pushDashboardParams(
       setDashboardAgentTokenPageParams(
         new URLSearchParams(searchParams.toString()),
         after
+      )
+    );
+  };
+
+  const handleAgentTokenSearch = (query: string | null) => {
+    setCreatedAgentToken(null);
+    setCreatedAgentTokenPageKey(null);
+    setAgentTokenPageUpdates({ pageKey: null, tokensById: {} });
+    pushDashboardParams(
+      setDashboardAgentTokenSearchParams(
+        new URLSearchParams(searchParams.toString()),
+        query
       )
     );
   };
@@ -1892,6 +1926,7 @@ export function BubblophyDashboard({
   const handlePersistedProjectCreated = (project: ProjectSummary) => {
     setPersistedProjects((currentProjects) => [project, ...currentProjects]);
     setCreatedAgentToken(null);
+    setCreatedAgentTokenPageKey(null);
     setAgentTokenPageUpdates({ pageKey: null, tokensById: {} });
     updateSelectionUrl(project.key, '', {
       resetIssueCursor: true,
@@ -2039,6 +2074,7 @@ export function BubblophyDashboard({
     };
 
     setCreatedAgentToken(summary);
+    setCreatedAgentTokenPageKey(agentTokenPageKey);
     setAgentTokenPageUpdates({ pageKey: null, tokensById: {} });
     setRecentMutationFeedback(`Agent-Token ${summary.label} wurde erstellt.`);
     refreshDatabaseSnapshot();
@@ -2338,8 +2374,10 @@ export function BubblophyDashboard({
 
             <aside className="grid content-start gap-5">
               <AgentAccess
+                key={`agent-tokens:${agentTokenQuery ?? ''}`}
                 dataSource={snapshot.meta.dataSource}
                 agentTokens={displayedAgentTokens}
+                query={agentTokenQuery}
                 pageStatus={
                   hasAgentTokenPageBoundary && !currentAgentTokenPageResult
                     ? 'loading'
@@ -2365,6 +2403,7 @@ export function BubblophyDashboard({
                 }
                 onCreateAgentToken={() => setIsAgentTokenDialogOpen(true)}
                 onAgentTokenLifecycleUpdated={handleAgentTokenLifecycleUpdated}
+                onSearch={handleAgentTokenSearch}
                 onFirstPage={() => handleAgentTokenPageChange(null)}
                 onNextPage={handleAgentTokenPageChange}
               />
@@ -5526,6 +5565,7 @@ function IssuePlanDraftDialog({
 function AgentAccess({
   dataSource,
   agentTokens,
+  query,
   pageStatus,
   cursor,
   nextAfter,
@@ -5535,11 +5575,13 @@ function AgentAccess({
   updateAgentTokenLifecycleAction,
   onCreateAgentToken,
   onAgentTokenLifecycleUpdated,
+  onSearch,
   onFirstPage,
   onNextPage,
 }: {
   dataSource: DashboardSnapshot['meta']['dataSource'];
   agentTokens: DashboardAgentTokenPageItem[];
+  query: string | null;
   pageStatus: AgentTokenPageStatus | null;
   cursor: DashboardAgentTokenCursor | null;
   nextAfter: DashboardAgentTokenCursor | null;
@@ -5551,11 +5593,26 @@ function AgentAccess({
   ) => Promise<UpdateBubblophyAgentTokenLifecycleActionResult>;
   onCreateAgentToken: () => void;
   onAgentTokenLifecycleUpdated: (token: AgentTokenSummary) => void;
+  onSearch: (query: string | null) => void;
   onFirstPage: () => void;
   onNextPage: (after: DashboardAgentTokenCursor) => void;
 }) {
   const isDatabaseSource =
     dataSource === 'database' || dataSource === 'empty_database';
+  const [searchDraft, setSearchDraft] = useState(query ?? '');
+  const [searchError, setSearchError] = useState<string | null>(null);
+
+  const submitSearch = () => {
+    const normalizedQuery = searchDraft.trim();
+
+    if (normalizedQuery.length === 1) {
+      setSearchError('Gib mindestens zwei Zeichen ein oder leere die Suche.');
+      return;
+    }
+
+    setSearchError(null);
+    onSearch(normalizedQuery || null);
+  };
 
   return (
     <Card id="agents" className="scroll-mt-24">
@@ -5581,6 +5638,50 @@ function AgentAccess({
         ) : null}
       </CardHeader>
       <CardContent className="grid gap-3">
+        {dataSource === 'database' ? (
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              type="search"
+              value={searchDraft}
+              maxLength={DASHBOARD_AGENT_TOKEN_QUERY_MAX_LENGTH}
+              disabled={pageStatus === 'loading'}
+              aria-label="Agent-Tokens nach Label durchsuchen"
+              placeholder="Token-Label"
+              onChange={(event) => setSearchDraft(event.currentTarget.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  submitSearch();
+                }
+              }}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              disabled={pageStatus === 'loading'}
+              onClick={submitSearch}>
+              Suchen
+            </Button>
+            {query || searchDraft ? (
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={pageStatus === 'loading'}
+                onClick={() => {
+                  setSearchDraft('');
+                  setSearchError(null);
+                  onSearch(null);
+                }}>
+                Suche leeren
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+        {searchError ? (
+          <p role="alert" className="text-sm text-destructive">
+            {searchError}
+          </p>
+        ) : null}
         {isDatabaseSource && pageStatus === 'success' ? (
           <div className="flex flex-wrap items-center justify-end gap-2 border-b border-border/60 pb-3">
             {cursor ? (
@@ -5614,6 +5715,23 @@ function AgentAccess({
             Agent-Token-Liste wird geladen.
           </p>
         ) : null}
+        {isDatabaseSource && pageStatus === 'invalid' ? (
+          <div className="grid gap-2">
+            <p role="alert" className="text-sm text-destructive">
+              Die Agent-Token-Suche oder Seitenposition ist ungültig. Setze den
+              betroffenen Filter zurück und versuche es erneut.
+            </p>
+            {cursor ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={onFirstPage}>
+                Zur ersten Token-Seite
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
         {!isDatabaseSource && agentTokens.length > 0 ? (
           <p className="rounded-md border border-dashed border-border bg-muted/30 p-3 text-sm text-muted-foreground">
             Beispielhafte Agent-Token-Vorschau aus Sample/Fallback-Daten. Hier
@@ -5621,10 +5739,13 @@ function AgentAccess({
           </p>
         ) : null}
         {pageStatus !== 'database_unavailable' &&
+        pageStatus !== 'invalid' &&
         pageStatus !== 'loading' &&
         agentTokens.length === 0 ? (
           <p className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
-            Noch keine Agent-Tokens für diese Datenquelle.
+            {query
+              ? `Keine Agent-Tokens mit dem Label-Präfix „${query}“ gefunden.`
+              : 'Noch keine Agent-Tokens für diese Datenquelle.'}
           </p>
         ) : null}
         {agentTokens.map((token) => (
@@ -5836,14 +5957,21 @@ function canShowConcreteAgentRunHandoff(state: AgentRunState) {
 /** Builds the bounded client overlay key for one token management page. */
 function buildAgentTokenPageKey(
   projectKey: string | null,
+  query: string | null,
   after: DashboardAgentTokenCursor | null
 ) {
   return [
     projectKey ?? 'all',
+    query ?? '',
     after?.projectKey ?? '',
     after?.normalizedLabel ?? '',
     after?.tokenId ?? '',
   ].join('\u0000');
+}
+
+/** Checks one token label against the current literal case-insensitive prefix. */
+function matchesAgentTokenLabelPrefix(label: string, query: string | null) {
+  return !query || label.toLowerCase().startsWith(query.toLowerCase());
 }
 
 /**

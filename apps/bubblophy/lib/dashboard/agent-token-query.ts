@@ -6,8 +6,11 @@ export interface DashboardAgentTokenCursor {
 
 export interface DashboardAgentTokenPageRequestState {
   projectKey: string | null;
+  query: string | null;
   after: DashboardAgentTokenCursor | null;
 }
+
+export const DASHBOARD_AGENT_TOKEN_QUERY_MAX_LENGTH = 80;
 
 const projectKeyPattern = /^[A-Z0-9]{2,8}$/;
 const normalizedLabelMaxLength = 80;
@@ -44,15 +47,59 @@ export function parseDashboardAgentTokenCursor(
 export function isDashboardAgentTokenPageRequestCurrent(
   request: DashboardAgentTokenPageRequestState | null | undefined,
   projectKey: string | null,
+  query: string | null,
   after: DashboardAgentTokenCursor | null
 ) {
   return Boolean(
     request &&
     request.projectKey === projectKey &&
+    request.query === query &&
     request.after?.projectKey === after?.projectKey &&
     request.after?.normalizedLabel === after?.normalizedLabel &&
     request.after?.tokenId === after?.tokenId
   );
+}
+
+/** Normalizes the optional literal token-label prefix from the URL. */
+export function normalizeDashboardAgentTokenQuery(
+  query: string | null | undefined
+) {
+  return query?.trim() || null;
+}
+
+/** Writes a fresh token-label search and clears its incompatible cursor. */
+export function setDashboardAgentTokenSearchParams(
+  searchParams: URLSearchParams,
+  query: string | null
+) {
+  const nextParams = new URLSearchParams(searchParams.toString());
+
+  if (query) {
+    nextParams.set('tokenQ', query);
+  } else {
+    nextParams.delete('tokenQ');
+  }
+
+  clearDashboardAgentTokenCursor(nextParams);
+
+  return nextParams;
+}
+
+/** Canonicalizes the complete token search and cursor URL contract. */
+export function writeDashboardAgentTokenQueryParams(
+  searchParams: URLSearchParams,
+  query: string | null,
+  after: DashboardAgentTokenCursor | null
+) {
+  const nextParams = setDashboardAgentTokenPageParams(searchParams, after);
+
+  if (query) {
+    nextParams.set('tokenQ', query);
+  } else {
+    nextParams.delete('tokenQ');
+  }
+
+  return nextParams;
 }
 
 /** Writes or clears the independent token-management cursor. */

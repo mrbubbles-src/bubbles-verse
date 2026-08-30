@@ -136,6 +136,7 @@ describe('selectDashboardAgentTokenPageForUser', () => {
     const result = await selectDashboardAgentTokenPageForUser({
       authUserId: 'user-1',
       projectKey: null,
+      query: null,
       after: null,
       now: '2026-08-31T10:00:00.000Z',
     });
@@ -192,6 +193,7 @@ describe('selectDashboardAgentTokenPageForUser', () => {
       selectDashboardAgentTokenPageForUser({
         authUserId: 'user-1',
         projectKey: 'BV',
+        query: null,
         after: null,
         now: '2026-08-31T10:00:00.000Z',
       })
@@ -202,6 +204,7 @@ describe('selectDashboardAgentTokenPageForUser', () => {
         isArchived: false,
         currentUserRole: 'owner',
       },
+      query: null,
       items: [],
       nextAfter: null,
     });
@@ -228,6 +231,7 @@ describe('selectDashboardAgentTokenPageForUser', () => {
     const result = await selectDashboardAgentTokenPageForUser({
       authUserId: 'user-1',
       projectKey: null,
+      query: null,
       after: null,
       now: '2026-08-31T10:00:00.000Z',
     });
@@ -237,6 +241,37 @@ describe('selectDashboardAgentTokenPageForUser', () => {
       projectIsArchived: true,
       currentUserRole: 'viewer',
     });
+  });
+
+  it('applies a literal label prefix together with the stable cursor', async () => {
+    queryRows = [
+      Array.from({ length: 21 }, (_, index) => makeToken(index + 21)),
+      [makeProject()],
+    ];
+    const { selectDashboardAgentTokenPageForUser } =
+      await import('@/lib/dashboard/agent-tokens-database-read');
+
+    const result = await selectDashboardAgentTokenPageForUser({
+      authUserId: 'user-1',
+      projectKey: null,
+      query: '%_\\Codex',
+      after: {
+        projectKey: 'BV',
+        normalizedLabel: 'token 20',
+        tokenId: 'token-20',
+      },
+      now: '2026-08-31T10:00:00.000Z',
+    });
+
+    expect(result?.query).toBe('%_\\Codex');
+    expect(result?.items).toHaveLength(20);
+    expect(result?.nextAfter).toEqual({
+      projectKey: 'BV',
+      normalizedLabel: 'token 40',
+      tokenId: 'token-40',
+    });
+    expect(calls[0]?.whereParams).toContain('\\\\%\\\\_\\\\\\\\codex%');
+    expect(calls[0]?.whereParams).toContain('token 20');
   });
 
   it('skips invalidated projects and continues to later visible rows', async () => {
@@ -264,6 +299,7 @@ describe('selectDashboardAgentTokenPageForUser', () => {
     const result = await selectDashboardAgentTokenPageForUser({
       authUserId: 'user-1',
       projectKey: null,
+      query: null,
       after: null,
       now: '2026-08-31T10:00:00.000Z',
     });
@@ -293,6 +329,7 @@ describe('selectDashboardAgentTokenPageForUser', () => {
       selectDashboardAgentTokenPageForUser({
         authUserId: 'user-1',
         projectKey: 'BV',
+        query: null,
         after: null,
         now: '2026-08-31T10:00:00.000Z',
       })

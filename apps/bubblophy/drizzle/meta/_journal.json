@@ -99,6 +99,13 @@
       "when": 1788127785795,
       "tag": "0013_steady_starfox",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1788129251620,
+      "tag": "0014_plain_smiling_tiger",
+      "breakpoints": true
     }
   ]
 }

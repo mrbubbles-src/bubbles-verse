@@ -51,7 +51,10 @@ import type {
 } from '@/lib/dashboard/types';
 
 import { parseDashboardActivityQuery } from '@/lib/dashboard/activity-query';
-import { parseDashboardAgentTokenCursor } from '@/lib/dashboard/agent-token-query';
+import {
+  normalizeDashboardAgentTokenQuery,
+  parseDashboardAgentTokenCursor,
+} from '@/lib/dashboard/agent-token-query';
 import { parseDashboardAllIssueQuery } from '@/lib/dashboard/all-issue-query';
 import { parseDashboardIssueQuery } from '@/lib/dashboard/issue-query';
 import {
@@ -827,8 +830,13 @@ function buildAgentTokenPageTestProps(
     params.get('tokenAfterId')
   );
   const projectKey = selectedProject?.key ?? null;
+  const query = normalizeDashboardAgentTokenQuery(params.get('tokenQ'));
   const sortedTokens = [...tokens]
     .filter((token) => !projectKey || token.projectKey === projectKey)
+    .filter(
+      (token) =>
+        !query || token.label.toLowerCase().startsWith(query.toLowerCase())
+    )
     .sort(
       (left, right) =>
         left.projectKey.localeCompare(right.projectKey) ||
@@ -848,7 +856,7 @@ function buildAgentTokenPageTestProps(
   const lastToken = pageTokens.at(-1);
 
   return {
-    agentTokenPageRequest: { projectKey, after },
+    agentTokenPageRequest: { projectKey, query, after },
     agentTokenPageResult: {
       status: 'success',
       project: selectedProject
@@ -859,6 +867,7 @@ function buildAgentTokenPageTestProps(
             currentUserRole: selectedProject.currentUserRole ?? 'viewer',
           }
         : null,
+      query,
       items: pageTokens.map((token) => {
         const project = snapshot.projects.find(
           (candidate) => candidate.key === token.projectKey
@@ -4445,10 +4454,11 @@ describe('BubblophyDashboard interactions', () => {
     render(
       <BubblophyDashboard
         snapshot={databaseSnapshot}
-        agentTokenPageRequest={{ projectKey: null, after: null }}
+        agentTokenPageRequest={{ projectKey: null, query: null, after: null }}
         agentTokenPageResult={{
           status: 'success',
           project: null,
+          query: null,
           items: [],
           nextAfter,
         }}
@@ -4480,6 +4490,196 @@ describe('BubblophyDashboard interactions', () => {
     expect(pushedUrl.searchParams.get('tokenAfterId')).toBe('token-20');
   });
 
+  it('starts a literal token-label search and clears the old cursor', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams(
+        'tokenAfterProject=NO&tokenAfterLabel=token-20&tokenAfterId=token-20'
+      )
+    );
+
+    render(<BubblophyDashboard snapshot={databaseSnapshot} />);
+    const agentSection = document.getElementById('agents');
+
+    expect(agentSection).toBeInstanceOf(HTMLElement);
+
+    if (!agentSection) {
+      throw new Error('Expected the agent token section to render.');
+    }
+
+    fireEvent.change(
+      within(agentSection).getByLabelText(
+        'Agent-Tokens nach Label durchsuchen'
+      ),
+      { target: { value: '%_\\Codex' } }
+    );
+    navigationMocks.routerPush.mockClear();
+    autoCommitMockNavigation = false;
+    fireEvent.click(
+      within(agentSection).getByRole('button', { name: 'Suchen' })
+    );
+
+    const pushedHref = navigationMocks.routerPush.mock.calls[0]?.[0];
+    const pushedUrl = new URL(
+      pushedHref ?? '/',
+      'https://bubblophy.example.test'
+    );
+
+    expect(pushedUrl.searchParams.get('tokenQ')).toBe('%_\\Codex');
+    expect(pushedUrl.searchParams.has('tokenAfterProject')).toBe(false);
+    expect(pushedUrl.searchParams.has('tokenAfterLabel')).toBe(false);
+    expect(pushedUrl.searchParams.has('tokenAfterId')).toBe(false);
+  });
+
+  it('keeps the token query while paginating search results', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('tokenQ=Codex')
+    );
+    const nextAfter = {
+      projectKey: 'BV',
+      normalizedLabel: 'codex 20',
+      tokenId: 'token-20',
+    } as const;
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        agentTokenPageRequest={{
+          projectKey: null,
+          query: 'Codex',
+          after: null,
+        }}
+        agentTokenPageResult={{
+          status: 'success',
+          project: null,
+          query: 'Codex',
+          items: [],
+          nextAfter,
+        }}
+      />
+    );
+    const agentSection = document.getElementById('agents');
+
+    expect(agentSection).toBeInstanceOf(HTMLElement);
+
+    if (!agentSection) {
+      throw new Error('Expected the agent token section to render.');
+    }
+
+    expect(
+      within(agentSection).getByText(
+        'Keine Agent-Tokens mit dem Label-Präfix „Codex“ gefunden.'
+      )
+    ).toBeInTheDocument();
+    navigationMocks.routerPush.mockClear();
+    autoCommitMockNavigation = false;
+    fireEvent.click(
+      within(agentSection).getByRole('button', { name: 'Weitere 20 Tokens' })
+    );
+
+    const pushedHref = navigationMocks.routerPush.mock.calls[0]?.[0];
+    const pushedUrl = new URL(
+      pushedHref ?? '/',
+      'https://bubblophy.example.test'
+    );
+
+    expect(pushedUrl.searchParams.get('tokenQ')).toBe('Codex');
+    expect(pushedUrl.searchParams.get('tokenAfterProject')).toBe('BV');
+    expect(pushedUrl.searchParams.get('tokenAfterId')).toBe('token-20');
+  });
+
+  it('rejects a one-character token search before navigation', () => {
+    render(<BubblophyDashboard snapshot={databaseSnapshot} />);
+    const agentSection = document.getElementById('agents');
+
+    expect(agentSection).toBeInstanceOf(HTMLElement);
+
+    if (!agentSection) {
+      throw new Error('Expected the agent token section to render.');
+    }
+
+    fireEvent.change(
+      within(agentSection).getByLabelText(
+        'Agent-Tokens nach Label durchsuchen'
+      ),
+      { target: { value: 'x' } }
+    );
+    navigationMocks.routerPush.mockClear();
+    fireEvent.click(
+      within(agentSection).getByRole('button', { name: 'Suchen' })
+    );
+
+    expect(within(agentSection).getByRole('alert')).toHaveTextContent(
+      'Gib mindestens zwei Zeichen ein'
+    );
+    expect(navigationMocks.routerPush).not.toHaveBeenCalled();
+  });
+
+  it('does not show a created token inside an invalid search result', async () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('tokenQ=x')
+    );
+    const createAgentTokenAction = vi.fn<
+      (
+        input: CreateBubblophyAgentTokenActionInput
+      ) => Promise<CreateBubblophyAgentTokenActionResult>
+    >(async () => ({
+      status: 'created',
+      token: {
+        id: 'token_xylophon_local',
+        label: 'Xylophon lokal',
+        projectKey: 'BV',
+        scopes: ['projects:read', 'issues:read'],
+        state: 'aktiv',
+        lastUsedAt: 'noch nie verwendet',
+        expiresAt: 'läuft nicht automatisch ab',
+        plaintextToken: 'test_plaintext_token_once',
+      },
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        createAgentTokenAction={createAgentTokenAction}
+        agentTokenPageRequest={{ projectKey: null, query: 'x', after: null }}
+        agentTokenPageResult={{
+          status: 'invalid',
+          reason: 'query_too_short',
+        }}
+      />
+    );
+    const agentSection = document.getElementById('agents');
+
+    expect(agentSection).toBeInstanceOf(HTMLElement);
+
+    if (!agentSection) {
+      throw new Error('Expected the agent token section to render.');
+    }
+
+    expect(within(agentSection).getByRole('alert')).toHaveTextContent(
+      'Die Agent-Token-Suche oder Seitenposition ist ungültig.'
+    );
+
+    fireEvent.click(
+      within(agentSection).getByRole('button', {
+        name: 'Agent-Token erstellen',
+      })
+    );
+    fireEvent.change(screen.getByLabelText('Label'), {
+      target: { value: 'Xylophon lokal' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Token erstellen' }));
+
+    const dialog = await screen.findByRole('dialog');
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Fertig' }));
+
+    expect(createAgentTokenAction).toHaveBeenCalledOnce();
+    expect(within(agentSection).queryByText('Xylophon lokal')).toBeNull();
+    expect(within(agentSection).getByRole('alert')).toHaveTextContent(
+      'Die Agent-Token-Suche oder Seitenposition ist ungültig.'
+    );
+  });
+
   it('shows token loading while URL and server page fingerprints differ', () => {
     navigationMocks.searchParams.mockReturnValue(
       new URLSearchParams(
@@ -4490,10 +4690,11 @@ describe('BubblophyDashboard interactions', () => {
     render(
       <BubblophyDashboard
         snapshot={databaseSnapshot}
-        agentTokenPageRequest={{ projectKey: null, after: null }}
+        agentTokenPageRequest={{ projectKey: null, query: null, after: null }}
         agentTokenPageResult={{
           status: 'success',
           project: null,
+          query: null,
           items: [],
           nextAfter: null,
         }}
@@ -4516,6 +4717,96 @@ describe('BubblophyDashboard interactions', () => {
     ).toBeNull();
   });
 
+  it('shows token loading while the URL and server search differ', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams('tokenQ=Claude')
+    );
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        agentTokenPageRequest={{
+          projectKey: null,
+          query: 'Codex',
+          after: null,
+        }}
+        agentTokenPageResult={{
+          status: 'success',
+          project: null,
+          query: 'Codex',
+          items: [],
+          nextAfter: null,
+        }}
+      />
+    );
+    const agentSection = document.getElementById('agents');
+
+    expect(agentSection).toBeInstanceOf(HTMLElement);
+
+    if (!agentSection) {
+      throw new Error('Expected the agent token section to render.');
+    }
+
+    expect(within(agentSection).getByRole('status')).toHaveTextContent(
+      'Agent-Token-Liste wird geladen.'
+    );
+    expect(within(agentSection).queryByText('codex-local-lio')).toBeNull();
+  });
+
+  it('offers a first-page reset for an invalid token cursor', () => {
+    const foreignCursor = {
+      projectKey: 'NO',
+      normalizedLabel: 'token-20',
+      tokenId: 'token-20',
+    } as const;
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams(
+        'project=BV&tokenAfterProject=NO&tokenAfterLabel=token-20&tokenAfterId=token-20'
+      )
+    );
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        agentTokenPageRequest={{
+          projectKey: 'BV',
+          query: null,
+          after: foreignCursor,
+        }}
+        agentTokenPageResult={{
+          status: 'invalid',
+          reason: 'invalid_cursor',
+        }}
+      />
+    );
+    const agentSection = document.getElementById('agents');
+
+    expect(agentSection).toBeInstanceOf(HTMLElement);
+
+    if (!agentSection) {
+      throw new Error('Expected the agent token section to render.');
+    }
+
+    navigationMocks.routerPush.mockClear();
+    autoCommitMockNavigation = false;
+    fireEvent.click(
+      within(agentSection).getByRole('button', {
+        name: 'Zur ersten Token-Seite',
+      })
+    );
+
+    const pushedHref = navigationMocks.routerPush.mock.calls[0]?.[0];
+    const pushedUrl = new URL(
+      pushedHref ?? '/',
+      'https://bubblophy.example.test'
+    );
+
+    expect(pushedUrl.searchParams.get('project')).toBe('BV');
+    expect(pushedUrl.searchParams.has('tokenAfterProject')).toBe(false);
+    expect(pushedUrl.searchParams.has('tokenAfterLabel')).toBe(false);
+    expect(pushedUrl.searchParams.has('tokenAfterId')).toBe(false);
+  });
+
   it.each([
     {
       accessState: 'viewer role',
@@ -4533,10 +4824,11 @@ describe('BubblophyDashboard interactions', () => {
       render(
         <BubblophyDashboard
           snapshot={databaseSnapshot}
-          agentTokenPageRequest={{ projectKey: null, after: null }}
+          agentTokenPageRequest={{ projectKey: null, query: null, after: null }}
           agentTokenPageResult={{
             status: 'success',
             project: null,
+            query: null,
             items: [
               {
                 ...dashboardAgentTokenFixtures[0]!,
@@ -6562,15 +6854,41 @@ describe('BubblophyDashboard interactions', () => {
     ).not.toBeInTheDocument();
     expect(within(agentSection).getByText('Codex lokal')).toBeInTheDocument();
 
+    fireEvent.change(
+      within(agentSection).getByLabelText(
+        'Agent-Tokens nach Label durchsuchen'
+      ),
+      { target: { value: 'Codex' } }
+    );
+    fireEvent.click(
+      within(agentSection).getByRole('button', { name: 'Suchen' })
+    );
+    await waitFor(() => {
+      const currentAgentSection = document.getElementById('agents');
+
+      expect(currentAgentSection).toBeInstanceOf(HTMLElement);
+
+      if (!currentAgentSection) {
+        throw new Error('Expected the agent token section to render.');
+      }
+
+      expect(within(currentAgentSection).queryByText('Codex lokal')).toBeNull();
+      expect(
+        within(currentAgentSection).getByText('codex-local-lio')
+      ).toBeVisible();
+    });
+    act(() => commitMockNavigation('/'));
+
     rerender(
       <BubblophyDashboard
         snapshot={databaseSnapshot}
         createAgentTokenAction={createAgentTokenAction}
         updateAgentTokenLifecycleAction={updateAgentTokenLifecycleAction}
-        agentTokenPageRequest={{ projectKey: null, after: null }}
+        agentTokenPageRequest={{ projectKey: null, query: null, after: null }}
         agentTokenPageResult={{
           status: 'success',
           project: null,
+          query: null,
           items: [
             {
               id: 'token_codex_local',
@@ -6589,12 +6907,26 @@ describe('BubblophyDashboard interactions', () => {
       />
     );
 
-    expect(within(agentSection).getByText('Codex lokal')).toBeInTheDocument();
+    const confirmedAgentSection = document.getElementById('agents');
+
+    expect(confirmedAgentSection).toBeInstanceOf(HTMLElement);
+
+    if (!confirmedAgentSection) {
+      throw new Error('Expected the agent token section to render.');
+    }
+
     expect(
-      within(agentSection).queryByRole('button', { name: 'Pausieren' })
+      within(confirmedAgentSection).getByText('Codex lokal')
+    ).toBeInTheDocument();
+    expect(
+      within(confirmedAgentSection).queryByRole('button', {
+        name: 'Pausieren',
+      })
     ).toBeNull();
     expect(
-      within(agentSection).queryByRole('button', { name: 'Widerrufen' })
+      within(confirmedAgentSection).queryByRole('button', {
+        name: 'Widerrufen',
+      })
     ).toBeNull();
   });
 

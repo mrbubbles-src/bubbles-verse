@@ -145,6 +145,7 @@ export async function selectDashboardAgentTokenPageForUser(
           currentUserRole: finalProject.currentUserRole,
         }
       : null,
+    query: input.query,
     items: visibleItems,
     nextAfter:
       acceptedRows.length > DASHBOARD_AGENT_TOKEN_PAGE_SIZE && lastVisibleRow
@@ -161,6 +162,9 @@ async function selectCandidateTokenRows(
   const normalizedLabel = sql<string>`lower(${bubblophyAgentTokens.label})`;
   const projectCondition = input.projectKey
     ? eq(bubblophyProjects.key, input.projectKey)
+    : undefined;
+  const queryCondition = input.query
+    ? sql`${normalizedLabel} like ${buildLiteralLabelPrefix(input.query)} escape '\\'`
     : undefined;
   const cursorCondition = after
     ? or(
@@ -206,6 +210,7 @@ async function selectCandidateTokenRows(
       and(
         eq(bubblophyProjectMembers.authUserId, input.authUserId),
         projectCondition,
+        queryCondition,
         cursorCondition
       )
     )
@@ -215,6 +220,19 @@ async function selectCandidateTokenRows(
       asc(bubblophyAgentTokens.id)
     )
     .limit(DASHBOARD_AGENT_TOKEN_PAGE_SIZE + 1)) as AgentTokenPageRow[];
+}
+
+/** Builds a case-insensitive literal prefix for a token label. */
+function buildLiteralLabelPrefix(query: string) {
+  return `${escapeLikePattern(query.toLowerCase())}%`;
+}
+
+/** Escapes PostgreSQL LIKE wildcards in a user-entered token prefix. */
+function escapeLikePattern(value: string) {
+  return value
+    .replaceAll('\\', '\\\\')
+    .replaceAll('%', '\\%')
+    .replaceAll('_', '\\_');
 }
 
 /** Reads one concrete visible project for empty-page and final access checks. */

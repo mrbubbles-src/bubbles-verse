@@ -4,7 +4,11 @@ import type { BubblophyProjectRole } from '@/drizzle/db/schema';
 import type { DashboardAgentTokenCursor } from '@/lib/dashboard/agent-token-query';
 import type { AgentTokenSummary } from '@/lib/dashboard/types';
 
-import { parseDashboardAgentTokenCursor } from '@/lib/dashboard/agent-token-query';
+import {
+  DASHBOARD_AGENT_TOKEN_QUERY_MAX_LENGTH,
+  normalizeDashboardAgentTokenQuery,
+  parseDashboardAgentTokenCursor,
+} from '@/lib/dashboard/agent-token-query';
 
 export interface DashboardAgentTokenPageItem extends AgentTokenSummary {
   projectIsArchived: boolean;
@@ -18,6 +22,7 @@ export interface DashboardAgentTokenPage {
     isArchived: boolean;
     currentUserRole: BubblophyProjectRole;
   } | null;
+  query: string | null;
   items: DashboardAgentTokenPageItem[];
   nextAfter: DashboardAgentTokenCursor | null;
 }
@@ -25,6 +30,7 @@ export interface DashboardAgentTokenPage {
 export interface DashboardAgentTokenPageReadInput {
   authUserId: string;
   projectKey: string | null;
+  query: string | null;
   after: DashboardAgentTokenCursor | null;
   now: string;
 }
@@ -35,6 +41,7 @@ export type DashboardAgentTokenPageReader = (
 
 export interface ReadDashboardAgentTokenPageInput {
   projectKey?: string;
+  query?: string;
   after?: DashboardAgentTokenCursor;
 }
 
@@ -47,7 +54,12 @@ export type ReadDashboardAgentTokenPageResult =
   | ({ status: 'success' } & DashboardAgentTokenPage)
   | {
       status: 'invalid';
-      reason: 'empty_auth_user' | 'invalid_project_key' | 'invalid_cursor';
+      reason:
+        | 'empty_auth_user'
+        | 'invalid_project_key'
+        | 'query_too_short'
+        | 'query_too_long'
+        | 'invalid_cursor';
     }
   | { status: 'not_found' }
   | { status: 'database_unavailable' };
@@ -70,6 +82,7 @@ export async function readDashboardAgentTokenPage(
 ): Promise<ReadDashboardAgentTokenPageResult> {
   const normalizedAuthUserId = authUserId.trim();
   const projectKey = input.projectKey?.trim().toUpperCase() || null;
+  const query = normalizeDashboardAgentTokenQuery(input.query);
   const after = input.after
     ? parseDashboardAgentTokenCursor(
         input.after.projectKey,
@@ -84,6 +97,14 @@ export async function readDashboardAgentTokenPage(
 
   if (projectKey && !projectKeyPattern.test(projectKey)) {
     return { status: 'invalid', reason: 'invalid_project_key' };
+  }
+
+  if (query && query.length < 2) {
+    return { status: 'invalid', reason: 'query_too_short' };
+  }
+
+  if (query && query.length > DASHBOARD_AGENT_TOKEN_QUERY_MAX_LENGTH) {
+    return { status: 'invalid', reason: 'query_too_long' };
   }
 
   if (
@@ -104,6 +125,7 @@ export async function readDashboardAgentTokenPage(
     const page = await readPage({
       authUserId: normalizedAuthUserId,
       projectKey,
+      query,
       after,
       now: (options.clock ?? (() => new Date()))().toISOString(),
     });

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added a URL-backed literal token-label prefix search to the bounded agent-
+  token management page. Searches require 2–80 characters, escape PostgreSQL
+  wildcard characters, retain 20-item keyset pagination for one or all visible
+  projects, include the query in stale-response and overlay fingerprints, and
+  use a dedicated `text_pattern_ops` index without replacing cursor ordering.
 - Replaced the unbounded dashboard agent-token snapshot with a membership-
   scoped 20-item management page for one or all projects. The page uses a
   stable `(projectKey, lower(label), tokenId)` URL cursor, rechecks membership,

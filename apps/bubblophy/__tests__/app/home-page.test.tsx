@@ -285,6 +285,7 @@ describe('Bubblophy home page', () => {
     readDashboardAgentTokenPageMock.mockResolvedValue({
       status: 'success',
       project: null,
+      query: null,
       items: [],
       nextAfter: null,
     } satisfies ReadDashboardAgentTokenPageResult);
@@ -448,6 +449,18 @@ describe('Bubblophy home page', () => {
     getBubblophyDashboardSnapshotMock.mockResolvedValue(homeDatabaseSnapshot);
     readDashboardIssuePageMock.mockResolvedValue(pageResult);
     readDashboardIssueDetailMock.mockResolvedValue(detailResult);
+    readDashboardAgentTokenPageMock.mockResolvedValue({
+      status: 'success',
+      project: {
+        key: 'AP',
+        name: 'Allowed Project',
+        isArchived: false,
+        currentUserRole: 'owner',
+      },
+      query: 'Codex',
+      items: [],
+      nextAfter: null,
+    } satisfies ReadDashboardAgentTokenPageResult);
 
     const { ProtectedBubblophyDashboard } = await import('@/app/page');
     const element = await ProtectedBubblophyDashboard({
@@ -467,6 +480,10 @@ describe('Bubblophy home page', () => {
         activityAfterAt: '2026-07-19T11:00:00.000Z',
         activityAfterSource: 'issue',
         activityAfterId: 'event-20',
+        tokenQ: ' Codex ',
+        tokenAfterProject: ' ap ',
+        tokenAfterLabel: ' Codex 20 ',
+        tokenAfterId: ' token-20 ',
       }),
     });
 
@@ -504,6 +521,15 @@ describe('Bubblophy home page', () => {
         eventId: 'event-20',
       },
     });
+    expect(readDashboardAgentTokenPageMock).toHaveBeenCalledWith('user_owner', {
+      projectKey: 'AP',
+      query: 'Codex',
+      after: {
+        projectKey: 'AP',
+        normalizedLabel: 'codex 20',
+        tokenId: 'token-20',
+      },
+    });
     expect(element.props.issuePageResult).toBe(pageResult);
     expect(element.props.issueDetailResult).toBe(detailResult);
     expect(element.props.issuePageRequest).toEqual({
@@ -524,6 +550,15 @@ describe('Bubblophy home page', () => {
       after: {
         createdAt: '2026-07-01T09:00:00.000Z',
         authUserId: 'user-20',
+      },
+    });
+    expect(element.props.agentTokenPageRequest).toEqual({
+      projectKey: 'AP',
+      query: 'Codex',
+      after: {
+        projectKey: 'AP',
+        normalizedLabel: 'codex 20',
+        tokenId: 'token-20',
       },
     });
     expect(element.props.activityPageRequest).toEqual({

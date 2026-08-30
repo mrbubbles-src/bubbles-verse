@@ -1,7 +1,10 @@
 import {
   isDashboardAgentTokenPageRequestCurrent,
+  normalizeDashboardAgentTokenQuery,
   parseDashboardAgentTokenCursor,
   setDashboardAgentTokenPageParams,
+  setDashboardAgentTokenSearchParams,
+  writeDashboardAgentTokenQueryParams,
 } from '@/lib/dashboard/agent-token-query';
 
 import { describe, expect, it } from 'vitest';
@@ -30,25 +33,67 @@ describe('dashboard agent-token page query', () => {
   it('matches the complete project and cursor request fingerprint', () => {
     expect(
       isDashboardAgentTokenPageRequestCurrent(
-        { projectKey: 'BV', after: cursor },
+        { projectKey: 'BV', query: 'Codex', after: cursor },
         'BV',
+        'Codex',
         cursor
       )
     ).toBe(true);
     expect(
       isDashboardAgentTokenPageRequestCurrent(
-        { projectKey: null, after: cursor },
+        { projectKey: null, query: 'Codex', after: cursor },
         'BV',
+        'Codex',
         cursor
       )
     ).toBe(false);
     expect(
       isDashboardAgentTokenPageRequestCurrent(
-        { projectKey: 'BV', after: cursor },
+        { projectKey: 'BV', query: 'Other', after: cursor },
         'BV',
+        'Codex',
+        cursor
+      )
+    ).toBe(false);
+    expect(
+      isDashboardAgentTokenPageRequestCurrent(
+        { projectKey: 'BV', query: 'Codex', after: cursor },
+        'BV',
+        'Codex',
         { ...cursor, tokenId: 'other-token' }
       )
     ).toBe(false);
+  });
+
+  it('normalizes search text and clears only the incompatible cursor', () => {
+    expect(normalizeDashboardAgentTokenQuery('  Codex Local  ')).toBe(
+      'Codex Local'
+    );
+    expect(normalizeDashboardAgentTokenQuery('   ')).toBeNull();
+
+    const params = setDashboardAgentTokenPageParams(
+      new URLSearchParams('project=BV&tokenQ=old'),
+      cursor
+    );
+    const searched = setDashboardAgentTokenSearchParams(params, 'Codex');
+
+    expect(searched.get('tokenQ')).toBe('Codex');
+    expect(searched.has('tokenAfterProject')).toBe(false);
+    expect(searched.has('tokenAfterLabel')).toBe(false);
+    expect(searched.has('tokenAfterId')).toBe(false);
+    expect(searched.get('project')).toBe('BV');
+  });
+
+  it('canonicalizes query and cursor together for paginated search', () => {
+    const params = writeDashboardAgentTokenQueryParams(
+      new URLSearchParams('project=BV&tokenQ=stale'),
+      'Codex',
+      cursor
+    );
+
+    expect(params.get('tokenQ')).toBe('Codex');
+    expect(params.get('tokenAfterProject')).toBe('BV');
+    expect(params.get('tokenAfterId')).toBe('token-20');
   });
 
   it('writes and clears only the token cursor fields', () => {

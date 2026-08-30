@@ -8,7 +8,10 @@ import type { DashboardSnapshot } from '@/lib/dashboard/types';
 import { requireBubblophySession } from '@/lib/auth/session';
 import { readDashboardActivityPage } from '@/lib/dashboard/activity';
 import { parseDashboardActivityQuery } from '@/lib/dashboard/activity-query';
-import { parseDashboardAgentTokenCursor } from '@/lib/dashboard/agent-token-query';
+import {
+  normalizeDashboardAgentTokenQuery,
+  parseDashboardAgentTokenCursor,
+} from '@/lib/dashboard/agent-token-query';
 import { readDashboardAgentTokenPage } from '@/lib/dashboard/agent-tokens';
 import { parseDashboardAllIssueQuery } from '@/lib/dashboard/all-issue-query';
 import { readDashboardAllIssuePage } from '@/lib/dashboard/all-issues';
@@ -162,6 +165,9 @@ export async function ProtectedBubblophyDashboard({
     getFirstSearchParam(rawSearchParams.tokenAfterLabel),
     getFirstSearchParam(rawSearchParams.tokenAfterId)
   );
+  const agentTokenQuery = normalizeDashboardAgentTokenQuery(
+    getFirstSearchParam(rawSearchParams.tokenQ)
+  );
   const requestedIssueKey = getFirstSearchParam(rawSearchParams.issue)
     ?.trim()
     .toUpperCase();
@@ -231,12 +237,14 @@ export async function ProtectedBubblophyDashboard({
     dashboardSnapshot.meta.dataSource === 'database'
       ? ({
           projectKey: selectedProject?.key ?? null,
+          query: agentTokenQuery,
           after: agentTokenCursor,
         } satisfies DashboardAgentTokenPageRequestState)
       : null;
   const agentTokenPagePromise = agentTokenPageRequest
     ? readDashboardAgentTokenPage(session.authUserId, {
         projectKey: agentTokenPageRequest.projectKey ?? undefined,
+        query: agentTokenQuery ?? undefined,
         after: agentTokenCursor ?? undefined,
       })
     : Promise.resolve(null);

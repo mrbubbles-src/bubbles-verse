@@ -8,6 +8,7 @@ describe('readDashboardAgentTokenPage', () => {
   it('normalizes all-project input, cursor, and the server clock', async () => {
     const readPage = vi.fn<DashboardAgentTokenPageReader>(async () => ({
       project: null,
+      query: 'Codex',
       items: [],
       nextAfter: null,
     }));
@@ -21,6 +22,7 @@ describe('readDashboardAgentTokenPage', () => {
             normalizedLabel: ' Codex ',
             tokenId: ' token-20 ',
           },
+          query: ' Codex ',
         },
         {
           readPage,
@@ -31,6 +33,7 @@ describe('readDashboardAgentTokenPage', () => {
     expect(readPage).toHaveBeenCalledWith({
       authUserId: 'user-1',
       projectKey: null,
+      query: 'Codex',
       after: {
         projectKey: 'BV',
         normalizedLabel: 'codex',
@@ -63,6 +66,16 @@ describe('readDashboardAgentTokenPage', () => {
         { readPage }
       )
     ).resolves.toEqual({ status: 'invalid', reason: 'invalid_cursor' });
+    await expect(
+      readDashboardAgentTokenPage('user-1', { query: 'x' }, { readPage })
+    ).resolves.toEqual({ status: 'invalid', reason: 'query_too_short' });
+    await expect(
+      readDashboardAgentTokenPage(
+        'user-1',
+        { query: 'x'.repeat(81) },
+        { readPage }
+      )
+    ).resolves.toEqual({ status: 'invalid', reason: 'query_too_long' });
     await expect(
       readDashboardAgentTokenPage(
         'user-1',

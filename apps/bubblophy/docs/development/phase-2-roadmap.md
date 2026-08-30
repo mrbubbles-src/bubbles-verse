@@ -206,8 +206,9 @@ Status: abgeschlossen.
   einen membership-scoped 20er-Vertrag für ein oder alle Projekte mit stabilem
   `(projectKey, lower(label), tokenId)`-URL-Cursor, finaler Rollen- und
   Archivprüfung sowie seitengebundenen Create-/Lifecycle-Overlays. Der
-  unbeschränkte Token-Root-Read ist entfernt. Präfixsuche bleibt ein eigener
-  nächster Slice.
+  unbeschränkte Token-Root-Read ist entfernt. Die URL-basierte, wörtlich
+  behandelte Präfixsuche mit 2–80 Zeichen ist ebenfalls abgeschlossen und bleibt
+  über denselben Cursor paginierbar.
 - Datenbankabfragen und Cache-Tags auf größere Projektmengen prüfen.
 
 ### 6. Benachrichtigungen und Team-Arbeit
@@ -283,6 +284,6 @@ Assignee-Auswahl besitzen inzwischen eigene begrenzte Verträge; der globale
 Mitglieder-Root-Read ist entfernt. Run-Anfragen besitzen außerdem eine eigene
 begrenzte ausführbare Token-Auswahl. Auch die Agent-Token-Verwaltungsansicht
 ist als 20er-Seite für ein oder alle Projekte integriert und aus dem Root-
-Snapshot entfernt; als nächster Token-Slice bleibt die begrenzte Präfixsuche.
-Die MCP-Grundlage bleibt unter
+Snapshot entfernt. Die begrenzte, wörtlich behandelte und weiterhin paginierbare
+Label-Präfixsuche ist ebenfalls integriert. Die MCP-Grundlage bleibt unter
 `docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md` dokumentiert.

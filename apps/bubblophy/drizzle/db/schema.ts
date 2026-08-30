@@ -388,6 +388,14 @@ export const bubblophyAgentTokens = pgTable(
       sql`lower(${table.label})`,
       table.id
     ),
+    projectLabelPrefixIdx: index(
+      'bubblophy_agent_tokens_project_label_prefix_idx'
+    ).using(
+      'btree',
+      table.projectId,
+      sql`lower(${table.label}) text_pattern_ops`,
+      table.id
+    ),
     projectStateLabelIdx: index(
       'bubblophy_agent_tokens_project_state_label_idx'
     ).using(
