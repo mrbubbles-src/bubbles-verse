@@ -38,17 +38,6 @@ function makeDatabaseRows(
 ): BubblophyDashboardPersistenceRows {
   return {
     projectRows: [makeProjectRow()],
-    agentTokenRows: [
-      {
-        id: 'token_codex',
-        label: 'Codex lokal',
-        projectKey: 'BV',
-        scopes: ['projects:read', 'issues:read'],
-        state: 'active',
-        lastUsedAt: null,
-        expiresAt: null,
-      },
-    ],
     agentRunRows: [
       {
         id: 'run_codex',
@@ -94,17 +83,6 @@ describe('getBubblophyDashboardSnapshot', () => {
         },
       ],
       projectMembers: [],
-      agentTokens: [
-        {
-          id: 'token_codex',
-          label: 'Codex lokal',
-          projectKey: 'BV',
-          scopes: ['projects:read', 'issues:read'],
-          state: 'aktiv',
-          lastUsedAt: 'noch nie verwendet',
-          expiresAt: 'läuft nicht automatisch ab',
-        },
-      ],
       activity: [],
       agentRuns: [
         {
@@ -155,7 +133,6 @@ describe('getBubblophyDashboardSnapshot', () => {
         loadRows: async () =>
           makeDatabaseRows({
             projectRows: [],
-            agentTokenRows: [],
             agentRunRows: [],
           }),
       })
@@ -166,7 +143,6 @@ describe('getBubblophyDashboardSnapshot', () => {
       },
       projects: [],
       projectMembers: [],
-      agentTokens: [],
       agentRuns: [],
       activity: [],
     });
@@ -183,7 +159,7 @@ describe('getBubblophyDashboardSnapshot', () => {
     expect(snapshot.meta.hint).toContain('DATABASE_URL');
     expect(snapshot.currentUser.authUserId).toBe('user_owner');
     expect(snapshot.projects).toEqual([]);
-    expect(snapshot.agentTokens).toEqual([]);
+    expect(snapshot).not.toHaveProperty('agentTokens');
     expect(snapshot.activity).toEqual([]);
   });
 
@@ -235,17 +211,14 @@ describe('loadBubblophyDashboardSnapshot', () => {
 });
 
 describe('cloneDashboardSnapshot', () => {
-  it('copies metadata and nested token scopes instead of sharing mutable objects', () => {
+  it('copies metadata and projects instead of sharing mutable objects', () => {
     const clone = cloneDashboardSnapshot(dashboardSnapshot);
 
     expect(clone.meta).toEqual(dashboardSnapshot.meta);
     expect(clone.meta).not.toBe(dashboardSnapshot.meta);
     expect(clone.currentUser).toEqual(dashboardSnapshot.currentUser);
     expect(clone.currentUser).not.toBe(dashboardSnapshot.currentUser);
-    expect(clone.agentTokens[0]).not.toBe(dashboardSnapshot.agentTokens[0]);
-    expect(clone.agentTokens[0]?.scopes).not.toBe(
-      dashboardSnapshot.agentTokens[0]?.scopes
-    );
+    expect(clone.projects[0]).not.toBe(dashboardSnapshot.projects[0]);
   });
 
   it('clones current user identity without sharing references', () => {

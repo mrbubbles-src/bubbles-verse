@@ -1,4 +1,38 @@
-import type { DashboardSnapshot, IssueSummary } from '@/lib/dashboard/types';
+import type {
+  AgentTokenSummary,
+  DashboardSnapshot,
+  IssueSummary,
+} from '@/lib/dashboard/types';
+
+export const dashboardAgentTokenFixtures = [
+  {
+    id: 'token_codex_bv',
+    label: 'codex-local-lio',
+    projectKey: 'BV',
+    scopes: ['issues:read', 'issues:write', 'runs:create'],
+    state: 'aktiv',
+    lastUsedAt: 'vor 12 Min.',
+    expiresAt: 'läuft nicht automatisch ab',
+  },
+  {
+    id: 'token_claude_no',
+    label: 'claude-code-martin',
+    projectKey: 'NO',
+    scopes: ['issues:read', 'plans:write'],
+    state: 'aktiv',
+    lastUsedAt: 'vor 1 Std.',
+    expiresAt: '2026-12-31T23:00:00.000Z',
+  },
+  {
+    id: 'token_archive_bv',
+    label: 'codex-archiv',
+    projectKey: 'BV',
+    scopes: ['issues:read'],
+    state: 'pausiert',
+    lastUsedAt: 'gestern',
+    expiresAt: 'läuft nicht automatisch ab',
+  },
+] satisfies AgentTokenSummary[];
 
 export const dashboardIssueFixtures = [
   {
@@ -145,35 +179,6 @@ export const dashboardSnapshot = {
       label: 'mrbubbles',
       role: 'owner',
       createdAt: '2026-06-01T10:00:00.000Z',
-    },
-  ],
-  agentTokens: [
-    {
-      id: 'token_codex_bv',
-      label: 'codex-local-lio',
-      projectKey: 'BV',
-      scopes: ['issues:read', 'issues:write', 'runs:create'],
-      state: 'aktiv',
-      lastUsedAt: 'vor 12 Min.',
-      expiresAt: 'läuft nicht automatisch ab',
-    },
-    {
-      id: 'token_claude_no',
-      label: 'claude-code-martin',
-      projectKey: 'NO',
-      scopes: ['issues:read', 'plans:write'],
-      state: 'aktiv',
-      lastUsedAt: 'vor 1 Std.',
-      expiresAt: '2026-12-31T23:00:00.000Z',
-    },
-    {
-      id: 'token_archive_bv',
-      label: 'codex-archiv',
-      projectKey: 'BV',
-      scopes: ['issues:read'],
-      state: 'pausiert',
-      lastUsedAt: 'gestern',
-      expiresAt: 'läuft nicht automatisch ab',
     },
   ],
   agentRuns: [

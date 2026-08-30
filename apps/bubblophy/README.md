@@ -143,6 +143,14 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   Die UI bietet Erstellung und Lifecycle-Aktionen ebenfalls ausschließlich für
   aktive Projekte mit aktueller Owner-/Maintainer-Rolle an; bei gemischten
   Rollen wird pro Projekt gefiltert.
+- Die Verwaltungsansicht lädt für ein ausgewähltes Projekt oder projektübergreifend
+  höchstens 20 Agent-Tokens pro Seite. Der stabile URL-Cursor besteht aus
+  `(projectKey, lower(label), tokenId)`. Membership, finale Rolle und
+  Archivstatus werden vor dem öffentlichen DTO erneut geprüft; ungültig
+  gewordene Kandidaten werden intern übersprungen, ohne spätere sichtbare Tokens
+  abzuschneiden. Der Dashboard-Root enthält keine Token-Verwaltungszeilen mehr.
+  Lokale Create- und Lifecycle-Overlays gelten ausschließlich für die aktuelle
+  Seite und werden beim Projekt- oder Seitenwechsel verworfen.
 - Der Auth- und Sicherheitsplan liegt in
   `docs/contracts/auth-security-plan.md`.
 - Der Nach-MVP-Umfang, beginnend mit einem providerneutralen Remote-MCP über
@@ -414,9 +422,10 @@ bun run build
   Maintainer-Mitgliedschaft, schreibt nur den Token-Hash und startet keine
   Agent-Runs. Projektweite `agent_token_created`-Audit-Events landen in
   `bubblophy_project_events`, nicht in issue-zentrierten Events.
-- Der Datenbank-Snapshot liest Agent-Token-Summaries und Project-Events nur für
-  Projekte mit menschlicher Mitgliedschaft. Token-Plaintext und `token_hash`
-  werden nicht selektiert und nicht an die UI gegeben.
+- Agent-Token-Summaries werden ausschließlich über die membership-scoped
+  20er-Verwaltungsseite gelesen. Sie selektiert weder Token-Plaintext noch
+  `token_hash`, Creator-/Revocation-Actor-IDs oder andere interne Tokenfelder.
+  Project-Events werden getrennt über die begrenzte ActivityPage geladen.
 - Der Datenbank-Snapshot liest Planinhalte nur über membership-scoped Issues.
   Ungültige oder leere JSONB-Step-Einträge werden nicht gerendert; ohne
   Planversion bleibt die UI im echten Empty-State.

@@ -1,4 +1,5 @@
 import type { DashboardActivityPageRequestState } from '@/lib/dashboard/activity-query';
+import type { DashboardAgentTokenPageRequestState } from '@/lib/dashboard/agent-token-query';
 import type { DashboardAllIssuePageRequestState } from '@/lib/dashboard/all-issue-query';
 import type { DashboardIssuePageRequestState } from '@/lib/dashboard/issue-query';
 import type { DashboardMemberPageRequestState } from '@/lib/dashboard/member-query';
@@ -7,6 +8,8 @@ import type { DashboardSnapshot } from '@/lib/dashboard/types';
 import { requireBubblophySession } from '@/lib/auth/session';
 import { readDashboardActivityPage } from '@/lib/dashboard/activity';
 import { parseDashboardActivityQuery } from '@/lib/dashboard/activity-query';
+import { parseDashboardAgentTokenCursor } from '@/lib/dashboard/agent-token-query';
+import { readDashboardAgentTokenPage } from '@/lib/dashboard/agent-tokens';
 import { parseDashboardAllIssueQuery } from '@/lib/dashboard/all-issue-query';
 import { readDashboardAllIssuePage } from '@/lib/dashboard/all-issues';
 import { getBubblophyDashboardSnapshot } from '@/lib/dashboard/data';
@@ -154,6 +157,11 @@ export async function ProtectedBubblophyDashboard({
     getFirstSearchParam(rawSearchParams.memberAfterAt),
     getFirstSearchParam(rawSearchParams.memberAfterAuthUserId)
   );
+  const agentTokenCursor = parseDashboardAgentTokenCursor(
+    getFirstSearchParam(rawSearchParams.tokenAfterProject),
+    getFirstSearchParam(rawSearchParams.tokenAfterLabel),
+    getFirstSearchParam(rawSearchParams.tokenAfterId)
+  );
   const requestedIssueKey = getFirstSearchParam(rawSearchParams.issue)
     ?.trim()
     .toUpperCase();
@@ -219,6 +227,19 @@ export async function ProtectedBubblophyDashboard({
           after: memberCursor ?? undefined,
         })
       : Promise.resolve(null);
+  const agentTokenPageRequest =
+    dashboardSnapshot.meta.dataSource === 'database'
+      ? ({
+          projectKey: selectedProject?.key ?? null,
+          after: agentTokenCursor,
+        } satisfies DashboardAgentTokenPageRequestState)
+      : null;
+  const agentTokenPagePromise = agentTokenPageRequest
+    ? readDashboardAgentTokenPage(session.authUserId, {
+        projectKey: agentTokenPageRequest.projectKey ?? undefined,
+        after: agentTokenCursor ?? undefined,
+      })
+    : Promise.resolve(null);
   const activityPageRequest =
     dashboardSnapshot.meta.dataSource === 'database'
       ? ({
@@ -246,6 +267,7 @@ export async function ProtectedBubblophyDashboard({
     requestedIssueDetailResult,
     runPageResult,
     memberPageResult,
+    agentTokenPageResult,
     activityPageResult,
   ] = await Promise.all([
     issuePagePromise,
@@ -253,6 +275,7 @@ export async function ProtectedBubblophyDashboard({
     requestedIssueDetailPromise,
     runPagePromise,
     memberPagePromise,
+    agentTokenPagePromise,
     activityPagePromise,
   ]);
   const missingRequestedIssueKey =
@@ -285,6 +308,7 @@ export async function ProtectedBubblophyDashboard({
     issuePageResult?.status === 'not_found' ||
     runPageResult?.status === 'not_found' ||
     memberPageResult?.status === 'not_found' ||
+    (selectedProject && agentTokenPageResult?.status === 'not_found') ||
     activityPageResult?.status === 'not_found';
   const issueDetailRequestKey = hasLostProjectAccess
     ? null
@@ -321,6 +345,8 @@ export async function ProtectedBubblophyDashboard({
       runPageResult={hasLostProjectAccess ? null : runPageResult}
       memberPageRequest={memberPageRequest}
       memberPageResult={hasLostProjectAccess ? null : memberPageResult}
+      agentTokenPageRequest={agentTokenPageRequest}
+      agentTokenPageResult={hasLostProjectAccess ? null : agentTokenPageResult}
       activityPageRequest={activityPageRequest}
       activityPageResult={hasLostProjectAccess ? null : activityPageResult}
       createIssueAction={createBubblophyIssueAction}
@@ -382,9 +408,6 @@ function redactDashboardProject(
     projects: snapshot.projects.filter((project) => project.key !== projectKey),
     projectMembers: snapshot.projectMembers.filter(
       (member) => member.projectKey !== projectKey
-    ),
-    agentTokens: snapshot.agentTokens.filter(
-      (token) => token.projectKey !== projectKey
     ),
     agentRuns: snapshot.agentRuns.filter(
       (run) => !run.issueId.startsWith(issueKeyPrefix)

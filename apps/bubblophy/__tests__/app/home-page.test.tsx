@@ -18,6 +18,8 @@ import type {
 } from '@/app/actions';
 import type { ReadDashboardActivityPageResult } from '@/lib/dashboard/activity';
 import type { DashboardActivityPageRequestState } from '@/lib/dashboard/activity-query';
+import type { DashboardAgentTokenPageRequestState } from '@/lib/dashboard/agent-token-query';
+import type { ReadDashboardAgentTokenPageResult } from '@/lib/dashboard/agent-tokens';
 import type { DashboardAllIssuePageRequestState } from '@/lib/dashboard/all-issue-query';
 import type { ReadDashboardAllIssuePageResult } from '@/lib/dashboard/all-issues';
 import type { BubblophyDashboardSnapshotInput } from '@/lib/dashboard/data';
@@ -42,6 +44,7 @@ const readDashboardIssueDetailMock = vi.fn();
 const readDashboardRunPageMock = vi.fn();
 const readDashboardMemberPageMock = vi.fn();
 const readDashboardActivityPageMock = vi.fn();
+const readDashboardAgentTokenPageMock = vi.fn();
 const BubblophyDashboardMock = vi.fn(
   (props: {
     snapshot: DashboardSnapshot;
@@ -55,6 +58,8 @@ const BubblophyDashboardMock = vi.fn(
     memberPageResult?: ReadDashboardMemberPageResult | null;
     activityPageRequest?: DashboardActivityPageRequestState | null;
     activityPageResult?: ReadDashboardActivityPageResult | null;
+    agentTokenPageRequest?: DashboardAgentTokenPageRequestState | null;
+    agentTokenPageResult?: ReadDashboardAgentTokenPageResult | null;
     createIssueAction?: typeof createBubblophyIssueAction;
     updateIssueContentAction?: typeof updateBubblophyIssueContentAction;
     updateIssueAssigneeAction?: typeof updateBubblophyIssueAssigneeAction;
@@ -102,7 +107,6 @@ const homeDatabaseSnapshot = {
     },
   ],
   projectMembers: [],
-  agentTokens: [],
   agentRuns: [],
   activity: [],
 } satisfies DashboardSnapshot;
@@ -173,6 +177,20 @@ vi.mock('@/lib/dashboard/activity', () => ({
   ) => readDashboardActivityPageMock(authUserId, input),
 }));
 
+vi.mock('@/lib/dashboard/agent-tokens', () => ({
+  readDashboardAgentTokenPage: (
+    authUserId: string,
+    input: {
+      projectKey?: string;
+      after?: {
+        projectKey: string;
+        normalizedLabel: string;
+        tokenId: string;
+      };
+    }
+  ) => readDashboardAgentTokenPageMock(authUserId, input),
+}));
+
 vi.mock('@/lib/profiles/database-write', () => ({
   syncBubblophyUserProfile: (input: {
     user: object;
@@ -193,6 +211,8 @@ vi.mock('@/components/dashboard/bubblophy-dashboard', () => ({
     memberPageResult?: ReadDashboardMemberPageResult | null;
     activityPageRequest?: DashboardActivityPageRequestState | null;
     activityPageResult?: ReadDashboardActivityPageResult | null;
+    agentTokenPageRequest?: DashboardAgentTokenPageRequestState | null;
+    agentTokenPageResult?: ReadDashboardAgentTokenPageResult | null;
     createIssueAction?: typeof createBubblophyIssueAction;
     updateIssueContentAction?: typeof updateBubblophyIssueContentAction;
     updateIssueAssigneeAction?: typeof updateBubblophyIssueAssigneeAction;
@@ -261,6 +281,13 @@ describe('Bubblophy home page', () => {
       items: [],
       nextAfter: null,
     } satisfies ReadDashboardActivityPageResult);
+    readDashboardAgentTokenPageMock.mockReset();
+    readDashboardAgentTokenPageMock.mockResolvedValue({
+      status: 'success',
+      project: null,
+      items: [],
+      nextAfter: null,
+    } satisfies ReadDashboardAgentTokenPageResult);
     BubblophyDashboardMock.mockClear();
   });
 
@@ -290,7 +317,6 @@ describe('Bubblophy home page', () => {
         },
       ],
       projectMembers: [],
-      agentTokens: [],
       agentRuns: [],
       activity: [],
     } satisfies DashboardSnapshot;
@@ -383,7 +409,6 @@ describe('Bubblophy home page', () => {
       currentUser: { authUserId: 'user_owner' },
       projects: [],
       projectMembers: [],
-      agentTokens: [],
       agentRuns: [],
       activity: [],
     } satisfies DashboardSnapshot;
@@ -589,17 +614,6 @@ describe('Bubblophy home page', () => {
           createdAt: '2026-07-19T10:00:00.000Z',
         },
       ],
-      agentTokens: [
-        {
-          id: 'token-ap',
-          label: 'AP Reader',
-          projectKey: 'AP',
-          scopes: ['issues:read'],
-          state: 'aktiv',
-          lastUsedAt: 'noch nie',
-          expiresAt: 'läuft nicht ab',
-        },
-      ],
       agentRuns: [
         {
           id: 'run-ap-5',
@@ -659,7 +673,8 @@ describe('Bubblophy home page', () => {
 
     expect(element.props.snapshot.projects).toEqual([]);
     expect(element.props.snapshot.projectMembers).toEqual([]);
-    expect(element.props.snapshot.agentTokens).toEqual([]);
+    expect(element.props.snapshot).not.toHaveProperty('agentTokens');
+    expect(element.props.agentTokenPageResult).toBeNull();
     expect(element.props.snapshot.agentRuns).toEqual([]);
     expect(element.props.snapshot.activity).toEqual([]);
     expect(element.props.issueDetailResult).toBeNull();

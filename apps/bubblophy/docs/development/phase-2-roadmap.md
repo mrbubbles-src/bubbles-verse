@@ -202,9 +202,12 @@ Status: abgeschlossen.
   `(lower(label), id)`-Cursor. Auch die RunQueue hängt nicht mehr von dieser
   Verwaltungsliste ab: Ein redigiertes Boolean bildet State, Ablauf und
   `runs:update` des exakt dem Run zugeordneten Tokens sowie den Archivstatus
-  des Projekts ab. Die
-  Verwaltungsansicht für Agent-Tokens bleibt bis zum nächsten Slice
-  unpaginiert.
+  des Projekts ab. Die Agent-Token-Verwaltungsansicht besitzt nun ebenfalls
+  einen membership-scoped 20er-Vertrag für ein oder alle Projekte mit stabilem
+  `(projectKey, lower(label), tokenId)`-URL-Cursor, finaler Rollen- und
+  Archivprüfung sowie seitengebundenen Create-/Lifecycle-Overlays. Der
+  unbeschränkte Token-Root-Read ist entfernt. Präfixsuche bleibt ein eigener
+  nächster Slice.
 - Datenbankabfragen und Cache-Tags auf größere Projektmengen prüfen.
 
 ### 6. Benachrichtigungen und Team-Arbeit
@@ -278,7 +281,8 @@ Verträgen. Die begrenzte ActivityPage und ihre URL-/Dashboard-Integration sind
 ebenfalls abgeschlossen. Mitgliederpanel, Issue-Assignee-Labels und
 Assignee-Auswahl besitzen inzwischen eigene begrenzte Verträge; der globale
 Mitglieder-Root-Read ist entfernt. Run-Anfragen besitzen außerdem eine eigene
-begrenzte ausführbare Token-Auswahl. Als nächste größere Datenmenge bleibt die
-Agent-Token-Verwaltungsansicht. Die
-MCP-Grundlage bleibt unter
+begrenzte ausführbare Token-Auswahl. Auch die Agent-Token-Verwaltungsansicht
+ist als 20er-Seite für ein oder alle Projekte integriert und aus dem Root-
+Snapshot entfernt; als nächster Token-Slice bleibt die begrenzte Präfixsuche.
+Die MCP-Grundlage bleibt unter
 `docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md` dokumentiert.

@@ -325,6 +325,9 @@ describe('selectBubblophyDashboardRowsForUser', () => {
         call.selectedKeys.includes('displayName')
     );
     const selectedKeys = calls.flatMap((call) => call.selectedKeys);
+    const tokenTableCalls = calls.filter(
+      (call) => call.tableName === 'bubblophy_agent_tokens'
+    );
 
     expect(projectEventCall).toBeUndefined();
     expect(issueEventCall).toBeUndefined();
@@ -353,6 +356,12 @@ describe('selectBubblophyDashboardRowsForUser', () => {
       calls.find((call) => call.tableName === 'ranked_issue_notes')
     ).toBeUndefined();
     expect(projectMemberCall).toBeUndefined();
+    expect(tokenTableCalls).toEqual([
+      expect.objectContaining({
+        selectedKeys: ['projectId', 'total'],
+        groupByCalled: true,
+      }),
+    ]);
     expect(selectedKeys).not.toContain('tokenHash');
     expect(selectedKeys).not.toContain('plaintextToken');
     expect(selectedKeys).not.toContain('requestedByAuthUserId');
@@ -428,7 +437,6 @@ describe('selectBubblophyDashboardRowsForUser', () => {
       selectBubblophyDashboardRowsForUser('user_owner')
     ).resolves.toEqual({
       projectRows: [],
-      agentTokenRows: [],
       agentRunRows: [],
     });
   });
@@ -479,7 +487,6 @@ describe('selectBubblophyDashboardRowsForUser', () => {
         key: 'OLD',
       }),
     ]);
-    expect(rows.agentTokenRows).toEqual([]);
     expect(rows.agentRunRows).toEqual([]);
   });
 });

@@ -43,6 +43,7 @@ import type {
 } from '@/lib/dashboard/issues';
 import type { ReadDashboardMemberPageResult } from '@/lib/dashboard/members';
 import type {
+  AgentTokenSummary,
   DashboardSnapshot,
   IssuePriority,
   IssueStatus,
@@ -50,9 +51,11 @@ import type {
 } from '@/lib/dashboard/types';
 
 import { parseDashboardActivityQuery } from '@/lib/dashboard/activity-query';
+import { parseDashboardAgentTokenCursor } from '@/lib/dashboard/agent-token-query';
 import { parseDashboardAllIssueQuery } from '@/lib/dashboard/all-issue-query';
 import { parseDashboardIssueQuery } from '@/lib/dashboard/issue-query';
 import {
+  dashboardAgentTokenFixtures,
   dashboardIssueFixtures,
   dashboardSnapshot,
 } from '@/lib/dashboard/sample-data';
@@ -115,6 +118,10 @@ const issueFixturesBySnapshot = new WeakMap<
   DashboardSnapshot,
   IssueSummary[]
 >();
+const agentTokenFixturesBySnapshot = new WeakMap<
+  DashboardSnapshot,
+  AgentTokenSummary[]
+>();
 
 /** Associates page/detail fixtures without putting issues back into snapshots. */
 function withIssueFixtures<T extends DashboardSnapshot>(
@@ -125,20 +132,32 @@ function withIssueFixtures<T extends DashboardSnapshot>(
   return snapshot;
 }
 
-withIssueFixtures(dashboardSnapshot);
+/** Associates token-page fixtures without putting tokens back into snapshots. */
+function withAgentTokenFixtures<T extends DashboardSnapshot>(
+  snapshot: T,
+  tokens: AgentTokenSummary[] = dashboardAgentTokenFixtures
+) {
+  agentTokenFixturesBySnapshot.set(snapshot, tokens);
+  return snapshot;
+}
 
-const databaseSnapshot = withIssueFixtures({
-  ...dashboardSnapshot,
-  projects: dashboardSnapshot.projects.map((project) => ({
-    ...project,
-    currentUserRole: 'owner' as const,
-  })),
-  meta: {
-    dataSource: 'database',
-    label: 'Datenbankdaten',
-    description: 'Read-only Testdaten.',
-  },
-} satisfies DashboardSnapshot);
+withIssueFixtures(dashboardSnapshot);
+withAgentTokenFixtures(dashboardSnapshot);
+
+const databaseSnapshot = withAgentTokenFixtures(
+  withIssueFixtures({
+    ...dashboardSnapshot,
+    projects: dashboardSnapshot.projects.map((project) => ({
+      ...project,
+      currentUserRole: 'owner' as const,
+    })),
+    meta: {
+      dataSource: 'database',
+      label: 'Datenbankdaten',
+      description: 'Read-only Testdaten.',
+    },
+  } satisfies DashboardSnapshot)
+);
 
 const bvIssuePageResult = {
   status: 'success',
@@ -379,7 +398,6 @@ const emptyDatabaseSnapshot = {
   },
   projects: [],
   projectMembers: [],
-  agentTokens: [],
   agentRuns: [],
   activity: [],
 } satisfies DashboardSnapshot;
@@ -426,28 +444,83 @@ function createRunTargetOptionsAction(
   );
 }
 
-const databaseSnapshotWithoutAgentTokens = {
-  ...databaseSnapshotWithEmptyRuns,
-  agentTokens: [],
-} satisfies DashboardSnapshot;
+const databaseSnapshotWithoutAgentTokens = withAgentTokenFixtures(
+  { ...databaseSnapshotWithEmptyRuns } satisfies DashboardSnapshot,
+  []
+);
 
-const databaseSnapshotWithRunUpdateToken = {
-  ...databaseSnapshot,
-  agentTokens: [
-    {
-      id: 'token_runner',
-      label: 'Codex Runner',
-      projectKey: 'BV',
-      scopes: ['runs:update'],
-      state: 'aktiv',
-      lastUsedAt: 'noch nie verwendet',
-      expiresAt: 'läuft nicht automatisch ab',
-    },
-  ],
-  agentRuns: databaseSnapshot.agentRuns.map((run) =>
-    run.id === 'run_bv_14' ? { ...run, canAgentReportStatus: true } : run
-  ),
-} satisfies DashboardSnapshot;
+const runUpdateTokenFixtures = [
+  {
+    id: 'token_runner',
+    label: 'Codex Runner',
+    projectKey: 'BV',
+    scopes: ['runs:update'],
+    state: 'aktiv',
+    lastUsedAt: 'noch nie verwendet',
+    expiresAt: 'läuft nicht automatisch ab',
+  },
+] satisfies AgentTokenSummary[];
+
+const databaseSnapshotWithRunUpdateToken = withAgentTokenFixtures(
+  {
+    ...databaseSnapshot,
+    agentRuns: databaseSnapshot.agentRuns.map((run) =>
+      run.id === 'run_bv_14' ? { ...run, canAgentReportStatus: true } : run
+    ),
+  } satisfies DashboardSnapshot,
+  runUpdateTokenFixtures
+);
+
+const issueReadTokenFixtures = [
+  {
+    id: 'token_reader',
+    label: 'Claude Reader',
+    projectKey: 'BV',
+    scopes: ['issues:read'],
+    state: 'aktiv',
+    lastUsedAt: 'noch nie verwendet',
+    expiresAt: 'läuft nicht automatisch ab',
+  },
+] satisfies AgentTokenSummary[];
+
+const unresolvedIssueReadTokenFixtures = [
+  {
+    id: 'token_unknown_project',
+    label: 'Reader ohne Projektauflösung',
+    projectKey: 'ZZ',
+    scopes: ['issues:read'],
+    state: 'aktiv',
+    lastUsedAt: 'noch nie verwendet',
+    expiresAt: 'läuft nicht automatisch ab',
+  },
+] satisfies AgentTokenSummary[];
+
+const writeOnlyTokenFixtures = [
+  {
+    id: 'token_writer',
+    label: 'Writer ohne Handoff',
+    projectKey: 'BV',
+    scopes: ['issues:write'],
+    state: 'aktiv',
+    lastUsedAt: 'noch nie verwendet',
+    expiresAt: 'läuft nicht automatisch ab',
+  },
+] satisfies AgentTokenSummary[];
+
+const databaseSnapshotWithIssueReadToken = withAgentTokenFixtures(
+  { ...databaseSnapshot } satisfies DashboardSnapshot,
+  issueReadTokenFixtures
+);
+
+const databaseSnapshotWithUnresolvedIssueReadToken = withAgentTokenFixtures(
+  { ...databaseSnapshot } satisfies DashboardSnapshot,
+  unresolvedIssueReadTokenFixtures
+);
+
+const databaseSnapshotWithWriteOnlyToken = withAgentTokenFixtures(
+  { ...databaseSnapshot } satisfies DashboardSnapshot,
+  writeOnlyTokenFixtures
+);
 
 const databaseSnapshotWithApprovedRunUpdateToken = {
   ...databaseSnapshotWithRunUpdateToken,
@@ -500,51 +573,6 @@ const databaseSnapshotWithUnresolvedRun = {
       state: 'review',
       requestedBy: 'Mensch',
       lastEvent: 'Run verweist auf ein nicht geladenes Issue.',
-    },
-  ],
-} satisfies DashboardSnapshot;
-
-const databaseSnapshotWithIssueReadToken = {
-  ...databaseSnapshot,
-  agentTokens: [
-    {
-      id: 'token_reader',
-      label: 'Claude Reader',
-      projectKey: 'BV',
-      scopes: ['issues:read'],
-      state: 'aktiv',
-      lastUsedAt: 'noch nie verwendet',
-      expiresAt: 'läuft nicht automatisch ab',
-    },
-  ],
-} satisfies DashboardSnapshot;
-
-const databaseSnapshotWithUnresolvedIssueReadToken = {
-  ...databaseSnapshot,
-  agentTokens: [
-    {
-      id: 'token_unknown_project',
-      label: 'Reader ohne Projektauflösung',
-      projectKey: 'ZZ',
-      scopes: ['issues:read'],
-      state: 'aktiv',
-      lastUsedAt: 'noch nie verwendet',
-      expiresAt: 'läuft nicht automatisch ab',
-    },
-  ],
-} satisfies DashboardSnapshot;
-
-const databaseSnapshotWithWriteOnlyToken = {
-  ...databaseSnapshot,
-  agentTokens: [
-    {
-      id: 'token_writer',
-      label: 'Writer ohne Handoff',
-      projectKey: 'BV',
-      scopes: ['issues:write'],
-      state: 'aktiv',
-      lastUsedAt: 'noch nie verwendet',
-      expiresAt: 'läuft nicht automatisch ab',
     },
   ],
 } satisfies DashboardSnapshot;
@@ -763,15 +791,95 @@ function BubblophyDashboard(props: TestDashboardProps) {
     props.snapshot.meta.dataSource === 'database' && !hasExplicitActivityPage
       ? buildActivityPageTestProps(params, props.snapshot, selectedProject)
       : {};
+  const hasExplicitAgentTokenPage =
+    Object.hasOwn(props, 'agentTokenPageRequest') ||
+    Object.hasOwn(props, 'agentTokenPageResult');
+  const agentTokenProps = hasExplicitAgentTokenPage
+    ? {}
+    : buildAgentTokenPageTestProps(
+        params,
+        props.snapshot,
+        selectedProject,
+        agentTokenFixturesBySnapshot.get(props.snapshot) ?? []
+      );
 
   return (
     <ProductionBubblophyDashboard
       {...pageProps}
       {...detailProps}
       {...activityProps}
+      {...agentTokenProps}
       {...props}
     />
   );
+}
+
+/** Builds one bounded token-page fixture without snapshot token data. */
+function buildAgentTokenPageTestProps(
+  params: URLSearchParams,
+  snapshot: DashboardSnapshot,
+  selectedProject: DashboardSnapshot['projects'][number] | undefined,
+  tokens: AgentTokenSummary[]
+): Pick<TestDashboardProps, 'agentTokenPageRequest' | 'agentTokenPageResult'> {
+  const after = parseDashboardAgentTokenCursor(
+    params.get('tokenAfterProject'),
+    params.get('tokenAfterLabel'),
+    params.get('tokenAfterId')
+  );
+  const projectKey = selectedProject?.key ?? null;
+  const sortedTokens = [...tokens]
+    .filter((token) => !projectKey || token.projectKey === projectKey)
+    .sort(
+      (left, right) =>
+        left.projectKey.localeCompare(right.projectKey) ||
+        left.label.toLowerCase().localeCompare(right.label.toLowerCase()) ||
+        left.id.localeCompare(right.id)
+    )
+    .filter(
+      (token) =>
+        !after ||
+        token.projectKey > after.projectKey ||
+        (token.projectKey === after.projectKey &&
+          (token.label.toLowerCase() > after.normalizedLabel ||
+            (token.label.toLowerCase() === after.normalizedLabel &&
+              token.id > after.tokenId)))
+    );
+  const pageTokens = sortedTokens.slice(0, 20);
+  const lastToken = pageTokens.at(-1);
+
+  return {
+    agentTokenPageRequest: { projectKey, after },
+    agentTokenPageResult: {
+      status: 'success',
+      project: selectedProject
+        ? {
+            key: selectedProject.key,
+            name: selectedProject.name,
+            isArchived: selectedProject.isArchived,
+            currentUserRole: selectedProject.currentUserRole ?? 'viewer',
+          }
+        : null,
+      items: pageTokens.map((token) => {
+        const project = snapshot.projects.find(
+          (candidate) => candidate.key === token.projectKey
+        );
+
+        return {
+          ...token,
+          projectIsArchived: project?.isArchived ?? false,
+          currentUserRole: project?.currentUserRole ?? 'owner',
+        };
+      }),
+      nextAfter:
+        sortedTokens.length > 20 && lastToken
+          ? {
+              projectKey: lastToken.projectKey,
+              normalizedLabel: lastToken.label.toLowerCase(),
+              tokenId: lastToken.id,
+            }
+          : null,
+    },
+  };
 }
 
 /** Builds a server activity-page fixture from legacy presentation fixtures. */
@@ -1091,7 +1199,7 @@ describe('BubblophyDashboard interactions', () => {
   );
 
   it('scopes token creation and lifecycle controls to managed projects', () => {
-    const mixedRoleSnapshot = {
+    const mixedRoleSnapshot = withAgentTokenFixtures({
       ...databaseSnapshot,
       projects: databaseSnapshot.projects.map((project) => ({
         ...project,
@@ -1102,7 +1210,7 @@ describe('BubblophyDashboard interactions', () => {
               ? ('viewer' as const)
               : ('member' as const),
       })),
-    } satisfies DashboardSnapshot;
+    } satisfies DashboardSnapshot);
 
     render(
       <BubblophyDashboard
@@ -2132,9 +2240,6 @@ describe('BubblophyDashboard interactions', () => {
       ),
       projectMembers: databaseSnapshot.projectMembers.filter(
         (member) => member.projectKey !== 'BV'
-      ),
-      agentTokens: databaseSnapshot.agentTokens.filter(
-        (token) => token.projectKey !== 'BV'
       ),
       agentRuns: databaseSnapshot.agentRuns.filter(
         (run) => !run.issueId.startsWith('BV-')
@@ -4330,7 +4435,146 @@ describe('BubblophyDashboard interactions', () => {
     ).toBeInTheDocument();
   });
 
+  it('writes the complete cursor when opening the next token page', () => {
+    const nextAfter = {
+      projectKey: 'NO',
+      normalizedLabel: 'token 20',
+      tokenId: 'token-20',
+    } as const;
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        agentTokenPageRequest={{ projectKey: null, after: null }}
+        agentTokenPageResult={{
+          status: 'success',
+          project: null,
+          items: [],
+          nextAfter,
+        }}
+      />
+    );
+    const agentSection = document.getElementById('agents');
+
+    expect(agentSection).toBeInstanceOf(HTMLElement);
+
+    if (!agentSection) {
+      throw new Error('Expected the agent token section to render.');
+    }
+
+    navigationMocks.routerPush.mockClear();
+    autoCommitMockNavigation = false;
+    fireEvent.click(
+      within(agentSection).getByRole('button', { name: 'Weitere 20 Tokens' })
+    );
+
+    const pushedHref = navigationMocks.routerPush.mock.calls[0]?.[0];
+
+    expect(pushedHref).toBeTruthy();
+    const pushedUrl = new URL(
+      pushedHref ?? '/',
+      'https://bubblophy.example.test'
+    );
+    expect(pushedUrl.searchParams.get('tokenAfterProject')).toBe('NO');
+    expect(pushedUrl.searchParams.get('tokenAfterLabel')).toBe('token 20');
+    expect(pushedUrl.searchParams.get('tokenAfterId')).toBe('token-20');
+  });
+
+  it('shows token loading while URL and server page fingerprints differ', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams(
+        'tokenAfterProject=BV&tokenAfterLabel=codex&tokenAfterId=token-20'
+      )
+    );
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        agentTokenPageRequest={{ projectKey: null, after: null }}
+        agentTokenPageResult={{
+          status: 'success',
+          project: null,
+          items: [],
+          nextAfter: null,
+        }}
+      />
+    );
+    const agentSection = document.getElementById('agents');
+
+    expect(agentSection).toBeInstanceOf(HTMLElement);
+
+    if (!agentSection) {
+      throw new Error('Expected the agent token section to render.');
+    }
+
+    expect(within(agentSection).getByRole('status')).toHaveTextContent(
+      'Agent-Token-Liste wird geladen.'
+    );
+    expect(within(agentSection).queryByText('codex-local-lio')).toBeNull();
+    expect(
+      within(agentSection).queryByText(/Noch keine Agent-Tokens/i)
+    ).toBeNull();
+  });
+
+  it.each([
+    {
+      accessState: 'viewer role',
+      currentUserRole: 'viewer' as const,
+      projectIsArchived: false,
+    },
+    {
+      accessState: 'archived project',
+      currentUserRole: 'owner' as const,
+      projectIsArchived: true,
+    },
+  ])(
+    'hides token lifecycle controls for final $accessState metadata',
+    ({ currentUserRole, projectIsArchived }) => {
+      render(
+        <BubblophyDashboard
+          snapshot={databaseSnapshot}
+          agentTokenPageRequest={{ projectKey: null, after: null }}
+          agentTokenPageResult={{
+            status: 'success',
+            project: null,
+            items: [
+              {
+                ...dashboardAgentTokenFixtures[0]!,
+                currentUserRole,
+                projectIsArchived,
+              },
+            ],
+            nextAfter: null,
+          }}
+          updateAgentTokenLifecycleAction={async () => ({
+            status: 'forbidden',
+          })}
+        />
+      );
+      const agentSection = document.getElementById('agents');
+
+      expect(agentSection).toBeInstanceOf(HTMLElement);
+
+      if (!agentSection) {
+        throw new Error('Expected the agent token section to render.');
+      }
+
+      expect(within(agentSection).getByText('codex-local-lio')).toBeVisible();
+      expect(
+        within(agentSection).queryByRole('button', { name: 'Pausieren' })
+      ).toBeNull();
+      expect(
+        within(agentSection).queryByRole('button', { name: 'Widerrufen' })
+      ).toBeNull();
+    }
+  );
+
   it('creates and selects a database project from the projects panel', async () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams(
+        'tokenAfterProject=NO&tokenAfterLabel=token-20&tokenAfterId=token-20'
+      )
+    );
     const createProjectAction = vi.fn<
       (
         input: CreateBubblophyProjectActionInput
@@ -4402,6 +4646,20 @@ describe('BubblophyDashboard interactions', () => {
     expect(createProjectAction.mock.calls[0]?.[0]).not.toHaveProperty(
       'authUserId'
     );
+    const projectSelectionHref =
+      navigationMocks.routerPush.mock.calls.at(-1)?.[0];
+
+    expect(projectSelectionHref).toBeTruthy();
+    const projectSelectionUrl = new URL(
+      projectSelectionHref ?? '/',
+      'https://bubblophy.example.test'
+    );
+    expect(projectSelectionUrl.searchParams.get('project')).toBe('ZEN');
+    expect(projectSelectionUrl.searchParams.has('tokenAfterProject')).toBe(
+      false
+    );
+    expect(projectSelectionUrl.searchParams.has('tokenAfterLabel')).toBe(false);
+    expect(projectSelectionUrl.searchParams.has('tokenAfterId')).toBe(false);
 
     await waitFor(() => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -6217,10 +6475,14 @@ describe('BubblophyDashboard interactions', () => {
       },
     }));
 
-    render(
+    const updateAgentTokenLifecycleAction = vi.fn(async () => ({
+      status: 'forbidden' as const,
+    }));
+    const { rerender } = render(
       <BubblophyDashboard
         snapshot={databaseSnapshot}
         createAgentTokenAction={createAgentTokenAction}
+        updateAgentTokenLifecycleAction={updateAgentTokenLifecycleAction}
       />
     );
 
@@ -6299,6 +6561,41 @@ describe('BubblophyDashboard interactions', () => {
       screen.queryByText('test_plaintext_token_once')
     ).not.toBeInTheDocument();
     expect(within(agentSection).getByText('Codex lokal')).toBeInTheDocument();
+
+    rerender(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        createAgentTokenAction={createAgentTokenAction}
+        updateAgentTokenLifecycleAction={updateAgentTokenLifecycleAction}
+        agentTokenPageRequest={{ projectKey: null, after: null }}
+        agentTokenPageResult={{
+          status: 'success',
+          project: null,
+          items: [
+            {
+              id: 'token_codex_local',
+              label: 'Codex lokal',
+              projectKey: 'BV',
+              scopes: ['projects:read', 'issues:read'],
+              state: 'aktiv',
+              lastUsedAt: 'noch nie verwendet',
+              expiresAt: 'läuft nicht automatisch ab',
+              projectIsArchived: true,
+              currentUserRole: 'viewer',
+            },
+          ],
+          nextAfter: null,
+        }}
+      />
+    );
+
+    expect(within(agentSection).getByText('Codex lokal')).toBeInTheDocument();
+    expect(
+      within(agentSection).queryByRole('button', { name: 'Pausieren' })
+    ).toBeNull();
+    expect(
+      within(agentSection).queryByRole('button', { name: 'Widerrufen' })
+    ).toBeNull();
   });
 
   it('creates agent token with optional expiry', async () => {
@@ -6793,16 +7090,16 @@ describe('BubblophyDashboard interactions', () => {
         expiresAt: 'läuft nicht automatisch ab',
       },
     }));
-    const firstToken = databaseSnapshot.agentTokens[0];
+    const firstToken = dashboardAgentTokenFixtures[0];
 
     if (!firstToken) {
       throw new Error('Expected a token fixture.');
     }
 
-    const singleTokenSnapshot = {
-      ...databaseSnapshot,
-      agentTokens: [firstToken],
-    } satisfies DashboardSnapshot;
+    const singleTokenSnapshot = withAgentTokenFixtures(
+      { ...databaseSnapshot } satisfies DashboardSnapshot,
+      [firstToken]
+    );
 
     render(
       <BubblophyDashboard
@@ -6863,21 +7160,21 @@ describe('BubblophyDashboard interactions', () => {
         expiresAt: 'läuft nicht automatisch ab',
       },
     }));
-    const firstToken = databaseSnapshot.agentTokens[0];
+    const firstToken = dashboardAgentTokenFixtures[0];
 
     if (!firstToken) {
       throw new Error('Expected a token fixture.');
     }
 
-    const pausedTokenSnapshot = {
-      ...databaseSnapshot,
-      agentTokens: [
+    const pausedTokenSnapshot = withAgentTokenFixtures(
+      { ...databaseSnapshot } satisfies DashboardSnapshot,
+      [
         {
           ...firstToken,
           state: 'pausiert',
         },
-      ],
-    } satisfies DashboardSnapshot;
+      ]
+    );
 
     render(
       <BubblophyDashboard
@@ -6936,16 +7233,16 @@ describe('BubblophyDashboard interactions', () => {
         expiresAt: 'läuft nicht automatisch ab',
       },
     }));
-    const firstToken = databaseSnapshot.agentTokens[0];
+    const firstToken = dashboardAgentTokenFixtures[0];
 
     if (!firstToken) {
       throw new Error('Expected a token fixture.');
     }
 
-    const singleTokenSnapshot = {
-      ...databaseSnapshot,
-      agentTokens: [firstToken],
-    } satisfies DashboardSnapshot;
+    const singleTokenSnapshot = withAgentTokenFixtures(
+      { ...databaseSnapshot } satisfies DashboardSnapshot,
+      [firstToken]
+    );
 
     render(
       <BubblophyDashboard
@@ -7000,9 +7297,9 @@ describe('BubblophyDashboard interactions', () => {
   });
 
   it('does not show lifecycle actions for revoked or expired tokens', () => {
-    const tokenLifecycleSnapshot = {
-      ...databaseSnapshot,
-      agentTokens: [
+    const tokenLifecycleSnapshot = withAgentTokenFixtures(
+      { ...databaseSnapshot } satisfies DashboardSnapshot,
+      [
         {
           id: 'token_revoked',
           label: 'Widerrufenes Token',
@@ -7021,8 +7318,8 @@ describe('BubblophyDashboard interactions', () => {
           lastUsedAt: 'noch nie verwendet',
           expiresAt: '2000-01-01T00:00:00.000Z',
         },
-      ],
-    } satisfies DashboardSnapshot;
+      ]
+    );
 
     render(
       <BubblophyDashboard
@@ -7101,16 +7398,16 @@ describe('BubblophyDashboard interactions', () => {
         'tokenHash=<token-hash> Authorization: Bearer <agent-token>'
       );
     });
-    const firstToken = databaseSnapshot.agentTokens[0];
+    const firstToken = dashboardAgentTokenFixtures[0];
 
     if (!firstToken) {
       throw new Error('Expected a token fixture.');
     }
 
-    const singleTokenSnapshot = {
-      ...databaseSnapshot,
-      agentTokens: [firstToken],
-    } satisfies DashboardSnapshot;
+    const singleTokenSnapshot = withAgentTokenFixtures(
+      { ...databaseSnapshot } satisfies DashboardSnapshot,
+      [firstToken]
+    );
 
     render(
       <BubblophyDashboard
@@ -8648,7 +8945,6 @@ describe('BubblophyDashboard interactions', () => {
     const unavailableWithIssueAndToken = {
       ...databaseUnavailableSnapshot,
       projects: databaseSnapshot.projects,
-      agentTokens: databaseSnapshot.agentTokens,
     } satisfies DashboardSnapshot;
 
     withIssueFixtures(unavailableWithIssueAndToken);

@@ -7,19 +7,16 @@ import type {
 } from '@/lib/dashboard/types';
 import type {
   BubblophyAgentRunPersistenceRow,
-  BubblophyAgentTokenPersistenceRow,
   BubblophyProjectPersistenceRow,
 } from '@/lib/issues/repository';
 
 import {
   buildBubblophyAgentRunSummaries,
-  buildBubblophyAgentTokenSummaries,
   buildBubblophyProjectSummaries,
 } from '@/lib/issues/repository';
 
 export interface BubblophyDashboardPersistenceRows {
   projectRows: BubblophyProjectPersistenceRow[];
-  agentTokenRows: BubblophyAgentTokenPersistenceRow[];
   agentRunRows: BubblophyAgentRunPersistenceRow[];
 }
 
@@ -46,10 +43,6 @@ export function cloneDashboardSnapshot(
     currentUser: { ...snapshot.currentUser },
     projects: snapshot.projects.map((project) => ({ ...project })),
     projectMembers: snapshot.projectMembers.map((member) => ({ ...member })),
-    agentTokens: snapshot.agentTokens.map((token) => ({
-      ...token,
-      scopes: [...token.scopes],
-    })),
     agentRuns: snapshot.agentRuns.map((run) => ({ ...run })),
     activity: snapshot.activity.map((event) => ({ ...event })),
   };
@@ -75,9 +68,7 @@ export async function loadBubblophyDashboardSnapshot({
   const rows = await selectRows(authUserId);
   const projects = buildBubblophyProjectSummaries(rows.projectRows);
   const isEmptyDatabase =
-    projects.length === 0 &&
-    rows.agentTokenRows.length === 0 &&
-    rows.agentRunRows.length === 0;
+    projects.length === 0 && rows.agentRunRows.length === 0;
 
   return {
     meta: {
@@ -92,7 +83,6 @@ export async function loadBubblophyDashboardSnapshot({
     },
     projects,
     projectMembers: [],
-    agentTokens: buildBubblophyAgentTokenSummaries(rows.agentTokenRows),
     agentRuns: buildBubblophyAgentRunSummaries(rows.agentRunRows),
     activity: [],
   };
@@ -175,7 +165,6 @@ function createDatabaseUnavailableSnapshot(
     },
     projects: [],
     projectMembers: [],
-    agentTokens: [],
     agentRuns: [],
     activity: [],
   };

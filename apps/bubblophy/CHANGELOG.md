@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Replaced the unbounded dashboard agent-token snapshot with a membership-
+  scoped 20-item management page for one or all projects. The page uses a
+  stable `(projectKey, lower(label), tokenId)` URL cursor, rechecks membership,
+  role and archive state before mapping, continues past invalidated candidates,
+  exposes no token secrets or actor IDs, and keeps create/lifecycle overlays
+  confined to the current page. A matching database index supports the
+  ordering.
 - Decoupled RunQueue handoff hints from the dashboard token list. Each bounded
   run DTO now carries only a redacted `canAgentReportStatus` boolean derived
   from project archive state plus the assigned token's current lifecycle,

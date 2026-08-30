@@ -3,7 +3,6 @@ import 'server-only';
 import type { BubblophyDashboardPersistenceRows } from '@/lib/dashboard/data';
 import type {
   BubblophyAgentRunPersistenceRow,
-  BubblophyAgentTokenPersistenceRow,
   BubblophyProjectPersistenceRow,
 } from '@/lib/issues/repository';
 
@@ -56,20 +55,17 @@ export async function selectBubblophyDashboardRowsForUser(
   if (projectIds.length === 0) {
     return {
       projectRows: [],
-      agentTokenRows: [],
       agentRunRows: [],
     };
   }
 
-  const [projectRows, agentTokenRows, agentRunRows] = await Promise.all([
+  const [projectRows, agentRunRows] = await Promise.all([
     selectBubblophyProjectRowsForProjectIds(authUserId, projectIds),
-    selectBubblophyAgentTokenRowsForProjectIds(projectIds),
     selectBubblophyAgentRunRowsForProjectIds(projectIds),
   ]);
 
   const rows = {
     projectRows,
-    agentTokenRows,
     agentRunRows,
   };
   const currentMemberships =
@@ -119,9 +115,6 @@ function restrictDashboardRowsToCurrentMemberships(
   );
   return {
     projectRows,
-    agentTokenRows: rows.agentTokenRows.filter((row) =>
-      stableProjectKeys.has(row.projectKey)
-    ),
     agentRunRows: rows.agentRunRows.filter((row) =>
       stableProjectKeys.has(row.projectKey)
     ),
@@ -281,36 +274,6 @@ async function selectBubblophyProjectRowsForProjectIds(
       },
     ];
   });
-}
-
-/**
- * Selects public agent token summary rows for visible projects.
- *
- * The selected shape intentionally omits `token_hash`.
- *
- * @param projectIds Project IDs already constrained by membership.
- * @returns Public token rows for the dashboard.
- */
-async function selectBubblophyAgentTokenRowsForProjectIds(
-  projectIds: string[]
-): Promise<BubblophyAgentTokenPersistenceRow[]> {
-  return db
-    .select({
-      id: bubblophyAgentTokens.id,
-      label: bubblophyAgentTokens.label,
-      projectKey: bubblophyProjects.key,
-      scopes: bubblophyAgentTokens.scopes,
-      state: bubblophyAgentTokens.state,
-      lastUsedAt: bubblophyAgentTokens.lastUsedAt,
-      expiresAt: bubblophyAgentTokens.expiresAt,
-    })
-    .from(bubblophyAgentTokens)
-    .innerJoin(
-      bubblophyProjects,
-      eq(bubblophyProjects.id, bubblophyAgentTokens.projectId)
-    )
-    .where(inArray(bubblophyAgentTokens.projectId, projectIds))
-    .orderBy(asc(bubblophyProjects.key), asc(bubblophyAgentTokens.label));
 }
 
 /**

@@ -167,13 +167,14 @@ export function mapBubblophyAgentTokenState(
  * @returns Dashboard token state.
  */
 export function deriveBubblophyAgentTokenState(
-  row: Pick<BubblophyAgentTokenPersistenceRow, 'state' | 'expiresAt'>
+  row: Pick<BubblophyAgentTokenPersistenceRow, 'state' | 'expiresAt'>,
+  now = Date.now()
 ): AgentTokenState {
   if (row.state === 'revoked') {
     return 'widerrufen';
   }
 
-  if (isExpiredTimestamp(row.expiresAt)) {
+  if (isExpiredTimestamp(row.expiresAt, now)) {
     return 'abgelaufen';
   }
 
@@ -372,14 +373,14 @@ const projectMemberRoleSortOrder = {
  * @param expiresAt Nullable persisted expiry timestamp.
  * @returns True when the timestamp is valid and no longer in the future.
  */
-function isExpiredTimestamp(expiresAt: string | null) {
+function isExpiredTimestamp(expiresAt: string | null, now = Date.now()) {
   if (!expiresAt) {
     return false;
   }
 
   const time = Date.parse(expiresAt);
 
-  return Number.isFinite(time) && time <= Date.now();
+  return Number.isFinite(time) && time <= now;
 }
 
 /**

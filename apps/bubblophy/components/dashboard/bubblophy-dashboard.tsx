@@ -52,6 +52,14 @@ import type {
   ReadDashboardActivityPageResult,
 } from '@/lib/dashboard/activity';
 import type { DashboardActivityPageRequestState } from '@/lib/dashboard/activity-query';
+import type {
+  DashboardAgentTokenCursor,
+  DashboardAgentTokenPageRequestState,
+} from '@/lib/dashboard/agent-token-query';
+import type {
+  DashboardAgentTokenPageItem,
+  ReadDashboardAgentTokenPageResult,
+} from '@/lib/dashboard/agent-tokens';
 import type { DashboardAllIssuePageRequestState } from '@/lib/dashboard/all-issue-query';
 import type {
   DashboardAllIssueCursor,
@@ -101,6 +109,12 @@ import {
   setDashboardActivityPageParams,
   writeDashboardActivityQueryParams,
 } from '@/lib/dashboard/activity-query';
+import {
+  clearDashboardAgentTokenCursor,
+  isDashboardAgentTokenPageRequestCurrent,
+  parseDashboardAgentTokenCursor,
+  setDashboardAgentTokenPageParams,
+} from '@/lib/dashboard/agent-token-query';
 import {
   isDashboardAllIssuePageRequestCurrent,
   parseDashboardAllIssueQuery,
@@ -222,6 +236,8 @@ interface BubblophyDashboardProps {
   runPageResult?: ReadDashboardRunPageResult | null;
   memberPageRequest?: DashboardMemberPageRequestState | null;
   memberPageResult?: ReadDashboardMemberPageResult | null;
+  agentTokenPageRequest?: DashboardAgentTokenPageRequestState | null;
+  agentTokenPageResult?: ReadDashboardAgentTokenPageResult | null;
   activityPageRequest?: DashboardActivityPageRequestState | null;
   activityPageResult?: ReadDashboardActivityPageResult | null;
   createIssueAction?: (
@@ -367,6 +383,9 @@ type IssuePageStatus =
   | 'loading';
 
 type MemberPageStatus = ReadDashboardMemberPageResult['status'] | 'loading';
+type AgentTokenPageStatus =
+  | ReadDashboardAgentTokenPageResult['status']
+  | 'loading';
 
 type DashboardIssue = IssueSummary | LocalDraftIssue;
 
@@ -723,6 +742,8 @@ export function BubblophyDashboard({
   runPageResult = null,
   memberPageRequest = null,
   memberPageResult = null,
+  agentTokenPageRequest = null,
+  agentTokenPageResult = null,
   activityPageRequest = null,
   activityPageResult = null,
   createIssueAction,
@@ -778,12 +799,12 @@ export function BubblophyDashboard({
   const [removedProjectMemberIds, setRemovedProjectMemberIds] = useState<
     string[]
   >([]);
-  const [persistedAgentTokens, setPersistedAgentTokens] = useState<
-    AgentTokenSummary[]
-  >([]);
-  const [updatedAgentTokensById, setUpdatedAgentTokensById] = useState<
-    Record<string, AgentTokenSummary>
-  >({});
+  const [createdAgentToken, setCreatedAgentToken] =
+    useState<AgentTokenSummary | null>(null);
+  const [agentTokenPageUpdates, setAgentTokenPageUpdates] = useState<{
+    pageKey: string | null;
+    tokensById: Record<string, AgentTokenSummary>;
+  }>({ pageKey: null, tokensById: {} });
   const [persistedAgentRuns, setPersistedAgentRuns] = useState<
     AgentRunSummary[]
   >([]);
@@ -931,6 +952,33 @@ export function BubblophyDashboard({
       memberPageResult.project.key === urlProjectKey)
       ? memberPageResult
       : null;
+  const agentTokenCursor = useMemo(
+    () =>
+      parseDashboardAgentTokenCursor(
+        searchParams.get('tokenAfterProject'),
+        searchParams.get('tokenAfterLabel'),
+        searchParams.get('tokenAfterId')
+      ),
+    [searchParams]
+  );
+  const agentTokenProjectKey = urlProjectKey === 'all' ? null : urlProjectKey;
+  const hasAgentTokenPageBoundary =
+    snapshot.meta.dataSource === 'database' &&
+    (agentTokenPageRequest !== null || agentTokenPageResult !== null);
+  const currentAgentTokenPageResult =
+    isDashboardAgentTokenPageRequestCurrent(
+      agentTokenPageRequest,
+      agentTokenProjectKey,
+      agentTokenCursor
+    ) &&
+    (agentTokenPageResult?.status !== 'success' ||
+      (agentTokenPageResult.project?.key ?? null) === agentTokenProjectKey)
+      ? agentTokenPageResult
+      : null;
+  const agentTokenPageKey = buildAgentTokenPageKey(
+    agentTokenProjectKey,
+    agentTokenCursor
+  );
   const activityProjectKey = urlProjectKey === 'all' ? null : urlProjectKey;
   const hasActivityPageBoundary =
     snapshot.meta.dataSource === 'database' &&
@@ -1081,18 +1129,71 @@ export function BubblophyDashboard({
     urlProjectKey,
     visiblePersistedIssues,
   ]);
-  const allAgentTokens = useMemo(
-    () =>
-      [...persistedAgentTokens, ...snapshot.agentTokens]
-        .filter((token) => token.projectKey !== deniedProjectKey)
-        .map((token) => updatedAgentTokensById[token.id] ?? token),
-    [
-      deniedProjectKey,
-      persistedAgentTokens,
-      snapshot.agentTokens,
-      updatedAgentTokensById,
-    ]
-  );
+  const allAgentTokens = useMemo(() => {
+    const serverItems =
+      currentAgentTokenPageResult?.status === 'success'
+        ? currentAgentTokenPageResult.items
+            .filter((token) => token.projectKey !== deniedProjectKey)
+            .map((token) => ({
+              ...token,
+              projectIsArchived:
+                updatedProjectsByKey[token.projectKey]?.isArchived ??
+                token.projectIsArchived,
+            }))
+        : [];
+    const pageUpdates =
+      agentTokenPageUpdates.pageKey === agentTokenPageKey
+        ? agentTokenPageUpdates.tokensById
+        : {};
+    const updatedServerItems = serverItems.map((token) => ({
+      ...token,
+      ...(pageUpdates[token.id] ?? {}),
+    }));
+
+    if (
+      !createdAgentToken ||
+      agentTokenCursor ||
+      createdAgentToken.projectKey === deniedProjectKey ||
+      (agentTokenProjectKey &&
+        createdAgentToken.projectKey !== agentTokenProjectKey)
+    ) {
+      return updatedServerItems;
+    }
+
+    if (updatedServerItems.some((token) => token.id === createdAgentToken.id)) {
+      return updatedServerItems;
+    }
+
+    const project = baseProjects.find(
+      (candidate) => candidate.key === createdAgentToken.projectKey
+    );
+
+    if (!project?.currentUserRole) {
+      return updatedServerItems;
+    }
+
+    const createdItem: DashboardAgentTokenPageItem = {
+      ...createdAgentToken,
+      ...(pageUpdates[createdAgentToken.id] ?? {}),
+      projectIsArchived: project.isArchived,
+      currentUserRole: project.currentUserRole,
+    };
+
+    return [
+      createdItem,
+      ...updatedServerItems.filter((token) => token.id !== createdItem.id),
+    ];
+  }, [
+    agentTokenCursor,
+    agentTokenPageKey,
+    agentTokenPageUpdates,
+    agentTokenProjectKey,
+    baseProjects,
+    createdAgentToken,
+    currentAgentTokenPageResult,
+    deniedProjectKey,
+    updatedProjectsByKey,
+  ]);
   const serverPageRuns = useMemo(
     () =>
       currentRunPageResult?.status === 'success'
@@ -1259,6 +1360,9 @@ export function BubblophyDashboard({
     currentSuccessfulIssueDetail?.project ?? null,
     currentMemberPageResult?.status === 'success'
       ? currentMemberPageResult.project
+      : null,
+    currentAgentTokenPageResult?.status === 'success'
+      ? currentAgentTokenPageResult.project
       : null
   );
   const allPageProjectAccessByKey = useMemo(() => {
@@ -1350,10 +1454,6 @@ export function BubblophyDashboard({
         canManageBubblophyProject(project.currentUserRole)
       ),
     [activeProjects]
-  );
-  const manageableProjectKeys = useMemo(
-    () => new Set(activeManagerProjects.map((project) => project.key)),
-    [activeManagerProjects]
   );
   const agentTokenCreationProjects = useMemo(
     () =>
@@ -1536,7 +1636,10 @@ export function BubblophyDashboard({
   const updateSelectionUrl = (
     projectKey: ProjectFilterKey,
     issueId: string,
-    options: { resetIssueCursor?: boolean } = {}
+    options: {
+      resetIssueCursor?: boolean;
+      resetTokenPage?: boolean;
+    } = {}
   ) => {
     const nextParams = new URLSearchParams(searchParams.toString());
 
@@ -1559,6 +1662,10 @@ export function BubblophyDashboard({
       nextParams.delete('allAfterIssue');
       nextParams.delete('runAfterAt');
       nextParams.delete('runAfterId');
+    }
+
+    if (options.resetTokenPage) {
+      clearDashboardAgentTokenCursor(nextParams);
     }
 
     pushDashboardParams(nextParams);
@@ -1600,12 +1707,15 @@ export function BubblophyDashboard({
     }
 
     const canonicalQueryParams = writeDashboardActivityQueryParams(
-      setDashboardMemberPageParams(
-        setDashboardRunPageParams(
-          canonicalIssueParams,
-          urlProjectKey === 'all' ? null : runCursor
+      setDashboardAgentTokenPageParams(
+        setDashboardMemberPageParams(
+          setDashboardRunPageParams(
+            canonicalIssueParams,
+            urlProjectKey === 'all' ? null : runCursor
+          ),
+          urlProjectKey === 'all' ? null : memberCursor
         ),
-        urlProjectKey === 'all' ? null : memberCursor
+        agentTokenCursor
       ),
       activityQuery
     );
@@ -1622,6 +1732,7 @@ export function BubblophyDashboard({
   }, [
     allIssueQuery,
     activityQuery,
+    agentTokenCursor,
     issueQuery,
     memberCursor,
     pathname,
@@ -1649,8 +1760,11 @@ export function BubblophyDashboard({
     nextParams.delete('runAfterId');
     nextParams.delete('memberAfterAt');
     nextParams.delete('memberAfterAuthUserId');
+    clearDashboardAgentTokenCursor(nextParams);
     clearDashboardActivityCursor(nextParams);
     nextParams.delete('issue');
+    setCreatedAgentToken(null);
+    setAgentTokenPageUpdates({ pageKey: null, tokensById: {} });
     pushDashboardParams(nextParams);
   };
 
@@ -1702,6 +1816,19 @@ export function BubblophyDashboard({
   const handleMemberPageChange = (after: DashboardMemberCursor | null) => {
     pushDashboardParams(
       setDashboardMemberPageParams(
+        new URLSearchParams(searchParams.toString()),
+        after
+      )
+    );
+  };
+
+  const handleAgentTokenPageChange = (
+    after: DashboardAgentTokenCursor | null
+  ) => {
+    setCreatedAgentToken(null);
+    setAgentTokenPageUpdates({ pageKey: null, tokensById: {} });
+    pushDashboardParams(
+      setDashboardAgentTokenPageParams(
         new URLSearchParams(searchParams.toString()),
         after
       )
@@ -1764,7 +1891,12 @@ export function BubblophyDashboard({
 
   const handlePersistedProjectCreated = (project: ProjectSummary) => {
     setPersistedProjects((currentProjects) => [project, ...currentProjects]);
-    updateSelectionUrl(project.key, '', { resetIssueCursor: true });
+    setCreatedAgentToken(null);
+    setAgentTokenPageUpdates({ pageKey: null, tokensById: {} });
+    updateSelectionUrl(project.key, '', {
+      resetIssueCursor: true,
+      resetTokenPage: true,
+    });
     setRecentMutationFeedback(`Projekt ${project.key} wurde erstellt.`);
     refreshDatabaseSnapshot();
     setIsProjectDialogOpen(false);
@@ -1906,15 +2038,21 @@ export function BubblophyDashboard({
       expiresAt: token.expiresAt,
     };
 
-    setPersistedAgentTokens((currentTokens) => [summary, ...currentTokens]);
+    setCreatedAgentToken(summary);
+    setAgentTokenPageUpdates({ pageKey: null, tokensById: {} });
     setRecentMutationFeedback(`Agent-Token ${summary.label} wurde erstellt.`);
     refreshDatabaseSnapshot();
   };
 
   const handleAgentTokenLifecycleUpdated = (token: AgentTokenSummary) => {
-    setUpdatedAgentTokensById((currentTokens) => ({
-      ...currentTokens,
-      [token.id]: token,
+    setAgentTokenPageUpdates((currentUpdates) => ({
+      pageKey: agentTokenPageKey,
+      tokensById: {
+        ...(currentUpdates.pageKey === agentTokenPageKey
+          ? currentUpdates.tokensById
+          : {}),
+        [token.id]: token,
+      },
     }));
     setRecentMutationFeedback(`Agent-Token ${token.label} wurde aktualisiert.`);
     refreshDatabaseSnapshot();
@@ -2202,6 +2340,17 @@ export function BubblophyDashboard({
               <AgentAccess
                 dataSource={snapshot.meta.dataSource}
                 agentTokens={displayedAgentTokens}
+                pageStatus={
+                  hasAgentTokenPageBoundary && !currentAgentTokenPageResult
+                    ? 'loading'
+                    : (currentAgentTokenPageResult?.status ?? null)
+                }
+                cursor={agentTokenCursor}
+                nextAfter={
+                  currentAgentTokenPageResult?.status === 'success'
+                    ? currentAgentTokenPageResult.nextAfter
+                    : null
+                }
                 projects={allProjects}
                 canCreateAgentToken={
                   canUseDatabase &&
@@ -2211,12 +2360,13 @@ export function BubblophyDashboard({
                 canUpdateAgentTokens={
                   canUseDatabase && Boolean(updateAgentTokenLifecycleAction)
                 }
-                manageableProjectKeys={manageableProjectKeys}
                 updateAgentTokenLifecycleAction={
                   updateAgentTokenLifecycleAction
                 }
                 onCreateAgentToken={() => setIsAgentTokenDialogOpen(true)}
                 onAgentTokenLifecycleUpdated={handleAgentTokenLifecycleUpdated}
+                onFirstPage={() => handleAgentTokenPageChange(null)}
+                onNextPage={handleAgentTokenPageChange}
               />
               <RunQueue
                 dataSource={snapshot.meta.dataSource}
@@ -5376,25 +5526,33 @@ function IssuePlanDraftDialog({
 function AgentAccess({
   dataSource,
   agentTokens,
+  pageStatus,
+  cursor,
+  nextAfter,
   projects,
   canCreateAgentToken,
   canUpdateAgentTokens,
-  manageableProjectKeys,
   updateAgentTokenLifecycleAction,
   onCreateAgentToken,
   onAgentTokenLifecycleUpdated,
+  onFirstPage,
+  onNextPage,
 }: {
   dataSource: DashboardSnapshot['meta']['dataSource'];
-  agentTokens: AgentTokenSummary[];
+  agentTokens: DashboardAgentTokenPageItem[];
+  pageStatus: AgentTokenPageStatus | null;
+  cursor: DashboardAgentTokenCursor | null;
+  nextAfter: DashboardAgentTokenCursor | null;
   projects: ProjectSummary[];
   canCreateAgentToken: boolean;
   canUpdateAgentTokens: boolean;
-  manageableProjectKeys: ReadonlySet<string>;
   updateAgentTokenLifecycleAction?: (
     input: UpdateBubblophyAgentTokenLifecycleActionInput
   ) => Promise<UpdateBubblophyAgentTokenLifecycleActionResult>;
   onCreateAgentToken: () => void;
   onAgentTokenLifecycleUpdated: (token: AgentTokenSummary) => void;
+  onFirstPage: () => void;
+  onNextPage: (after: DashboardAgentTokenCursor) => void;
 }) {
   const isDatabaseSource =
     dataSource === 'database' || dataSource === 'empty_database';
@@ -5423,13 +5581,48 @@ function AgentAccess({
         ) : null}
       </CardHeader>
       <CardContent className="grid gap-3">
+        {isDatabaseSource && pageStatus === 'success' ? (
+          <div className="flex flex-wrap items-center justify-end gap-2 border-b border-border/60 pb-3">
+            {cursor ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={onFirstPage}>
+                Zur ersten Token-Seite
+              </Button>
+            ) : null}
+            {nextAfter ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => onNextPage(nextAfter)}>
+                Weitere 20 Tokens
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+        {isDatabaseSource && pageStatus === 'database_unavailable' ? (
+          <p role="status" className="text-sm text-muted-foreground">
+            Die Agent-Token-Liste ist gerade nicht verfügbar. Andere
+            Dashboard-Bereiche bleiben nutzbar.
+          </p>
+        ) : null}
+        {isDatabaseSource && pageStatus === 'loading' ? (
+          <p role="status" className="text-sm text-muted-foreground">
+            Agent-Token-Liste wird geladen.
+          </p>
+        ) : null}
         {!isDatabaseSource && agentTokens.length > 0 ? (
           <p className="rounded-md border border-dashed border-border bg-muted/30 p-3 text-sm text-muted-foreground">
             Beispielhafte Agent-Token-Vorschau aus Sample/Fallback-Daten. Hier
             sind keine operativen Tokens aktiv.
           </p>
         ) : null}
-        {agentTokens.length === 0 ? (
+        {pageStatus !== 'database_unavailable' &&
+        pageStatus !== 'loading' &&
+        agentTokens.length === 0 ? (
           <p className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
             Noch keine Agent-Tokens für diese Datenquelle.
           </p>
@@ -5458,7 +5651,8 @@ function AgentAccess({
               ))}
             </div>
             {canUpdateAgentTokens &&
-            manageableProjectKeys.has(token.projectKey) &&
+            !token.projectIsArchived &&
+            canManageBubblophyProject(token.currentUserRole) &&
             updateAgentTokenLifecycleAction ? (
               <AgentTokenLifecycleControls
                 key={`${token.id}-${token.state}`}
@@ -5637,6 +5831,19 @@ function buildAgentRunUpdateCurlExample(runId?: string) {
  */
 function canShowConcreteAgentRunHandoff(state: AgentRunState) {
   return agentUpdateableRunStates.includes(state);
+}
+
+/** Builds the bounded client overlay key for one token management page. */
+function buildAgentTokenPageKey(
+  projectKey: string | null,
+  after: DashboardAgentTokenCursor | null
+) {
+  return [
+    projectKey ?? 'all',
+    after?.projectKey ?? '',
+    after?.normalizedLabel ?? '',
+    after?.tokenId ?? '',
+  ].join('\u0000');
 }
 
 /**

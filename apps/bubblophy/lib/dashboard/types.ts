@@ -146,7 +146,6 @@ export interface DashboardSnapshot {
   };
   projects: ProjectSummary[];
   projectMembers: ProjectMemberSummary[];
-  agentTokens: AgentTokenSummary[];
   agentRuns: AgentRunSummary[];
   activity: ActivityEvent[];
 }
