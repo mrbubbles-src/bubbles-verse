@@ -2,6 +2,7 @@ import type { DashboardActivityPageRequestState } from '@/lib/dashboard/activity
 import type { DashboardAgentTokenPageRequestState } from '@/lib/dashboard/agent-token-query';
 import type { DashboardAllIssuePageRequestState } from '@/lib/dashboard/all-issue-query';
 import type { DashboardIssuePageRequestState } from '@/lib/dashboard/issue-query';
+import type { DashboardIssueReviewPageRequestState } from '@/lib/dashboard/issue-review-notification-query';
 import type { DashboardMemberPageRequestState } from '@/lib/dashboard/member-query';
 import type { DashboardNotificationPageRequestState } from '@/lib/dashboard/notification-query';
 import type { DashboardSnapshot } from '@/lib/dashboard/types';
@@ -18,6 +19,8 @@ import { parseDashboardAllIssueQuery } from '@/lib/dashboard/all-issue-query';
 import { readDashboardAllIssuePage } from '@/lib/dashboard/all-issues';
 import { getBubblophyDashboardSnapshot } from '@/lib/dashboard/data';
 import { parseDashboardIssueQuery } from '@/lib/dashboard/issue-query';
+import { parseDashboardIssueReviewCursor } from '@/lib/dashboard/issue-review-notification-query';
+import { readDashboardIssueReviewPage } from '@/lib/dashboard/issue-review-notifications';
 import {
   readDashboardIssueDetail,
   readDashboardIssuePage,
@@ -175,6 +178,16 @@ export async function ProtectedBubblophyDashboard({
     getFirstSearchParam(rawSearchParams.notificationAfterAt),
     getFirstSearchParam(rawSearchParams.notificationAfterId)
   );
+  const parsedIssueReviewCursor = parseDashboardIssueReviewCursor(
+    getFirstSearchParam(rawSearchParams.issueReviewAfterAt),
+    getFirstSearchParam(rawSearchParams.issueReviewAfterProject),
+    getFirstSearchParam(rawSearchParams.issueReviewAfterIssue)
+  );
+  const issueReviewCursor =
+    selectedProject &&
+    parsedIssueReviewCursor?.projectKey !== selectedProject.key
+      ? null
+      : parsedIssueReviewCursor;
   const requestedIssueKey = getFirstSearchParam(rawSearchParams.issue)
     ?.trim()
     .toUpperCase();
@@ -282,6 +295,19 @@ export async function ProtectedBubblophyDashboard({
         after: notificationCursor ?? undefined,
       })
     : Promise.resolve(null);
+  const issueReviewPageRequest =
+    dashboardSnapshot.meta.dataSource === 'database'
+      ? ({
+          projectKey: selectedProject?.key ?? null,
+          after: issueReviewCursor,
+        } satisfies DashboardIssueReviewPageRequestState)
+      : null;
+  const issueReviewPagePromise = issueReviewPageRequest
+    ? readDashboardIssueReviewPage(session.authUserId, {
+        projectKey: issueReviewPageRequest.projectKey ?? undefined,
+        after: issueReviewCursor ?? undefined,
+      })
+    : Promise.resolve(null);
   const requestedIssueDetailPromise =
     dashboardSnapshot.meta.dataSource === 'database' &&
     requestedPersistedIssueKey
@@ -298,6 +324,7 @@ export async function ProtectedBubblophyDashboard({
     agentTokenPageResult,
     activityPageResult,
     notificationPageResult,
+    issueReviewPageResult,
   ] = await Promise.all([
     issuePagePromise,
     allIssuePagePromise,
@@ -307,6 +334,7 @@ export async function ProtectedBubblophyDashboard({
     agentTokenPagePromise,
     activityPagePromise,
     notificationPagePromise,
+    issueReviewPagePromise,
   ]);
   const missingRequestedIssueKey =
     requestedIssueDetailResult?.status === 'not_found'
@@ -340,6 +368,7 @@ export async function ProtectedBubblophyDashboard({
     memberPageResult?.status === 'not_found' ||
     (selectedProject && agentTokenPageResult?.status === 'not_found') ||
     (selectedProject && notificationPageResult?.status === 'not_found') ||
+    (selectedProject && issueReviewPageResult?.status === 'not_found') ||
     activityPageResult?.status === 'not_found';
   const issueDetailRequestKey = hasLostProjectAccess
     ? null
@@ -383,6 +412,10 @@ export async function ProtectedBubblophyDashboard({
       notificationPageRequest={notificationPageRequest}
       notificationPageResult={
         hasLostProjectAccess ? null : notificationPageResult
+      }
+      issueReviewPageRequest={issueReviewPageRequest}
+      issueReviewPageResult={
+        hasLostProjectAccess ? null : issueReviewPageResult
       }
       createIssueAction={createBubblophyIssueAction}
       updateIssueContentAction={updateBubblophyIssueContentAction}

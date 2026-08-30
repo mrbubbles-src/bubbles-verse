@@ -69,6 +69,11 @@ import type {
   DashboardIssuePageRequestState,
   DashboardIssueQueryPatch,
 } from '@/lib/dashboard/issue-query';
+import type {
+  DashboardIssueReviewCursor,
+  DashboardIssueReviewPageRequestState,
+} from '@/lib/dashboard/issue-review-notification-query';
+import type { ReadDashboardIssueReviewPageResult } from '@/lib/dashboard/issue-review-notifications';
 import type { DashboardProjectAccess } from '@/lib/dashboard/issue-view';
 import type {
   ReadDashboardIssueDetailResult,
@@ -138,6 +143,14 @@ import {
   setDashboardIssuePageParams,
   writeDashboardIssueQueryParams,
 } from '@/lib/dashboard/issue-query';
+import {
+  buildDashboardIssueReviewPageKey,
+  clearDashboardIssueReviewCursor,
+  isDashboardIssueReviewPageRequestCurrent,
+  parseDashboardIssueReviewCursor,
+  setDashboardIssueReviewPageParams,
+  writeDashboardIssueReviewQueryParams,
+} from '@/lib/dashboard/issue-review-notification-query';
 import {
   combineDashboardProjectAccess,
   mapDashboardAllIssuePageToSummaries,
@@ -259,6 +272,8 @@ interface BubblophyDashboardProps {
   agentTokenPageResult?: ReadDashboardAgentTokenPageResult | null;
   notificationPageRequest?: DashboardNotificationPageRequestState | null;
   notificationPageResult?: ReadDashboardNotificationPageResult | null;
+  issueReviewPageRequest?: DashboardIssueReviewPageRequestState | null;
+  issueReviewPageResult?: ReadDashboardIssueReviewPageResult | null;
   activityPageRequest?: DashboardActivityPageRequestState | null;
   activityPageResult?: ReadDashboardActivityPageResult | null;
   createIssueAction?: (
@@ -767,6 +782,8 @@ export function BubblophyDashboard({
   agentTokenPageResult = null,
   notificationPageRequest = null,
   notificationPageResult = null,
+  issueReviewPageRequest = null,
+  issueReviewPageResult = null,
   activityPageRequest = null,
   activityPageResult = null,
   createIssueAction,
@@ -841,6 +858,10 @@ export function BubblophyDashboard({
     pageKey: string | null;
     runIds: string[];
   }>({ pageKey: null, runIds: [] });
+  const [resolvedIssueReviews, setResolvedIssueReviews] = useState<{
+    pageKey: string | null;
+    items: { issueKey: string; updatedAt: string }[];
+  }>({ pageKey: null, items: [] });
   const [recentMutationFeedback, setRecentMutationFeedback] = useState<
     string | null
   >(null);
@@ -1040,6 +1061,38 @@ export function BubblophyDashboard({
   const notificationPageKey = buildDashboardNotificationPageKey(
     notificationProjectKey,
     notificationCursor
+  );
+  const issueReviewProjectKey = urlProjectKey === 'all' ? null : urlProjectKey;
+  const parsedIssueReviewCursor = useMemo(
+    () =>
+      parseDashboardIssueReviewCursor(
+        searchParams.get('issueReviewAfterAt'),
+        searchParams.get('issueReviewAfterProject'),
+        searchParams.get('issueReviewAfterIssue')
+      ),
+    [searchParams]
+  );
+  const issueReviewCursor =
+    issueReviewProjectKey &&
+    parsedIssueReviewCursor?.projectKey !== issueReviewProjectKey
+      ? null
+      : parsedIssueReviewCursor;
+  const hasIssueReviewPageBoundary =
+    snapshot.meta.dataSource === 'database' &&
+    (issueReviewPageRequest !== null || issueReviewPageResult !== null);
+  const currentIssueReviewPageResult =
+    isDashboardIssueReviewPageRequestCurrent(
+      issueReviewPageRequest,
+      issueReviewProjectKey,
+      issueReviewCursor
+    ) &&
+    (issueReviewPageResult?.status !== 'success' ||
+      (issueReviewPageResult.project?.key ?? null) === issueReviewProjectKey)
+      ? issueReviewPageResult
+      : null;
+  const issueReviewPageKey = buildDashboardIssueReviewPageKey(
+    issueReviewProjectKey,
+    issueReviewCursor
   );
   const activityProjectKey = urlProjectKey === 'all' ? null : urlProjectKey;
   const hasActivityPageBoundary =
@@ -1409,6 +1462,25 @@ export function BubblophyDashboard({
     notificationPageKey,
     resolvedNotificationRuns,
   ]);
+  const displayedIssueReviews = useMemo(() => {
+    if (currentIssueReviewPageResult?.status !== 'success') {
+      return [];
+    }
+
+    const resolvedItems =
+      resolvedIssueReviews.pageKey === issueReviewPageKey
+        ? new Set(
+            resolvedIssueReviews.items.map(
+              (item) => `${item.issueKey}\u0000${item.updatedAt}`
+            )
+          )
+        : new Set<string>();
+
+    return currentIssueReviewPageResult.items.filter(
+      (review) =>
+        !resolvedItems.has(`${review.issueKey}\u0000${review.updatedAt}`)
+    );
+  }, [currentIssueReviewPageResult, issueReviewPageKey, resolvedIssueReviews]);
   const displayedActivity = useMemo(() => {
     if (snapshot.meta.dataSource === 'database') {
       return currentActivityPageResult?.status === 'success'
@@ -1792,19 +1864,22 @@ export function BubblophyDashboard({
     }
 
     const canonicalQueryParams = writeDashboardActivityQueryParams(
-      writeDashboardNotificationQueryParams(
-        writeDashboardAgentTokenQueryParams(
-          setDashboardMemberPageParams(
-            setDashboardRunPageParams(
-              canonicalIssueParams,
-              urlProjectKey === 'all' ? null : runCursor
+      writeDashboardIssueReviewQueryParams(
+        writeDashboardNotificationQueryParams(
+          writeDashboardAgentTokenQueryParams(
+            setDashboardMemberPageParams(
+              setDashboardRunPageParams(
+                canonicalIssueParams,
+                urlProjectKey === 'all' ? null : runCursor
+              ),
+              urlProjectKey === 'all' ? null : memberCursor
             ),
-            urlProjectKey === 'all' ? null : memberCursor
+            agentTokenQuery,
+            agentTokenCursor
           ),
-          agentTokenQuery,
-          agentTokenCursor
+          notificationCursor
         ),
-        notificationCursor
+        issueReviewCursor
       ),
       activityQuery
     );
@@ -1824,6 +1899,7 @@ export function BubblophyDashboard({
     agentTokenCursor,
     agentTokenQuery,
     issueQuery,
+    issueReviewCursor,
     memberCursor,
     notificationCursor,
     pathname,
@@ -1853,12 +1929,14 @@ export function BubblophyDashboard({
     nextParams.delete('memberAfterAuthUserId');
     clearDashboardAgentTokenCursor(nextParams);
     clearDashboardNotificationCursor(nextParams);
+    clearDashboardIssueReviewCursor(nextParams);
     clearDashboardActivityCursor(nextParams);
     nextParams.delete('issue');
     setCreatedAgentToken(null);
     setCreatedAgentTokenPageKey(null);
     setAgentTokenPageUpdates({ pageKey: null, tokensById: {} });
     setResolvedNotificationRuns({ pageKey: null, runIds: [] });
+    setResolvedIssueReviews({ pageKey: null, items: [] });
     pushDashboardParams(nextParams);
   };
 
@@ -1913,6 +1991,18 @@ export function BubblophyDashboard({
     setResolvedNotificationRuns({ pageKey: null, runIds: [] });
     pushDashboardParams(
       setDashboardNotificationPageParams(
+        new URLSearchParams(searchParams.toString()),
+        after
+      )
+    );
+  };
+
+  const handleIssueReviewPageChange = (
+    after: DashboardIssueReviewCursor | null
+  ) => {
+    setResolvedIssueReviews({ pageKey: null, items: [] });
+    pushDashboardParams(
+      setDashboardIssueReviewPageParams(
         new URLSearchParams(searchParams.toString()),
         after
       )
@@ -2143,6 +2233,31 @@ export function BubblophyDashboard({
       ...currentIssues,
       [issue.id]: issue,
     }));
+    const resolvedReview =
+      currentIssueReviewPageResult?.status === 'success'
+        ? currentIssueReviewPageResult.items.find(
+            (review) => review.issueKey === issue.id
+          )
+        : undefined;
+
+    if (issue.status !== 'review' && resolvedReview) {
+      setResolvedIssueReviews((currentReviews) => ({
+        pageKey: issueReviewPageKey,
+        items: [
+          ...(currentReviews.pageKey === issueReviewPageKey
+            ? currentReviews.items.filter(
+                (item) =>
+                  item.issueKey !== resolvedReview.issueKey ||
+                  item.updatedAt !== resolvedReview.updatedAt
+              )
+            : []),
+          {
+            issueKey: resolvedReview.issueKey,
+            updatedAt: resolvedReview.updatedAt,
+          },
+        ],
+      }));
+    }
     setRecentMutationFeedback(`Issue ${issue.id} wurde aktualisiert.`);
     refreshDatabaseSnapshot();
   };
@@ -2481,11 +2596,25 @@ export function BubblophyDashboard({
                     ? currentNotificationPageResult.nextAfter
                     : null
                 }
+                issueReviews={displayedIssueReviews}
+                issueReviewStatus={
+                  hasIssueReviewPageBoundary && !currentIssueReviewPageResult
+                    ? 'loading'
+                    : (currentIssueReviewPageResult?.status ?? null)
+                }
+                issueReviewCursor={issueReviewCursor}
+                nextIssueReviewAfter={
+                  currentIssueReviewPageResult?.status === 'success'
+                    ? currentIssueReviewPageResult.nextAfter
+                    : null
+                }
                 transitionAgentRunAction={transitionAgentRunAction}
                 onAgentRunTransitioned={handleAgentRunTransitioned}
                 onIssueSelect={handleIssueSelect}
                 onFirstPage={() => handleNotificationPageChange(null)}
                 onNextPage={handleNotificationPageChange}
+                onFirstIssueReviewPage={() => handleIssueReviewPageChange(null)}
+                onNextIssueReviewPage={handleIssueReviewPageChange}
               />
               <AgentAccess
                 key={`agent-tokens:${agentTokenQuery ?? ''}`}

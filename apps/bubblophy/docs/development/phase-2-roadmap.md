@@ -221,8 +221,12 @@ Status: abgeschlossen.
   und Contributor können `requested` direkt freigeben oder abbrechen. Die
   Projektion ist bewusst live und besitzt noch kein gelesen/ungelesen oder
   Zustellmodell.
-- Benachrichtigungen für den eigenständigen Issue-Status `review` als
-  Folgeslice ergänzen; er ist nicht mit Run-`needs_review` gleichzusetzen.
+- Der eigenständige Issue-Status `review` besitzt inzwischen eine zweite,
+  unabhängig paginierte 20er-Live-Seite im selben Benachrichtigungsbereich.
+  Sie bleibt von Run-`needs_review` getrennt, verwendet den öffentlichen
+  `(updatedAt, projectKey, issueNumber)`-Cursor, prüft den aktuellen Status und
+  alle Resource-Bindungen erneut und führt zur vollständigen menschlichen
+  Statuswahl im Issue-Detail statt zu einer pauschalen Direktaktion.
 - Kommentar-Threads, bessere Audit-Diffs, Aktivitätsfilter und rollenbasierte
   Ansichten als getrennte Slices umsetzen.
 - Agent-Handoffs um klare Client-Anleitungen, Laufzeithinweise und
@@ -296,5 +300,6 @@ Snapshot entfernt. Die begrenzte, wörtlich behandelte und weiterhin paginierbar
 Label-Präfixsuche ist ebenfalls integriert. Die MCP-Grundlage bleibt unter
 `docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md` dokumentiert.
 Der erste live berechnete Run-Benachrichtigungs-Slice für Freigaben,
-`needs_review` und fehlgeschlagene Runs ist ebenfalls integriert; Issue-Review
-bleibt bewusst separat.
+`needs_review` und fehlgeschlagene Runs ist ebenfalls integriert. Der getrennte
+Issue-Review-Slice ist ebenfalls vorhanden und bewahrt seinen eigenen Cursor
+und Workflow.

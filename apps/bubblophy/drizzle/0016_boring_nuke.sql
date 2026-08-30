@@ -1,0 +1,1 @@
+CREATE INDEX "bubblophy_issues_review_updated_project_number_idx" ON "bubblophy_issues" USING btree ("project_id","updated_at" DESC NULLS LAST,"issue_number" DESC NULLS LAST) WHERE "bubblophy_issues"."status" = 'review';

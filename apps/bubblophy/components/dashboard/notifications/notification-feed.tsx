@@ -4,6 +4,11 @@ import type {
   TransitionBubblophyAgentRunActionInput,
   TransitionBubblophyAgentRunActionResult,
 } from '@/app/actions';
+import type { DashboardIssueReviewCursor } from '@/lib/dashboard/issue-review-notification-query';
+import type {
+  DashboardIssueReviewPageItem,
+  ReadDashboardIssueReviewPageResult,
+} from '@/lib/dashboard/issue-review-notifications';
 import type { DashboardNotificationCursor } from '@/lib/dashboard/notification-query';
 import type {
   DashboardNotificationPageItem,
@@ -23,6 +28,7 @@ import {
   CardTitle,
 } from '@bubbles/ui/shadcn/card';
 
+import { IssueReviewFeedSection } from '@/components/dashboard/notifications/issue-review-feed-section';
 import { RunDecisionControls } from '@/components/dashboard/run-decision-controls';
 
 const notificationLabels = {
@@ -58,17 +64,30 @@ export function NotificationFeed({
   status,
   cursor,
   nextAfter,
+  issueReviews,
+  issueReviewStatus,
+  issueReviewCursor,
+  nextIssueReviewAfter,
   transitionAgentRunAction,
   onAgentRunTransitioned,
   onIssueSelect,
   onFirstPage,
   onNextPage,
+  onFirstIssueReviewPage,
+  onNextIssueReviewPage,
 }: {
   dataSource: DashboardSnapshot['meta']['dataSource'];
   notifications: DashboardNotificationPageItem[];
   status: ReadDashboardNotificationPageResult['status'] | 'loading' | null;
   cursor: DashboardNotificationCursor | null;
   nextAfter: DashboardNotificationCursor | null;
+  issueReviews: DashboardIssueReviewPageItem[];
+  issueReviewStatus:
+    | ReadDashboardIssueReviewPageResult['status']
+    | 'loading'
+    | null;
+  issueReviewCursor: DashboardIssueReviewCursor | null;
+  nextIssueReviewAfter: DashboardIssueReviewCursor | null;
   transitionAgentRunAction?: (
     input: TransitionBubblophyAgentRunActionInput
   ) => Promise<TransitionBubblophyAgentRunActionResult>;
@@ -76,6 +95,8 @@ export function NotificationFeed({
   onIssueSelect: (issueKey: string) => void;
   onFirstPage: () => void;
   onNextPage: (after: DashboardNotificationCursor) => void;
+  onFirstIssueReviewPage: () => void;
+  onNextIssueReviewPage: (after: DashboardIssueReviewCursor) => void;
 }) {
   const isDatabaseSource =
     dataSource === 'database' || dataSource === 'empty_database';
@@ -196,6 +217,16 @@ export function NotificationFeed({
             </Button>
           </div>
         ) : null}
+        <IssueReviewFeedSection
+          dataSource={dataSource}
+          reviews={issueReviews}
+          status={issueReviewStatus}
+          cursor={issueReviewCursor}
+          nextAfter={nextIssueReviewAfter}
+          onIssueSelect={onIssueSelect}
+          onFirstPage={onFirstIssueReviewPage}
+          onNextPage={onNextIssueReviewPage}
+        />
       </CardContent>
     </Card>
   );

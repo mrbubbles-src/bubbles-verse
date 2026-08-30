@@ -1336,7 +1336,7 @@ describe('BubblophyDashboard interactions', () => {
   it('keeps the activity kind but clears its cursor on project changes', () => {
     navigationMocks.searchParams.mockReturnValue(
       new URLSearchParams(
-        'activityKind=issue&activityAfterAt=2026-07-19T10%3A00%3A00.000Z&activityAfterSource=issue&activityAfterId=event-20&memberAfterAt=2026-07-01T09%3A00%3A00.000Z&memberAfterAuthUserId=user-20&notificationAfterAt=2026-07-19T09%3A00%3A00.000Z&notificationAfterId=run-20'
+        'activityKind=issue&activityAfterAt=2026-07-19T10%3A00%3A00.000Z&activityAfterSource=issue&activityAfterId=event-20&memberAfterAt=2026-07-01T09%3A00%3A00.000Z&memberAfterAuthUserId=user-20&notificationAfterAt=2026-07-19T09%3A00%3A00.000Z&notificationAfterId=run-20&issueReviewAfterAt=2026-07-19T08%3A00%3A00.000Z&issueReviewAfterProject=BV&issueReviewAfterIssue=12'
       )
     );
 
@@ -4334,6 +4334,261 @@ describe('BubblophyDashboard interactions', () => {
       'Benachrichtigungen werden geladen.'
     );
     expect(within(notificationSection).queryByText('stale-run')).toBeNull();
+  });
+
+  it('keeps issue reviews separate and writes their complete cursor', () => {
+    const nextAfter = {
+      updatedAt: '2026-07-19T08:00:00.000Z',
+      projectKey: 'NO',
+      issueNumber: 8,
+    };
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        notificationPageRequest={{ projectKey: null, after: null }}
+        notificationPageResult={{
+          status: 'success',
+          project: null,
+          items: [
+            {
+              runId: 'run-review-1',
+              issueKey: 'BV-12',
+              projectKey: 'BV',
+              projectName: 'Bubblesverse',
+              agentLabel: 'Codex lokal',
+              state: 'needs_review',
+              updatedAt: '2026-07-19T10:00:00.000Z',
+              canManage: true,
+            },
+          ],
+          nextAfter: null,
+        }}
+        issueReviewPageRequest={{ projectKey: null, after: null }}
+        issueReviewPageResult={{
+          status: 'success',
+          project: null,
+          items: [
+            {
+              issueKey: 'NO-8',
+              title: 'Eigenständigen Issue-Review prüfen',
+              projectKey: 'NO',
+              projectName: 'Novari',
+              updatedAt: '2026-07-19T09:00:00.000Z',
+            },
+          ],
+          nextAfter,
+        }}
+      />
+    );
+    const notificationSection = document.getElementById('notifications');
+
+    expect(notificationSection).toBeInstanceOf(HTMLElement);
+
+    if (!notificationSection) {
+      throw new Error('Expected the notification section to render.');
+    }
+
+    expect(within(notificationSection).getByText('Review nötig')).toBeVisible();
+    expect(within(notificationSection).getByText('Issue-Status')).toBeVisible();
+    expect(
+      within(notificationSection).getByText(
+        'Eigenständigen Issue-Review prüfen'
+      )
+    ).toBeVisible();
+    navigationMocks.routerPush.mockClear();
+    fireEvent.click(
+      within(notificationSection).getByRole('button', {
+        name: 'Weitere Reviews',
+      })
+    );
+    expect(navigationMocks.routerPush).toHaveBeenCalledWith(
+      '/?issueReviewAfterAt=2026-07-19T08%3A00%3A00.000Z&issueReviewAfterProject=NO&issueReviewAfterIssue=8'
+    );
+  });
+
+  it('shows issue-review loading instead of a stale cursor response', () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams(
+        'issueReviewAfterAt=2026-07-19T08%3A00%3A00.000Z&issueReviewAfterProject=NO&issueReviewAfterIssue=8'
+      )
+    );
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        issueReviewPageRequest={{ projectKey: null, after: null }}
+        issueReviewPageResult={{
+          status: 'success',
+          project: null,
+          items: [
+            {
+              issueKey: 'BV-12',
+              title: 'Staler Issue-Review',
+              projectKey: 'BV',
+              projectName: 'Bubblesverse',
+              updatedAt: '2026-07-19T10:00:00.000Z',
+            },
+          ],
+          nextAfter: null,
+        }}
+      />
+    );
+    const notificationSection = document.getElementById('notifications');
+
+    expect(notificationSection).toBeInstanceOf(HTMLElement);
+
+    if (!notificationSection) {
+      throw new Error('Expected the notification section to render.');
+    }
+
+    expect(within(notificationSection).getByRole('status')).toHaveTextContent(
+      'Issue-Reviews werden geladen.'
+    );
+    expect(
+      within(notificationSection).queryByText('Staler Issue-Review')
+    ).toBeNull();
+  });
+
+  it('clears an issue-review cursor from another selected project', async () => {
+    navigationMocks.searchParams.mockReturnValue(
+      new URLSearchParams(
+        'project=BV&issueReviewAfterAt=2026-07-19T08%3A00%3A00.000Z&issueReviewAfterProject=NO&issueReviewAfterIssue=8'
+      )
+    );
+
+    render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        issueReviewPageRequest={{ projectKey: 'BV', after: null }}
+        issueReviewPageResult={{
+          status: 'success',
+          project: {
+            key: 'BV',
+            name: 'Bubblesverse',
+            currentUserRole: 'owner',
+          },
+          items: [],
+          nextAfter: null,
+        }}
+      />
+    );
+
+    await waitFor(() => {
+      expect(navigationMocks.routerReplace).toHaveBeenCalled();
+    });
+    const replacement = new URL(
+      navigationMocks.routerReplace.mock.calls.at(-1)?.[0] ?? '/',
+      'https://bubblophy.example.test'
+    );
+    expect(replacement.searchParams.get('project')).toBe('BV');
+    expect(replacement.searchParams.has('issueReviewAfterAt')).toBe(false);
+    expect(replacement.searchParams.has('issueReviewAfterProject')).toBe(false);
+    expect(replacement.searchParams.has('issueReviewAfterIssue')).toBe(false);
+  });
+
+  it('removes a resolved review but shows a newer recurrence', async () => {
+    const updateIssueStatusAction = vi.fn<
+      (
+        input: UpdateBubblophyIssueStatusActionInput
+      ) => Promise<UpdateBubblophyIssueStatusActionResult>
+    >(async () => ({
+      status: 'updated',
+      issue: {
+        id: 'BV-12',
+        title: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+        projectKey: 'BV',
+        status: 'bereit',
+        priority: 'hoch',
+        assigneeAuthUserId: 'user_mrbubbles',
+        assigneeLabel: 'mrbubbles',
+        planSteps: 3,
+        approvalRequired: true,
+      },
+    }));
+
+    const { rerender } = render(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        issueReviewPageRequest={{ projectKey: null, after: null }}
+        issueReviewPageResult={{
+          status: 'success',
+          project: null,
+          items: [
+            {
+              issueKey: 'BV-12',
+              title: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+              projectKey: 'BV',
+              projectName: 'Bubblesverse',
+              updatedAt: '2026-07-19T10:00:00.000Z',
+            },
+          ],
+          nextAfter: null,
+        }}
+        updateIssueStatusAction={updateIssueStatusAction}
+      />
+    );
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+    const detailPanel = screen.getByLabelText('Issue-Details');
+    fireEvent.change(within(detailPanel).getByLabelText('Neuer Status'), {
+      target: { value: 'bereit' },
+    });
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Status speichern' })
+    );
+
+    await waitFor(() => {
+      expect(updateIssueStatusAction).toHaveBeenCalled();
+      const reviewSection = screen.getByRole('region', {
+        name: 'Issue-Reviews',
+      });
+      expect(within(reviewSection).queryByText('BV-12')).toBeNull();
+    });
+
+    rerender(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        issueReviewPageRequest={{ projectKey: null, after: null }}
+        issueReviewPageResult={{
+          status: 'success',
+          project: null,
+          items: [],
+          nextAfter: null,
+        }}
+        updateIssueStatusAction={updateIssueStatusAction}
+      />
+    );
+    rerender(
+      <BubblophyDashboard
+        snapshot={databaseSnapshot}
+        issueReviewPageRequest={{ projectKey: null, after: null }}
+        issueReviewPageResult={{
+          status: 'success',
+          project: null,
+          items: [
+            {
+              issueKey: 'BV-12',
+              title: 'Erneut im Review',
+              projectKey: 'BV',
+              projectName: 'Bubblesverse',
+              updatedAt: '2026-07-19T11:00:00.000Z',
+            },
+          ],
+          nextAfter: null,
+        }}
+        updateIssueStatusAction={updateIssueStatusAction}
+      />
+    );
+
+    expect(
+      within(screen.getByRole('region', { name: 'Issue-Reviews' })).getByText(
+        'Erneut im Review'
+      )
+    ).toBeVisible();
   });
 
   it('appends a human issue note without starting an agent run', async () => {

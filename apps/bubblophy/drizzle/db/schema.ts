@@ -312,6 +312,11 @@ export const bubblophyIssues = pgTable(
       table.projectId,
       table.status
     ),
+    reviewUpdatedProjectNumberIdx: index(
+      'bubblophy_issues_review_updated_project_number_idx'
+    )
+      .on(table.projectId, table.updatedAt.desc(), table.issueNumber.desc())
+      .where(sql`${table.status} = 'review'`),
     parentIssueIdx: index('bubblophy_issues_parent_issue_idx').on(
       table.parentIssueId
     ),

@@ -22,7 +22,7 @@ angewendet.
 ## Vorbereitete Migration
 
 Die Struktur, RLS-Härtung, OAuth-Audit-Attribution und Einladungsbasis liegen
-aktuell in elf lokalen Migrationen:
+aktuell in siebzehn lokalen Migrationen:
 
 ```text
 apps/bubblophy/drizzle/0000_premium_psynapse.sql
@@ -36,6 +36,12 @@ apps/bubblophy/drizzle/0007_add_bubblophy_user_profiles.sql
 apps/bubblophy/drizzle/0008_add_run_page_cursor_index.sql
 apps/bubblophy/drizzle/0009_normal_monster_badoon.sql
 apps/bubblophy/drizzle/0010_giant_cannonball.sql
+apps/bubblophy/drizzle/0011_useful_eternity.sql
+apps/bubblophy/drizzle/0012_melodic_mulholland_black.sql
+apps/bubblophy/drizzle/0013_steady_starfox.sql
+apps/bubblophy/drizzle/0014_plain_smiling_tiger.sql
+apps/bubblophy/drizzle/0015_material_ma_gnuci.sql
+apps/bubblophy/drizzle/0016_boring_nuke.sql
 ```
 
 `0000_premium_psynapse.sql` erzeugt:
@@ -175,6 +181,12 @@ Präfix- und Cursor-Indizes für Assignee-, Run-Target- und Agent-Token-Seiten.
 NotificationPage. Ein repräsentatives Produktions-`EXPLAIN` bleibt ein
 Deployment-Gate; lokal ist kein `DATABASE_URL` für einen realen Planvergleich
 gesetzt.
+
+`0016_boring_nuke.sql` ergänzt den partiellen Projekt-Review-Index
+`(project_id, updated_at DESC, issue_number DESC) WHERE status = 'review'`.
+Die IssueReviewNotificationPage verwendet dasselbe wörtliche Statusprädikat;
+ein repräsentatives Produktions-`EXPLAIN` für konkrete und projektübergreifende
+Reads bleibt ebenfalls Deployment-Gate.
 
 Die Zielumgebung braucht zusätzlich einen Supabase-Custom-Access-Token-Hook,
 der JWTs mit `client_id` die exakte Audience `<NEXT_PUBLIC_APP_URL>/mcp` gibt.

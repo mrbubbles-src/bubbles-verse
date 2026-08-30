@@ -1,3 +1,4 @@
+import type { DashboardIssueReviewPageItem } from '@/lib/dashboard/issue-review-notifications';
 import type { DashboardNotificationPageItem } from '@/lib/dashboard/notifications';
 
 import {
@@ -45,6 +46,14 @@ const notifications: DashboardNotificationPageItem[] = [
 ];
 
 const noop = () => undefined;
+const emptyIssueReviewProps = {
+  issueReviews: [] as DashboardIssueReviewPageItem[],
+  issueReviewStatus: null,
+  issueReviewCursor: null,
+  nextIssueReviewAfter: null,
+  onFirstIssueReviewPage: noop,
+  onNextIssueReviewPage: noop,
+};
 
 describe('NotificationFeed', () => {
   it('renders the three live run signals and opens their public issues', () => {
@@ -52,6 +61,7 @@ describe('NotificationFeed', () => {
 
     render(
       <NotificationFeed
+        {...emptyIssueReviewProps}
         dataSource="database"
         notifications={notifications}
         status="success"
@@ -100,6 +110,7 @@ describe('NotificationFeed', () => {
 
     render(
       <NotificationFeed
+        {...emptyIssueReviewProps}
         dataSource="database"
         notifications={notifications}
         status="success"
@@ -148,6 +159,7 @@ describe('NotificationFeed', () => {
 
     render(
       <NotificationFeed
+        {...emptyIssueReviewProps}
         dataSource="database"
         notifications={[notifications[0]!]}
         status="success"
@@ -182,6 +194,7 @@ describe('NotificationFeed', () => {
     };
     const { rerender } = render(
       <NotificationFeed
+        {...emptyIssueReviewProps}
         dataSource="database"
         notifications={[]}
         status="loading"
@@ -198,6 +211,7 @@ describe('NotificationFeed', () => {
 
     rerender(
       <NotificationFeed
+        {...emptyIssueReviewProps}
         dataSource="database"
         notifications={[]}
         status="success"
@@ -220,6 +234,7 @@ describe('NotificationFeed', () => {
   it('shows the honest empty state for an empty configured database', () => {
     render(
       <NotificationFeed
+        {...emptyIssueReviewProps}
         dataSource="empty_database"
         notifications={[]}
         status={null}

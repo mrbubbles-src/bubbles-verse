@@ -504,8 +504,16 @@ bun run build
   Server Action jede Berechtigung und Token-Ausführbarkeit erneut prüft.
   Archivierte konkrete Projekte bleiben erreichbar und liefern eine leere
   Seite statt eines falschen Zugriffsentzugs. Dies ist eine aktuelle
-  Aufmerksamkeitsschlange ohne gelesen/ungelesen oder Zustellung. Der
-  Issue-Status `review` folgt als eigener Benachrichtigungs-Slice.
+  Aufmerksamkeitsschlange ohne gelesen/ungelesen oder Zustellung.
+- Der eigenständige Issue-Status `review` besitzt im selben
+  Benachrichtigungsbereich eine getrennte live berechnete 20er-Seite mit dem
+  öffentlichen URL-Cursor `(updatedAt, projectKey, issueNumber)`. Sie liest
+  weder Run-Zustände noch Audit-Historie, prüft Mitgliedschaft, aktives Projekt,
+  Issue-Bindung, Status und Aktualisierungszeit vor dem DTO erneut und zeigt
+  ausschließlich Issue-Key, Titel, Projekt und Zeit. Viewer dürfen sichtbare
+  Reviews entdecken; die Auflösung bleibt im Issue-Detail, weil Review keinen
+  einzigen kanonischen Folgestatus besitzt. Ein erfolgreicher Statuswechsel
+  aus `review` entfernt den Hinweis lokal und lädt die Serverprojektion neu.
 - Der Dashboard-Read lädt keine ungruppierten Issue-, Plan- oder Notizzeilen.
   Projektmetriken stammen aus separaten SQL-Aggregaten über alle Candidate-
   Issues. Offen-, Bereit- und Blockiert-Zähler bleiben vollständig;

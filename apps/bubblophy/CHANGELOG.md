@@ -2,13 +2,20 @@
 
 ## Unreleased
 
+- Added a separate live 20-item page for issues currently in the persisted
+  `review` status. It uses its own public `(updatedAt, projectKey,
+  issueNumber)` cursor, keeps Run `needs_review` signals distinct, rechecks
+  membership, active project, issue binding, status, and update time before
+  mapping, and offers discovery through the existing issue detail rather than
+  assuming one review outcome. A partial review index supports project-scoped
+  newest-first reads.
 - Added the first live notification slice as an independent, membership-scoped
   20-item page for requested, reviewable, and failed agent runs. The page uses
   a stable `(updatedAt, runId)` URL cursor, excludes archived projects without
   treating them as access loss, rechecks project, issue, run, and assigned-token
   bindings, and exposes direct contributor approve/cancel controls for open run
-  requests. It intentionally has no persisted read/unread state; issue-status
-  review notifications remain a separate follow-up.
+  requests. It intentionally has no persisted read/unread state and remains
+  independently paginated from issue-status review notifications.
 - Added a URL-backed literal token-label prefix search to the bounded agent-
   token management page. Searches require 2–80 characters, escape PostgreSQL
   wildcard characters, retain 20-item keyset pagination for one or all visible

@@ -23,6 +23,8 @@ import type { ReadDashboardAgentTokenPageResult } from '@/lib/dashboard/agent-to
 import type { DashboardAllIssuePageRequestState } from '@/lib/dashboard/all-issue-query';
 import type { ReadDashboardAllIssuePageResult } from '@/lib/dashboard/all-issues';
 import type { BubblophyDashboardSnapshotInput } from '@/lib/dashboard/data';
+import type { DashboardIssueReviewPageRequestState } from '@/lib/dashboard/issue-review-notification-query';
+import type { ReadDashboardIssueReviewPageResult } from '@/lib/dashboard/issue-review-notifications';
 import type {
   ReadDashboardIssueDetailResult,
   ReadDashboardIssuePageResult,
@@ -48,6 +50,7 @@ const readDashboardMemberPageMock = vi.fn();
 const readDashboardActivityPageMock = vi.fn();
 const readDashboardAgentTokenPageMock = vi.fn();
 const readDashboardNotificationPageMock = vi.fn();
+const readDashboardIssueReviewPageMock = vi.fn();
 const BubblophyDashboardMock = vi.fn(
   (props: {
     snapshot: DashboardSnapshot;
@@ -65,6 +68,8 @@ const BubblophyDashboardMock = vi.fn(
     agentTokenPageResult?: ReadDashboardAgentTokenPageResult | null;
     notificationPageRequest?: DashboardNotificationPageRequestState | null;
     notificationPageResult?: ReadDashboardNotificationPageResult | null;
+    issueReviewPageRequest?: DashboardIssueReviewPageRequestState | null;
+    issueReviewPageResult?: ReadDashboardIssueReviewPageResult | null;
     createIssueAction?: typeof createBubblophyIssueAction;
     updateIssueContentAction?: typeof updateBubblophyIssueContentAction;
     updateIssueAssigneeAction?: typeof updateBubblophyIssueAssigneeAction;
@@ -206,6 +211,20 @@ vi.mock('@/lib/dashboard/notifications', () => ({
   ) => readDashboardNotificationPageMock(authUserId, input),
 }));
 
+vi.mock('@/lib/dashboard/issue-review-notifications', () => ({
+  readDashboardIssueReviewPage: (
+    authUserId: string,
+    input: {
+      projectKey?: string;
+      after?: {
+        updatedAt: string;
+        projectKey: string;
+        issueNumber: number;
+      };
+    }
+  ) => readDashboardIssueReviewPageMock(authUserId, input),
+}));
+
 vi.mock('@/lib/profiles/database-write', () => ({
   syncBubblophyUserProfile: (input: {
     user: object;
@@ -230,6 +249,8 @@ vi.mock('@/components/dashboard/bubblophy-dashboard', () => ({
     agentTokenPageResult?: ReadDashboardAgentTokenPageResult | null;
     notificationPageRequest?: DashboardNotificationPageRequestState | null;
     notificationPageResult?: ReadDashboardNotificationPageResult | null;
+    issueReviewPageRequest?: DashboardIssueReviewPageRequestState | null;
+    issueReviewPageResult?: ReadDashboardIssueReviewPageResult | null;
     createIssueAction?: typeof createBubblophyIssueAction;
     updateIssueContentAction?: typeof updateBubblophyIssueContentAction;
     updateIssueAssigneeAction?: typeof updateBubblophyIssueAssigneeAction;
@@ -313,6 +334,13 @@ describe('Bubblophy home page', () => {
       items: [],
       nextAfter: null,
     } satisfies ReadDashboardNotificationPageResult);
+    readDashboardIssueReviewPageMock.mockReset();
+    readDashboardIssueReviewPageMock.mockResolvedValue({
+      status: 'success',
+      project: null,
+      items: [],
+      nextAfter: null,
+    } satisfies ReadDashboardIssueReviewPageResult);
     BubblophyDashboardMock.mockClear();
   });
 
@@ -510,6 +538,9 @@ describe('Bubblophy home page', () => {
         tokenAfterId: ' token-20 ',
         notificationAfterAt: '2026-07-19T10:00:00.000Z',
         notificationAfterId: 'run-notification-20',
+        issueReviewAfterAt: '2026-07-19T09:00:00.000Z',
+        issueReviewAfterProject: ' ap ',
+        issueReviewAfterIssue: '17',
       }),
     });
 
@@ -566,6 +597,17 @@ describe('Bubblophy home page', () => {
         },
       }
     );
+    expect(readDashboardIssueReviewPageMock).toHaveBeenCalledWith(
+      'user_owner',
+      {
+        projectKey: 'AP',
+        after: {
+          updatedAt: '2026-07-19T09:00:00.000Z',
+          projectKey: 'AP',
+          issueNumber: 17,
+        },
+      }
+    );
     expect(element.props.issuePageResult).toBe(pageResult);
     expect(element.props.issueDetailResult).toBe(detailResult);
     expect(element.props.issuePageRequest).toEqual({
@@ -611,6 +653,14 @@ describe('Bubblophy home page', () => {
       after: {
         updatedAt: '2026-07-19T10:00:00.000Z',
         runId: 'run-notification-20',
+      },
+    });
+    expect(element.props.issueReviewPageRequest).toEqual({
+      projectKey: 'AP',
+      after: {
+        updatedAt: '2026-07-19T09:00:00.000Z',
+        projectKey: 'AP',
+        issueNumber: 17,
       },
     });
   });
@@ -663,6 +713,10 @@ describe('Bubblophy home page', () => {
       issueKey: 'AP-1',
     });
     expect(readDashboardNotificationPageMock).toHaveBeenCalledWith(
+      'user_owner',
+      {}
+    );
+    expect(readDashboardIssueReviewPageMock).toHaveBeenCalledWith(
       'user_owner',
       {}
     );
@@ -761,6 +815,7 @@ describe('Bubblophy home page', () => {
     expect(element.props.snapshot).not.toHaveProperty('agentTokens');
     expect(element.props.agentTokenPageResult).toBeNull();
     expect(element.props.notificationPageResult).toBeNull();
+    expect(element.props.issueReviewPageResult).toBeNull();
     expect(element.props.snapshot.agentRuns).toEqual([]);
     expect(element.props.snapshot.activity).toEqual([]);
     expect(element.props.issueDetailResult).toBeNull();
