@@ -59,6 +59,11 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   weiterhin zugewiesene Personen bleiben
   generisch als `Ehemaliges Projektmitglied` sichtbar und können explizit
   abgewählt werden. Der Dashboard-Root lädt keine globale Mitgliederliste mehr.
+- Run-Anfragen laden ihre Token-Ziele unabhängig von der Verwaltungsansicht.
+  Der issue-gebundene Selektor liefert höchstens 20 aktive, nicht abgelaufene
+  Tokens mit `issues:read` und `runs:update`, zeigt ausschließlich ID und Label
+  und paginiert stabil über `(lower(label), id)`. Viewer, archivierte Projekte,
+  verlorene Mitgliedschaften und veraltete Issue-Bindungen bleiben fail-closed.
 - Owner und Maintainer können Nicht-Owner-Mitglieder zwischen `maintainer`,
   `member` und `viewer` umstellen oder entfernen. Owner-Rollen, Owner-Removal
   und Self-Removal bleiben im MVP konservativ gesperrt. Projekt und beteiligte
@@ -88,8 +93,9 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   Projektrolle, schreibt ein eindeutig als Issue-Update markiertes
   `commented`-Audit-Event und startet keinen Agent-Run.
 - Im Issue-Detail können Menschen bei aktiver Datenbankquelle einen Agent-Run
-  anfragen, wenn ein aktives Projekt-Token existiert. Die RunQueue zeigt den
-  neuen Eintrag lokal als wartend; es wird kein Agent gestartet.
+  anfragen, wenn ein aktives, nicht abgelaufenes Projekt-Token mit
+  `issues:read` und `runs:update` existiert. Die RunQueue zeigt den neuen
+  Eintrag lokal als wartend; es wird kein Agent gestartet.
 - In der RunQueue können Menschen angefragte Runs freigeben oder abbrechen,
   wenn die echte Server-Action verfügbar ist. Die Entscheidung prüft
   Projektmitgliedschaft, schreibt einen Statuswechsel plus Audit-Event und

@@ -8,6 +8,7 @@ import type {
   CreateBubblophyProjectInvitationActionInput,
   ReadBubblophyIssueAssigneeOptionsActionInput,
   ReadBubblophyProjectInvitationManagerSnapshotActionInput,
+  ReadBubblophyRunTargetOptionsActionInput,
   ReinviteBubblophyProjectInvitationActionInput,
   RemoveBubblophyProjectMemberActionInput,
   RequestBubblophyAgentRunActionInput,
@@ -27,6 +28,7 @@ import type { RequestBubblophyAgentRunInput } from '@/lib/agent-runs/request';
 import type { CreateBubblophyAgentTokenInput } from '@/lib/agent-tokens/create';
 import type { UpdateBubblophyAgentTokenLifecycleInput } from '@/lib/agent-tokens/lifecycle';
 import type { ReadDashboardAssigneeOptionsInput } from '@/lib/dashboard/assignee-options';
+import type { ReadDashboardRunTargetOptionsInput } from '@/lib/dashboard/run-target-options';
 import type { UpdateBubblophyIssueAssigneeInput } from '@/lib/issues/assignment';
 import type { CreateBubblophyIssueDraftInput } from '@/lib/issues/create';
 import type { UpdateBubblophyIssueContentInput } from '@/lib/issues/edit';
@@ -66,6 +68,7 @@ const cookiesMock = vi.fn(async () => ({
 const createBubblophyIssueDraftMock = vi.fn();
 const updateBubblophyIssueAssigneeMock = vi.fn();
 const readDashboardAssigneeOptionsMock = vi.fn();
+const readDashboardRunTargetOptionsMock = vi.fn();
 const updateBubblophyIssueContentMock = vi.fn();
 const createBubblophyIssuePlanDraftMock = vi.fn();
 const createBubblophyIssueNoteMock = vi.fn();
@@ -118,6 +121,13 @@ vi.mock('@/lib/dashboard/assignee-options', () => ({
     authUserId: string,
     input: ReadDashboardAssigneeOptionsInput
   ) => readDashboardAssigneeOptionsMock(authUserId, input),
+}));
+
+vi.mock('@/lib/dashboard/run-target-options', () => ({
+  readDashboardRunTargetOptions: (
+    authUserId: string,
+    input: ReadDashboardRunTargetOptionsInput
+  ) => readDashboardRunTargetOptionsMock(authUserId, input),
 }));
 
 vi.mock('@/lib/issues/edit', () => ({
@@ -480,6 +490,45 @@ describe('readBubblophyIssueAssigneeOptionsAction', () => {
       {
         issueKey: 'BV-12',
         query: 'mar',
+        after: undefined,
+      }
+    );
+    expect(result).toEqual({ status: 'database_unavailable' });
+  });
+});
+
+describe('readBubblophyRunTargetOptionsAction', () => {
+  beforeEach(() => {
+    requireBubblophySessionMock.mockReset();
+    readDashboardRunTargetOptionsMock.mockReset();
+  });
+
+  it('binds the bounded run-target read to the server session', async () => {
+    requireBubblophySessionMock.mockResolvedValue({
+      authUserId: 'user_server',
+      email: 'owner@example.test',
+      user: {},
+    });
+    readDashboardRunTargetOptionsMock.mockResolvedValue({
+      status: 'database_unavailable',
+    });
+
+    const { readBubblophyRunTargetOptionsAction } =
+      await import('@/app/actions');
+    const result = await readBubblophyRunTargetOptionsAction({
+      issueKey: 'BV-12',
+      query: 'worker',
+      authUserId: 'user_client_spoof',
+    } as ReadBubblophyRunTargetOptionsActionInput & {
+      authUserId: string;
+    });
+
+    expect(requireBubblophySessionMock).toHaveBeenCalledWith({ nextPath: '/' });
+    expect(readDashboardRunTargetOptionsMock).toHaveBeenCalledWith(
+      'user_server',
+      {
+        issueKey: 'BV-12',
+        query: 'worker',
         after: undefined,
       }
     );

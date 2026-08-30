@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Replaced the run-request form's dependency on the unbounded dashboard token
+  snapshot with an issue-bound 20-item executable-token selector. The selector
+  rechecks contributor membership, active project and issue identity, filters
+  active/unexpired `issues:read` plus `runs:update` targets in SQL, exposes only
+  `{id,label}`, and uses a stable `(lower(label), id)` cursor with a matching
+  ordering index plus a dedicated prefix-search index.
 - Replaced the unbounded dashboard member snapshot with bounded consumers.
   Issue pages and details now carry final membership-checked assignee labels,
   while assignment uses an issue-bound 20-item selector with bounded Auth user

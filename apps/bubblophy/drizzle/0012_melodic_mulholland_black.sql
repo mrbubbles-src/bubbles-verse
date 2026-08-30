@@ -1,0 +1,2 @@
+CREATE INDEX "bubblophy_agent_tokens_project_state_label_idx" ON "bubblophy_agent_tokens" USING btree ("project_id","state",lower("label"),"id");--> statement-breakpoint
+CREATE INDEX "bubblophy_agent_tokens_project_state_label_prefix_idx" ON "bubblophy_agent_tokens" USING btree ("project_id","state",lower("label") text_pattern_ops,"id");

@@ -34,6 +34,7 @@ import {
   createBubblophyProjectInvitationAction,
   readBubblophyIssueAssigneeOptionsAction,
   readBubblophyProjectInvitationManagerSnapshotAction,
+  readBubblophyRunTargetOptionsAction,
   reinviteBubblophyProjectInvitationAction,
   removeBubblophyProjectMemberAction,
   requestBubblophyAgentRunAction,
@@ -326,6 +327,7 @@ export async function ProtectedBubblophyDashboard({
       updateIssueContentAction={updateBubblophyIssueContentAction}
       updateIssueAssigneeAction={updateBubblophyIssueAssigneeAction}
       readIssueAssigneeOptionsAction={readBubblophyIssueAssigneeOptionsAction}
+      readRunTargetOptionsAction={readBubblophyRunTargetOptionsAction}
       createIssuePlanAction={createBubblophyIssuePlanAction}
       createIssueNoteAction={createBubblophyIssueNoteAction}
       updateIssueStatusAction={updateBubblophyIssueStatusAction}

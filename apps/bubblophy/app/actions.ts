@@ -21,6 +21,10 @@ import type {
   ReadDashboardAssigneeOptionsResult,
 } from '@/lib/dashboard/assignee-options';
 import type {
+  ReadDashboardRunTargetOptionsInput,
+  ReadDashboardRunTargetOptionsResult,
+} from '@/lib/dashboard/run-target-options';
+import type {
   UpdateBubblophyIssueAssigneeInput,
   UpdateBubblophyIssueAssigneeResult,
 } from '@/lib/issues/assignment';
@@ -86,6 +90,7 @@ import {
   requireBubblophySession,
 } from '@/lib/auth/session';
 import { readDashboardAssigneeOptions } from '@/lib/dashboard/assignee-options';
+import { readDashboardRunTargetOptions } from '@/lib/dashboard/run-target-options';
 import { updateBubblophyIssueAssignee } from '@/lib/issues/assignment';
 import { createBubblophyIssueDraft } from '@/lib/issues/create';
 import { updateBubblophyIssueContent } from '@/lib/issues/edit';
@@ -146,6 +151,12 @@ export type ReadBubblophyIssueAssigneeOptionsActionInput =
 
 export type ReadBubblophyIssueAssigneeOptionsActionResult =
   ReadDashboardAssigneeOptionsResult;
+
+export type ReadBubblophyRunTargetOptionsActionInput =
+  ReadDashboardRunTargetOptionsInput;
+
+export type ReadBubblophyRunTargetOptionsActionResult =
+  ReadDashboardRunTargetOptionsResult;
 
 export type CreateBubblophyIssuePlanActionInput = Omit<
   CreateOrUpdateBubblophyIssuePlanDraftInput,
@@ -395,6 +406,24 @@ export async function readBubblophyIssueAssigneeOptionsAction(
   const session = await requireBubblophySession({ nextPath: '/' });
 
   return readDashboardAssigneeOptions(session.authUserId, {
+    issueKey: input.issueKey,
+    query: input.query,
+    after: input.after,
+  });
+}
+
+/**
+ * Reads a bounded executable-token page for the current human session.
+ *
+ * @param input Public issue key, optional label prefix, and stable cursor.
+ * @returns Issue-bound `{id,label}` options without token secrets or scopes.
+ */
+export async function readBubblophyRunTargetOptionsAction(
+  input: ReadBubblophyRunTargetOptionsActionInput
+): Promise<ReadBubblophyRunTargetOptionsActionResult> {
+  const session = await requireBubblophySession({ nextPath: '/' });
+
+  return readDashboardRunTargetOptions(session.authUserId, {
     issueKey: input.issueKey,
     query: input.query,
     after: input.after,

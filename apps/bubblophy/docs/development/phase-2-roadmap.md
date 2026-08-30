@@ -195,7 +195,12 @@ Status: abgeschlossen.
   URL-Pagination. Assignee-Labels werden in den begrenzten Issue-Verträgen
   final membership-geprüft; die Auswahl nutzt einen eigenen issue-gebundenen
   20er-Read mit begrenzter Nutzer-ID-Präfixsuche ohne E-Mail-Adressen. Der unbeschränkte
-  Mitglieder-Root-Read ist entfernt. Agent-Tokens sind weiterhin unpaginiert.
+  Mitglieder-Root-Read ist entfernt. Auch Run-Anfragen hängen nicht mehr von
+  der unbeschränkten Token-Verwaltungsliste ab: Ein eigener issue-gebundener
+  20er-Selektor filtert aktive, nicht abgelaufene `issues:read`- plus
+  `runs:update`-Ziele, gibt nur ID und Label aus und verwendet den stabilen
+  `(lower(label), id)`-Cursor. Die Verwaltungsansicht für Agent-Tokens bleibt
+  bis zum nächsten Slice unpaginiert.
 - Datenbankabfragen und Cache-Tags auf größere Projektmengen prüfen.
 
 ### 6. Benachrichtigungen und Team-Arbeit
@@ -212,9 +217,10 @@ Status: abgeschlossen.
 - Der zweistufige Dashboard-Read ist gehärtet: Die erste Membership-Abfrage
   begrenzt nur die Kandidaten. Ein zweites, fail-closed Gate bindet unmittelbar
   vor dem DTO-Mapping alle Projekt-, Token- und Run-Zeilen erneut an die
-  aktuelle Mitgliedschaft und Rolle. Die getrennten Issue-, Member-, Assignee-
-  und Activity-Reads revalidieren ihre jeweilige Projekt-/Resource-Bindung
-  ebenfalls und redigieren sensible Felder nach Rollenänderungen erneut.
+  aktuelle Mitgliedschaft und Rolle. Die getrennten Issue-, Member-, Assignee-,
+  Run-Target- und Activity-Reads revalidieren ihre jeweilige
+  Projekt-/Resource-Bindung ebenfalls und redigieren sensible Felder nach
+  Rollenänderungen erneut.
 - Kritische UI-Flows in stabilen Viewports automatisiert prüfen.
 - OAuth-/MCP-Verbindungsaufbau mit Test-Identitäten und getrennten
   Projektmitgliedschaften abdecken.
@@ -266,7 +272,8 @@ Issue-Listen und Details stammen nur noch aus den begrenzten Page-/Detail-
 Verträgen. Die begrenzte ActivityPage und ihre URL-/Dashboard-Integration sind
 ebenfalls abgeschlossen. Mitgliederpanel, Issue-Assignee-Labels und
 Assignee-Auswahl besitzen inzwischen eigene begrenzte Verträge; der globale
-Mitglieder-Root-Read ist entfernt. Als nächste größere Datenmenge bleiben die
-Agent-Tokens. Die
+Mitglieder-Root-Read ist entfernt. Run-Anfragen besitzen außerdem eine eigene
+begrenzte ausführbare Token-Auswahl. Als nächste größere Datenmenge bleibt die
+Agent-Token-Verwaltungsansicht. Die
 MCP-Grundlage bleibt unter
 `docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md` dokumentiert.

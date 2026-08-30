@@ -16,6 +16,8 @@ import type {
   ReadBubblophyIssueAssigneeOptionsActionInput,
   ReadBubblophyIssueAssigneeOptionsActionResult,
   ReadBubblophyProjectInvitationManagerSnapshotActionResult,
+  ReadBubblophyRunTargetOptionsActionInput,
+  ReadBubblophyRunTargetOptionsActionResult,
   ReinviteBubblophyProjectInvitationActionInput,
   ReinviteBubblophyProjectInvitationActionResult,
   RemoveBubblophyProjectMemberActionInput,
@@ -204,6 +206,7 @@ import { IssueAssigneeOptionPicker } from '@/components/dashboard/issue-assignee
 import { IssueQueueControls } from '@/components/dashboard/issue-queue/issue-queue-controls';
 import { ProjectInvitationManager } from '@/components/dashboard/project-invitations/project-invitation-manager';
 import { ProjectRoleGuide } from '@/components/dashboard/project-members/project-role-guide';
+import { RunTargetOptionPicker } from '@/components/dashboard/run-target/run-target-option-picker';
 
 interface BubblophyDashboardProps {
   snapshot: DashboardSnapshot;
@@ -233,6 +236,9 @@ interface BubblophyDashboardProps {
   readIssueAssigneeOptionsAction?: (
     input: ReadBubblophyIssueAssigneeOptionsActionInput
   ) => Promise<ReadBubblophyIssueAssigneeOptionsActionResult>;
+  readRunTargetOptionsAction?: (
+    input: ReadBubblophyRunTargetOptionsActionInput
+  ) => Promise<ReadBubblophyRunTargetOptionsActionResult>;
   createIssuePlanAction?: (
     input: CreateBubblophyIssuePlanActionInput
   ) => Promise<CreateBubblophyIssuePlanActionResult>;
@@ -723,6 +729,7 @@ export function BubblophyDashboard({
   updateIssueContentAction,
   updateIssueAssigneeAction,
   readIssueAssigneeOptionsAction,
+  readRunTargetOptionsAction,
   createIssuePlanAction,
   createIssueNoteAction,
   updateIssueStatusAction,
@@ -2137,6 +2144,7 @@ export function BubblophyDashboard({
                 updateIssueContentAction={updateIssueContentAction}
                 updateIssueAssigneeAction={updateIssueAssigneeAction}
                 readIssueAssigneeOptionsAction={readIssueAssigneeOptionsAction}
+                readRunTargetOptionsAction={readRunTargetOptionsAction}
                 updateIssueStatusAction={updateIssueStatusAction}
                 updateIssuePriorityAction={updateIssuePriorityAction}
                 requestAgentRunAction={
@@ -2145,7 +2153,6 @@ export function BubblophyDashboard({
                     ? requestAgentRunAction
                     : undefined
                 }
-                agentTokens={displayedAgentTokens}
                 projectMembers={allProjectMembers}
                 agentRuns={selectedIssueRuns}
                 onProjectSelect={handleProjectSelect}
@@ -3480,10 +3487,10 @@ function IssueQueue({
   updateIssueContentAction,
   updateIssueAssigneeAction,
   readIssueAssigneeOptionsAction,
+  readRunTargetOptionsAction,
   updateIssueStatusAction,
   updateIssuePriorityAction,
   requestAgentRunAction,
-  agentTokens,
   projectMembers,
   agentRuns,
   onProjectSelect,
@@ -3534,6 +3541,9 @@ function IssueQueue({
   readIssueAssigneeOptionsAction?: (
     input: ReadBubblophyIssueAssigneeOptionsActionInput
   ) => Promise<ReadBubblophyIssueAssigneeOptionsActionResult>;
+  readRunTargetOptionsAction?: (
+    input: ReadBubblophyRunTargetOptionsActionInput
+  ) => Promise<ReadBubblophyRunTargetOptionsActionResult>;
   updateIssueStatusAction?: (
     input: UpdateBubblophyIssueStatusActionInput
   ) => Promise<UpdateBubblophyIssueStatusActionResult>;
@@ -3543,7 +3553,6 @@ function IssueQueue({
   requestAgentRunAction?: (
     input: RequestBubblophyAgentRunActionInput
   ) => Promise<RequestBubblophyAgentRunActionResult>;
-  agentTokens: AgentTokenSummary[];
   projectMembers: ProjectMemberSummary[];
   agentRuns: AgentRunSummary[];
   onProjectSelect: (projectKey: ProjectFilterKey) => void;
@@ -3562,13 +3571,6 @@ function IssueQueue({
   canCreateIssue: boolean;
   onCreateIssue: () => void;
 }) {
-  const activeProjectAgentTokens = selectedIssue
-    ? agentTokens.filter(
-        (token) =>
-          token.projectKey === selectedIssue.projectKey &&
-          token.state === 'aktiv'
-      )
-    : [];
   const issuePageFailed =
     issuePageStatus !== null &&
     issuePageStatus !== 'success' &&
@@ -3801,10 +3803,10 @@ function IssueQueue({
           updateIssueContentAction={updateIssueContentAction}
           updateIssueAssigneeAction={updateIssueAssigneeAction}
           readIssueAssigneeOptionsAction={readIssueAssigneeOptionsAction}
+          readRunTargetOptionsAction={readRunTargetOptionsAction}
           updateIssueStatusAction={updateIssueStatusAction}
           updateIssuePriorityAction={updateIssuePriorityAction}
           requestAgentRunAction={requestAgentRunAction}
-          activeAgentTokens={activeProjectAgentTokens}
           projectMembers={projectMembers}
           agentRuns={agentRuns}
           onDraftDelete={onDraftDelete}
@@ -3842,10 +3844,10 @@ function IssueDetailPanel({
   updateIssueContentAction,
   updateIssueAssigneeAction,
   readIssueAssigneeOptionsAction,
+  readRunTargetOptionsAction,
   updateIssueStatusAction,
   updateIssuePriorityAction,
   requestAgentRunAction,
-  activeAgentTokens,
   projectMembers,
   agentRuns,
   onDraftDelete,
@@ -3881,6 +3883,9 @@ function IssueDetailPanel({
   readIssueAssigneeOptionsAction?: (
     input: ReadBubblophyIssueAssigneeOptionsActionInput
   ) => Promise<ReadBubblophyIssueAssigneeOptionsActionResult>;
+  readRunTargetOptionsAction?: (
+    input: ReadBubblophyRunTargetOptionsActionInput
+  ) => Promise<ReadBubblophyRunTargetOptionsActionResult>;
   updateIssueStatusAction?: (
     input: UpdateBubblophyIssueStatusActionInput
   ) => Promise<UpdateBubblophyIssueStatusActionResult>;
@@ -3890,7 +3895,6 @@ function IssueDetailPanel({
   requestAgentRunAction?: (
     input: RequestBubblophyAgentRunActionInput
   ) => Promise<RequestBubblophyAgentRunActionResult>;
-  activeAgentTokens: AgentTokenSummary[];
   projectMembers: ProjectMemberSummary[];
   agentRuns: AgentRunSummary[];
   onDraftDelete: (issueId: string) => void;
@@ -3997,10 +4001,10 @@ function IssueDetailPanel({
       />
 
       <AgentRunRequestPanel
-        key={`${issue.id}-${activeAgentTokens.map((token) => token.id).join('-')}`}
+        key={`run-request-${issue.id}`}
         dataSource={dataSource}
         issue={issue}
-        activeAgentTokens={activeAgentTokens}
+        readRunTargetOptionsAction={readRunTargetOptionsAction}
         requestAgentRunAction={requestAgentRunAction}
         onAgentRunRequested={onAgentRunRequested}
       />
@@ -5051,19 +5055,21 @@ function IssueNotesPanel({
 /**
  * Renders a human-only agent run request control.
  *
- * @param props Selected issue, active project tokens, and request action.
+ * @param props Selected issue, bounded options action, and request action.
  * @returns Compact request form or a non-persistent explanation.
  */
 function AgentRunRequestPanel({
   dataSource,
   issue,
-  activeAgentTokens,
+  readRunTargetOptionsAction,
   requestAgentRunAction,
   onAgentRunRequested,
 }: {
   dataSource: DashboardSnapshot['meta']['dataSource'];
   issue: DashboardIssue;
-  activeAgentTokens: AgentTokenSummary[];
+  readRunTargetOptionsAction?: (
+    input: ReadBubblophyRunTargetOptionsActionInput
+  ) => Promise<ReadBubblophyRunTargetOptionsActionResult>;
   requestAgentRunAction?: (
     input: RequestBubblophyAgentRunActionInput
   ) => Promise<RequestBubblophyAgentRunActionResult>;
@@ -5074,11 +5080,9 @@ function AgentRunRequestPanel({
   const canRequestRun =
     isDatabaseSource &&
     !isLocalDraftIssue(issue) &&
-    activeAgentTokens.length > 0 &&
+    Boolean(readRunTargetOptionsAction) &&
     Boolean(requestAgentRunAction);
-  const [agentTokenId, setAgentTokenId] = useState(
-    activeAgentTokens[0]?.id ?? ''
-  );
+  const [agentTokenId, setAgentTokenId] = useState('');
   const [instructions, setInstructions] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -5133,20 +5137,15 @@ function AgentRunRequestPanel({
             event.preventDefault();
             handleSubmit();
           }}>
-          <label className="grid gap-1.5 text-sm font-medium">
-            Agent-Token
-            <select
-              name="agentTokenId"
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-              value={agentTokenId}
-              onChange={(event) => setAgentTokenId(event.currentTarget.value)}>
-              {activeAgentTokens.map((token) => (
-                <option key={token.id} value={token.id}>
-                  {token.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          {readRunTargetOptionsAction ? (
+            <RunTargetOptionPicker
+              issueKey={issue.id}
+              selectedTokenId={agentTokenId}
+              disabled={isPending}
+              readOptionsAction={readRunTargetOptionsAction}
+              onValueChange={setAgentTokenId}
+            />
+          ) : null}
 
           <label className="grid gap-1.5 text-sm font-medium">
             Auftrag
@@ -5179,7 +5178,7 @@ function AgentRunRequestPanel({
           {getAgentRunRequestUnavailableMessage({
             dataSource,
             issue,
-            activeAgentTokens,
+            readRunTargetOptionsAction,
             requestAgentRunAction,
           })}
         </p>
@@ -7233,18 +7232,20 @@ function getAgentTokenLifecycleActionErrorMessage(
 /**
  * Explains why a persisted run request is not available.
  *
- * @param props Current data source, selected issue, active tokens, and action.
+ * @param props Current data source, selected issue, and required actions.
  * @returns Short non-operative helper copy.
  */
 function getAgentRunRequestUnavailableMessage({
   dataSource,
   issue,
-  activeAgentTokens,
+  readRunTargetOptionsAction,
   requestAgentRunAction,
 }: {
   dataSource: DashboardSnapshot['meta']['dataSource'];
   issue: DashboardIssue;
-  activeAgentTokens: AgentTokenSummary[];
+  readRunTargetOptionsAction?: (
+    input: ReadBubblophyRunTargetOptionsActionInput
+  ) => Promise<ReadBubblophyRunTargetOptionsActionResult>;
   requestAgentRunAction?: (
     input: RequestBubblophyAgentRunActionInput
   ) => Promise<RequestBubblophyAgentRunActionResult>;
@@ -7261,8 +7262,8 @@ function getAgentRunRequestUnavailableMessage({
     return 'Die Datenbank ist nicht bereit. Bubblophy zeigt deshalb keine persistente Run-Anfrage.';
   }
 
-  if (activeAgentTokens.length === 0) {
-    return 'Für dieses Projekt ist kein aktives Agent-Token verfügbar.';
+  if (!readRunTargetOptionsAction) {
+    return 'Die begrenzte Token-Auswahl ist in dieser Oberfläche nicht aktiv.';
   }
 
   if (!requestAgentRunAction) {

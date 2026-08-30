@@ -11,6 +11,8 @@ import type {
   CreateBubblophyProjectActionResult,
   ReadBubblophyIssueAssigneeOptionsActionResult,
   ReadBubblophyProjectInvitationManagerSnapshotActionResult,
+  ReadBubblophyRunTargetOptionsActionInput,
+  ReadBubblophyRunTargetOptionsActionResult,
   RemoveBubblophyProjectMemberActionInput,
   RemoveBubblophyProjectMemberActionResult,
   RequestBubblophyAgentRunActionInput,
@@ -398,6 +400,31 @@ const databaseSnapshotWithEmptyRuns = {
   ...databaseSnapshot,
   agentRuns: [],
 } satisfies DashboardSnapshot;
+
+/** Builds the issue-bound run-target action used by dashboard integration tests. */
+function createRunTargetOptionsAction(
+  items: Array<{ id: string; label: string }> = [
+    { id: 'token_codex_bv', label: 'codex-local-lio' },
+  ]
+) {
+  return vi.fn(
+    async (
+      input: ReadBubblophyRunTargetOptionsActionInput
+    ): Promise<ReadBubblophyRunTargetOptionsActionResult> => ({
+      status: 'success',
+      project: {
+        key: input.issueKey.split('-')[0] ?? 'BV',
+        name: 'Bubblesverse',
+        currentUserRole: 'member',
+      },
+      issueKey: input.issueKey,
+      query: input.query?.trim() || null,
+      after: input.after ?? null,
+      items,
+      nextAfter: null,
+    })
+  );
+}
 
 const databaseSnapshotWithoutAgentTokens = {
   ...databaseSnapshotWithEmptyRuns,
@@ -5926,6 +5953,7 @@ describe('BubblophyDashboard interactions', () => {
   });
 
   it('updates recent mutation feedback after a later successful action', async () => {
+    const readRunTargetOptionsAction = createRunTargetOptionsAction();
     const createIssueAction = vi.fn<
       (
         input: CreateBubblophyIssueActionInput
@@ -5966,6 +5994,7 @@ describe('BubblophyDashboard interactions', () => {
       <BubblophyDashboard
         snapshot={databaseSnapshot}
         createIssueAction={createIssueAction}
+        readRunTargetOptionsAction={readRunTargetOptionsAction}
         requestAgentRunAction={requestAgentRunAction}
       />
     );
@@ -5982,8 +6011,10 @@ describe('BubblophyDashboard interactions', () => {
 
     const detailPanel = screen.getByLabelText('Issue-Details');
 
-    fireEvent.change(within(detailPanel).getByLabelText('Agent-Token'), {
-      target: { value: 'token_codex_bv' },
+    await waitFor(() => {
+      expect(
+        within(detailPanel).getByRole('button', { name: 'Run anfragen' })
+      ).toBeEnabled();
     });
     fireEvent.change(within(detailPanel).getByLabelText('Auftrag'), {
       target: { value: 'Bitte nur lokal prüfen.' },
@@ -7476,6 +7507,7 @@ describe('BubblophyDashboard interactions', () => {
   });
 
   it('requests a human-only agent run and adds it to the run queue', async () => {
+    const readRunTargetOptionsAction = createRunTargetOptionsAction();
     const requestAgentRunAction = vi.fn<
       (
         input: RequestBubblophyAgentRunActionInput
@@ -7497,6 +7529,7 @@ describe('BubblophyDashboard interactions', () => {
     render(
       <BubblophyDashboard
         snapshot={databaseSnapshotWithEmptyRuns}
+        readRunTargetOptionsAction={readRunTargetOptionsAction}
         requestAgentRunAction={requestAgentRunAction}
       />
     );
@@ -7513,8 +7546,10 @@ describe('BubblophyDashboard interactions', () => {
       within(detailPanel).getByText(/kein Agent gestartet/i)
     ).toBeInTheDocument();
     expect(requestAgentRunAction).not.toHaveBeenCalled();
-    fireEvent.change(within(detailPanel).getByLabelText('Agent-Token'), {
-      target: { value: 'token_codex_bv' },
+    await waitFor(() => {
+      expect(
+        within(detailPanel).getByRole('button', { name: 'Run anfragen' })
+      ).toBeEnabled();
     });
     fireEvent.change(within(detailPanel).getByLabelText('Auftrag'), {
       target: {
@@ -7568,6 +7603,7 @@ describe('BubblophyDashboard interactions', () => {
   });
 
   it('explains every executable-token requirement after a denied run request', async () => {
+    const readRunTargetOptionsAction = createRunTargetOptionsAction();
     const requestAgentRunAction = vi.fn<
       (
         input: RequestBubblophyAgentRunActionInput
@@ -7577,6 +7613,7 @@ describe('BubblophyDashboard interactions', () => {
     render(
       <BubblophyDashboard
         snapshot={databaseSnapshotWithEmptyRuns}
+        readRunTargetOptionsAction={readRunTargetOptionsAction}
         requestAgentRunAction={requestAgentRunAction}
       />
     );
@@ -7586,8 +7623,10 @@ describe('BubblophyDashboard interactions', () => {
       })
     );
     const detailPanel = screen.getByLabelText('Issue-Details');
-    fireEvent.change(within(detailPanel).getByLabelText('Agent-Token'), {
-      target: { value: 'token_codex_bv' },
+    await waitFor(() => {
+      expect(
+        within(detailPanel).getByRole('button', { name: 'Run anfragen' })
+      ).toBeEnabled();
     });
     fireEvent.click(
       within(detailPanel).getByRole('button', { name: 'Run anfragen' })
@@ -7599,6 +7638,7 @@ describe('BubblophyDashboard interactions', () => {
   });
 
   it('keeps the run request form usable when the action throws', async () => {
+    const readRunTargetOptionsAction = createRunTargetOptionsAction();
     const requestAgentRunAction = vi.fn<
       (
         input: RequestBubblophyAgentRunActionInput
@@ -7610,6 +7650,7 @@ describe('BubblophyDashboard interactions', () => {
     render(
       <BubblophyDashboard
         snapshot={databaseSnapshotWithEmptyRuns}
+        readRunTargetOptionsAction={readRunTargetOptionsAction}
         requestAgentRunAction={requestAgentRunAction}
       />
     );
@@ -7622,8 +7663,10 @@ describe('BubblophyDashboard interactions', () => {
 
     const detailPanel = screen.getByLabelText('Issue-Details');
 
-    fireEvent.change(within(detailPanel).getByLabelText('Agent-Token'), {
-      target: { value: 'token_codex_bv' },
+    await waitFor(() => {
+      expect(
+        within(detailPanel).getByRole('button', { name: 'Run anfragen' })
+      ).toBeEnabled();
     });
     fireEvent.change(within(detailPanel).getByLabelText('Auftrag'), {
       target: {
@@ -8527,10 +8570,13 @@ describe('BubblophyDashboard interactions', () => {
     ).toBeInTheDocument();
   });
 
-  it('blocks run requests for database issues without active project tokens', () => {
+  it('blocks run requests for database issues without executable project tokens', async () => {
+    const readRunTargetOptionsAction = createRunTargetOptionsAction([]);
+
     render(
       <BubblophyDashboard
         snapshot={databaseSnapshotWithoutAgentTokens}
+        readRunTargetOptionsAction={readRunTargetOptionsAction}
         requestAgentRunAction={async () => ({
           status: 'database_unavailable',
         })}
@@ -8546,11 +8592,13 @@ describe('BubblophyDashboard interactions', () => {
     const detailPanel = screen.getByLabelText('Issue-Details');
 
     expect(
-      within(detailPanel).queryByRole('button', { name: 'Run anfragen' })
-    ).not.toBeInTheDocument();
-    expect(
-      within(detailPanel).getByText(/kein aktives Agent-Token verfügbar/i)
+      await within(detailPanel).findByText(
+        /Keine passenden ausführbaren Agent-Tokens gefunden/i
+      )
     ).toBeInTheDocument();
+    expect(
+      within(detailPanel).getByRole('button', { name: 'Run anfragen' })
+    ).toBeDisabled();
   });
 
   it('does not expose persistent run requests when the database is unavailable', () => {
