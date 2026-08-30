@@ -2,6 +2,8 @@ import 'server-only';
 
 import type {
   BubblophyAgentRunState,
+  BubblophyAgentTokenScope,
+  BubblophyAgentTokenState,
   BubblophyIssuePriority,
   BubblophyIssueStatus,
   JsonObject,
@@ -20,6 +22,8 @@ import type {
   ProjectMemberSummary,
   ProjectSummary,
 } from '@/lib/dashboard/types';
+
+import { canBubblophyAgentTokenReportRunStatus } from '@/lib/agent-tokens/execution';
 
 export interface BubblophyProjectPersistenceRow {
   id: string;
@@ -48,8 +52,12 @@ export interface BubblophyAgentTokenPersistenceRow {
 export interface BubblophyAgentRunPersistenceRow {
   id: string;
   projectKey: string;
+  projectIsArchived: boolean;
   issueNumber: number;
   agentTokenLabel: string;
+  agentTokenScopes: BubblophyAgentTokenScope[];
+  agentTokenState: BubblophyAgentTokenState;
+  agentTokenExpiresAt: string | null;
   state: BubblophyAgentRunState;
   updatedAt: string;
   result: JsonValue | null;
@@ -393,6 +401,13 @@ export function buildBubblophyAgentRunSummaries(
     state: mapBubblophyAgentRunState(row.state),
     requestedBy: 'Mensch',
     lastEvent: `Status ${mapBubblophyAgentRunState(row.state)} · zuletzt ${row.updatedAt}`,
+    canAgentReportStatus:
+      !row.projectIsArchived &&
+      canBubblophyAgentTokenReportRunStatus({
+        state: row.agentTokenState,
+        expiresAt: row.agentTokenExpiresAt,
+        scopes: row.agentTokenScopes,
+      }),
     resultSummary: buildSafeAgentRunResultSummary(row.result),
   }));
 }

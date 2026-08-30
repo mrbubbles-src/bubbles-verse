@@ -2,6 +2,8 @@ import 'server-only';
 
 import type {
   BubblophyAgentRunState,
+  BubblophyAgentTokenScope,
+  BubblophyAgentTokenState,
   BubblophyProjectRole,
   JsonValue,
 } from '@/drizzle/db/schema';
@@ -10,6 +12,7 @@ import type {
   DashboardRunPageReadInput,
 } from '@/lib/dashboard/runs';
 
+import { canBubblophyAgentTokenReportRunStatus } from '@/lib/agent-tokens/execution';
 import { DASHBOARD_RUN_PAGE_SIZE } from '@/lib/dashboard/runs';
 import {
   buildSafeAgentRunResultSummary,
@@ -39,6 +42,9 @@ interface DashboardRunPageRow extends DashboardRunProjectRow {
   id: string;
   issueNumber: number;
   agentLabel: string;
+  agentTokenScopes: BubblophyAgentTokenScope[];
+  agentTokenState: BubblophyAgentTokenState;
+  agentTokenExpiresAt: string | null;
   state: BubblophyAgentRunState;
   updatedAt: string;
   result: JsonValue | null;
@@ -84,6 +90,9 @@ export async function selectDashboardRunPageForUser(
       id: bubblophyAgentRuns.id,
       issueNumber: bubblophyIssues.issueNumber,
       agentLabel: bubblophyAgentTokens.label,
+      agentTokenScopes: bubblophyAgentTokens.scopes,
+      agentTokenState: bubblophyAgentTokens.state,
+      agentTokenExpiresAt: bubblophyAgentTokens.expiresAt,
       state: bubblophyAgentRuns.state,
       updatedAt: bubblophyAgentRuns.updatedAt,
       result: bubblophyAgentRuns.result,
@@ -148,6 +157,13 @@ export async function selectDashboardRunPageForUser(
       state: row.state,
       updatedAt: row.updatedAt,
       resultSummary: buildSafeAgentRunResultSummary(row.result) ?? null,
+      canAgentReportStatus:
+        !row.projectIsArchived &&
+        canBubblophyAgentTokenReportRunStatus({
+          state: row.agentTokenState,
+          expiresAt: row.agentTokenExpiresAt,
+          scopes: row.agentTokenScopes,
+        }),
     })),
     nextAfter:
       rows.length > DASHBOARD_RUN_PAGE_SIZE && lastRow

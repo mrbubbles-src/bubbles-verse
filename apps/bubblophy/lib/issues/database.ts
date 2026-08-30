@@ -328,8 +328,12 @@ async function selectBubblophyAgentRunRowsForProjectIds(
     .select({
       id: bubblophyAgentRuns.id,
       projectKey: bubblophyProjects.key,
+      projectIsArchived: bubblophyProjects.isArchived,
       issueNumber: bubblophyIssues.issueNumber,
       agentTokenLabel: bubblophyAgentTokens.label,
+      agentTokenScopes: bubblophyAgentTokens.scopes,
+      agentTokenState: bubblophyAgentTokens.state,
+      agentTokenExpiresAt: bubblophyAgentTokens.expiresAt,
       state: bubblophyAgentRuns.state,
       updatedAt: bubblophyAgentRuns.updatedAt,
       result: bubblophyAgentRuns.result,

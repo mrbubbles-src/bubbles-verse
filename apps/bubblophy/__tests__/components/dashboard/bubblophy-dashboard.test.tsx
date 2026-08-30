@@ -444,11 +444,14 @@ const databaseSnapshotWithRunUpdateToken = {
       expiresAt: 'läuft nicht automatisch ab',
     },
   ],
+  agentRuns: databaseSnapshot.agentRuns.map((run) =>
+    run.id === 'run_bv_14' ? { ...run, canAgentReportStatus: true } : run
+  ),
 } satisfies DashboardSnapshot;
 
 const databaseSnapshotWithApprovedRunUpdateToken = {
   ...databaseSnapshotWithRunUpdateToken,
-  agentRuns: databaseSnapshot.agentRuns.map((run) =>
+  agentRuns: databaseSnapshotWithRunUpdateToken.agentRuns.map((run) =>
     run.id === 'run_bv_14'
       ? {
           ...run,
@@ -461,7 +464,7 @@ const databaseSnapshotWithApprovedRunUpdateToken = {
 
 const databaseSnapshotWithReviewRun = {
   ...databaseSnapshotWithRunUpdateToken,
-  agentRuns: databaseSnapshot.agentRuns.map((run) =>
+  agentRuns: databaseSnapshotWithRunUpdateToken.agentRuns.map((run) =>
     run.id === 'run_bv_14'
       ? {
           ...run,
@@ -475,7 +478,7 @@ const databaseSnapshotWithReviewRun = {
 
 const databaseSnapshotWithFailedRunResult = {
   ...databaseSnapshotWithRunUpdateToken,
-  agentRuns: databaseSnapshot.agentRuns.map((run) =>
+  agentRuns: databaseSnapshotWithRunUpdateToken.agentRuns.map((run) =>
     run.id === 'run_bv_14'
       ? {
           ...run,
@@ -7759,6 +7762,7 @@ describe('BubblophyDashboard interactions', () => {
               state: 'needs_review',
               updatedAt: '2026-07-19T12:00:00.000Z',
               resultSummary: 'Serverseitig paginiert.',
+              canAgentReportStatus: true,
             },
           ],
           nextAfter,
@@ -7821,6 +7825,7 @@ describe('BubblophyDashboard interactions', () => {
               state: 'requested',
               updatedAt: '2026-07-19T12:00:00.000Z',
               resultSummary: null,
+              canAgentReportStatus: true,
             },
           ],
           nextAfter: null,
@@ -7883,6 +7888,7 @@ describe('BubblophyDashboard interactions', () => {
                 state: 'requested',
                 updatedAt: '2026-07-19T12:00:00.000Z',
                 resultSummary: null,
+                canAgentReportStatus: true,
               },
             ],
             nextAfter: null,
@@ -8421,6 +8427,36 @@ describe('BubblophyDashboard interactions', () => {
       within(runsSection).queryByText(
         /\$BUBBLOPHY_BASE_URL\/api\/agent-runs\/run_no_08/
       )
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not use a different update token from the same project for run handoff', () => {
+    render(
+      <BubblophyDashboard
+        snapshot={{
+          ...databaseSnapshotWithApprovedRunUpdateToken,
+          agentRuns: databaseSnapshotWithApprovedRunUpdateToken.agentRuns.map(
+            (run) =>
+              run.id === 'run_bv_14'
+                ? { ...run, canAgentReportStatus: false }
+                : run
+          ),
+        }}
+      />
+    );
+
+    const runsSection = document.getElementById('runs');
+
+    expect(runsSection).toBeInstanceOf(HTMLElement);
+
+    if (!runsSection) {
+      throw new Error('Expected the runs section to render.');
+    }
+
+    expect(
+      within(runsSection).queryByRole('button', {
+        name: 'PATCH für run_bv_14 kopieren',
+      })
     ).not.toBeInTheDocument();
   });
 

@@ -248,8 +248,12 @@ describe('Bubblophy issue repository mapping', () => {
       {
         id: 'run_codex',
         projectKey: 'BV',
+        projectIsArchived: false,
         issueNumber: 7,
         agentTokenLabel: 'Codex lokal',
+        agentTokenScopes: ['runs:update'],
+        agentTokenState: 'active',
+        agentTokenExpiresAt: null,
         state: 'requested',
         updatedAt: '2026-06-13T16:10:00.000Z',
         result: null,
@@ -264,6 +268,7 @@ describe('Bubblophy issue repository mapping', () => {
         state: 'wartet',
         requestedBy: 'Mensch',
         lastEvent: 'Status wartet · zuletzt 2026-06-13T16:10:00.000Z',
+        canAgentReportStatus: true,
         resultSummary: undefined,
       },
     ]);
@@ -272,13 +277,37 @@ describe('Bubblophy issue repository mapping', () => {
     expect(JSON.stringify(runs)).not.toContain('plaintextToken');
   });
 
+  it('hides agent status handoff for runs in archived projects', () => {
+    const [run] = buildBubblophyAgentRunSummaries([
+      {
+        id: 'run_archived',
+        projectKey: 'BV',
+        projectIsArchived: true,
+        issueNumber: 7,
+        agentTokenLabel: 'Codex lokal',
+        agentTokenScopes: ['runs:update'],
+        agentTokenState: 'active',
+        agentTokenExpiresAt: null,
+        state: 'approved',
+        updatedAt: '2026-06-13T16:10:00.000Z',
+        result: null,
+      },
+    ]);
+
+    expect(run?.canAgentReportStatus).toBe(false);
+  });
+
   it('maps agent run result summaries without token secrets', () => {
     const runs = buildBubblophyAgentRunSummaries([
       {
         id: 'run_codex',
         projectKey: 'BV',
+        projectIsArchived: false,
         issueNumber: 7,
         agentTokenLabel: 'Codex lokal',
+        agentTokenScopes: ['runs:update'],
+        agentTokenState: 'active',
+        agentTokenExpiresAt: null,
         state: 'needs_review',
         updatedAt: '2026-06-13T16:10:00.000Z',
         result: {

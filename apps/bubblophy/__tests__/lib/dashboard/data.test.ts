@@ -53,8 +53,12 @@ function makeDatabaseRows(
       {
         id: 'run_codex',
         projectKey: 'BV',
+        projectIsArchived: false,
         issueNumber: 7,
         agentTokenLabel: 'Codex lokal',
+        agentTokenScopes: ['runs:update'],
+        agentTokenState: 'active',
+        agentTokenExpiresAt: null,
         state: 'requested',
         updatedAt: '2026-06-13T16:10:00.000Z',
         result: null,

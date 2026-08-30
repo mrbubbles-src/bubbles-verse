@@ -25,6 +25,7 @@ export function mapDashboardRunPageToSummaries(
       state,
       requestedBy: 'Mensch',
       lastEvent: `Status ${state} · zuletzt ${item.updatedAt}`,
+      canAgentReportStatus: item.canAgentReportStatus,
       resultSummary: item.resultSummary ?? undefined,
     };
   });

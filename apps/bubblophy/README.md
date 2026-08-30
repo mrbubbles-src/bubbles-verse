@@ -104,7 +104,11 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   newest-first RunPage mit 20 Einträgen und stabilem
   `(updated_at, run_id)`-Cursor statt des globalen 20er-Snapshots. Der Cursor
   liegt als `runAfterAt`/`runAfterId` in der URL; Projektwechsel setzen ihn
-  zurück. Resultate erscheinen nur als secret-gefilterte Kurzfassung.
+  zurück. Resultate erscheinen nur als secret-gefilterte Kurzfassung. Der
+  konkrete PATCH-Handoff erscheint ausschließlich für ein aktives Projekt,
+  wenn das dem Run zugeordnete Token aktuell aktiv, nicht abgelaufen und mit
+  `runs:update` ausgestattet ist; dafür erhält der Browser nur ein Boolean,
+  keine zusätzlichen Token-Felder.
 - `GET /api/agent-runs/[runId]` liefert lokalen Agenten mit
   `Authorization: Bearer <agent-token>` und Scope `issues:read` einen kleinen
   read-only Kontext für freigegebene oder laufende Runs aus Run, Projekt,
@@ -472,7 +476,9 @@ bun run build
   durch eine unabhängige 20er-RunPage. Jeder Run bleibt im Run-Statement an
   aktuelle Membership, Projekt, Issue und projektgleiches Agent-Token gebunden;
   legitime leere Seiten werden durch ein abschließendes Membership-Recheck vom
-  Zugriffsentzug unterschieden.
+  Zugriffsentzug unterschieden. Die Handoff-Anzeige verwendet nur die
+  redigierte Aktualisierungsfähigkeit des exakt zugeordneten Tokens und hängt
+  nicht mehr von der vollständigen Token-Verwaltungsliste ab.
 - Der Dashboard-Read lädt keine ungruppierten Issue-, Plan- oder Notizzeilen.
   Projektmetriken stammen aus separaten SQL-Aggregaten über alle Candidate-
   Issues. Offen-, Bereit- und Blockiert-Zähler bleiben vollständig;

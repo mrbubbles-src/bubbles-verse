@@ -184,6 +184,7 @@ export const dashboardSnapshot = {
       state: 'wartet',
       requestedBy: 'mrbubbles',
       lastEvent: 'Plan wartet auf Freigabe',
+      canAgentReportStatus: false,
     },
     {
       id: 'run_no_08',
@@ -192,6 +193,7 @@ export const dashboardSnapshot = {
       state: 'review',
       requestedBy: 'Martin',
       lastEvent: 'Diff bereit zur menschlichen Prüfung',
+      canAgentReportStatus: false,
     },
   ],
   activity: [

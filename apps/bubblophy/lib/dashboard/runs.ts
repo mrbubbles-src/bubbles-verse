@@ -15,6 +15,7 @@ export interface DashboardRunPageItem {
   state: BubblophyAgentRunState;
   updatedAt: string;
   resultSummary: string | null;
+  canAgentReportStatus: boolean;
 }
 
 export interface DashboardRunPage {

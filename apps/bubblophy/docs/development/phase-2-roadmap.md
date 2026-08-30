@@ -199,8 +199,12 @@ Status: abgeschlossen.
   der unbeschränkten Token-Verwaltungsliste ab: Ein eigener issue-gebundener
   20er-Selektor filtert aktive, nicht abgelaufene `issues:read`- plus
   `runs:update`-Ziele, gibt nur ID und Label aus und verwendet den stabilen
-  `(lower(label), id)`-Cursor. Die Verwaltungsansicht für Agent-Tokens bleibt
-  bis zum nächsten Slice unpaginiert.
+  `(lower(label), id)`-Cursor. Auch die RunQueue hängt nicht mehr von dieser
+  Verwaltungsliste ab: Ein redigiertes Boolean bildet State, Ablauf und
+  `runs:update` des exakt dem Run zugeordneten Tokens sowie den Archivstatus
+  des Projekts ab. Die
+  Verwaltungsansicht für Agent-Tokens bleibt bis zum nächsten Slice
+  unpaginiert.
 - Datenbankabfragen und Cache-Tags auf größere Projektmengen prüfen.
 
 ### 6. Benachrichtigungen und Team-Arbeit

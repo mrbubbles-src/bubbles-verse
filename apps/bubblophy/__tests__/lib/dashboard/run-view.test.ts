@@ -19,6 +19,7 @@ describe('mapDashboardRunPageToSummaries', () => {
           state: 'needs_review',
           updatedAt: '2026-07-19T12:00:00.000Z',
           resultSummary: 'Review bereit.',
+          canAgentReportStatus: true,
         },
       ],
       nextAfter: null,
@@ -31,6 +32,7 @@ describe('mapDashboardRunPageToSummaries', () => {
       state: 'review',
       requestedBy: 'Mensch',
       lastEvent: 'Status review · zuletzt 2026-07-19T12:00:00.000Z',
+      canAgentReportStatus: true,
       resultSummary: 'Review bereit.',
     });
   });

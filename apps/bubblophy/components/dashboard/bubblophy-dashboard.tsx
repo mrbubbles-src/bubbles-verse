@@ -2221,7 +2221,6 @@ export function BubblophyDashboard({
               <RunQueue
                 dataSource={snapshot.meta.dataSource}
                 agentRuns={displayedAgentRuns}
-                agentTokens={displayedAgentTokens}
                 selectedProjectKey={selectedProjectKey}
                 runPageStatus={
                   hasConcreteRunPageBoundary && !currentRunPageResult
@@ -5641,16 +5640,6 @@ function canShowConcreteAgentRunHandoff(state: AgentRunState) {
 }
 
 /**
- * Extracts the project key prefix from a dashboard issue ID.
- *
- * @param issueId Public issue ID such as `BV-12`.
- * @returns Project key prefix or an empty string.
- */
-function getProjectKeyFromIssueId(issueId: string) {
-  return issueId.split('-')[0] ?? '';
-}
-
-/**
  * Renders a copyable command or secret block without persisting its value.
  *
  * @param props Button label and text value to copy.
@@ -6080,7 +6069,6 @@ function NewAgentTokenDialog({
 function RunQueue({
   dataSource,
   agentRuns,
-  agentTokens,
   selectedProjectKey,
   runPageStatus,
   runCursor,
@@ -6094,7 +6082,6 @@ function RunQueue({
 }: {
   dataSource: DashboardSnapshot['meta']['dataSource'];
   agentRuns: AgentRunSummary[];
-  agentTokens: AgentTokenSummary[];
   selectedProjectKey: ProjectFilterKey;
   runPageStatus: ReadDashboardRunPageResult['status'] | 'loading' | null;
   runCursor: DashboardRunCursor | null;
@@ -6181,14 +6168,7 @@ function RunQueue({
         ) : null}
         {isDatabaseSource
           ? agentRuns.map((run) => {
-              const runProjectKey = getProjectKeyFromIssueId(run.issueId);
               const canTransitionRun = writableIssueIds.has(run.issueId);
-              const canUpdateThisRun = agentTokens.some(
-                (token) =>
-                  token.state === 'aktiv' &&
-                  token.projectKey === runProjectKey &&
-                  token.scopes.includes('runs:update')
-              );
 
               return (
                 <div
@@ -6240,7 +6220,7 @@ function RunQueue({
                     </div>
                   ) : null}
                   {canShowConcreteAgentRunHandoff(run.state) &&
-                  canUpdateThisRun ? (
+                  run.canAgentReportStatus ? (
                     <div className="grid gap-2 rounded-md border border-border bg-background/60 p-2">
                       <p className="text-xs text-muted-foreground">
                         Lokaler Agent kann für diesen Run Status melden. Kein

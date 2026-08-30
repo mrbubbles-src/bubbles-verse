@@ -106,6 +106,7 @@ export interface AgentRunSummary {
   state: AgentRunState;
   requestedBy: string;
   lastEvent: string;
+  canAgentReportStatus?: boolean;
   resultSummary?: string;
 }
 

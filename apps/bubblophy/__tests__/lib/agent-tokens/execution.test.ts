@@ -1,4 +1,7 @@
-import { isExecutableBubblophyAgentToken } from '@/lib/agent-tokens/execution';
+import {
+  canBubblophyAgentTokenReportRunStatus,
+  isExecutableBubblophyAgentToken,
+} from '@/lib/agent-tokens/execution';
 
 import { describe, expect, it } from 'vitest';
 
@@ -52,6 +55,54 @@ describe('isExecutableBubblophyAgentToken', () => {
           state: 'active',
           expiresAt: null,
           scopes: ['runs:update'],
+        },
+        now
+      )
+    ).toBe(false);
+  });
+});
+
+describe('canBubblophyAgentTokenReportRunStatus', () => {
+  it('requires only the assigned token run-update capability', () => {
+    expect(
+      canBubblophyAgentTokenReportRunStatus(
+        {
+          state: 'active',
+          expiresAt: null,
+          scopes: ['runs:update'],
+        },
+        now
+      )
+    ).toBe(true);
+  });
+
+  it('rejects paused, expired, or read-only tokens', () => {
+    expect(
+      canBubblophyAgentTokenReportRunStatus(
+        {
+          state: 'paused',
+          expiresAt: null,
+          scopes: ['runs:update'],
+        },
+        now
+      )
+    ).toBe(false);
+    expect(
+      canBubblophyAgentTokenReportRunStatus(
+        {
+          state: 'active',
+          expiresAt: now,
+          scopes: ['runs:update'],
+        },
+        now
+      )
+    ).toBe(false);
+    expect(
+      canBubblophyAgentTokenReportRunStatus(
+        {
+          state: 'active',
+          expiresAt: null,
+          scopes: ['issues:read'],
         },
         now
       )

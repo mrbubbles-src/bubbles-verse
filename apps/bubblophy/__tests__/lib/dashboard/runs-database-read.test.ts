@@ -101,6 +101,9 @@ function makeRun(index: number): DatabaseRow {
     id: `run-${String(index).padStart(2, '0')}`,
     issueNumber: index,
     agentLabel: 'codex',
+    agentTokenScopes: ['issues:read', 'runs:update'],
+    agentTokenState: 'active',
+    agentTokenExpiresAt: null,
     state: index === 1 ? 'needs_review' : 'running',
     updatedAt: `2026-07-19T12:${String(60 - index).padStart(2, '0')}:00.000Z`,
     result: index === 1 ? { summary: 'Review bereit.' } : null,
@@ -139,6 +142,7 @@ describe('selectDashboardRunPageForUser', () => {
       state: 'needs_review',
       updatedAt: '2026-07-19T12:59:00.000Z',
       resultSummary: 'Review bereit.',
+      canAgentReportStatus: true,
     });
     expect(result?.nextAfter).toEqual({
       updatedAt: '2026-07-19T12:40:00.000Z',
@@ -182,6 +186,29 @@ describe('selectDashboardRunPageForUser', () => {
       nextAfter: null,
     });
     expect(calls).toHaveLength(3);
+  });
+
+  it('hides agent status handoff for archived projects', async () => {
+    queryRows = [
+      [makeProject({ projectIsArchived: true })],
+      [makeRun(1), makeRun(2)].map((row) => ({
+        ...row,
+        projectIsArchived: true,
+      })),
+    ];
+    const { selectDashboardRunPageForUser } =
+      await import('@/lib/dashboard/runs-database-read');
+
+    const result = await selectDashboardRunPageForUser({
+      authUserId: 'user-1',
+      projectKey: 'BV',
+      after: null,
+    });
+
+    expect(result?.items).toEqual([
+      expect.objectContaining({ canAgentReportStatus: false }),
+      expect.objectContaining({ canAgentReportStatus: false }),
+    ]);
   });
 
   it('fails closed when membership disappears before an empty result returns', async () => {

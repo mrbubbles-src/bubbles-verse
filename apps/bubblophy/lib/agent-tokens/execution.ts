@@ -29,3 +29,25 @@ export function isExecutableBubblophyAgentToken(
     requiredExecutionScopes.every((scope) => token.scopes.includes(scope))
   );
 }
+
+/**
+ * Checks whether the token assigned to a run may report run status.
+ *
+ * @param token Persisted lifecycle, expiry, and scope fields.
+ * @param now Current ISO timestamp, injectable for deterministic checks.
+ * @returns `true` only for an active, unexpired token with `runs:update`.
+ */
+export function canBubblophyAgentTokenReportRunStatus(
+  token: {
+    state: BubblophyAgentTokenState;
+    expiresAt: string | null;
+    scopes: BubblophyAgentTokenScope[];
+  },
+  now = new Date().toISOString()
+) {
+  return (
+    token.state === 'active' &&
+    (!token.expiresAt || token.expiresAt > now) &&
+    token.scopes.includes('runs:update')
+  );
+}

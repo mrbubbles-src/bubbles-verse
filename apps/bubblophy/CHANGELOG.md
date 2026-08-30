@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Decoupled RunQueue handoff hints from the dashboard token list. Each bounded
+  run DTO now carries only a redacted `canAgentReportStatus` boolean derived
+  from project archive state plus the assigned token's current lifecycle,
+  expiry, and `runs:update` scope, matching the API's exact run-token binding
+  without exposing token metadata.
 - Replaced the run-request form's dependency on the unbounded dashboard token
   snapshot with an issue-bound 20-item executable-token selector. The selector
   rechecks contributor membership, active project and issue identity, filters
