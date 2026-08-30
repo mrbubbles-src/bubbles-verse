@@ -124,6 +124,9 @@
 - Added the read-only `list_run_targets` MCP tool, exposing only IDs and labels
   of currently executable same-project agent tokens to active contributors as
   the narrow selection boundary for human-approved run requests.
+- Bounded `list_run_targets` to 20 entries per page with literal prefix search,
+  a stable case-folded label/ID cursor, and database-side executable-token
+  filtering that no longer hydrates lifecycle or scope fields into the service.
 - Added the controlled `request_run` MCP write tool with OAuth audit
   attribution, locked contributor and token rechecks, and a public requested-run
   response without approval, execution, workflow mutation, or internal IDs.

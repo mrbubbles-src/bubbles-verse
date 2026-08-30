@@ -39,9 +39,12 @@ persönliche Client-Anmeldung. Es enthält keine echten Tokens oder Secrets.
 - Kontrolliertes Schreibwerkzeug `create_issue`: OAuth-attributierter,
   nicht zugewiesener Triage-Draft für Contributor in aktiven Projekten, ohne
   Plan, Approval oder Run.
-- `list_run_targets` liefert nur ID und Label aktuell ausführbarer
-  Same-Project-Agent-Tokens für Contributor in aktiven Projekten. Token-Hash,
-  Scopes, Zustand, Ablauf, Creator- und Nutzungsdaten bleiben serverintern.
+- `list_run_targets` liefert höchstens 20 aktuell ausführbare
+  Same-Project-Agent-Tokens pro Seite für Contributor in aktiven Projekten,
+  jeweils nur mit ID und Label. `query` ist eine optionale literale
+  Präfixsuche; `nextAfter` wird als `after` fortgesetzt. Für gefilterte
+  Folgeseiten muss derselbe `query` erneut gesendet werden. Token-Hash, Scopes,
+  Zustand, Ablauf, Creator- und Nutzungsdaten bleiben serverintern.
 - Kontrolliertes Schreibwerkzeug `request_run`: legt für ein sichtbares Issue
   und ein erneut geprüftes Run-Ziel nur einen OAuth-attributierten Run im
   Zustand `requested` an. Approval, Ausführung und Issue-Status bleiben
@@ -245,8 +248,10 @@ insbesondere Schritt 7 bleibt deshalb ein offenes Produktions-Gate.
    nicht abgelaufene Same-Project-Tokens mit `issues:read` und `runs:update`
    dürfen mit ID und Label erscheinen. Pausierte, widerrufene, abgelaufene oder
    unvollständig berechtigte Tokens sowie alle Hash-, Scope-, Lifecycle-,
-   Creator- und Nutzungsfelder müssen fehlen. Viewer, entfernte Membership und
-   archivierte Projekte müssen scheitern.
+   Creator- und Nutzungsfelder müssen fehlen. Mehr als 20 Treffer müssen über
+   `nextAfter`/`after` fortgesetzt werden; bei einer Präfixsuche ist derselbe
+   `query` auf jeder Folgeseite erneut mitzusenden.
+   Viewer, entfernte Membership und archivierte Projekte müssen scheitern.
 9. Eines der sichtbaren Ziele mit `request_run` für ein eigenes Staging-Issue
    auswählen. Es müssen genau ein Run im Zustand `requested` und ein
    `agent_run_requested`-Event mit User- plus OAuth-Client-Attribution entstehen.

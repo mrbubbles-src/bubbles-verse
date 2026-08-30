@@ -177,10 +177,13 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   Result-JSON wird ausschließlich serverintern in die bestehende
   Secret-filternde Kurzfassung überführt. User- und Token-IDs bleiben verborgen.
 - Das read-only Werkzeug `list_run_targets` liefert Contributor-Rollen für ein
-  aktives Projekt nur ID und Label aktuell ausführbarer Agent-Tokens. Zustand,
-  Scopes, Ablauf, Hash, Creator- und Nutzungsdaten bleiben serverintern. Damit
-  kann `request_run` ein Ziel referenzieren, ohne den breiteren Token-Vertrag
-  offenzulegen; Viewer und archivierte Projekte bleiben gesperrt.
+  aktives Projekt höchstens 20 aktuell ausführbare Agent-Tokens pro Seite, nur
+  mit ID und Label. Eine optionale Präfixsuche und `nextAfter` begrenzen auch
+  große Projekte; bei gefilterten Folgeseiten muss derselbe `query` zusammen
+  mit `after` gesendet werden. Zustand, Scopes, Ablauf, Hash, Creator- und
+  Nutzungsdaten bleiben serverintern. Damit kann `request_run` ein Ziel
+  referenzieren, ohne den breiteren Token-Vertrag offenzulegen; Viewer und
+  archivierte Projekte bleiben gesperrt.
 - `request_run` erzeugt für ein sichtbares Issue und ein erneut geprüftes
   Same-Project-Run-Ziel ausschließlich einen OAuth-attributierten Run im Zustand
   `requested`. Projekt, Issue, Membership und Token werden transaktional

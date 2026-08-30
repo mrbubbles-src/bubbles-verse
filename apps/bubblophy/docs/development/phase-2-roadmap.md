@@ -245,7 +245,8 @@ lokale Supabase-JWT-Validierung, das membership-basierte read-only Werkzeug
 membership-basierten Detailwerkzeuge `get_issue`, `get_issue_plan` und
 `get_run`, die OAuth-vs.-Data-API-RLS-Grenze und der persönliche
 OAuth-Consent-Flow sowie die kontrollierten Schreibwerkzeuge `propose_plan`,
-`add_note` und `create_issue` sowie die sichere Run-Zielauswahl
+`add_note` und `create_issue` sowie die sichere, auf 20 Treffer pro Seite
+begrenzte und optional per Label-Präfix durchsuchbare Run-Zielauswahl
 `list_run_targets` und die kontrollierte Run-Anfrage `request_run` sind
 vorhanden. Konfliktsichere Statusänderungen laufen über
 `update_issue_status`. Ohne

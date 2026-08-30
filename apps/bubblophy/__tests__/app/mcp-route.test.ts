@@ -94,7 +94,11 @@ vi.mock('@/lib/mcp/create-issue', () => ({
 vi.mock('@/lib/mcp/run-targets', () => ({
   listBubblophyMcpRunTargets: (
     authUserId: string,
-    input: { projectId: string }
+    input: {
+      projectId: string;
+      query?: string;
+      after?: { normalizedLabel: string; id: string };
+    }
   ) => listBubblophyMcpRunTargetsMock(authUserId, input),
 }));
 
@@ -340,7 +344,11 @@ function createListRunTargetsRequest() {
       method: 'tools/call',
       params: {
         name: 'list_run_targets',
-        arguments: { projectId: 'project_bv' },
+        arguments: {
+          projectId: 'project_bv',
+          query: 'co',
+          after: { normalizedLabel: 'codex', id: 'token-20' },
+        },
       },
     }),
   });
@@ -882,7 +890,9 @@ describe('/mcp', () => {
     listBubblophyMcpRunTargetsMock.mockResolvedValue({
       status: 'success',
       project: { id: 'project_bv', key: 'BV', isArchived: false },
+      query: 'co',
       targets: [{ id: 'token_codex', label: 'Codex' }],
+      nextAfter: { normalizedLabel: 'codex', id: 'token_codex' },
     });
     const { POST } = await import('@/app/mcp/route');
     const response = await POST(createListRunTargetsRequest());
@@ -891,6 +901,10 @@ describe('/mcp', () => {
     expect(response.status).toBe(200);
     expect(body).toContain('"id":"token_codex"');
     expect(body).toContain('"label":"Codex"');
+    expect(body).toContain('"query":"co"');
+    expect(body).toContain(
+      '"nextAfter":{"normalizedLabel":"codex","id":"token_codex"}'
+    );
     expect(body).not.toContain('tokenHash');
     expect(body).not.toContain('scopes');
     expect(body).not.toContain('state');
@@ -900,6 +914,8 @@ describe('/mcp', () => {
     expect(body).not.toContain('user-1');
     expect(listBubblophyMcpRunTargetsMock).toHaveBeenCalledWith('user-1', {
       projectId: 'project_bv',
+      query: 'co',
+      after: { normalizedLabel: 'codex', id: 'token-20' },
     });
   });
 

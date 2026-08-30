@@ -6,6 +6,22 @@ import * as z from 'zod';
 
 const inputSchema = z.object({
   projectId: z.string().trim().min(1).max(200),
+  query: z
+    .string()
+    .trim()
+    .min(2)
+    .max(80)
+    .optional()
+    .describe('Literal case-insensitive label prefix.'),
+  after: z
+    .object({
+      normalizedLabel: z.string().trim().min(1).max(256),
+      id: z.string().trim().min(1).max(128),
+    })
+    .optional()
+    .describe(
+      'Stable cursor from nextAfter. Repeat the same query for filtered follow-up pages.'
+    ),
 });
 
 const outputSchema = z.object({
@@ -14,12 +30,19 @@ const outputSchema = z.object({
     key: z.string(),
     isArchived: z.literal(false),
   }),
+  query: z.string().nullable(),
   targets: z.array(
     z.object({
       id: z.string(),
       label: z.string(),
     })
   ),
+  nextAfter: z
+    .object({
+      normalizedLabel: z.string(),
+      id: z.string(),
+    })
+    .nullable(),
 });
 
 /** Registers the public executable run-target selection tool. */
@@ -29,7 +52,7 @@ export function registerBubblophyMcpRunTargetsTool(server: McpServer) {
     {
       title: 'List Bubblophy run targets',
       description:
-        'Lists public executable agent targets selectable for a later human-approved run request in one active contributor project.',
+        'Lists one bounded, searchable page of public executable agent targets selectable for a later human-approved run request in one active contributor project. Send nextAfter as after and repeat the same query for a filtered next page.',
       inputSchema,
       outputSchema,
       annotations: {
@@ -64,7 +87,9 @@ export function registerBubblophyMcpRunTargetsTool(server: McpServer) {
         ],
         structuredContent: {
           project: result.project,
+          query: result.query,
           targets: result.targets,
+          nextAfter: result.nextAfter,
         },
       };
     }

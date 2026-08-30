@@ -1,6 +1,5 @@
 // @vitest-environment node
 
-import type { BubblophyMcpRunTargetReadResult } from '@/lib/mcp/run-targets';
 import type { SQL } from 'drizzle-orm';
 
 import { getTableName } from 'drizzle-orm';
@@ -16,18 +15,18 @@ interface RunTargetRow {
   memberRole: 'member';
   tokenId: string | null;
   tokenLabel: string | null;
-  tokenState: 'active' | null;
-  tokenScopes: ('issues:read' | 'runs:update')[] | null;
-  tokenExpiresAt: string | null;
+  tokenNormalizedLabel: string | null;
 }
 
 interface SelectCall {
   selectedKeys: string[];
   fromTable: string | null;
   joinedTables: string[];
+  joinSql: string[];
   whereParams: string;
   whereSql: string | null;
-  orderByCalls: number;
+  orderBySql: string | null;
+  limit: number | null;
 }
 
 const selectCalls: SelectCall[] = [];
@@ -41,9 +40,11 @@ class MockSelectQuery implements PromiseLike<RunTargetRow[]> {
       selectedKeys,
       fromTable: null,
       joinedTables: [],
+      joinSql: [],
       whereParams: '[]',
       whereSql: null,
-      orderByCalls: 0,
+      orderBySql: null,
+      limit: null,
     };
     selectCalls.push(this.call);
   }
@@ -53,13 +54,13 @@ class MockSelectQuery implements PromiseLike<RunTargetRow[]> {
     return this;
   }
 
-  innerJoin(table: DrizzleTable) {
-    this.call.joinedTables.push(getTableName(table));
+  innerJoin(table: DrizzleTable, condition: SQL) {
+    this.captureJoin(table, condition);
     return this;
   }
 
-  leftJoin(table: DrizzleTable) {
-    this.call.joinedTables.push(getTableName(table));
+  leftJoin(table: DrizzleTable, condition: SQL) {
+    this.captureJoin(table, condition);
     return this;
   }
 
@@ -70,12 +71,26 @@ class MockSelectQuery implements PromiseLike<RunTargetRow[]> {
     return this;
   }
 
-  orderBy() {
-    this.call.orderByCalls += 1;
+  orderBy(...conditions: SQL[]) {
+    const dialect = new PgDialect();
+    this.call.orderBySql = conditions
+      .map((condition) => dialect.sqlToQuery(condition).sql)
+      .join(' ');
     return this;
   }
 
-  then<TResult1 = RunTargetRow[], TResult2 = never>(
+  limit(value: number) {
+    this.call.limit = value;
+    return this;
+  }
+
+  private captureJoin(table: DrizzleTable, condition: SQL) {
+    const query = new PgDialect().sqlToQuery(condition);
+    this.call.joinedTables.push(getTableName(table));
+    this.call.joinSql.push(`${query.sql} ${JSON.stringify(query.params)}`);
+  }
+
+  then<TResult1 = RunTargetRow[], TResult2 = TResult1>(
     onfulfilled?:
       | ((value: RunTargetRow[]) => TResult1 | PromiseLike<TResult1>)
       | null,
@@ -94,6 +109,14 @@ const dbMock = {
 
 vi.mock('@/drizzle/db', () => ({ db: dbMock }));
 
+const input = {
+  authUserId: 'user-1',
+  projectId: 'project_bv',
+  query: null,
+  after: null,
+  now: '2026-08-30T12:00:00.000Z',
+};
+
 describe('selectBubblophyMcpRunTargetsForUser', () => {
   beforeEach(() => {
     rows = [];
@@ -101,72 +124,116 @@ describe('selectBubblophyMcpRunTargetsForUser', () => {
     dbMock.select.mockClear();
   });
 
-  it('starts at membership and never selects token secrets or lifecycle actors', async () => {
-    rows = [createRow('token_codex', 'Codex')];
+  it('returns a 20+1 public page without selecting token internals', async () => {
+    rows = Array.from({ length: 21 }, (_, index) =>
+      createRow(
+        `token-${index + 1}`,
+        `Target ${index + 1}`,
+        index === 19 ? 'postgres-normalized' : `target ${index + 1}`
+      )
+    );
     const { selectBubblophyMcpRunTargetsForUser } =
       await import('@/lib/mcp/run-targets-database-read');
 
-    await expect(
-      selectBubblophyMcpRunTargetsForUser({
-        authUserId: 'user-1',
-        projectId: 'project_bv',
-      })
-    ).resolves.toEqual({
+    const result = await selectBubblophyMcpRunTargetsForUser(input);
+
+    expect(result).toMatchObject({
       project: {
         id: 'project_bv',
         key: 'BV',
         isArchived: false,
         role: 'member',
       },
-      candidates: [
-        {
-          id: 'token_codex',
-          label: 'Codex',
-          state: 'active',
-          scopes: ['issues:read', 'runs:update'],
-          expiresAt: null,
-        },
-      ],
-    } satisfies BubblophyMcpRunTargetReadResult);
-    expect(selectCalls).toHaveLength(1);
-    expect(selectCalls[0]).toMatchObject({
-      selectedKeys: [
-        'projectId',
-        'projectKey',
-        'projectIsArchived',
-        'memberRole',
-        'tokenId',
-        'tokenLabel',
-        'tokenState',
-        'tokenScopes',
-        'tokenExpiresAt',
-      ],
-      fromTable: 'bubblophy_project_members',
-      joinedTables: ['bubblophy_projects', 'bubblophy_agent_tokens'],
-      whereParams:
-        '["user-1","project_bv",false,"owner","maintainer","member"]',
-      orderByCalls: 1,
+      targets: expect.any(Array),
+      nextAfter: {
+        normalizedLabel: 'postgres-normalized',
+        id: 'token-20',
+      },
     });
-    expect(selectCalls[0]?.whereSql).toContain('auth_user_id');
-    expect(selectCalls[0]?.whereSql).toContain('"bubblophy_projects"."id"');
-    expect(selectCalls[0]?.whereSql).toContain('is_archived');
-    expect(selectCalls[0]?.whereSql).toContain('"role" in');
+    expect(result?.targets).toHaveLength(20);
+    expect(Object.keys(result?.targets[0] ?? {}).sort()).toEqual([
+      'id',
+      'label',
+    ]);
+    expect(selectCalls[0]?.selectedKeys).toEqual([
+      'projectId',
+      'projectKey',
+      'projectIsArchived',
+      'memberRole',
+      'tokenId',
+      'tokenLabel',
+      'tokenNormalizedLabel',
+    ]);
     expect(JSON.stringify(selectCalls)).not.toMatch(
-      /tokenHash|createdBy|lastUsed|revokedAt/i
+      /tokenHash|tokenScopes|tokenState|tokenExpiresAt|createdBy|lastUsed|revokedAt/i
     );
+    expect(selectCalls[0]?.limit).toBe(21);
   });
 
-  it('returns an empty target set for a visible project without tokens', async () => {
-    rows = [createRow(null, null)];
+  it('binds membership and filters executability, prefix, and cursor in SQL', async () => {
+    rows = [createRow('token-21', 'Target 21', 'target 21')];
+    const { selectBubblophyMcpRunTargetsForUser } =
+      await import('@/lib/mcp/run-targets-database-read');
+
+    await selectBubblophyMcpRunTargetsForUser({
+      ...input,
+      query: 'A%_\\',
+      after: { normalizedLabel: 'target 20', id: 'token-20' },
+    });
+
+    expect(selectCalls[0]).toMatchObject({
+      fromTable: 'bubblophy_project_members',
+      joinedTables: [
+        'bubblophy_projects',
+        'bubblophy_mcp_run_target_candidates',
+      ],
+      limit: 21,
+    });
+    expect(selectCalls[0]?.whereParams).toBe(
+      '["user-1","project_bv",false,"owner","maintainer","member"]'
+    );
+    const tokenJoin = selectCalls[0]?.joinSql[1] ?? '';
+    expect(tokenJoin).toContain('active');
+    expect(tokenJoin).toContain('2026-08-30T12:00:00.000Z');
+    expect(tokenJoin).toContain('@>');
+    expect(tokenJoin).toContain('issues:read');
+    expect(tokenJoin).toContain('runs:update');
+    expect(tokenJoin).toContain('a\\\\%\\\\_\\\\\\\\%');
+    expect(tokenJoin).toContain('target 20');
+    expect(tokenJoin).toContain('token-20');
+    expect(selectCalls[0]?.orderBySql).toContain('lower');
+  });
+
+  it('advances duplicate case-folded labels by token ID', async () => {
+    rows = [createRow('token-2', 'CODEX', 'codex')];
     const { selectBubblophyMcpRunTargetsForUser } =
       await import('@/lib/mcp/run-targets-database-read');
 
     await expect(
       selectBubblophyMcpRunTargetsForUser({
-        authUserId: 'user-1',
-        projectId: 'project_bv',
+        ...input,
+        query: 'Co',
+        after: { normalizedLabel: 'codex', id: 'token-1' },
       })
-    ).resolves.toMatchObject({ candidates: [] });
+    ).resolves.toMatchObject({
+      targets: [{ id: 'token-2', label: 'CODEX' }],
+    });
+
+    const tokenJoin = selectCalls[0]?.joinSql[1] ?? '';
+    expect(tokenJoin).toContain('codex');
+    expect(tokenJoin).toContain('token-1');
+    expect(selectCalls[0]?.orderBySql).toContain('lower');
+    expect(selectCalls[0]?.orderBySql).toContain('"id"');
+  });
+
+  it('preserves an authorized project with no executable targets', async () => {
+    rows = [createRow(null, null, null)];
+    const { selectBubblophyMcpRunTargetsForUser } =
+      await import('@/lib/mcp/run-targets-database-read');
+
+    await expect(
+      selectBubblophyMcpRunTargetsForUser(input)
+    ).resolves.toMatchObject({ targets: [], nextAfter: null });
   });
 
   it('returns null without revealing foreign or missing projects', async () => {
@@ -175,17 +242,18 @@ describe('selectBubblophyMcpRunTargetsForUser', () => {
 
     await expect(
       selectBubblophyMcpRunTargetsForUser({
-        authUserId: 'user-1',
+        ...input,
         projectId: 'foreign',
       })
     ).resolves.toBeNull();
   });
 });
 
-/** Builds one deterministic membership/project/token join row. */
+/** Builds one deterministic membership/project/public-token row. */
 function createRow(
   tokenId: string | null,
-  tokenLabel: string | null
+  tokenLabel: string | null,
+  tokenNormalizedLabel: string | null
 ): RunTargetRow {
   return {
     projectId: 'project_bv',
@@ -194,8 +262,6 @@ function createRow(
     memberRole: 'member',
     tokenId,
     tokenLabel,
-    tokenState: tokenId ? 'active' : null,
-    tokenScopes: tokenId ? ['issues:read', 'runs:update'] : null,
-    tokenExpiresAt: null,
+    tokenNormalizedLabel,
   };
 }

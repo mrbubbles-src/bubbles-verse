@@ -1,20 +1,17 @@
 import 'server-only';
 
-import type {
-  BubblophyAgentTokenScope,
-  BubblophyAgentTokenState,
-} from '@/drizzle/db/schema';
 import type { BubblophyMcpProjectRole } from '@/lib/mcp/projects';
 
-import { isExecutableBubblophyAgentToken } from '@/lib/agent-tokens/execution';
 import { canContributeToBubblophyProject } from '@/lib/projects/permissions';
 
-export interface BubblophyMcpRunTargetCandidate {
+export interface BubblophyMcpRunTargetCursor {
+  normalizedLabel: string;
+  id: string;
+}
+
+export interface BubblophyMcpRunTarget {
   id: string;
   label: string;
-  state: BubblophyAgentTokenState;
-  scopes: BubblophyAgentTokenScope[];
-  expiresAt: string | null;
 }
 
 export interface BubblophyMcpRunTargetReadResult {
@@ -24,12 +21,16 @@ export interface BubblophyMcpRunTargetReadResult {
     isArchived: boolean;
     role: BubblophyMcpProjectRole;
   };
-  candidates: BubblophyMcpRunTargetCandidate[];
+  targets: BubblophyMcpRunTarget[];
+  nextAfter: BubblophyMcpRunTargetCursor | null;
 }
 
 export interface BubblophyMcpRunTargetReadInput {
   authUserId: string;
   projectId: string;
+  query: string | null;
+  after: BubblophyMcpRunTargetCursor | null;
+  now: string;
 }
 
 export type BubblophyMcpRunTargetReader = (
@@ -38,6 +39,8 @@ export type BubblophyMcpRunTargetReader = (
 
 export interface ListBubblophyMcpRunTargetsInput {
   projectId: string;
+  query?: string;
+  after?: BubblophyMcpRunTargetCursor;
 }
 
 interface ListBubblophyMcpRunTargetsOptions {
@@ -49,26 +52,41 @@ export type ListBubblophyMcpRunTargetsResult =
   | {
       status: 'success';
       project: { id: string; key: string; isArchived: false };
-      targets: { id: string; label: string }[];
+      query: string | null;
+      targets: BubblophyMcpRunTarget[];
+      nextAfter: BubblophyMcpRunTargetCursor | null;
     }
   | {
       status: 'invalid';
-      reason: 'empty_auth_user' | 'empty_project';
+      reason:
+        | 'empty_auth_user'
+        | 'empty_project'
+        | 'invalid_project'
+        | 'query_too_short'
+        | 'query_too_long'
+        | 'invalid_cursor';
     }
   | { status: 'not_found' }
   | { status: 'forbidden' }
   | { status: 'database_unavailable' };
 
+export const BUBBLOPHY_MCP_RUN_TARGET_PAGE_SIZE = 20;
+export const BUBBLOPHY_MCP_RUN_TARGET_QUERY_MAX_LENGTH = 80;
+
+const projectIdMaxLength = 200;
+const cursorLabelMaxLength = 256;
+const cursorIdMaxLength = 128;
+
 /**
- * Lists public executable run targets for one active contributor project.
+ * Lists one bounded page of public executable targets for a contributor.
  *
- * Lifecycle, scopes, expiry, hashes, and actor data remain internal. The MCP
- * boundary returns only the token ID needed for later selection and its label.
+ * Lifecycle, scopes, expiry, hashes, and actor data remain inside the database
+ * predicate. The MCP boundary returns only target IDs, labels, and a cursor.
  *
  * @param authUserId Verified OAuth subject mapped to the Bubblophy user.
- * @param input Visible project ID selected by the MCP client.
+ * @param input Project ID, optional literal label prefix, and stable cursor.
  * @param options Optional reader and clock dependencies for tests.
- * @returns Public run targets or a safe structured failure.
+ * @returns One public target page or a safe structured failure.
  */
 export async function listBubblophyMcpRunTargets(
   authUserId: string,
@@ -77,6 +95,8 @@ export async function listBubblophyMcpRunTargets(
 ): Promise<ListBubblophyMcpRunTargetsResult> {
   const normalizedAuthUserId = authUserId.trim();
   const normalizedProjectId = input.projectId.trim();
+  const query = input.query?.trim() || null;
+  const after = input.after ? normalizeCursor(input.after) : null;
 
   if (!normalizedAuthUserId) {
     return { status: 'invalid', reason: 'empty_auth_user' };
@@ -86,17 +106,36 @@ export async function listBubblophyMcpRunTargets(
     return { status: 'invalid', reason: 'empty_project' };
   }
 
-  const readTargets =
-    options.readTargets ?? (await getDefaultBubblophyMcpRunTargetReader());
+  if (normalizedProjectId.length > projectIdMaxLength) {
+    return { status: 'invalid', reason: 'invalid_project' };
+  }
 
-  if (!readTargets) {
-    return { status: 'database_unavailable' };
+  if (query && query.length < 2) {
+    return { status: 'invalid', reason: 'query_too_short' };
+  }
+
+  if (query && query.length > BUBBLOPHY_MCP_RUN_TARGET_QUERY_MAX_LENGTH) {
+    return { status: 'invalid', reason: 'query_too_long' };
+  }
+
+  if (input.after && !after) {
+    return { status: 'invalid', reason: 'invalid_cursor' };
   }
 
   try {
+    const readTargets =
+      options.readTargets ?? (await getDefaultBubblophyMcpRunTargetReader());
+
+    if (!readTargets) {
+      return { status: 'database_unavailable' };
+    }
+
     const result = await readTargets({
       authUserId: normalizedAuthUserId,
       projectId: normalizedProjectId,
+      query,
+      after,
+      now: normalizeNow(options.now),
     });
 
     if (!result) {
@@ -110,12 +149,6 @@ export async function listBubblophyMcpRunTargets(
       return { status: 'forbidden' };
     }
 
-    const now = options.now ?? new Date().toISOString();
-    const targets = result.candidates
-      .filter((candidate) => isExecutableBubblophyAgentToken(candidate, now))
-      .map(({ id, label }) => ({ id, label }))
-      .sort((left, right) => left.label.localeCompare(right.label));
-
     return {
       status: 'success',
       project: {
@@ -123,11 +156,45 @@ export async function listBubblophyMcpRunTargets(
         key: result.project.key,
         isArchived: false,
       },
-      targets,
+      query,
+      targets: result.targets,
+      nextAfter: result.nextAfter,
     };
   } catch {
     return { status: 'database_unavailable' };
   }
+}
+
+/** Normalizes the all-or-nothing stable `(lower(label), id)` cursor. */
+function normalizeCursor(
+  cursor: BubblophyMcpRunTargetCursor
+): BubblophyMcpRunTargetCursor | null {
+  const normalizedLabel = cursor.normalizedLabel.trim().toLowerCase();
+  const id = cursor.id.trim();
+
+  if (
+    !normalizedLabel ||
+    normalizedLabel.length > cursorLabelMaxLength ||
+    !id ||
+    id.length > cursorIdMaxLength
+  ) {
+    return null;
+  }
+
+  return { normalizedLabel, id };
+}
+
+/** Uses one deterministic ISO timestamp for expiry comparisons. */
+function normalizeNow(now?: string) {
+  if (!now) {
+    return new Date().toISOString();
+  }
+
+  const parsed = new Date(now);
+
+  return Number.isFinite(parsed.getTime())
+    ? parsed.toISOString()
+    : new Date().toISOString();
 }
 
 /** Loads the membership-bound Drizzle reader when database access exists. */
