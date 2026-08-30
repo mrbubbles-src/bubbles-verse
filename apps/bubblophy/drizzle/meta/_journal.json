@@ -78,6 +78,13 @@
       "when": 1786520854795,
       "tag": "0010_giant_cannonball",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1786523746351,
+      "tag": "0011_useful_eternity",
+      "breakpoints": true
     }
   ]
 }

@@ -13,6 +13,8 @@ import type {
   CreateBubblophyProjectActionResult,
   CreateBubblophyProjectInvitationActionInput,
   CreateBubblophyProjectInvitationActionResult,
+  ReadBubblophyIssueAssigneeOptionsActionInput,
+  ReadBubblophyIssueAssigneeOptionsActionResult,
   ReadBubblophyProjectInvitationManagerSnapshotActionResult,
   ReinviteBubblophyProjectInvitationActionInput,
   ReinviteBubblophyProjectInvitationActionResult,
@@ -198,6 +200,7 @@ import {
 } from '@bubbles/ui/shadcn/table';
 import { Textarea } from '@bubbles/ui/shadcn/textarea';
 
+import { IssueAssigneeOptionPicker } from '@/components/dashboard/issue-assignee/issue-assignee-option-picker';
 import { IssueQueueControls } from '@/components/dashboard/issue-queue/issue-queue-controls';
 import { ProjectInvitationManager } from '@/components/dashboard/project-invitations/project-invitation-manager';
 import { ProjectRoleGuide } from '@/components/dashboard/project-members/project-role-guide';
@@ -227,6 +230,9 @@ interface BubblophyDashboardProps {
   updateIssueAssigneeAction?: (
     input: UpdateBubblophyIssueAssigneeActionInput
   ) => Promise<UpdateBubblophyIssueAssigneeActionResult>;
+  readIssueAssigneeOptionsAction?: (
+    input: ReadBubblophyIssueAssigneeOptionsActionInput
+  ) => Promise<ReadBubblophyIssueAssigneeOptionsActionResult>;
   createIssuePlanAction?: (
     input: CreateBubblophyIssuePlanActionInput
   ) => Promise<CreateBubblophyIssuePlanActionResult>;
@@ -716,6 +722,7 @@ export function BubblophyDashboard({
   createIssueAction,
   updateIssueContentAction,
   updateIssueAssigneeAction,
+  readIssueAssigneeOptionsAction,
   createIssuePlanAction,
   createIssueNoteAction,
   updateIssueStatusAction,
@@ -2129,6 +2136,7 @@ export function BubblophyDashboard({
                 createIssueNoteAction={createIssueNoteAction}
                 updateIssueContentAction={updateIssueContentAction}
                 updateIssueAssigneeAction={updateIssueAssigneeAction}
+                readIssueAssigneeOptionsAction={readIssueAssigneeOptionsAction}
                 updateIssueStatusAction={updateIssueStatusAction}
                 updateIssuePriorityAction={updateIssuePriorityAction}
                 requestAgentRunAction={
@@ -3471,6 +3479,7 @@ function IssueQueue({
   createIssueNoteAction,
   updateIssueContentAction,
   updateIssueAssigneeAction,
+  readIssueAssigneeOptionsAction,
   updateIssueStatusAction,
   updateIssuePriorityAction,
   requestAgentRunAction,
@@ -3522,6 +3531,9 @@ function IssueQueue({
   updateIssueAssigneeAction?: (
     input: UpdateBubblophyIssueAssigneeActionInput
   ) => Promise<UpdateBubblophyIssueAssigneeActionResult>;
+  readIssueAssigneeOptionsAction?: (
+    input: ReadBubblophyIssueAssigneeOptionsActionInput
+  ) => Promise<ReadBubblophyIssueAssigneeOptionsActionResult>;
   updateIssueStatusAction?: (
     input: UpdateBubblophyIssueStatusActionInput
   ) => Promise<UpdateBubblophyIssueStatusActionResult>;
@@ -3788,6 +3800,7 @@ function IssueQueue({
           createIssueNoteAction={createIssueNoteAction}
           updateIssueContentAction={updateIssueContentAction}
           updateIssueAssigneeAction={updateIssueAssigneeAction}
+          readIssueAssigneeOptionsAction={readIssueAssigneeOptionsAction}
           updateIssueStatusAction={updateIssueStatusAction}
           updateIssuePriorityAction={updateIssuePriorityAction}
           requestAgentRunAction={requestAgentRunAction}
@@ -3828,6 +3841,7 @@ function IssueDetailPanel({
   createIssueNoteAction,
   updateIssueContentAction,
   updateIssueAssigneeAction,
+  readIssueAssigneeOptionsAction,
   updateIssueStatusAction,
   updateIssuePriorityAction,
   requestAgentRunAction,
@@ -3864,6 +3878,9 @@ function IssueDetailPanel({
   updateIssueAssigneeAction?: (
     input: UpdateBubblophyIssueAssigneeActionInput
   ) => Promise<UpdateBubblophyIssueAssigneeActionResult>;
+  readIssueAssigneeOptionsAction?: (
+    input: ReadBubblophyIssueAssigneeOptionsActionInput
+  ) => Promise<ReadBubblophyIssueAssigneeOptionsActionResult>;
   updateIssueStatusAction?: (
     input: UpdateBubblophyIssueStatusActionInput
   ) => Promise<UpdateBubblophyIssueStatusActionResult>;
@@ -3948,13 +3965,14 @@ function IssueDetailPanel({
       </dl>
 
       <IssueAssigneeUpdatePanel
-        key={`assignee-${issue.id}`}
+        key={`assignee-${issue.id}-${issue.assigneeAuthUserId ?? 'none'}`}
         issue={issue}
         projectMembers={issueProjectMembers}
         canPersistIssueAssignee={
           canPersistIssueAssignee && !isLocalDraftIssue(issue)
         }
         updateIssueAssigneeAction={updateIssueAssigneeAction}
+        readIssueAssigneeOptionsAction={readIssueAssigneeOptionsAction}
         onIssueAssigneeUpdated={onIssueAssigneeUpdated}
       />
 
@@ -4516,18 +4534,10 @@ const issuePriorityOptions = [
  * Resolves the currently selected assignee from its stable Auth user ID.
  *
  * @param issue Selected dashboard issue.
- * @param projectMembers Members of the selected issue's project.
  * @returns Matching project member auth ID, or empty string for unassigned.
  */
-function getCurrentIssueAssigneeAuthUserId(
-  issue: DashboardIssue,
-  projectMembers: ProjectMemberSummary[]
-) {
-  const member = projectMembers.find(
-    (candidate) => candidate.authUserId === issue.assigneeAuthUserId
-  );
-
-  return member?.authUserId ?? '';
+function getCurrentIssueAssigneeAuthUserId(issue: DashboardIssue) {
+  return issue.assigneeAuthUserId ?? '';
 }
 
 /**
@@ -4568,6 +4578,7 @@ function IssueAssigneeUpdatePanel({
   projectMembers,
   canPersistIssueAssignee,
   updateIssueAssigneeAction,
+  readIssueAssigneeOptionsAction,
   onIssueAssigneeUpdated,
 }: {
   issue: DashboardIssue;
@@ -4576,12 +4587,12 @@ function IssueAssigneeUpdatePanel({
   updateIssueAssigneeAction?: (
     input: UpdateBubblophyIssueAssigneeActionInput
   ) => Promise<UpdateBubblophyIssueAssigneeActionResult>;
+  readIssueAssigneeOptionsAction?: (
+    input: ReadBubblophyIssueAssigneeOptionsActionInput
+  ) => Promise<ReadBubblophyIssueAssigneeOptionsActionResult>;
   onIssueAssigneeUpdated: (issue: IssueSummary) => void;
 }) {
-  const currentAssigneeAuthUserId = getCurrentIssueAssigneeAuthUserId(
-    issue,
-    projectMembers
-  );
+  const currentAssigneeAuthUserId = getCurrentIssueAssigneeAuthUserId(issue);
   const [nextAssigneeAuthUserId, setNextAssigneeAuthUserId] = useState(
     currentAssigneeAuthUserId
   );
@@ -4602,13 +4613,14 @@ function IssueAssigneeUpdatePanel({
 
   const isKnownAssignee =
     nextAssigneeAuthUserId === '' ||
+    Boolean(readIssueAssigneeOptionsAction) ||
     projectMembers.some(
       (member) => member.authUserId === nextAssigneeAuthUserId
     );
   const canSubmit =
     canPersistIssueAssignee &&
     Boolean(updateIssueAssigneeAction) &&
-    projectMembers.length > 0 &&
+    (Boolean(readIssueAssigneeOptionsAction) || projectMembers.length > 0) &&
     isKnownAssignee &&
     nextAssigneeAuthUserId !== currentAssigneeAuthUserId &&
     !isPending;
@@ -4664,29 +4676,44 @@ function IssueAssigneeUpdatePanel({
             event.preventDefault();
             handleSubmit();
           }}>
-          <label className="grid gap-1.5 text-sm font-medium">
-            Zuständig
-            <select
-              name="assigneeAuthUserId"
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-              value={nextAssigneeAuthUserId}
-              onChange={(event) => {
-                setNextAssigneeAuthUserId(event.currentTarget.value);
+          {readIssueAssigneeOptionsAction ? (
+            <IssueAssigneeOptionPicker
+              issueKey={issue.id}
+              selectedAuthUserId={nextAssigneeAuthUserId}
+              selectedLabel={issue.assigneeLabel}
+              disabled={isPending}
+              readOptionsAction={readIssueAssigneeOptionsAction}
+              onValueChange={(value) => {
+                setNextAssigneeAuthUserId(value);
                 setActionError(null);
                 setActionSuccess(null);
-              }}>
-              <option value="">Nicht zugewiesen</option>
-              {projectMembers.map((member) => (
-                <option key={member.id} value={member.authUserId}>
-                  {member.label}
-                  {member.email && member.email !== member.label
-                    ? ` · ${member.email}`
-                    : ''}{' '}
-                  · {projectMemberRoleLabels[member.role]}
-                </option>
-              ))}
-            </select>
-          </label>
+              }}
+            />
+          ) : (
+            <label className="grid gap-1.5 text-sm font-medium">
+              Zuständig
+              <select
+                name="assigneeAuthUserId"
+                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                value={nextAssigneeAuthUserId}
+                onChange={(event) => {
+                  setNextAssigneeAuthUserId(event.currentTarget.value);
+                  setActionError(null);
+                  setActionSuccess(null);
+                }}>
+                <option value="">Nicht zugewiesen</option>
+                {projectMembers.map((member) => (
+                  <option key={member.id} value={member.authUserId}>
+                    {member.label}
+                    {member.email && member.email !== member.label
+                      ? ` · ${member.email}`
+                      : ''}{' '}
+                    · {projectMemberRoleLabels[member.role]}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
 
           {actionError ? (
             <p role="alert" className="text-sm text-destructive">

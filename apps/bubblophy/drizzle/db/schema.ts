@@ -164,6 +164,14 @@ export const bubblophyProjectMembers = pgTable(
     projectCreatedAuthUserIdx: index(
       'bubblophy_project_members_project_created_auth_user_idx'
     ).on(table.projectId, table.createdAt, table.authUserId),
+    projectAuthUserPrefixIdx: index(
+      'bubblophy_project_members_project_auth_user_prefix_idx'
+    ).using(
+      'btree',
+      table.projectId,
+      sql`lower(${table.authUserId}) text_pattern_ops`,
+      table.authUserId
+    ),
   })
 );
 

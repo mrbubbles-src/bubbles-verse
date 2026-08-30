@@ -2,12 +2,15 @@
 
 ## Unreleased
 
+- Replaced the unbounded dashboard member snapshot with bounded consumers.
+  Issue pages and details now carry final membership-checked assignee labels,
+  while assignment uses an issue-bound 20-item selector with bounded Auth user
+  ID prefix search, never exposes e-mail addresses, and keeps removed assignees
+  explicitly unassignable.
 - Added a membership-scoped 20-item project member page with stable
   `(createdAt, authUserId)` URL pagination, final project and role rechecks,
   manager/self-only e-mail visibility, a matching database index, and bounded
-  member-panel loading and failure states. The legacy member snapshot remains
-  temporarily available only to the issue assignee consumer until its own
-  bounded lookup replaces it.
+  member-panel loading and failure states.
 - Replaced the dashboard's global top-20 audit snapshot with an independent,
   membership-scoped 20-item `ActivityPage`. Project and issue events are merged
   newest-first through a stable `(occurredAt, source, eventId)` cursor, support
@@ -17,7 +20,7 @@
   their ID tie-breaker in the cursor index.
 - Removed the unbounded legacy issue graph from `DashboardSnapshot`. Dashboard
   reads now load only project metadata with complete SQL aggregates plus bounded
-  run groups plus membership-scoped member and token groups; issue
+  run groups plus membership-scoped token groups; issue
   queues and details come exclusively from the paginated page/detail contracts.
   Global run cards deep-link by public issue key, including issues outside the
   current page.

@@ -192,9 +192,10 @@ Status: abgeschlossen.
   getrennte spätere Slices.
 - Das Mitgliederpanel nutzt eine membership-scoped 20er-MemberPage mit
   stabilem `(createdAt, authUserId)`-Cursor, finalem Rollen-Recheck und
-  URL-Pagination. Der alte Root-Snapshot bleibt vorerst ausschließlich für
-  Assignee-Labels und -Auswahl bestehen; dessen begrenzte Consumer-Migration
-  ist der nächste Mitglieder-Slice. Agent-Tokens sind weiterhin unpaginiert.
+  URL-Pagination. Assignee-Labels werden in den begrenzten Issue-Verträgen
+  final membership-geprüft; die Auswahl nutzt einen eigenen issue-gebundenen
+  20er-Read mit begrenzter Nutzer-ID-Präfixsuche ohne E-Mail-Adressen. Der unbeschränkte
+  Mitglieder-Root-Read ist entfernt. Agent-Tokens sind weiterhin unpaginiert.
 - Datenbankabfragen und Cache-Tags auf größere Projektmengen prüfen.
 
 ### 6. Benachrichtigungen und Team-Arbeit
@@ -210,10 +211,10 @@ Status: abgeschlossen.
 
 - Der zweistufige Dashboard-Read ist gehärtet: Die erste Membership-Abfrage
   begrenzt nur die Kandidaten. Ein zweites, fail-closed Gate bindet unmittelbar
-  vor dem DTO-Mapping alle Projekt-, Issue-, Mitglieder-, Token- und Run-Zeilen
-  erneut an die aktuelle Mitgliedschaft und Rolle. Die getrennte ActivityPage
-  revalidiert ihre Projekt-/Issue-Bindungen ebenso. Nach einer
-  Rollen-Demotion werden fremde E-Mail-Adressen erneut redigiert.
+  vor dem DTO-Mapping alle Projekt-, Token- und Run-Zeilen erneut an die
+  aktuelle Mitgliedschaft und Rolle. Die getrennten Issue-, Member-, Assignee-
+  und Activity-Reads revalidieren ihre jeweilige Projekt-/Resource-Bindung
+  ebenfalls und redigieren sensible Felder nach Rollenänderungen erneut.
 - Kritische UI-Flows in stabilen Viewports automatisiert prüfen.
 - OAuth-/MCP-Verbindungsaufbau mit Test-Identitäten und getrennten
   Projektmitgliedschaften abdecken.
@@ -263,8 +264,9 @@ All-Projekte-URL-/Dashboard-Integration sind ebenfalls vorhanden. Der
 unbeschränkte Legacy-Issue-Graph wurde aus dem Dashboard-Snapshot entfernt;
 Issue-Listen und Details stammen nur noch aus den begrenzten Page-/Detail-
 Verträgen. Die begrenzte ActivityPage und ihre URL-/Dashboard-Integration sind
-ebenfalls abgeschlossen. Das Mitgliederpanel besitzt inzwischen einen eigenen
-begrenzten Page-Vertrag. Als nächste größere Datenmengen bleiben dessen
-Assignee-Consumer-Migration und die Agent-Tokens. Die
+ebenfalls abgeschlossen. Mitgliederpanel, Issue-Assignee-Labels und
+Assignee-Auswahl besitzen inzwischen eigene begrenzte Verträge; der globale
+Mitglieder-Root-Read ist entfernt. Als nächste größere Datenmenge bleiben die
+Agent-Tokens. Die
 MCP-Grundlage bleibt unter
 `docs/superpowers/plans/2026-07-18-bubblophy-mcp-foundation.md` dokumentiert.

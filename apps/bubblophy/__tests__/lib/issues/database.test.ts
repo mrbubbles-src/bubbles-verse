@@ -89,24 +89,6 @@ const tableRows = {
       role: 'owner',
     },
   ],
-  projectMembers: [
-    {
-      projectKey: 'BV',
-      authUserId: 'user_owner',
-      displayName: 'Owner Name',
-      normalizedEmail: 'owner@example.test',
-      role: 'owner',
-      createdAt: '2026-06-13T10:00:00.000Z',
-    },
-    {
-      projectKey: 'BV',
-      authUserId: 'user_viewer',
-      displayName: 'Viewer Name',
-      normalizedEmail: 'viewer@example.test',
-      role: 'viewer',
-      createdAt: '2026-06-13T11:00:00.000Z',
-    },
-  ],
   memberships: [
     {
       projectId: 'project_visible',
@@ -254,10 +236,6 @@ function rowsForCall(call: QueryCall): MockRow[] {
       return rowsForTable('memberRoles');
     }
 
-    if (call.selectedKeys.includes('authUserId')) {
-      return rowsForTable('projectMembers');
-    }
-
     const result = membershipReadResults.shift() ?? tableRows.memberships;
 
     if (result instanceof Error) {
@@ -323,25 +301,6 @@ describe('selectBubblophyDashboardRowsForUser', () => {
         blockedIssueCount: 0,
       }),
     ]);
-    expect(rows.projectMemberRows).toEqual([
-      {
-        projectKey: 'BV',
-        authUserId: 'user_owner',
-        displayName: 'Owner Name',
-        normalizedEmail: 'owner@example.test',
-        role: 'owner',
-        createdAt: '2026-06-13T10:00:00.000Z',
-      },
-      {
-        projectKey: 'BV',
-        authUserId: 'user_viewer',
-        displayName: 'Viewer Name',
-        normalizedEmail: 'viewer@example.test',
-        role: 'viewer',
-        createdAt: '2026-06-13T11:00:00.000Z',
-      },
-    ]);
-
     const projectEventCall = calls.find(
       (call) => call.tableName === 'bubblophy_project_events'
     );
@@ -389,14 +348,7 @@ describe('selectBubblophyDashboardRowsForUser', () => {
     expect(
       calls.find((call) => call.tableName === 'ranked_issue_notes')
     ).toBeUndefined();
-    expect(projectMemberCall).toMatchObject({
-      joinedTableNames: expect.arrayContaining([
-        'bubblophy_projects',
-        'bubblophy_actor_memberships',
-        'bubblophy_user_profiles',
-      ]),
-      whereCalled: true,
-    });
+    expect(projectMemberCall).toBeUndefined();
     expect(selectedKeys).not.toContain('tokenHash');
     expect(selectedKeys).not.toContain('plaintextToken');
     expect(selectedKeys).not.toContain('requestedByAuthUserId');
@@ -432,7 +384,6 @@ describe('selectBubblophyDashboardRowsForUser', () => {
       memberCounts: [],
       agentTokenCounts: [],
       issueCounts: [],
-      projectMembers: [],
       agentTokens: [],
       agentRuns: [],
       projectEvents: [],
@@ -473,13 +424,12 @@ describe('selectBubblophyDashboardRowsForUser', () => {
       selectBubblophyDashboardRowsForUser('user_owner')
     ).resolves.toEqual({
       projectRows: [],
-      projectMemberRows: [],
       agentTokenRows: [],
       agentRunRows: [],
     });
   });
 
-  it('refreshes roles and redacts foreign e-mails after manager demotion', async () => {
+  it('refreshes the project role after manager demotion', async () => {
     membershipReadResults = [
       tableRows.memberships,
       [{ projectId: 'project_visible', projectKey: 'BV', role: 'member' }],
@@ -489,16 +439,6 @@ describe('selectBubblophyDashboardRowsForUser', () => {
     const restricted = await selectBubblophyDashboardRowsForUser('user_owner');
 
     expect(restricted.projectRows[0]?.currentUserRole).toBe('member');
-    expect(restricted.projectMemberRows).toEqual([
-      expect.objectContaining({
-        authUserId: 'user_owner',
-        normalizedEmail: 'owner@example.test',
-      }),
-      expect.objectContaining({
-        authUserId: 'user_viewer',
-        normalizedEmail: null,
-      }),
-    ]);
   });
 
   it('fails closed when the final membership lookup fails', async () => {
@@ -535,7 +475,6 @@ describe('selectBubblophyDashboardRowsForUser', () => {
         key: 'OLD',
       }),
     ]);
-    expect(rows.projectMemberRows).toEqual([]);
     expect(rows.agentTokenRows).toEqual([]);
     expect(rows.agentRunRows).toEqual([]);
   });
@@ -575,16 +514,6 @@ function createProjectKeyReuseRows(): Partial<
       { projectId: 'project_b', total: 0 },
     ],
     issueCounts: [],
-    projectMembers: [
-      {
-        projectKey: 'OLD',
-        authUserId: 'user_a',
-        displayName: 'Project A member',
-        normalizedEmail: 'a@example.test',
-        role: 'member',
-        createdAt: '2026-06-13T10:00:00.000Z',
-      },
-    ],
     agentTokens: [
       {
         id: 'token_a',

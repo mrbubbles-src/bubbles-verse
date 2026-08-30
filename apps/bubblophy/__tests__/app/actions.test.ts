@@ -6,6 +6,7 @@ import type {
   CreateBubblophyIssuePlanActionInput,
   CreateBubblophyProjectActionInput,
   CreateBubblophyProjectInvitationActionInput,
+  ReadBubblophyIssueAssigneeOptionsActionInput,
   ReadBubblophyProjectInvitationManagerSnapshotActionInput,
   ReinviteBubblophyProjectInvitationActionInput,
   RemoveBubblophyProjectMemberActionInput,
@@ -25,6 +26,7 @@ import type { TransitionBubblophyAgentRunInput } from '@/lib/agent-runs/human-tr
 import type { RequestBubblophyAgentRunInput } from '@/lib/agent-runs/request';
 import type { CreateBubblophyAgentTokenInput } from '@/lib/agent-tokens/create';
 import type { UpdateBubblophyAgentTokenLifecycleInput } from '@/lib/agent-tokens/lifecycle';
+import type { ReadDashboardAssigneeOptionsInput } from '@/lib/dashboard/assignee-options';
 import type { UpdateBubblophyIssueAssigneeInput } from '@/lib/issues/assignment';
 import type { CreateBubblophyIssueDraftInput } from '@/lib/issues/create';
 import type { UpdateBubblophyIssueContentInput } from '@/lib/issues/edit';
@@ -63,6 +65,7 @@ const cookiesMock = vi.fn(async () => ({
 }));
 const createBubblophyIssueDraftMock = vi.fn();
 const updateBubblophyIssueAssigneeMock = vi.fn();
+const readDashboardAssigneeOptionsMock = vi.fn();
 const updateBubblophyIssueContentMock = vi.fn();
 const createBubblophyIssuePlanDraftMock = vi.fn();
 const createBubblophyIssueNoteMock = vi.fn();
@@ -108,6 +111,13 @@ vi.mock('@/lib/issues/create', () => ({
 vi.mock('@/lib/issues/assignment', () => ({
   updateBubblophyIssueAssignee: (input: UpdateBubblophyIssueAssigneeInput) =>
     updateBubblophyIssueAssigneeMock(input),
+}));
+
+vi.mock('@/lib/dashboard/assignee-options', () => ({
+  readDashboardAssigneeOptions: (
+    authUserId: string,
+    input: ReadDashboardAssigneeOptionsInput
+  ) => readDashboardAssigneeOptionsMock(authUserId, input),
 }));
 
 vi.mock('@/lib/issues/edit', () => ({
@@ -435,6 +445,45 @@ describe('updateBubblophyIssueAssigneeAction', () => {
       updateBubblophyIssueAssigneeMock.mock.calls[0]?.[0]
     ).not.toHaveProperty('email');
     expect(result).toEqual({ status: 'invalid_assignee' });
+  });
+});
+
+describe('readBubblophyIssueAssigneeOptionsAction', () => {
+  beforeEach(() => {
+    requireBubblophySessionMock.mockReset();
+    readDashboardAssigneeOptionsMock.mockReset();
+  });
+
+  it('binds the bounded options read to the server session', async () => {
+    requireBubblophySessionMock.mockResolvedValue({
+      authUserId: 'user_server',
+      email: 'owner@example.test',
+      user: {},
+    });
+    readDashboardAssigneeOptionsMock.mockResolvedValue({
+      status: 'database_unavailable',
+    });
+
+    const { readBubblophyIssueAssigneeOptionsAction } =
+      await import('@/app/actions');
+    const result = await readBubblophyIssueAssigneeOptionsAction({
+      issueKey: 'BV-12',
+      query: 'mar',
+      authUserId: 'user_client_spoof',
+    } as ReadBubblophyIssueAssigneeOptionsActionInput & {
+      authUserId: string;
+    });
+
+    expect(requireBubblophySessionMock).toHaveBeenCalledWith({ nextPath: '/' });
+    expect(readDashboardAssigneeOptionsMock).toHaveBeenCalledWith(
+      'user_server',
+      {
+        issueKey: 'BV-12',
+        query: 'mar',
+        after: undefined,
+      }
+    );
+    expect(result).toEqual({ status: 'database_unavailable' });
   });
 });
 

@@ -17,6 +17,10 @@ import type {
   UpdateBubblophyAgentTokenLifecycleResult,
 } from '@/lib/agent-tokens/lifecycle';
 import type {
+  ReadDashboardAssigneeOptionsInput,
+  ReadDashboardAssigneeOptionsResult,
+} from '@/lib/dashboard/assignee-options';
+import type {
   UpdateBubblophyIssueAssigneeInput,
   UpdateBubblophyIssueAssigneeResult,
 } from '@/lib/issues/assignment';
@@ -81,6 +85,7 @@ import {
   requireAuthenticatedBubblophyUser,
   requireBubblophySession,
 } from '@/lib/auth/session';
+import { readDashboardAssigneeOptions } from '@/lib/dashboard/assignee-options';
 import { updateBubblophyIssueAssignee } from '@/lib/issues/assignment';
 import { createBubblophyIssueDraft } from '@/lib/issues/create';
 import { updateBubblophyIssueContent } from '@/lib/issues/edit';
@@ -135,6 +140,12 @@ export type UpdateBubblophyIssueAssigneeActionInput = Omit<
 
 export type UpdateBubblophyIssueAssigneeActionResult =
   UpdateBubblophyIssueAssigneeResult;
+
+export type ReadBubblophyIssueAssigneeOptionsActionInput =
+  ReadDashboardAssigneeOptionsInput;
+
+export type ReadBubblophyIssueAssigneeOptionsActionResult =
+  ReadDashboardAssigneeOptionsResult;
 
 export type CreateBubblophyIssuePlanActionInput = Omit<
   CreateOrUpdateBubblophyIssuePlanDraftInput,
@@ -369,6 +380,24 @@ export async function updateBubblophyIssueAssigneeAction(
   return updateBubblophyIssueAssignee({
     ...input,
     authUserId: session.authUserId,
+  });
+}
+
+/**
+ * Reads a bounded assignment-target page for the current human session.
+ *
+ * @param input Public issue key, optional prefix query, and stable cursor.
+ * @returns Issue-bound options without member e-mail addresses.
+ */
+export async function readBubblophyIssueAssigneeOptionsAction(
+  input: ReadBubblophyIssueAssigneeOptionsActionInput
+): Promise<ReadBubblophyIssueAssigneeOptionsActionResult> {
+  const session = await requireBubblophySession({ nextPath: '/' });
+
+  return readDashboardAssigneeOptions(session.authUserId, {
+    issueKey: input.issueKey,
+    query: input.query,
+    after: input.after,
   });
 }
 

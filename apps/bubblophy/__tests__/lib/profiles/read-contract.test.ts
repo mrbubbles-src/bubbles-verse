@@ -3,8 +3,8 @@ import { resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-const dashboardReadSource = readFileSync(
-  resolve(process.cwd(), 'lib/issues/database.ts'),
+const memberPageReadSource = readFileSync(
+  resolve(process.cwd(), 'lib/dashboard/members-database-read.ts'),
   'utf8'
 );
 const accessSource = readFileSync(
@@ -18,20 +18,20 @@ const invitationAcceptanceSource = readFileSync(
 
 describe('Bubblophy profile read contract', () => {
   it('rechecks actor membership in the same statement as profile reads', () => {
-    expect(dashboardReadSource).toContain(
-      "alias(\n    bubblophyProjectMembers,\n    'bubblophy_actor_memberships'"
+    expect(memberPageReadSource).toContain(
+      "alias(\n    bubblophyProjectMembers,\n    'bubblophy_member_page_actor_memberships'"
     );
-    expect(dashboardReadSource).toMatch(
-      /\.innerJoin\(\s*actorMemberships,[\s\S]*?actorMemberships\.authUserId,\s*authUserId[\s\S]*?\.leftJoin\(\s*bubblophyUserProfiles/
+    expect(memberPageReadSource).toMatch(
+      /\.innerJoin\(\s*actorMemberships,[\s\S]*?actorMemberships\.authUserId,\s*input\.authUserId[\s\S]*?\.leftJoin\(\s*bubblophyUserProfiles/
     );
   });
 
   it('limits profile e-mail to managers and the current user', () => {
-    expect(dashboardReadSource).toContain(
+    expect(memberPageReadSource).toContain(
       "when ${actorMemberships.role} in ('owner', 'maintainer')"
     );
-    expect(dashboardReadSource).toContain(
-      'or ${bubblophyProjectMembers.authUserId} = ${authUserId}'
+    expect(memberPageReadSource).toContain(
+      'or ${bubblophyProjectMembers.authUserId} = ${input.authUserId}'
     );
   });
 

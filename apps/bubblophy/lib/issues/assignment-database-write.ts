@@ -1,5 +1,6 @@
 import 'server-only';
 
+import type { db as bubblophyDb } from '@/drizzle/db';
 import type { JsonObject } from '@/drizzle/db/schema';
 import type {
   BubblophyIssueAssigneeUpdateStore,
@@ -9,14 +10,20 @@ import type {
 import { lockBubblophyIssueContributorWriteContext } from '@/lib/issues/contributor-write-context-database';
 import { parseBubblophyIssueKey } from '@/lib/issues/plan-database-write';
 
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 
 import {
   bubblophyIssueEvents,
   bubblophyIssuePlans,
   bubblophyIssues,
+  bubblophyProjectMembers,
   bubblophyProjects,
+  bubblophyUserProfiles,
 } from '@/drizzle/db/schema';
+
+type BubblophyIssueAssigneeUpdateTx = Parameters<
+  Parameters<typeof bubblophyDb.transaction>[0]
+>[0];
 
 export interface BubblophyIssueAssigneeChangedEventInsert {
   issueId: string;
@@ -131,6 +138,11 @@ async function updateIssueAssigneeWithEvent(
       throw new Error('Bubblophy issue assignee update did not return a row.');
     }
 
+    const assigneeLabel = await selectCurrentAssigneeLabel(tx, {
+      projectId: writeContext.projectId,
+      assigneeAuthUserId: updatedIssue.assignedAuthUserId,
+    });
+
     const [planCount] = await tx
       .select({
         count: sql<number>`count(*)::int`,
@@ -158,11 +170,49 @@ async function updateIssueAssigneeWithEvent(
         },
         issue: {
           ...updatedIssue,
+          assigneeLabel,
           planStepCount: Math.max(0, planCount?.count ?? 0),
         },
       },
     };
   });
+}
+
+/** Reads the locked target member's display label without selecting e-mail. */
+async function selectCurrentAssigneeLabel(
+  tx: BubblophyIssueAssigneeUpdateTx,
+  input: {
+    projectId: string;
+    assigneeAuthUserId: string | null;
+  }
+) {
+  if (!input.assigneeAuthUserId) {
+    return 'Nicht zugewiesen';
+  }
+
+  const [assignee] = await tx
+    .select({
+      authUserId: bubblophyProjectMembers.authUserId,
+      displayName: bubblophyUserProfiles.displayName,
+    })
+    .from(bubblophyProjectMembers)
+    .leftJoin(
+      bubblophyUserProfiles,
+      eq(bubblophyUserProfiles.authUserId, bubblophyProjectMembers.authUserId)
+    )
+    .where(
+      and(
+        eq(bubblophyProjectMembers.projectId, input.projectId),
+        eq(bubblophyProjectMembers.authUserId, input.assigneeAuthUserId)
+      )
+    )
+    .limit(1);
+
+  if (!assignee) {
+    throw new Error('Locked Bubblophy assignee could not be reloaded.');
+  }
+
+  return assignee.displayName ?? assignee.authUserId;
 }
 
 /**

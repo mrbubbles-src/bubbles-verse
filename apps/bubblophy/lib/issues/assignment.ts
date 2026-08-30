@@ -38,6 +38,7 @@ export interface BubblophyIssueAssigneeUpdateStoreResult {
     status: BubblophyIssueStatus;
     priority: BubblophyIssuePriority;
     assignedAuthUserId: string | null;
+    assigneeLabel: string;
     requiresHumanApproval: boolean;
     planStepCount: number;
   };
@@ -152,7 +153,7 @@ export function mapUpdatedIssueAssigneeToSummary(
     status: mapBubblophyIssueStatus(updated.issue.status),
     priority: mapBubblophyIssuePriority(updated.issue.priority),
     assigneeAuthUserId: updated.issue.assignedAuthUserId,
-    assigneeLabel: updated.issue.assignedAuthUserId ?? 'Nicht zugewiesen',
+    assigneeLabel: updated.issue.assigneeLabel,
     planSteps: Math.max(0, updated.issue.planStepCount),
     approvalRequired: updated.issue.requiresHumanApproval,
   };

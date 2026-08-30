@@ -45,7 +45,7 @@ export function mapDashboardIssuePageToSummaries(
     status: issueStatusMap[item.status],
     priority: issuePriorityMap[item.priority],
     assigneeAuthUserId: item.assignedAuthUserId,
-    assigneeLabel: item.assignedAuthUserId ? 'Mensch' : 'Nicht zugewiesen',
+    assigneeLabel: item.assigneeLabel,
     planSteps: item.latestPlan?.stepCount ?? 0,
     approvalRequired: item.requiresHumanApproval,
   }));
@@ -67,7 +67,7 @@ export function mapDashboardAllIssuePageToSummaries(
     status: issueStatusMap[item.status],
     priority: issuePriorityMap[item.priority],
     assigneeAuthUserId: item.assignedAuthUserId,
-    assigneeLabel: item.assignedAuthUserId ? 'Mensch' : 'Nicht zugewiesen',
+    assigneeLabel: item.assigneeLabel,
     planSteps: item.latestPlan?.stepCount ?? 0,
     approvalRequired: item.requiresHumanApproval,
   }));
@@ -92,9 +92,7 @@ export function mapDashboardIssueDetailToSummary(
     status: issueStatusMap[detail.issue.status],
     priority: issuePriorityMap[detail.issue.priority],
     assigneeAuthUserId: detail.issue.assignedAuthUserId,
-    assigneeLabel: detail.issue.assignedAuthUserId
-      ? 'Mensch'
-      : 'Nicht zugewiesen',
+    assigneeLabel: detail.issue.assigneeLabel,
     planSteps: detail.issue.latestPlan?.steps.length ?? 0,
     latestPlan: detail.issue.latestPlan ?? undefined,
     notes: detail.issue.notes,

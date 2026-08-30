@@ -52,6 +52,13 @@ einem bewusst human-gesteuerten Kontrollzentrum.
   stabilen URL-Cursor `(createdAt, authUserId)`. Der Read bindet Projekt und
   aktuelle Membership erneut, prüft die finale Rolle und redigiert fremde
   E-Mail-Adressen nach einer parallelen Demotion erneut.
+- Issue-Listen und -Details erhalten ihr Zuweisungslabel im begrenzten
+  Issue-Read. Der Zuweisungsdialog lädt höchstens 20 aktuelle Projektmitglieder
+  pro Seite über einen issue-gebundenen Cursor-Read. Die begrenzte Suche nutzt
+  einen Nutzer-ID-Präfix und gibt keine E-Mail-Adressen aus. Entfernte,
+  weiterhin zugewiesene Personen bleiben
+  generisch als `Ehemaliges Projektmitglied` sichtbar und können explizit
+  abgewählt werden. Der Dashboard-Root lädt keine globale Mitgliederliste mehr.
 - Owner und Maintainer können Nicht-Owner-Mitglieder zwischen `maintainer`,
   `member` und `viewer` umstellen oder entfernen. Owner-Rollen, Owner-Removal
   und Self-Removal bleiben im MVP konservativ gesperrt. Projekt und beteiligte

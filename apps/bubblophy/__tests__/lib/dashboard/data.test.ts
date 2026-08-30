@@ -38,20 +38,6 @@ function makeDatabaseRows(
 ): BubblophyDashboardPersistenceRows {
   return {
     projectRows: [makeProjectRow()],
-    projectMemberRows: [
-      {
-        projectKey: 'BV',
-        authUserId: 'user_owner',
-        role: 'owner',
-        createdAt: '2026-06-13T10:00:00.000Z',
-      },
-      {
-        projectKey: 'BV',
-        authUserId: 'user_martin',
-        role: 'viewer',
-        createdAt: '2026-06-13T11:00:00.000Z',
-      },
-    ],
     agentTokenRows: [
       {
         id: 'token_codex',
@@ -103,20 +89,7 @@ describe('getBubblophyDashboardSnapshot', () => {
           readyIssues: 1,
         },
       ],
-      projectMembers: [
-        {
-          id: 'BV:user_owner',
-          authUserId: 'user_owner',
-          role: 'owner',
-          label: 'user_owner',
-        },
-        {
-          id: 'BV:user_martin',
-          authUserId: 'user_martin',
-          role: 'viewer',
-          label: 'user_martin',
-        },
-      ],
+      projectMembers: [],
       agentTokens: [
         {
           id: 'token_codex',
@@ -168,14 +141,7 @@ describe('getBubblophyDashboardSnapshot', () => {
     expect(serializedSnapshot).not.toContain('requestedByAuthUserId');
     expect(serializedSnapshot).not.toContain('actorAuthUserId');
     expect(serializedSnapshot).not.toContain('assigneeAuthUserId');
-    expect(snapshot.projectMembers).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          authUserId: 'user_owner',
-          label: 'user_owner',
-        }),
-      ])
-    );
+    expect(snapshot.projectMembers).toEqual([]);
   });
 
   it('marks an available but empty database without using sample data', async () => {
@@ -185,7 +151,6 @@ describe('getBubblophyDashboardSnapshot', () => {
         loadRows: async () =>
           makeDatabaseRows({
             projectRows: [],
-            projectMemberRows: [],
             agentTokenRows: [],
             agentRunRows: [],
           }),

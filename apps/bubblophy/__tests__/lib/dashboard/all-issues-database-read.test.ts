@@ -57,11 +57,20 @@ class MockQuery implements PromiseLike<Row[]> {
   }
 
   innerJoin(table: DrizzleTable, condition: SQL) {
+    this.captureJoin(table, condition);
+    return this;
+  }
+
+  leftJoin(table: DrizzleTable, condition: SQL) {
+    this.captureJoin(table, condition);
+    return this;
+  }
+
+  private captureJoin(table: DrizzleTable, condition: SQL) {
     const query = dialect.sqlToQuery(condition);
 
     this.call.joinedTables.push(getTableName(table));
     this.call.joinSql.push(`${query.sql} ${JSON.stringify(query.params)}`);
-    return this;
   }
 
   where(condition: SQL) {
@@ -127,7 +136,6 @@ function makeCandidate(index: number): Row {
     issueTitle: `Issue ${index}`,
     issueStatus: 'ready',
     issuePriority: 'high',
-    issueAssignedAuthUserId: null,
     issueRequiresHumanApproval: true,
     issueLatestPlan: { version: 2, stepCount: 3 },
     issueUpdatedAt: `2026-07-18T${String(23 - (index % 24)).padStart(2, '0')}:00:00.000Z`,
@@ -144,6 +152,9 @@ function makeCurrentAccess(index: number, overrides: Partial<Row> = {}): Row {
     projectIsArchived: false,
     currentUserRole: projectKey === 'BV' ? 'owner' : 'viewer',
     issueId: `issue-${index}`,
+    assignedAuthUserId: null,
+    assigneeMemberAuthUserId: null,
+    assigneeDisplayName: null,
     ...overrides,
   };
 }
@@ -184,7 +195,6 @@ describe('selectDashboardAllIssuePageForUser', () => {
         'issueTitle',
         'issueStatus',
         'issuePriority',
-        'issueAssignedAuthUserId',
         'issueRequiresHumanApproval',
         'issueLatestPlan',
         'issueUpdatedAt',
@@ -211,9 +221,62 @@ describe('selectDashboardAllIssuePageForUser', () => {
     );
     expect(calls[0]?.latestPlanSql).toContain('limit 1');
     expect(calls[1]).toMatchObject({
+      selectedKeys: [
+        'projectId',
+        'projectKey',
+        'projectName',
+        'projectIsArchived',
+        'currentUserRole',
+        'issueId',
+        'assignedAuthUserId',
+        'assigneeMemberAuthUserId',
+        'assigneeDisplayName',
+      ],
       fromTable: 'bubblophy_project_members',
-      joinedTables: ['bubblophy_projects', 'bubblophy_issues'],
+      joinedTables: [
+        'bubblophy_projects',
+        'bubblophy_issues',
+        'bubblophy_all_issue_page_assignees',
+        'bubblophy_user_profiles',
+      ],
     });
+    expect(calls).toHaveLength(2);
+    expect(calls[1]?.selectedKeys).not.toContain('normalizedEmail');
+  });
+
+  it('hydrates assignee labels from the final bounded access read', async () => {
+    queryRows = [
+      [makeCandidate(0), makeCandidate(1), makeCandidate(2), makeCandidate(3)],
+      [
+        makeCurrentAccess(0, {
+          assignedAuthUserId: 'auth-martin',
+          assigneeMemberAuthUserId: 'auth-martin',
+          assigneeDisplayName: 'Martin',
+        }),
+        makeCurrentAccess(1, {
+          assignedAuthUserId: 'auth-no-name',
+          assigneeMemberAuthUserId: 'auth-no-name',
+        }),
+        makeCurrentAccess(2, {
+          assignedAuthUserId: 'auth-removed',
+        }),
+        makeCurrentAccess(3),
+      ],
+    ];
+    const { selectDashboardAllIssuePageForUser } =
+      await import('@/lib/dashboard/all-issues-database-read');
+
+    const result = await selectDashboardAllIssuePageForUser({
+      ...input,
+      after: null,
+    });
+
+    expect(result.items.map((item) => item.assigneeLabel)).toEqual([
+      'Martin',
+      'auth-no-name',
+      'Ehemaliges Projektmitglied',
+      'Nicht zugewiesen',
+    ]);
   });
 
   it('reverses every cursor and ordering comparison for oldest first', async () => {

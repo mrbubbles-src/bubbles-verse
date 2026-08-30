@@ -9,9 +9,11 @@ import type {
 } from '@/lib/dashboard/all-issues';
 
 import { DASHBOARD_ALL_ISSUE_PAGE_SIZE } from '@/lib/dashboard/all-issues';
+import { getDashboardAssigneeLabel } from '@/lib/dashboard/issues';
 import { formatBubblophyIssueKey } from '@/lib/issues/repository';
 
 import { and, asc, desc, eq, gt, inArray, lt, or, sql } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 
 import { db } from '@/drizzle/db';
 import {
@@ -19,6 +21,7 @@ import {
   bubblophyIssues,
   bubblophyProjectMembers,
   bubblophyProjects,
+  bubblophyUserProfiles,
 } from '@/drizzle/db/schema';
 
 interface CandidateRow {
@@ -29,7 +32,6 @@ interface CandidateRow {
   issueTitle: string;
   issueStatus: DashboardAllIssuePageItem['status'];
   issuePriority: DashboardAllIssuePageItem['priority'];
-  issueAssignedAuthUserId: string | null;
   issueRequiresHumanApproval: boolean;
   issueLatestPlan: DashboardAllIssuePageItem['latestPlan'];
   issueUpdatedAt: string;
@@ -42,6 +44,9 @@ interface CurrentIssueAccessRow {
   projectIsArchived: boolean;
   currentUserRole: BubblophyProjectRole;
   issueId: string;
+  assignedAuthUserId: string | null;
+  assigneeMemberAuthUserId: string | null;
+  assigneeDisplayName: string | null;
 }
 
 const latestPlanSummary = sql<DashboardAllIssuePageItem['latestPlan']>`(
@@ -159,7 +164,6 @@ async function selectCandidateRows(
       issueTitle: bubblophyIssues.title,
       issueStatus: bubblophyIssues.status,
       issuePriority: bubblophyIssues.priority,
-      issueAssignedAuthUserId: bubblophyIssues.assignedAuthUserId,
       issueRequiresHumanApproval: bubblophyIssues.requiresHumanApproval,
       issueLatestPlan: latestPlanSummary,
       issueUpdatedAt: bubblophyIssues.updatedAt,
@@ -237,6 +241,11 @@ async function selectCurrentIssueAccess(
     return [];
   }
 
+  const assigneeMembers = alias(
+    bubblophyProjectMembers,
+    'bubblophy_all_issue_page_assignees'
+  );
+
   return db
     .select({
       projectId: bubblophyProjects.id,
@@ -245,6 +254,9 @@ async function selectCurrentIssueAccess(
       projectIsArchived: bubblophyProjects.isArchived,
       currentUserRole: bubblophyProjectMembers.role,
       issueId: bubblophyIssues.id,
+      assignedAuthUserId: bubblophyIssues.assignedAuthUserId,
+      assigneeMemberAuthUserId: assigneeMembers.authUserId,
+      assigneeDisplayName: bubblophyUserProfiles.displayName,
     })
     .from(bubblophyProjectMembers)
     .innerJoin(
@@ -254,6 +266,17 @@ async function selectCurrentIssueAccess(
     .innerJoin(
       bubblophyIssues,
       eq(bubblophyIssues.projectId, bubblophyProjects.id)
+    )
+    .leftJoin(
+      assigneeMembers,
+      and(
+        eq(assigneeMembers.projectId, bubblophyProjects.id),
+        eq(assigneeMembers.authUserId, bubblophyIssues.assignedAuthUserId)
+      )
+    )
+    .leftJoin(
+      bubblophyUserProfiles,
+      eq(bubblophyUserProfiles.authUserId, assigneeMembers.authUserId)
     )
     .where(
       and(
@@ -289,7 +312,12 @@ function mapItem(
     status: row.issueStatus,
     priority: row.issuePriority,
     requiresHumanApproval: row.issueRequiresHumanApproval,
-    assignedAuthUserId: row.issueAssignedAuthUserId,
+    assignedAuthUserId: access.assignedAuthUserId,
+    assigneeLabel: getDashboardAssigneeLabel(
+      access.assignedAuthUserId,
+      access.assigneeMemberAuthUserId,
+      access.assigneeDisplayName
+    ),
     latestPlan: row.issueLatestPlan,
     updatedAt: row.issueUpdatedAt,
   };

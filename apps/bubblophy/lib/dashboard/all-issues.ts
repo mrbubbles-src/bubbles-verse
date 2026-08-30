@@ -37,6 +37,7 @@ export interface DashboardAllIssuePageItem {
   priority: BubblophyIssuePriority;
   requiresHumanApproval: boolean;
   assignedAuthUserId: string | null;
+  assigneeLabel: string;
   latestPlan: { version: number; stepCount: number } | null;
   updatedAt: string;
 }

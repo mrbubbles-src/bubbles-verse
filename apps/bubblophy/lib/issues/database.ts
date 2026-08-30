@@ -4,12 +4,10 @@ import type { BubblophyDashboardPersistenceRows } from '@/lib/dashboard/data';
 import type {
   BubblophyAgentRunPersistenceRow,
   BubblophyAgentTokenPersistenceRow,
-  BubblophyProjectMemberPersistenceRow,
   BubblophyProjectPersistenceRow,
 } from '@/lib/issues/repository';
 
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
-import { alias } from 'drizzle-orm/pg-core';
 
 import { db } from '@/drizzle/db';
 import {
@@ -18,7 +16,6 @@ import {
   bubblophyIssues,
   bubblophyProjectMembers,
   bubblophyProjects,
-  bubblophyUserProfiles,
 } from '@/drizzle/db/schema';
 
 type CountByProjectId = Record<string, number>;
@@ -47,7 +44,7 @@ type VisibleProjectMembership = {
  * and plaintext token material are never selected.
  *
  * @param authUserId Supabase Auth user ID from the authorized human session.
- * @returns Project aggregates plus public member, token, run, and activity rows.
+ * @returns Project aggregates plus token and run rows.
  */
 export async function selectBubblophyDashboardRowsForUser(
   authUserId: string
@@ -59,23 +56,19 @@ export async function selectBubblophyDashboardRowsForUser(
   if (projectIds.length === 0) {
     return {
       projectRows: [],
-      projectMemberRows: [],
       agentTokenRows: [],
       agentRunRows: [],
     };
   }
 
-  const [projectRows, projectMemberRows, agentTokenRows, agentRunRows] =
-    await Promise.all([
-      selectBubblophyProjectRowsForProjectIds(authUserId, projectIds),
-      selectBubblophyProjectMemberRowsForUser(authUserId, projectIds),
-      selectBubblophyAgentTokenRowsForProjectIds(projectIds),
-      selectBubblophyAgentRunRowsForProjectIds(projectIds),
-    ]);
+  const [projectRows, agentTokenRows, agentRunRows] = await Promise.all([
+    selectBubblophyProjectRowsForProjectIds(authUserId, projectIds),
+    selectBubblophyAgentTokenRowsForProjectIds(projectIds),
+    selectBubblophyAgentRunRowsForProjectIds(projectIds),
+  ]);
 
   const rows = {
     projectRows,
-    projectMemberRows,
     agentTokenRows,
     agentRunRows,
   };
@@ -85,8 +78,7 @@ export async function selectBubblophyDashboardRowsForUser(
   return restrictDashboardRowsToCurrentMemberships(
     rows,
     candidateMemberships,
-    currentMemberships,
-    authUserId
+    currentMemberships
   );
 }
 
@@ -95,20 +87,18 @@ export async function selectBubblophyDashboardRowsForUser(
  *
  * Project IDs from the first lookup only bound the parallel queries. This
  * second lookup is authoritative: a membership removed while those queries
- * ran cannot leave project, member, token, run, or activity rows in the
+ * ran cannot leave project, token, or run rows in the
  * returned snapshot. Missing project rows also fail closed for key-only DTOs.
  *
  * @param rows Data groups loaded through the initial project-ID bound.
  * @param candidateMemberships Memberships used to bound the initial queries.
  * @param currentMemberships Project memberships visible at the final gate.
- * @param authUserId Current verified session user for self e-mail visibility.
  * @returns Rows restricted to projects still visible to the current user.
  */
 function restrictDashboardRowsToCurrentMemberships(
   rows: BubblophyDashboardPersistenceRows,
   candidateMemberships: VisibleProjectMembership[],
-  currentMemberships: VisibleProjectMembership[],
-  authUserId: string
+  currentMemberships: VisibleProjectMembership[]
 ): BubblophyDashboardPersistenceRows {
   const projectRows = restrictProjectRowsToCurrentMemberships(
     rows.projectRows,
@@ -127,23 +117,8 @@ function restrictDashboardRowsToCurrentMemberships(
       )
       .map((row) => row.projectKey)
   );
-  const currentRoleByProjectKey = new Map(
-    currentMemberships.map((row) => [row.projectKey, row.role])
-  );
-
   return {
     projectRows,
-    projectMemberRows: rows.projectMemberRows
-      .filter((row) => stableProjectKeys.has(row.projectKey))
-      .map((row) => {
-        const currentRole = currentRoleByProjectKey.get(row.projectKey);
-        const canReadEmail =
-          currentRole === 'owner' ||
-          currentRole === 'maintainer' ||
-          row.authUserId === authUserId;
-
-        return canReadEmail ? row : { ...row, normalizedEmail: null };
-      }),
     agentTokenRows: rows.agentTokenRows.filter((row) =>
       stableProjectKeys.has(row.projectKey)
     ),
@@ -336,64 +311,6 @@ async function selectBubblophyAgentTokenRowsForProjectIds(
     )
     .where(inArray(bubblophyAgentTokens.projectId, projectIds))
     .orderBy(asc(bubblophyProjects.key), asc(bubblophyAgentTokens.label));
-}
-
-/**
- * Selects public project member rows for visible projects.
- *
- * Profiles are display-only. The same statement rechecks the actor membership
- * before reading member names or manager-visible e-mail addresses, so the
- * earlier project-ID lookup cannot outlive a concurrent membership removal.
- *
- * @param authUserId Current verified session user.
- * @param projectIds Project IDs already constrained by membership.
- * @returns Public membership rows for the dashboard.
- */
-async function selectBubblophyProjectMemberRowsForUser(
-  authUserId: string,
-  projectIds: string[]
-): Promise<BubblophyProjectMemberPersistenceRow[]> {
-  const actorMemberships = alias(
-    bubblophyProjectMembers,
-    'bubblophy_actor_memberships'
-  );
-
-  return db
-    .select({
-      projectKey: bubblophyProjects.key,
-      authUserId: bubblophyProjectMembers.authUserId,
-      displayName: bubblophyUserProfiles.displayName,
-      normalizedEmail: sql<string | null>`case
-        when ${actorMemberships.role} in ('owner', 'maintainer')
-          or ${bubblophyProjectMembers.authUserId} = ${authUserId}
-        then ${bubblophyUserProfiles.normalizedEmail}
-        else null
-      end`,
-      role: bubblophyProjectMembers.role,
-      createdAt: bubblophyProjectMembers.createdAt,
-    })
-    .from(bubblophyProjectMembers)
-    .innerJoin(
-      bubblophyProjects,
-      eq(bubblophyProjects.id, bubblophyProjectMembers.projectId)
-    )
-    .innerJoin(
-      actorMemberships,
-      and(
-        eq(actorMemberships.projectId, bubblophyProjectMembers.projectId),
-        eq(actorMemberships.authUserId, authUserId)
-      )
-    )
-    .leftJoin(
-      bubblophyUserProfiles,
-      eq(bubblophyUserProfiles.authUserId, bubblophyProjectMembers.authUserId)
-    )
-    .where(inArray(bubblophyProjectMembers.projectId, projectIds))
-    .orderBy(
-      asc(bubblophyProjects.key),
-      asc(bubblophyProjectMembers.role),
-      asc(bubblophyProjectMembers.authUserId)
-    );
 }
 
 /**

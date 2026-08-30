@@ -9,6 +9,7 @@ import type {
   CreateBubblophyIssuePlanActionResult,
   CreateBubblophyProjectActionInput,
   CreateBubblophyProjectActionResult,
+  ReadBubblophyIssueAssigneeOptionsActionResult,
   ReadBubblophyProjectInvitationManagerSnapshotActionResult,
   RemoveBubblophyProjectMemberActionInput,
   RemoveBubblophyProjectMemberActionResult,
@@ -156,6 +157,7 @@ const bvIssuePageResult = {
       priority: 'high',
       requiresHumanApproval: true,
       assignedAuthUserId: null,
+      assigneeLabel: 'Nicht zugewiesen',
       latestPlan: { version: 2, stepCount: 3 },
     },
   ],
@@ -202,6 +204,7 @@ const allIssuePageResult = {
       priority: 'medium',
       requiresHumanApproval: false,
       assignedAuthUserId: null,
+      assigneeLabel: 'Nicht zugewiesen',
       latestPlan: null,
       updatedAt: '2026-07-19T11:00:00.000Z',
     },
@@ -225,6 +228,7 @@ const bvOffPageIssueDetailResult = {
     priority: 'medium',
     requiresHumanApproval: false,
     assignedAuthUserId: null,
+    assigneeLabel: 'Nicht zugewiesen',
     createdAt: '2026-07-18T10:00:00.000Z',
     updatedAt: '2026-07-19T10:00:00.000Z',
     latestPlan: null,
@@ -868,6 +872,7 @@ function mapIssueSummaryToPageItem(issue: IssueSummary) {
     priority: rawIssuePriority[issue.priority],
     requiresHumanApproval: issue.approvalRequired,
     assignedAuthUserId: issue.assigneeAuthUserId,
+    assigneeLabel: issue.assigneeLabel,
     latestPlan: issue.latestPlan
       ? {
           version: issue.latestPlan.version,
@@ -909,6 +914,7 @@ function buildIssueDetailTestProps(
         priority: rawIssuePriority[issue.priority],
         requiresHumanApproval: issue.approvalRequired,
         assignedAuthUserId: issue.assigneeAuthUserId,
+        assigneeLabel: issue.assigneeLabel,
         createdAt: '2026-07-18T10:00:00.000Z',
         updatedAt: '2026-07-19T10:00:00.000Z',
         latestPlan: issue.latestPlan ?? null,
@@ -1221,6 +1227,7 @@ describe('BubblophyDashboard interactions', () => {
         priority: 'medium',
         requiresHumanApproval: false,
         assignedAuthUserId: null,
+        assigneeLabel: 'Nicht zugewiesen',
         createdAt: '2026-07-18T10:00:00.000Z',
         updatedAt: '2026-07-19T11:00:00.000Z',
         latestPlan: null,
@@ -2966,9 +2973,11 @@ describe('BubblophyDashboard interactions', () => {
       'authUserId'
     );
 
-    expect(
-      await within(detailPanel).findByText('Zuweisung gespeichert.')
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        within(detailPanel).getByText(/Zuständig Martin/i)
+      ).toBeInTheDocument();
+    });
     expect(
       within(detailPanel).getByText(/Zuständig Martin/i)
     ).toBeInTheDocument();
@@ -3055,6 +3064,105 @@ describe('BubblophyDashboard interactions', () => {
     expect(requestAgentRunAction).not.toHaveBeenCalled();
   });
 
+  it('reloads options after replacing a former dangling assignee', async () => {
+    const danglingSnapshot = withIssueFixtures(
+      { ...databaseSnapshot } satisfies DashboardSnapshot,
+      dashboardIssueFixtures.map((issue) =>
+        issue.id === 'BV-12'
+          ? {
+              ...issue,
+              assigneeAuthUserId: 'user_former',
+              assigneeLabel: 'Ehemaliges Projektmitglied',
+            }
+          : issue
+      )
+    );
+    let assigneeOptionsReadCount = 0;
+    const readIssueAssigneeOptionsAction = vi.fn<
+      () => Promise<ReadBubblophyIssueAssigneeOptionsActionResult>
+    >(async () => {
+      assigneeOptionsReadCount += 1;
+      return {
+        status: 'success',
+        project: {
+          key: 'BV',
+          name: 'Bubblesverse',
+          currentUserRole: 'owner',
+        },
+        issueKey: 'BV-12',
+        query: null,
+        after: null,
+        currentAssignee:
+          assigneeOptionsReadCount === 1
+            ? {
+                authUserId: 'user_former',
+                label: 'Ehemaliges Projektmitglied',
+                role: null,
+                isCurrentMember: false,
+              }
+            : {
+                authUserId: 'user_martin',
+                label: 'Martin',
+                role: 'member',
+                isCurrentMember: true,
+              },
+        items: [{ authUserId: 'user_martin', label: 'Martin', role: 'member' }],
+        nextAfter: null,
+      };
+    });
+    const updateIssueAssigneeAction = vi.fn<
+      () => Promise<UpdateBubblophyIssueAssigneeActionResult>
+    >(async () => ({
+      status: 'updated',
+      issue: {
+        id: 'BV-12',
+        title: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+        projectKey: 'BV',
+        status: 'geplant',
+        priority: 'hoch',
+        assigneeAuthUserId: 'user_martin',
+        assigneeLabel: 'Martin',
+        planSteps: 3,
+        approvalRequired: true,
+      },
+    }));
+
+    render(
+      <BubblophyDashboard
+        snapshot={danglingSnapshot}
+        updateIssueAssigneeAction={updateIssueAssigneeAction}
+        readIssueAssigneeOptionsAction={readIssueAssigneeOptionsAction}
+      />
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Issue-Plan als strukturierte Arbeitsnotiz speichern',
+      })
+    );
+    const detailPanel = screen.getByLabelText('Issue-Details');
+    const selector = await within(detailPanel).findByRole('combobox', {
+      name: 'Zuständig',
+    });
+    fireEvent.click(selector);
+    fireEvent.click(await screen.findByText(/Martin · Member/));
+    fireEvent.click(
+      within(detailPanel).getByRole('button', { name: 'Zuweisung speichern' })
+    );
+
+    await waitFor(() => {
+      expect(readIssueAssigneeOptionsAction).toHaveBeenCalledTimes(2);
+    });
+    fireEvent.click(
+      within(screen.getByLabelText('Issue-Details')).getByRole('combobox', {
+        name: 'Zuständig',
+      })
+    );
+    expect(
+      screen.queryByRole('option', { name: 'Ehemaliges Projektmitglied' })
+    ).not.toBeInTheDocument();
+  });
+
   it('shows assignee action failures without leaking details or discarding the selection', async () => {
     const updateIssueAssigneeAction = vi.fn<
       (
@@ -3103,7 +3211,7 @@ describe('BubblophyDashboard interactions', () => {
     expect(alert.textContent).not.toContain('membership SQL');
     expect(assigneeSelect).toHaveValue('user_martin');
     expect(
-      within(detailPanel).getByText(/Zuständig Mensch/i)
+      within(detailPanel).getByText(/Zuständig mrbubbles/i)
     ).toBeInTheDocument();
     expect(requestAgentRunAction).not.toHaveBeenCalled();
   });

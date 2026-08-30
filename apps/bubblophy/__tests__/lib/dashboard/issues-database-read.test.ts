@@ -126,11 +126,11 @@ function makeCandidate(issueNumber: number | null): DatabaseRow {
   return {
     projectId: 'project_bv',
     projectKey: 'BV',
+    issueId: issueNumber === null ? null : `issue_bv_${issueNumber}`,
     issueNumber,
     issueTitle: issueNumber === null ? null : `Issue ${issueNumber}`,
     issueStatus: issueNumber === null ? null : 'ready',
     issuePriority: issueNumber === null ? null : 'high',
-    issueAssignedAuthUserId: issueNumber === null ? null : 'auth-user-2',
     issueRequiresHumanApproval: issueNumber === null ? null : true,
     issueLatestPlan: issueNumber === null ? null : { version: 2, stepCount: 3 },
   };
@@ -145,8 +145,36 @@ function makeFinalMembership(
     projectName: 'Bubblesverse',
     projectIsArchived: true,
     currentUserRole: 'viewer',
+    issueId: 'issue_bv_99',
+    assignedAuthUserId: 'auth-user-2',
+    assigneeMemberAuthUserId: 'auth-user-2',
+    assigneeDisplayName: 'Martin',
     ...overrides,
   };
+}
+
+function makeFinalAssignment(
+  issueNumber: number,
+  overrides: Partial<DatabaseRow> = {}
+): DatabaseRow {
+  return {
+    issueId: `issue_bv_${issueNumber}`,
+    assignedAuthUserId: 'auth-user-2',
+    assigneeMemberAuthUserId: 'auth-user-2',
+    assigneeDisplayName: 'Martin',
+    ...overrides,
+  };
+}
+
+function makePageFinalRow(
+  issueNumber: number,
+  overrides: Partial<DatabaseRow> = {}
+): DatabaseRow {
+  const row: DatabaseRow = {
+    ...makeFinalMembership({ issueId: `issue_bv_${issueNumber}` }),
+    ...makeFinalAssignment(issueNumber),
+  };
+  return Object.assign(row, overrides);
 }
 
 function makeDetailCandidate(
@@ -161,7 +189,6 @@ function makeDetailCandidate(
     issueDescription: 'Liegt außerhalb der ersten Queue-Seite.',
     issueStatus: 'ready',
     issuePriority: 'high',
-    issueAssignedAuthUserId: 'auth-user-2',
     issueRequiresHumanApproval: true,
     issueCreatedAt: '2026-07-18T10:00:00.000Z',
     issueUpdatedAt: '2026-07-19T10:00:00.000Z',
@@ -207,11 +234,11 @@ describe('selectDashboardIssuePageForUser', () => {
       selectedKeys: [
         'projectId',
         'projectKey',
+        'issueId',
         'issueNumber',
         'issueTitle',
         'issueStatus',
         'issuePriority',
-        'issueAssignedAuthUserId',
         'issueRequiresHumanApproval',
         'issueLatestPlan',
       ],
@@ -248,7 +275,7 @@ describe('selectDashboardIssuePageForUser', () => {
       ],
       fromTable: 'bubblophy_project_members',
       joinedTables: ['bubblophy_projects'],
-      whereParams: '["project_bv","user-1"]',
+      whereParams: '["project_bv","user-1","BV"]',
       limit: 1,
     });
   });
@@ -256,7 +283,7 @@ describe('selectDashboardIssuePageForUser', () => {
   it('keeps an issue without a plan explicit in the lightweight DTO', async () => {
     queryRows = [
       [{ ...makeCandidate(29), issueLatestPlan: null }],
-      [makeFinalMembership()],
+      [makePageFinalRow(29)],
     ];
     const { selectDashboardIssuePageForUser } =
       await import('@/lib/dashboard/issues-database-read');
@@ -269,7 +296,9 @@ describe('selectDashboardIssuePageForUser', () => {
   it('returns 25 raw items and derives the cursor from row 25', async () => {
     queryRows = [
       Array.from({ length: 26 }, (_, index) => makeCandidate(50 - index)),
-      [makeFinalMembership({ projectIsArchived: false })],
+      Array.from({ length: 26 }, (_, index) =>
+        makePageFinalRow(50 - index, { projectIsArchived: false })
+      ),
     ];
     const { selectDashboardIssuePageForUser } =
       await import('@/lib/dashboard/issues-database-read');
@@ -288,6 +317,7 @@ describe('selectDashboardIssuePageForUser', () => {
       priority: 'high',
       requiresHumanApproval: true,
       assignedAuthUserId: 'auth-user-2',
+      assigneeLabel: 'Martin',
       latestPlan: { version: 2, stepCount: 3 },
     });
     expect(result?.nextAfterIssueNumber).toBe(26);
@@ -295,7 +325,7 @@ describe('selectDashboardIssuePageForUser', () => {
   });
 
   it('uses an ascending cursor for oldest-first pages', async () => {
-    queryRows = [[makeCandidate(31)], [makeFinalMembership()]];
+    queryRows = [[makeCandidate(31)], [makePageFinalRow(31)]];
     const { selectDashboardIssuePageForUser } =
       await import('@/lib/dashboard/issues-database-read');
 
@@ -334,6 +364,100 @@ describe('selectDashboardIssuePageForUser', () => {
       await expect(selectDashboardIssuePageForUser(input)).resolves.toBeNull();
     }
   );
+
+  it('hydrates all assignee label states from one final bounded read', async () => {
+    queryRows = [
+      [
+        makeCandidate(29),
+        makeCandidate(28),
+        makeCandidate(27),
+        makeCandidate(26),
+      ],
+      [
+        makePageFinalRow(29),
+        makePageFinalRow(28, {
+          assignedAuthUserId: 'auth-no-name',
+          assigneeMemberAuthUserId: 'auth-no-name',
+          assigneeDisplayName: null,
+        }),
+        makePageFinalRow(27, {
+          assignedAuthUserId: 'auth-removed',
+          assigneeMemberAuthUserId: null,
+          assigneeDisplayName: null,
+        }),
+        makePageFinalRow(26, {
+          assignedAuthUserId: null,
+          assigneeMemberAuthUserId: null,
+          assigneeDisplayName: null,
+        }),
+      ],
+    ];
+    const { selectDashboardIssuePageForUser } =
+      await import('@/lib/dashboard/issues-database-read');
+
+    const result = await selectDashboardIssuePageForUser({
+      ...input,
+      afterIssueNumber: null,
+    });
+
+    expect(result?.items.map((item) => item.assigneeLabel)).toEqual([
+      'Martin',
+      'auth-no-name',
+      'Ehemaliges Projektmitglied',
+      'Nicht zugewiesen',
+    ]);
+    expect(calls).toHaveLength(2);
+    expect(calls[1]).toMatchObject({
+      selectedKeys: [
+        'projectId',
+        'projectKey',
+        'projectName',
+        'projectIsArchived',
+        'currentUserRole',
+        'issueId',
+        'assignedAuthUserId',
+        'assigneeMemberAuthUserId',
+        'assigneeDisplayName',
+      ],
+      joinedTables: [
+        'bubblophy_projects',
+        'bubblophy_issues',
+        'bubblophy_issue_page_assignees',
+        'bubblophy_user_profiles',
+      ],
+    });
+    expect(calls[1]?.selectedKeys).not.toContain('normalizedEmail');
+  });
+
+  it('uses the final target membership when it is removed after the candidate read', async () => {
+    queryRows = [
+      [makeCandidate(29)],
+      [
+        makePageFinalRow(29, {
+          assignedAuthUserId: 'auth-removed',
+          assigneeMemberAuthUserId: null,
+          assigneeDisplayName: null,
+        }),
+      ],
+    ];
+    const { selectDashboardIssuePageForUser } =
+      await import('@/lib/dashboard/issues-database-read');
+
+    const result = await selectDashboardIssuePageForUser({
+      ...input,
+      afterIssueNumber: null,
+    });
+
+    expect(result?.items[0]).toMatchObject({
+      assignedAuthUserId: 'auth-removed',
+      assigneeLabel: 'Ehemaliges Projektmitglied',
+    });
+    expect(calls).toHaveLength(2);
+    expect(calls[1]?.whereParams).toContain('project_bv');
+    expect(calls[1]?.whereParams).toContain('BV');
+    expect(calls[1]?.whereParams).toContain('issue_bv_29');
+    expect(calls[1]?.limit).toBe(1);
+  });
 });
 
 describe('selectDashboardIssueDetailForUser', () => {
@@ -389,6 +513,7 @@ describe('selectDashboardIssueDetailForUser', () => {
         priority: 'high',
         requiresHumanApproval: true,
         assignedAuthUserId: 'auth-user-2',
+        assigneeLabel: 'Martin',
         createdAt: '2026-07-18T10:00:00.000Z',
         updatedAt: '2026-07-19T10:00:00.000Z',
         latestPlan: {
@@ -423,7 +548,6 @@ describe('selectDashboardIssueDetailForUser', () => {
         'issueDescription',
         'issueStatus',
         'issuePriority',
-        'issueAssignedAuthUserId',
         'issueRequiresHumanApproval',
         'issueCreatedAt',
         'issueUpdatedAt',
@@ -459,11 +583,28 @@ describe('selectDashboardIssueDetailForUser', () => {
     expect(calls[1]?.whereParams).toContain('issue_note');
     expect(calls[1]?.orderBySql).toContain('desc');
     expect(calls[2]).toMatchObject({
+      selectedKeys: [
+        'projectId',
+        'projectKey',
+        'projectName',
+        'projectIsArchived',
+        'currentUserRole',
+        'issueId',
+        'assignedAuthUserId',
+        'assigneeMemberAuthUserId',
+        'assigneeDisplayName',
+      ],
       fromTable: 'bubblophy_project_members',
-      joinedTables: ['bubblophy_projects', 'bubblophy_issues'],
+      joinedTables: [
+        'bubblophy_projects',
+        'bubblophy_issues',
+        'bubblophy_issue_detail_assignees',
+        'bubblophy_user_profiles',
+      ],
       whereParams: '["project_bv","user-1","issue_bv_99"]',
       limit: 1,
     });
+    expect(calls[2]?.selectedKeys).not.toContain('normalizedEmail');
   });
 
   it('keeps archived project details readable without a latest plan', async () => {
@@ -483,6 +624,33 @@ describe('selectDashboardIssueDetailForUser', () => {
 
     expect(result?.project.isArchived).toBe(true);
     expect(result?.issue.latestPlan).toBeNull();
+  });
+
+  it('uses the final detail assignment and marks a removed project member', async () => {
+    queryRows = [
+      [makeDetailCandidate()],
+      [],
+      [
+        makeFinalMembership({
+          assignedAuthUserId: 'auth-removed',
+          assigneeMemberAuthUserId: null,
+          assigneeDisplayName: null,
+        }),
+      ],
+    ];
+    const { selectDashboardIssueDetailForUser } =
+      await import('@/lib/dashboard/issues-database-read');
+
+    const result = await selectDashboardIssueDetailForUser({
+      authUserId: 'user-1',
+      projectKey: 'BV',
+      issueNumber: 99,
+    });
+
+    expect(result?.issue).toMatchObject({
+      assignedAuthUserId: 'auth-removed',
+      assigneeLabel: 'Ehemaliges Projektmitglied',
+    });
   });
 
   it('returns the newest 50 notes and reports older history', async () => {
@@ -538,7 +706,12 @@ describe('selectDashboardIssueDetailForUser', () => {
     ).resolves.toBeNull();
 
     expect(calls[2]).toMatchObject({
-      joinedTables: ['bubblophy_projects', 'bubblophy_issues'],
+      joinedTables: [
+        'bubblophy_projects',
+        'bubblophy_issues',
+        'bubblophy_issue_detail_assignees',
+        'bubblophy_user_profiles',
+      ],
       whereParams: '["project_bv","user-1","issue_bv_99"]',
     });
   });

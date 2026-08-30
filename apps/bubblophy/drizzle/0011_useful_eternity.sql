@@ -1,0 +1,1 @@
+CREATE INDEX "bubblophy_project_members_project_auth_user_prefix_idx" ON "bubblophy_project_members" USING btree ("project_id",lower("auth_user_id") text_pattern_ops,"auth_user_id");

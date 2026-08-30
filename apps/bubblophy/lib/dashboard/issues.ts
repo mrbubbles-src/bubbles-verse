@@ -33,6 +33,7 @@ export interface DashboardIssuePageItem {
   priority: BubblophyIssuePriority;
   requiresHumanApproval: boolean;
   assignedAuthUserId: string | null;
+  assigneeLabel: string;
   latestPlan: {
     version: number;
     stepCount: number;
@@ -68,6 +69,7 @@ export interface DashboardIssueDetail {
     priority: BubblophyIssuePriority;
     requiresHumanApproval: boolean;
     assignedAuthUserId: string | null;
+    assigneeLabel: string;
     createdAt: string;
     updatedAt: string;
     latestPlan: {
@@ -149,9 +151,35 @@ export type ReadDashboardIssueDetailResult =
   | { status: 'database_unavailable' };
 
 export const DASHBOARD_ISSUE_PAGE_SIZE = 25;
+export const DASHBOARD_UNASSIGNED_LABEL = 'Nicht zugewiesen';
+export const DASHBOARD_FORMER_MEMBER_LABEL = 'Ehemaliges Projektmitglied';
 
 const projectKeyPattern = /^[A-Z0-9]{2,8}$/;
 const issueKeyPattern = /^([A-Z0-9]{2,8})-(\d+)$/;
+
+/**
+ * Resolves a public assignee label from a final same-project membership read.
+ *
+ * @param assignedAuthUserId Current persisted assignee ID, or null.
+ * @param memberAuthUserId Same-project membership ID from the final read.
+ * @param displayName Optional synchronized display name for that member.
+ * @returns A display name, stable ID fallback, or explicit lifecycle label.
+ */
+export function getDashboardAssigneeLabel(
+  assignedAuthUserId: string | null,
+  memberAuthUserId: string | null,
+  displayName: string | null
+) {
+  if (!assignedAuthUserId) {
+    return DASHBOARD_UNASSIGNED_LABEL;
+  }
+
+  if (memberAuthUserId !== assignedAuthUserId) {
+    return DASHBOARD_FORMER_MEMBER_LABEL;
+  }
+
+  return displayName ?? assignedAuthUserId;
+}
 
 /**
  * Reads one bounded issue-number page for a concrete visible project.

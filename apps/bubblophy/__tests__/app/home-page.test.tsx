@@ -4,11 +4,13 @@ import type {
   createBubblophyIssuePlanAction,
   createBubblophyProjectAction,
   createBubblophyProjectInvitationAction,
+  readBubblophyIssueAssigneeOptionsAction,
   readBubblophyProjectInvitationManagerSnapshotAction,
   reinviteBubblophyProjectInvitationAction,
   revokeBubblophyProjectInvitationAction,
   transitionBubblophyProjectArchiveAction,
   updateBubblophyAgentTokenLifecycleAction,
+  updateBubblophyIssueAssigneeAction,
   updateBubblophyIssueContentAction,
   updateBubblophyIssuePriorityAction,
   updateBubblophyIssueStatusAction,
@@ -55,6 +57,8 @@ const BubblophyDashboardMock = vi.fn(
     activityPageResult?: ReadDashboardActivityPageResult | null;
     createIssueAction?: typeof createBubblophyIssueAction;
     updateIssueContentAction?: typeof updateBubblophyIssueContentAction;
+    updateIssueAssigneeAction?: typeof updateBubblophyIssueAssigneeAction;
+    readIssueAssigneeOptionsAction?: typeof readBubblophyIssueAssigneeOptionsAction;
     createIssuePlanAction?: typeof createBubblophyIssuePlanAction;
     updateIssueStatusAction?: typeof updateBubblophyIssueStatusAction;
     updateIssuePriorityAction?: typeof updateBubblophyIssuePriorityAction;
@@ -191,6 +195,8 @@ vi.mock('@/components/dashboard/bubblophy-dashboard', () => ({
     activityPageResult?: ReadDashboardActivityPageResult | null;
     createIssueAction?: typeof createBubblophyIssueAction;
     updateIssueContentAction?: typeof updateBubblophyIssueContentAction;
+    updateIssueAssigneeAction?: typeof updateBubblophyIssueAssigneeAction;
+    readIssueAssigneeOptionsAction?: typeof readBubblophyIssueAssigneeOptionsAction;
     createIssuePlanAction?: typeof createBubblophyIssuePlanAction;
     updateIssueStatusAction?: typeof updateBubblophyIssueStatusAction;
     updateIssuePriorityAction?: typeof updateBubblophyIssuePriorityAction;
@@ -632,6 +638,7 @@ describe('Bubblophy home page', () => {
         priority: 'medium',
         requiresHumanApproval: false,
         assignedAuthUserId: null,
+        assigneeLabel: 'Nicht zugewiesen',
         createdAt: '2026-07-19T09:00:00.000Z',
         updatedAt: '2026-07-19T10:00:00.000Z',
         latestPlan: null,
@@ -689,6 +696,7 @@ describe('Bubblophy home page', () => {
           priority: 'medium',
           requiresHumanApproval: false,
           assignedAuthUserId: null,
+          assigneeLabel: 'Nicht zugewiesen',
           latestPlan: null,
         },
       ],
@@ -734,6 +742,7 @@ describe('Bubblophy home page', () => {
           priority: 'medium',
           requiresHumanApproval: false,
           assignedAuthUserId: null,
+          assigneeLabel: 'Nicht zugewiesen',
           latestPlan: null,
         },
       ],
@@ -800,6 +809,7 @@ describe('Bubblophy home page', () => {
           priority: 'medium',
           requiresHumanApproval: false,
           assignedAuthUserId: null,
+          assigneeLabel: 'Nicht zugewiesen',
           latestPlan: null,
         },
         {
@@ -810,6 +820,7 @@ describe('Bubblophy home page', () => {
           priority: 'medium',
           requiresHumanApproval: false,
           assignedAuthUserId: null,
+          assigneeLabel: 'Nicht zugewiesen',
           latestPlan: null,
         },
       ],
