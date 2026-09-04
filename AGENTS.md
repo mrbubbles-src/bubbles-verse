@@ -54,7 +54,9 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## TypeScript
 
-- Do not use `any`, `unknown` or `never` unless there's absolutely no other way.
+- Use precise domain and interface types. Avoid `any`; use `unknown` at genuinely untrusted
+  boundaries and narrow it before use. Use `never` where it correctly expresses impossible states or
+  exhaustiveness, not as a workaround for missing types.
 
 ## Large File & Module Structure Policy
 
