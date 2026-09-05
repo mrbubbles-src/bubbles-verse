@@ -11,13 +11,15 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Be extremely concise. Sacrifice grammar for the sake of concision.
 - Avoid overly clever or abstract solutions unless clearly justified.
 - Write code for humans: it must be easy to read, understand, and maintain, while remaining efficient.
-- If you would signifiicantly change a file, always ask for confirmation first before proceeding.
-- Subagents should be used when appropriate to prevent context snowballing, even if the user does not explicitly request it. Usecases for subagents are for example code analysis, checking documentation, reviewing code etc.
-- Always run formatting, linting and typechecking before finishing a task.
+- Follow the global review and verification cadence: use focused checks during
+  implementation and the full relevant project checks on the final candidate,
+  not after every intermediate fix. Read-only tasks do not authorize formatting
+  or other edits.
 - Add concise JSDoc comments that explain what the function or component is for, how to use it, what it expects, and what it returns — even if the implementation seems obvious.
 - Avoid comments that merely restate the function name or implementation.
-- Always assume your knowledge is outdated, verify it with all your available tooling, such as the codebase, documentation via MCP Servers, Skills, Plugins, etc.
-- Use the `init` command first once in a new NextDevTools session to initialize the MCP.
+- Verify task-relevant assumptions against the codebase and installed versions.
+  Use current official documentation or suitable tools for version-sensitive
+  behavior or material uncertainty; do not use every available tool by default.
 - When writing german text, always use umlauts instead of "ae", "oe", "ue".
 - When creating new components, libraries, hooks, etc., think about grouping it into a folder structure that makes sense; don't just throw it into the respective resources folder.
 - Always run `bun install` and `bun add` from the repository root. For workspace
@@ -54,9 +56,13 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## TypeScript
 
-- Use precise domain and interface types. Avoid `any`; use `unknown` at genuinely untrusted
-  boundaries and narrow it before use. Use `never` where it correctly expresses impossible states or
-  exhaustiveness, not as a workaround for missing types.
+- Use precise domain and interface types. Prefer concrete types, generics,
+  schemas, and discriminated unions over `any`. If an unavoidable external
+  boundary requires `any`, isolate and explain the exception.
+- Use `unknown` for genuinely untrusted or not-yet-known values, then validate or
+  narrow them before use. Do not replace known domain types with `unknown`.
+- Use `never` for impossible states and exhaustiveness where appropriate. Do not
+  use blanket assertions or `as unknown as` to bypass missing types or validation.
 
 ## Large File & Module Structure Policy
 
@@ -70,11 +76,14 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## Documentation
 
-- Always update documentation, README.md, and CHANGELOG.md.
+- At the end of a coherent slice or feature, update the relevant documentation
+  so developers can understand the changed system, its contracts, and its usage.
+  Update README and CHANGELOG where appropriate. Batch related documentation
+  changes rather than updating every document after each intermediate fix.
+  Do not expand this into unrelated documentation work.
 - Documentation and changelogs must live close to the code they describe.
 - Keep docs concise, human readable, and aligned with the codebase.
 - Prefer small, focused files over large ones.
-- Document anything that improves human onboarding or understanding.
 - Root:
   - `docs/` documents only monorepo-wide architecture, setup, tooling, and cross-cutting contracts.
   - `docs/README.md` is the navigation entrypoint.
