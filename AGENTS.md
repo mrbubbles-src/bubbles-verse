@@ -8,7 +8,6 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## General
 
-- Be extremely concise. Sacrifice grammar for the sake of concision.
 - Avoid overly clever or abstract solutions unless clearly justified.
 - Write code for humans: it must be easy to read, understand, and maintain, while remaining efficient.
 - Follow the global review and verification cadence: use focused checks during
